@@ -306,7 +306,7 @@ getIoRate(float etime)
     static float smoothio = 0;
     double page_in, page_out;
 
-    if ( getPage(&page_in, &page_out, FALSE) == -1 ) {
+    if (getPage(&page_in, &page_out, FALSE) == -1) {
         return(0.0);
     }
 
@@ -386,22 +386,23 @@ initReadLoad(int checkMode, int *kernelPerm)
     if (checkMode)
         return;
 
-    if (statvfs( "/tmp", &fs ) < 0) {
+    if (statvfs("/tmp", &fs) < 0) {
         ls_syslog(LOG_ERR, "%s: statvfs() failed /tmp: %m", __func__);
         myHostPtr->statInfo.maxTmp = 0;
-    } else
+    } else {
         myHostPtr->statInfo.maxTmp =
             (float)fs.f_blocks/((float)(1024 * 1024)/fs.f_bsize);
+    }
 
     stat_fd = open("/proc/stat", O_RDONLY, 0);
-    if ( stat_fd == -1 ) {
+    if (stat_fd == -1) {
         ls_syslog(LOG_ERR, "\
 %s: open() on /proc/stat failed: %m", __FUNCTION__);
         *kernelPerm = -1;
         return;
     }
 
-    if (read( stat_fd, buffer, sizeof( buffer ) - 1 ) <= 0 ) {
+    if (read(stat_fd, buffer, sizeof(buffer) - 1) <= 0 ) {
         ls_syslog(LOG_ERR, "%s: read() /proc/stat failed: %m", __FUNCTION__);
         close( stat_fd );
         *kernelPerm = -1;
@@ -427,7 +428,7 @@ initReadLoad(int checkMode, int *kernelPerm)
     myHostPtr->statInfo.maxSwap = maxSwap;
 }
 
-const char *
+char *
 getHostModel(void)
 {
     static char model[MAXLSFNAMELEN];

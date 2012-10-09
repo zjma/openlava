@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
- *
- * $Id: lim.main.c 397 2007-11-26 19:04:00Z mblack $
+ * Copyright (C) 2011-2012 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -734,8 +732,6 @@ initAndConfig(int checkMode, int *kernelPerm)
         }
     }
 
-    getLastActiveTime();
-
     return 0;
 }
 
@@ -805,7 +801,7 @@ child_handler(int sig)
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         if (pid == elim_pid) {
             ls_syslog(LOG_ERR, "\
-%s: elim (pid=%d) died (exit_code=%d,exit_sig=%d)",
+%s: elim (pid=%d) died (exit_code=%d, exit_sig=%d)",
                       __func__,
                       (int)elim_pid,
                       WEXITSTATUS (status),
@@ -951,7 +947,7 @@ startPIM(int argc, char **argv)
 
     if ((pimPid = fork())) {
         if (pimPid < 0)
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "fork");
+            ls_syslog(LOG_ERR, "%s: fork() pim failed %m", __func__);
         return;
     }
 
@@ -978,7 +974,7 @@ startPIM(int argc, char **argv)
     pargv[0] = getDaemonPath_("/pim", limParams[LSF_SERVERDIR].paramValue);
     lsfExecv(pargv[0], pargv);
 
-    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, __func__, "execv", pargv[0]);
+    ls_syslog(LOG_ERR, "%s: exec() pim %s failed", __func__, pargv[0]);
 
     exit(-1);
 }

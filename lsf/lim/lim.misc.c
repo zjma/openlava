@@ -502,3 +502,27 @@ out:
 
     return 0;
 }
+
+/* lim_system()
+ * This is a simplified version of the libc system(),
+ * it does not handle SIGCHLD so that the main daemon
+ * handler is invoked when the child exits.
+ */
+int
+lim_system(const char *cmd)
+{
+    pid_t pid;
+
+    if (cmd == NULL)
+        return -1;
+
+    pid = fork();
+    if (pid < 0)
+        return -1;
+    if (pid > 0)
+        return pid;
+    /* child goes and executes the command
+     */
+    execl("/bin/sh", "sh", "-c", cmd, NULL);
+    exit(-1);
+}

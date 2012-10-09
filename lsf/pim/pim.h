@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2011 - 2012 David Bigagli
- * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2011-2012 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -17,4 +16,11 @@
  *
  */
 
+#include "../lsf.h"
+#include "../lib/lproto.h"
+#include "../intlib/intlibout.h"
 
+extern char infofile[];
+extern int pimPort;
+extern int scan_procs(void);
+extern void logProcessInfo(void);

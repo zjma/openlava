@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2011 David Bigagli
- *
- * $Id: lim.h 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -288,7 +286,7 @@ struct minSLimConfData {
 extern struct sharedResourceInstance *sharedResourceHead ;
 
 #define  BYTE(byte)  (((int)byte)&0xff)
-#define THRLDOK(inc,a,thrld)    (inc ? a <= thrld : a >= thrld)
+#define THRLDOK(inc, a, thrld)    (inc ? a <= thrld : a >= thrld)
 
 extern int getpagesize(void);
 
@@ -368,7 +366,6 @@ extern struct lsInfo allInfo;
 extern struct shortLsInfo shortInfo;
 extern int clientHosts[];
 extern struct floatClientInfo floatClientPool;
-extern int ncpus;
 extern struct clientNode  *clientMap[];
 
 extern pid_t elim_pid;
@@ -385,8 +382,6 @@ extern int numMasterCandidates;
 extern int isMasterCandidate;
 extern int limConfReady;
 extern int kernelPerm;
-
-
 
 extern int readShared(void);
 extern int readCluster(int);
@@ -407,20 +402,14 @@ extern int initTypeModel(struct hostNode *);
 extern char *getHostType(void);
 extern struct hostNode *addFloatClientHost(struct hostent *);
 extern int removeFloatClientHost(struct hostNode *);
-extern void slaveOnlyInit(int checkMode, int *kernelPerm);
-extern int slaveOnlyPreConf();
-extern int slaveOnlyPostConf(int checkMode, int *kernelPerm);
 extern int typeNameToNo(const char *);
 extern int archNameToNo(const char *);
-
-
 extern void reconfigReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void shutdownReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void limDebugReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void lockReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern int limPortOk(struct sockaddr_in *);
 extern void servAvailReq(XDR *, struct hostNode *, struct sockaddr_in *, struct LSFHeader *);
-
 extern void pingReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void clusNameReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void masterInfoReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
@@ -445,23 +434,33 @@ extern int  callMasterTcp(enum limReqCode, struct hostNode *, void *, bool_t(*)(
 extern int validateHost(char *, int);
 extern int validateHostbyAddr(struct sockaddr_in *, int);
 extern void checkAfterHourWindow();
-
+extern void runLoadCollector(void);
+extern int numCpus(void);
+extern int queueLengthEx(float *, float *, float *);
+extern void cpuTime(float *, float *);
+extern int realMem(float);
+extern float getIoRate(float);
+extern float getpaging(float);
+extern float getswap(void);
+extern int getLogin(void);
+extern float tmpspace(void);
 extern void sendLoad(void);
 extern void rcvLoad(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void copyIndices(float *, int , int, struct hostNode *);
-extern float normalizeRq(float rawql, float cpuFactor, int nprocs);
-extern struct resPair * getResPairs (struct hostNode *);
+extern float normalizeRq(float, float, int);
+extern struct resPair *getResPairs(struct hostNode *);
 extern void satIndex(void);
 extern void loadIndex(void);
 extern void initReadLoad(int, int *);
 extern void initConfInfo(void);
 extern void readLoad(int);
-extern const char* getHostModel(void);
-
+extern char *getHostModel(void);
+extern int queueLengthEx(float *, float *, float *);
+extern float queueLength(void);
 extern void getLastActiveTime(void);
 extern void putLastActiveTime(void);
 
-extern void lim_Exit(const char *fname);
+extern void lim_Exit(const char *);
 extern int equivHostAddr(struct hostNode *, u_int);
 extern struct hostNode *findHost(char *);
 extern struct hostNode *findHostbyAddr(struct sockaddr_in *,
@@ -516,5 +515,5 @@ extern int logLIMDown(void);
 extern int logAddHost(struct hostEntry *);
 extern int logRmHost(struct hostEntry *);
 extern int addHostByTab(hTab *);
-
+extern int lim_system(const char *);
 #endif

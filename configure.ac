@@ -1,7 +1,7 @@
 #
 # openlava project
 #
-# Copyright (C) 2011 David Bigagli
+# Copyright (C) 2011-2012 David Bigagli
 #
 AC_INIT(openlava, 2.0)
 AC_CONFIG_HEADERS(config.h)
@@ -14,13 +14,15 @@ AC_ARG_VAR([openlavaadmin], "")
 AC_SUBST([openlavacluster], [openlava])
 AC_ARG_VAR([openlavacluster], "")
 
-# Cygwin support
+# Non Linux support
 AC_CANONICAL_SYSTEM
+AM_CONDITIONAL([CYGWIN], [false]) 
+AM_CONDITIONAL([SOLARIS], [false])
 case "${target_os}" in
   *cygwin*)
     AM_CONDITIONAL([CYGWIN], [true]) ;;
-  *)
-    AM_CONDITIONAL([CYGWIN], [false]) ;;
+  *solaris*)
+    AM_CONDITIONAL([SOLARIS], [true]) ;;
 esac
 
 # Initialize the automake
@@ -49,7 +51,7 @@ if test "x$ac_compiler_gnu" = xyes; then
     CFLAGS="$CFLAGS -Wall"
 fi
 
-#AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"])
+AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"])
 # Check for tcl, we try tcl and all 8.X versions
 AC_CHECK_HEADERS([tcl.h], [], [
  AC_CHECK_HEADERS([tcl/tcl.h], [], [

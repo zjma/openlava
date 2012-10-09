@@ -54,6 +54,6 @@ struct lsPidInfo {
 #define PIM_SLEEP_TIME 3
 #define PIM_UPDATE_INTERVAL 30
 
-extern struct jRusage *getJInfo_(int, int*, int, int);
+extern struct jRusage *getJInfo_(int, int *, int, int);
 
 #endif

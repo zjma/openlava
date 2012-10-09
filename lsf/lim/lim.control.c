@@ -156,7 +156,6 @@ reconfig(void)
                 putenv(lsfLimLock);
             }
 
-            putLastActiveTime();
             lsfExecvp(myargv[0], myargv);
             ls_syslog(LOG_ERR, "\
 %s: execvp %s failed %m", myargv[0]);

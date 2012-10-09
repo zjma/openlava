@@ -40,6 +40,11 @@ sbatchd_LDADD = ../lib/liblsbatch.a \
 if !CYGWIN
 sbatchd_LDADD += -lnsl
 endif
+if SOLARIS
+mbatchd_LDADD += -lsocket -lnsl
+sbatchd_LDADD += -lsocket -lnsl
+endif
+
 
 etags :
 	etags *.[hc] ../*.h ../lib/*.[hc] ../../lsf/*.h \

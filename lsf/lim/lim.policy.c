@@ -1712,14 +1712,14 @@ setBusyIndex(int lidx, struct hostNode *host)
         || lidx == R1M) {
         load = normalizeRq(host->uloadIndex[lidx],
                            1,
-                           ncpus) - 1;
+                           myHostPtr->statInfo.maxCpus) - 1;
     } else {
         load = host->loadIndex[lidx];
     }
 
-    if ( ! THRLDOK(li[lidx].increasing,
-                   load,
-                   host->busyThreshold[lidx])) {
+    if (!THRLDOK(li[lidx].increasing,
+                 load,
+                 host->busyThreshold[lidx])) {
 
         SET_BIT(lidx + INTEGER_BITS, host->status);
 

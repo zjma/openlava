@@ -17,14 +17,8 @@
  *
  */
 
-#include "../lsf.h"
-#include "../lib/lproto.h"
-#include "../intlib/intlibout.h"
+#include "pim.h"
 
-static struct lsPidInfo pbase[MAX_PROC_ENT];
-static int numprocs;
-
-static int pimPort;
 static int gothup;
 
 struct config_param pimParams[] =
@@ -55,18 +49,18 @@ enum {
     LSF_PIM_UPDATE_INTERVAL
 };
 
+/* The pim info file with the process information
+ * this file is used by the arch dipendent modules.
+ */
+char infofile[PATH_MAX];
+int pimPort;
 static int pim_debug;
-static char infofile[MAXFILENAMELEN];
 static int sleepTime = PIM_SLEEP_TIME;
 static int updInterval = PIM_UPDATE_INTERVAL;
 
-static void logProcessInfo(void);
 static int doServ(void);
 static void hup(int);
-static int scan_procs(void);
-static void updateProcs(const time_t);
-static int parse_stat(char *, struct lsPidInfo *);
-static int ls_pidinfo(int, struct lsPidInfo *);
+static void updateProcs(void);
 
 static void
 usage (const char *cmd)
@@ -222,7 +216,7 @@ doServ(void)
 
     pimPort = ntohs(sin.sin_port);
 
-    TIMEIT(0, updateProcs(0), "updateProcs");
+    TIMEIT(0, updateProcs(), "updateProcs");
     nextTime = time(NULL) + updInterval;
 
     for (;;) {
@@ -248,7 +242,7 @@ doServ(void)
 
         t = time(NULL);
         if (t >= nextTime) {
-            TIMEIT(0, updateProcs(t), "updateProcs");
+            TIMEIT(0, updateProcs(), "updateProcs");
             nextTime = t + updInterval;
         }
 
@@ -290,7 +284,7 @@ doServ(void)
 
         /* Update processes and move the time ahead.
          */
-        TIMEIT(0, updateProcs(t), "updateProcs");
+        TIMEIT(0, updateProcs(), "updateProcs");
         nextTime = time(NULL) + updInterval;
 
         if ((cc = writeEncodeHdr_(sock, &hdr, nb_write_fix)) < 0) {
@@ -306,213 +300,20 @@ doServ(void)
 }
 
 /* updateProcs()
+ * Linux and Solaris implement the /proc reading
+ * differently.
  */
 static void
-updateProcs(const time_t lastUpdate)
+updateProcs(void)
 {
     ls_syslog(LOG_DEBUG, "\
 %s: updating PIM process table.", __func__);
 
     scan_procs();
-    logProcessInfo();
-}
-
-/* logProcessInfo()
- */
-static void
-logProcessInfo(void)
-{
-    int i;
-    FILE *fp;
-    static char wfile[MAXFILENAMELEN];
-
-    sprintf(wfile, "%s.%d", infofile, getpid());
-
-    fp = fopen(wfile, "w");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "%s: fopen() %s failed %m.", wfile);
-        return;
-    }
-
-    fprintf(fp, "%d\n", pimPort);
-    for (i = 0; i < numprocs; i++) {
-
-        fprintf(fp, "\
-%d %d %d %d %d %d %d %d %d %d %d %d\n",
-                pbase[i].pid, pbase[i].ppid, pbase[i].pgid, pbase[i].jobid,
-                pbase[i].utime, pbase[i].stime, pbase[i].cutime,
-                pbase[i].cstime, pbase[i].proc_size,
-                pbase[i].resident_size, pbase[i].stack_size,
-                (int) pbase[i].status);
-    }
-    fclose(fp);
-
-    if (unlink(infofile) < 0 && errno != ENOENT) {
-        ls_syslog(LOG_DEBUG, "\
-%s: unlink(%s) failed: %m.", __func__, infofile);
-    }
-
-    if (rename(wfile, infofile) < 0) {
-        ls_syslog(LOG_ERR, "\
-%s: rename() %s to %s failed: %m.", __func__, wfile, infofile);
-    }
-    unlink(wfile);
-
-    ls_syslog(LOG_DEBUG, "\
-%s: process table updated.", __func__);
-
 }
 
 static void
 hup(int sig)
 {
     gothup = 1;
-}
-
-static int
-scan_procs(void)
-{
-    DIR *dir;
-    struct dirent *process;
-    struct lsPidInfo rec;
-
-    dir = opendir("/proc");
-    if (dir == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: opendir(/proc) failed: %m.", __func__);
-        return -1;
-    }
-
-    numprocs = 0;
-    while ((process = readdir(dir))) {
-
-        if (! isdigit(process->d_name[0]))
-            continue;
-
-        if (ls_pidinfo(atoi(process->d_name), &rec) != 0)
-            continue;
-
-        if (rec.pgid == 1)
-            continue;
-
-        pbase[numprocs].pid = rec.pid;
-        pbase[numprocs].ppid = rec.ppid;
-        pbase[numprocs].pgid = rec.pgid;
-
-        pbase[numprocs].utime = rec.utime/100;
-        pbase[numprocs].stime = rec.stime/100;
-        pbase[numprocs].cutime = rec.cutime/100;
-        pbase[numprocs].cstime = rec.cstime/100;
-
-        pbase[numprocs].proc_size = rec.proc_size;
-        pbase[numprocs].resident_size
-            = rec.resident_size * (sysconf(_SC_PAGESIZE)/1024);
-        pbase[numprocs].stack_size = rec.stack_size;
-        if ( pbase[numprocs].stack_size < 0 )
-            pbase[numprocs].stack_size = 0;
-        pbase[numprocs].status = rec.status;
-
-        ++numprocs;
-        if (numprocs == MAX_PROC_ENT - 1) {
-            ls_syslog(LOG_INFO, "\
-%s: maximum number of processes %d reached.", __func__, numprocs);
-            break;
-        }
-    }
-
-    closedir(dir);
-
-    return 0;
-}
-
-/* ls_pidinfo()
- */
-static int
-ls_pidinfo(int pid, struct lsPidInfo *rec)
-{
-    int fd;
-    static char filename[PATH_MAX];
-    static char buffer[BUFSIZ];
-
-    sprintf(filename, "/proc/%d/stat", pid);
-
-    fd = open(filename, O_RDONLY, 0);
-    if (fd == -1) {
-        ls_syslog(LOG_ERR, "\
-%s: open() failed %s %m.", __func__, filename );
-        return -11;
-    }
-
-    if (read(fd, buffer, sizeof(buffer) - 1) <= 0) {
-        ls_syslog(LOG_ERR, "\
-%s: read() failed %s %m.", __func__, filename);
-        close(fd);
-        return -1;
-    }
-    close(fd);
-
-    if (parse_stat(buffer, rec) < 0) {
-        ls_syslog(LOG_ERR, "\
-%s: parse_stat() failed process %d.", __func__, pid);
-        return -1;
-    }
-
-    return 0;
-}
-
-/* parse_stat()
- */
-static int
-parse_stat(char *buf, struct lsPidInfo *pinfo)
-{
-    unsigned int rss_rlim;
-    unsigned int start_code;
-    unsigned int end_code;
-    unsigned int start_stack;
-    unsigned int end_stack;
-    unsigned char status;
-    unsigned long vsize;
-
-    sscanf(buf, "\
-%d %s %c %d %d %*d %*d %*d %*u %*u %*u %*u %*u %d %d %d "
-           "%d %*d %*d %*u %*u %*d %lu %u %u %u %u %u %u",
-           &pinfo->pid, pinfo->command, &status, &pinfo->ppid, &pinfo->pgid,
-           &pinfo->utime, &pinfo->stime, &pinfo->cutime, &pinfo->cstime,
-           &vsize, &pinfo->resident_size, &rss_rlim, &start_code,
-           &end_code, &start_stack, &end_stack);
-
-    if (pinfo->pid == 0) {
-        ls_syslog(LOG_ERR, "\
-%s: invalid process 0 found: %s", __func__, buf);
-        return -1;
-    }
-
-    pinfo->stack_size = start_stack - end_stack;
-    pinfo->proc_size = vsize/1024;
-
-    switch (status) {
-        case 'R' :
-            pinfo->status = LS_PSTAT_RUNNING;
-            break;
-        case 'S' :
-            pinfo->status = LS_PSTAT_SLEEP;
-            break;
-        case 'D' :
-            pinfo->status = LS_PSTAT_SLEEP;
-            break;
-        case 'T' :
-            pinfo->status = LS_PSTAT_STOPPED;
-            break;
-        case 'Z' :
-            pinfo->status = LS_PSTAT_ZOMBI;
-            break;
-        case 'W' :
-            pinfo->status = LS_PSTAT_SWAPPED;
-            break;
-        default :
-            pinfo->status = LS_PSTAT_RUNNING;
-            break;
-    }
-
-    return 0;
 }

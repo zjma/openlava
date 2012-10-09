@@ -24,6 +24,11 @@ nios_LDADD = ../../lsbatch/lib/liblsbatch.a \
 if !CYGWIN
 nios_LDADD += -lnsl
 endif
+if SOLARIS
+nios_LDADD += -lsocket
+res_LDADD += -lsocket
+endif
+
 #
 etags:
 	etags *.[hc] ../*.h ../lib/*.[hc] ../intlib/*.[hc]

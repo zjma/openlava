@@ -205,7 +205,6 @@ sendLoad(void)
     for (i = 0; i < allInfo.numIndx; i++)
         li[i].valuesent = myHostPtr->loadIndex[i];
 
-
     if (!masterMe) {
 
         loadType = e_vec;
