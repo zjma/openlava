@@ -3,9 +3,9 @@
 #
 # Copyright (C) 2011-2012 David Bigagli
 #
-AC_INIT(openlava, 2.0)
+AC_INIT(openlava, 2.1)
 AC_CONFIG_HEADERS(config.h)
-AC_PREFIX_DEFAULT([/opt/openlava-2.0])
+AC_PREFIX_DEFAULT([/opt/openlava-2.1])
 
 
 # Set some cluster configuration variables .
