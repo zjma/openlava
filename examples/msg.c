@@ -12,7 +12,7 @@ struct jinfo {
     char **np;
 };
 
-struct msgbuf {
+struct mzgbuf {
     long mtype;
     char mtext[64];
 };
@@ -22,8 +22,8 @@ main(int argc, char **argv)
 {
     int cc;
     int msqid;
-    struct msgbuf msg;
-    struct msgbuf msg2;
+    struct mzgbuf msg;
+    struct mzgbuf msg2;
     size_t len;
     struct msqid_ds buf;
 
