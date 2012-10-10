@@ -172,7 +172,6 @@ readLoad(int kernelPerm)
         extrafactor = (float)jobxfer/(float)keepTime;
         jobxfer--;
     }
-
     myHostPtr->loadIndex[R15S] = avrun15  + extraload[R15S] * extrafactor;
     myHostPtr->loadIndex[R1M]  = avrun1m  + extraload[R1M]  * extrafactor;
     myHostPtr->loadIndex[R15M] = avrun15m + extraload[R15M] * extrafactor;
