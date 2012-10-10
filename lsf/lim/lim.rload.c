@@ -30,14 +30,6 @@
 #include <unistd.h>
 #include "../lib/lproto.h"
 
-
-#define  EXP3   0.716531311
-#define  EXP4   0.77880078
-#define  EXP6   0.846481725
-#define  EXP12  0.920044415
-#define  EXP180 0.994459848
-
-float k_hz;
 static FILE *lim_popen(char **, char *);
 static int lim_pclose(FILE *);
 
@@ -45,7 +37,6 @@ pid_t elim_pid = -1;
 int defaultRunElim = FALSE;
 
 static void getusr(void);
-static float overRide[NBUILTINDEX];
 static char * getElimRes (void);
 static int saveSBValue (char *, char *);
 static int callElim(void);
@@ -60,7 +51,7 @@ int ELIMblocktime = -1;
 extern int maxnLbHost;
 float initLicFactor(void);
 static void setUnkwnValues (void);
-
+static int loginses;
 extern char *getExtResourcesVal(char *);
 extern int  blockSigs_(int, sigset_t*, sigset_t*);
 static void unblockSigs_(sigset_t* );
@@ -71,7 +62,6 @@ satIndex(void)
 
     for (i = 0; i < allInfo.numIndx; i++)
         li[i].satvalue = myHostPtr->busyThreshold[i];
-
 }
 
 void
@@ -80,12 +70,6 @@ loadIndex(void)
     li[R15S].exchthreshold += 0.05*(myHostPtr->statInfo.maxCpus - 1 );
     li[R1M].exchthreshold += 0.04*(myHostPtr->statInfo.maxCpus - 1 );
     li[R15M].exchthreshold += 0.03*(myHostPtr->statInfo.maxCpus - 1 );
-}
-
-static void
-smooth(float *val, float instant, float factor)
-{
-    (*val) = ((*val) * factor) + (instant * (1 - factor));
 }
 
 /* idletime()
@@ -106,6 +90,7 @@ idletime(void)
     setutent();
     t = time(NULL);
     idle = 3600*24*30*60;
+    loginses = 0;
     while ((u = getutent())) {
 
         if (u->ut_user[0] == 0
@@ -120,9 +105,12 @@ idletime(void)
             continue;
         }
 
+        /* Count the login session on the system.
+         */
+        ++loginses;
+
         ls_syslog(LOG_DEBUG, "\
 %s: %s %s %s %d", __func__, u->ut_user, u->ut_line, buf, t - statbuf.st_atime);
-
         l = t - statbuf.st_atime;
         if (l <= 0) {
             /* Somebody just send a char down the line
@@ -145,122 +133,39 @@ idletime(void)
 void
 readLoad(int kernelPerm)
 {
-    int i, busyBits = 0;
-    float  etime;
-    float  itime;
-    static  int readCount0 = 10000;
-    static  int readCount1 = 5;
-    static  int readCount2 = 1500;
-    static  float avrun15 = 0.0;
-    float   ql;
-    static  float avrun1m  = 0.0;
-    static  float avrun15m = 0.0;
-    static  float   smpages;
-    static  float   smkbps;
-    float   extrafactor;
+    int i;
+    int busyBits;
+    float extrafactor;
     float cpu_usage;
-    static  float   swap;
-    static  float   instant_ut;
-    static  int     loginses;
+    float avrun15;
+    float avrun1m;
+    float avrun15m;
+    static time_t next;
+
+    if (next == 0)
+        next = time(NULL) - 1;
 
     TIMEIT(0, getusr(), "getusr()");
 
-    if (kernelPerm < 0)
-        goto checkOverRide;
-
-    if (++readCount0 < (5.0/sampleIntvl)) {
-        goto checkExchange;
-    }
-
-    readCount0 = 0;
-    ql = 0.0;
-    instant_ut = 0.0;
-    if (0)
-        smooth(0, 0, 0);
-
-#if defined(__linux__)
-    if (queueLengthEx(&avrun15, &avrun1m, &avrun15m) < 0) {
-        ql = queueLength();
-        smooth(&avrun15, ql, EXP3);
-        smooth(&avrun1m, ql, EXP12);
-        smooth(&avrun15m, ql, EXP180);
-    }
-#endif
-
-#if defined(__sun__)
-    queueLengthEx(&avrun15, &avrun1m, &avrun15m);
-#endif
-
-    if (++readCount1 < 3)
-        goto checkExchange;
-
-    readCount1 = 0;
-    /* Use preprocessor defined macros.
-     */
-#if defined(__linux__)
-    cpuTime(&itime, &etime);
-    instant_ut = 1.0 - itime/etime;
-    smooth(&cpu_usage, instant_ut, EXP4);
-    etime /= k_hz;
-    etime = etime/myHostPtr->statInfo.maxCpus;
-#endif
-
-#if defined(__sun__)
-    cpuTime(&itime, &cpu_usage);
-    loginses = getLogin();
-#endif
+    queuelength(&avrun15, &avrun1m, &avrun15m);
+    cpu_usage = cputime();
 
     TIMEIT(0, myHostPtr->loadIndex[IT] = idletime(), "idletime");
-    TIMEIT(0, smpages = getpaging(etime), "getpaging");
-    TIMEIT(0, smkbps = getIoRate(etime), "getIoRate");
-    TIMEIT(0, swap = getswap(), "getswap");
-    TIMEIT(0, myHostPtr->loadIndex[TMP] = tmpspace(), "tmpspace");
-    TIMEIT(0, myHostPtr->loadIndex[MEM] = realMem(0.0), "realMem");
-    /* Start the next load collector.
+    TIMEIT(0, myHostPtr->loadIndex[PG] = paging(), "getpaging");
+    TIMEIT(0, myHostPtr->loadIndex[IO] = iorate(), "getIoRate");
+    TIMEIT(0, myHostPtr->loadIndex[SWP] = freeswap(), "getswap");
+    TIMEIT(0, myHostPtr->loadIndex[TMP] = freetmp(), "tmpspace");
+    TIMEIT(0, myHostPtr->loadIndex[MEM] = freemem(), "realMem");
+
+    /* Convert kB in MB
      */
-    runLoadCollector();
-checkOverRide:
-    if (overRide[UT] < INFINIT_LOAD)
-        cpu_usage = overRide[UT];
+    myHostPtr->loadIndex[MEM] = myHostPtr->loadIndex[MEM]/1024.0;
+    myHostPtr->loadIndex[SWP] = myHostPtr->loadIndex[SWP]/1024.0;
 
-    if (overRide[PG] < INFINIT_LOAD)
-        smpages = overRide[PG];
-
-    if (overRide[IO] < INFINIT_LOAD)
-        smkbps = overRide[IO];
-
-    if (overRide[IT] <  INFINIT_LOAD)
-        myHostPtr->loadIndex[IT] = overRide[IT];
-
-    if (overRide[SWP] <  INFINIT_LOAD)
-        swap = overRide[SWP];
-
-    if (overRide[TMP] < INFINIT_LOAD)
-        myHostPtr->loadIndex[TMP] = overRide[TMP];
-
-    if (overRide[R15S] < INFINIT_LOAD)
-        avrun15 = overRide[R15S];
-
-    if (overRide[R15S] < INFINIT_LOAD)
-        avrun15 = overRide[R15S];
-
-    if (overRide[R1M] < INFINIT_LOAD)
-        avrun1m = overRide[R1M];
-
-    if (overRide[R15M] < INFINIT_LOAD)
-        avrun15m = overRide[R15M];
-
-    if (overRide[LS] < INFINIT_LOAD)
-        loginses = overRide[LS];
-
-    if (overRide[MEM] < INFINIT_LOAD)
-        myHostPtr->loadIndex[MEM] = overRide[MEM];
-
-checkExchange:
-
-    if (++readCount2 < (exchIntvl/sampleIntvl))
+    /* call sendload() only evry exchange interval.
+     */
+    if (time(NULL) < next)
         return;
-    readCount2 = 0;
 
     extrafactor = 0;
     if (jobxfer) {
@@ -275,23 +180,24 @@ checkExchange:
     myHostPtr->loadIndex[UT] = cpu_usage + extraload[UT] * extrafactor;
     if (myHostPtr->loadIndex[UT] > 1.0)
         myHostPtr->loadIndex[UT] = 1.0;
-    myHostPtr->loadIndex[PG]  = smpages + extraload[PG] * extrafactor;
-    if (myHostPtr->statInfo.nDisks)
-        myHostPtr->loadIndex[IO] = smkbps + extraload[IO] * extrafactor;
-    else
-        myHostPtr->loadIndex[IO] = smkbps;
-    myHostPtr->loadIndex[LS]  = loginses + extraload[LS] * extrafactor;
+
+    myHostPtr->loadIndex[PG] += extraload[PG] * extrafactor;
+
+    myHostPtr->loadIndex[LS] = loginses;
+
     myHostPtr->loadIndex[IT] += extraload[IT] * extrafactor;
     if (myHostPtr->loadIndex[IT] < 0)
         myHostPtr->loadIndex[IT] = 0;
-    myHostPtr->loadIndex[SWP] = swap + extraload[SWP] *extrafactor;
+
+    myHostPtr->loadIndex[SWP] += extraload[SWP] * extrafactor;
     if (myHostPtr->loadIndex[SWP] < 0)
         myHostPtr->loadIndex[SWP] = 0;
-    myHostPtr->loadIndex[TMP] += extraload[TMP]*extrafactor;
+
+    myHostPtr->loadIndex[TMP] += extraload[TMP] * extrafactor;
     if (myHostPtr->loadIndex[TMP] < 0)
         myHostPtr->loadIndex[TMP] = 0;
 
-    myHostPtr->loadIndex[MEM] += extraload[MEM]*extrafactor;
+    myHostPtr->loadIndex[MEM] += extraload[MEM] * extrafactor;
     if (myHostPtr->loadIndex[MEM] < 0)
         myHostPtr->loadIndex[MEM] = 0;
 
@@ -321,6 +227,7 @@ checkExchange:
             CLEAR_BIT(i + INTEGER_BITS, myHostPtr->status);
     }
 
+    busyBits = 0;
     for (i = 0; i < GET_INTNUM (allInfo.numIndx); i++)
         busyBits += myHostPtr->status[i+1];
     if (!busyBits)
@@ -340,12 +247,11 @@ checkExchange:
     myHostPtr->loadMask = 0;
 
     TIMEIT(0, sendLoad(), "sendLoad()");
-    runLoadCollector();
 
     for(i = 0; i < allInfo.numIndx; i++) {
 
-        if (myHostPtr->loadIndex[i] < MIN_FLOAT16 &&
-            i < NBUILTINDEX){
+        if (myHostPtr->loadIndex[i] < MIN_FLOAT16
+            && i < NBUILTINDEX){
             myHostPtr->loadIndex[i] = 0.0;
         }
 
@@ -363,6 +269,9 @@ checkExchange:
             myHostPtr->uloadIndex[i] = myHostPtr->loadIndex[i];
         }
     }
+    /* Reload the timer.
+     */
+    next = time(NULL) + exchIntvl;
 
     return;
 }
@@ -478,15 +387,7 @@ saveIndx(char *name, float value)
         return 0;
     }
 
-    if (indx < NBUILTINDEX) {
-        if (!names[indx]) {
-            names[indx] = allInfo.resTable[indx].name;
-            ls_syslog(LOG_WARNING, "\
-%s: ELIM over-riding value of index %s", __func__, name);
-        }
-        overRide[indx] = value;
-    } else
-        myHostPtr->loadIndex[indx] = value;
+    myHostPtr->loadIndex[indx] = value;
 
     return 0;
 }
@@ -570,7 +471,6 @@ getusr(void)
     static char fname[]="getusr";
     static FILE *fp;
     static time_t lastStart;
-    static char first = TRUE;
     int i, nfds;
     struct timeval timeout;
     static char *masterResStr = "Y";
@@ -581,12 +481,6 @@ getusr(void)
     struct timeval t, expire;
     struct timeval time0 = {0,0};
     int bw, scc;
-
-    if (first) {
-        for(i = 0; i < NBUILTINDEX; i++)
-            overRide[i] = INFINIT_LOAD;
-        first = FALSE;
-    }
 
     if (!callElim()) {
         return;
@@ -917,20 +811,19 @@ unblockSigs_(sigset_t*  mask)
 }
 
 static void
-setUnkwnValues (void)
+setUnkwnValues(void)
 {
     int i;
 
-    for(i=0; i < allInfo.numUsrIndx; i++)
+    for(i = 0; i < allInfo.numUsrIndx; i++)
         myHostPtr->loadIndex[NBUILTINDEX + i] = INFINIT_LOAD;
-    for(i=0; i < NBUILTINDEX; i++)
-        overRide[i] = INFINIT_LOAD;
 
     for (i = 0; i < myHostPtr->numInstances; i++) {
+
         if (myHostPtr->instances[i]->updateTime == 0
             || myHostPtr->instances[i]->updHost == NULL)
-
             continue;
+
         if (myHostPtr->instances[i]->updHost == myHostPtr) {
             strcpy (myHostPtr->instances[i]->value, "-");
             myHostPtr->instances[i]->updHost = NULL;
@@ -1014,7 +907,7 @@ initConfInfo(void)
     if((sp = getenv("LSF_NCPUS")) != NULL)
         myHostPtr->statInfo.maxCpus = atoi(sp);
     else
-        myHostPtr->statInfo.maxCpus = numCpus();
+        myHostPtr->statInfo.maxCpus = numCPUs();
 
     if (myHostPtr->statInfo.maxCpus <= 0) {
         ls_syslog(LOG_ERR, "\

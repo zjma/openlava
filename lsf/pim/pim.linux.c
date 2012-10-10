@@ -20,10 +20,10 @@
 #include "pim.h"
 
 static struct lsPidInfo procs[MAX_PROC_ENT];
-static char buffer[1024];
 static int numprocs;
 static int ls_pidinfo(int, struct lsPidInfo *);
 static int parse_stat(char *, struct lsPidInfo *);
+static void logProcessInfo(void);
 
 int
 scan_procs(void)
@@ -78,7 +78,7 @@ scan_procs(void)
 
     closedir(dir);
 
-    logProcessInfo(void)
+    logProcessInfo();
 
     return 0;
 }

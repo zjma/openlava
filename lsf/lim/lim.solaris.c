@@ -17,20 +17,20 @@
  */
 
 #include "lim.h"
-#include <sys/statvfs.h>
-#include <sys/stat.h>
 
 static char cbuf[BUFSIZ];
-static int swap;
-static int mem;
-static int paging;
-static int ut;
+static unsigned long long int swap;
+static unsigned long long int mem;
+static unsigned long long int pageing;
+static unsigned long long int ut;
 static int numdisk;
 
-/* numCpus()
+static void runLoadCollector(void);
+
+/* numCPUs()
  */
 int
-numCpus(void)
+numCPUs(void)
 {
     int ncpus;
     FILE *fp;
@@ -55,10 +55,10 @@ numCpus(void)
     return ncpus;
 }
 
-/* queueLengthEx()
+/* queueLength()
  */
 int
-queueLengthEx(float *r15s, float *r1m, float *r15m)
+queuelength(float *r15s, float *r1m, float *r15m)
 {
     FILE *fp;
 
@@ -85,10 +85,10 @@ queueLengthEx(float *r15s, float *r1m, float *r15m)
 /* Get the dynamic values for swap, memory paging and CPU utilization.
  */
 
-/* cpuTime()
+/* cputime()
  */
-void
-cpuTime(float *itime, float *cpuut)
+float
+cputime(void)
 {
     FILE *fp;
 
@@ -96,75 +96,73 @@ cpuTime(float *itime, float *cpuut)
     if (fp == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: fopen() /var/tmp/lim failed %m", __func__);
-        return;
+        return 0.0;
     }
     fscanf(fp, "\
-%d %d %d %d", &swap, &mem, &paging, &ut);
+%llu %llu %llu %llu", &swap, &mem, &pageing, &ut);
     fclose(fp);
-    /* The caller expects a value < 1.
-     */
-    *cpuut = (float)ut/100.0;
 
     ls_syslog(LOG_DEBUG, "\
-%s: swap %d mem %d paging %d ut %d", __func__,
-              swap, mem, paging, ut);
+%s: swap %llu mem %llu pageing %llu ut %llu", __func__,
+              swap, mem, pageing, ut);
+
+    /* The caller expects a value < 1.
+     */
+    return (float)ut/100.0;
 }
 
 /* realMem()
  * Return free memory.
  */
-int
-realMem(float extrafactor)
+unsigned long long int
+freemem(void)
 {
-    float x;
-    /* Free memory is reported in kilobytes so
-     * we convert it to MB.
+    /* Free memory is reported in kilobytes.
+     * Start the collector for the next cycle.
      */
-    x = (float)mem/1024.0;
-    return x;
+    runLoadCollector();
+    return mem;
 }
 
 /* tmpspace()
  */
-float
-tmpspace(void)
+unsigned long long int
+freetmp(void)
 {
     struct statvfs fs;
     double tmps;
 
     tmps = 0.0;
     if (statvfs("/tmp", &fs) < 0) {
-        ls_syslog(LOG_ERR, "%s: statfs() /tmp failed: %m", __FUNCTION__);
+        ls_syslog(LOG_ERR, "%s: statfs() /tmp failed: %m", __func__);
         return 0.0;
     }
 
-    tmps = (double)fs.f_bavail / ((double)(1024 * 1024)/fs.f_bsize);
+    tmps = (fs.f_bavail * fs.f_bsize)/(1024 * 1024);
 
     return tmps;
 }
 
-/* getswap()
+/* freewap()
  */
-float
-getswap(void)
+unsigned long long int
+freeswap(void)
 {
-    float x;
-    /* Convert to MB
+    /* Kilobytes
      */
-    x = swap/1024.0;
-    return x;
+    return swap;
 }
 
 /* getpaging()
  */
 float
-getpaging(float etime)
+paging(void)
 {
-    return (float)paging;
+    return pageing;
 }
 
 float
-getIoRate(float etime)
+iorate(void)
 {
     FILE *fp;
     float iorate;
@@ -181,27 +179,6 @@ getIoRate(float etime)
     return iorate;
 }
 
-/* get the login sessions
- */
-#define LS "/usr/bin/w -h|/usr/bin/wc -l"
-int
-getLogin(void)
-{
-    FILE *fp;
-    int logz;
-
-    fp = popen(LS, "r");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: popen() %s failed %m", __func__, LS);
-        return 0;
-    }
-    fscanf(fp, "%d", &logz);
-    pclose(fp);
-
-    return logz;
-}
-
 /* The memory is in megabytes already.
  */
 #define MEMMAX "/usr/sbin/prtconf|/usr/bin/awk '{if ($1 == \"Memory\"){print $3; exit}}'"
@@ -212,7 +189,7 @@ getLogin(void)
 /* initReadLoad()
  */
 void
-initReadLoad(int checkMode, int *kernelPerm)
+initReadLoad(int checkMode)
 {
     float  maxmem;
     float maxswap;
@@ -287,13 +264,14 @@ char *
 getHostModel(void)
 {
     static char model[MAXLSFNAMELEN];
+
     strcpy(model, "solaris");
 
     return model;
 }
 
 /* runLoadCollector()
- * Get the laod information ahead of the next load reading cycle.
+ * Get the load information ahead of the next load reading cycle.
  */
 void
 runLoadCollector(void)

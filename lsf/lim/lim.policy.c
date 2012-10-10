@@ -1195,31 +1195,28 @@ reply:
 void
 updExtraLoad(struct hostNode **destHostPtr, char *resReq, int numHosts)
 {
-    static char fname[] = "updExtraLoad";
-    int j, lidx;
+    int j;
+    int lidx;
     struct resVal resVal;
     time_t jtime;
-    float dupfactor, exval;
+    float dupfactor;
+    float exval;
 
-    if (!destHostPtr) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5815,
-                                         "%s: Null host pointer"), fname); /* catgets 5815 */
-        return;
-    }
     initResVal (&resVal);
 
     if (parseResReq(resReq, &resVal, &allInfo, PR_RUSAGE) != PARSE_OK) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "parseResReq", resReq);
+        ls_syslog(LOG_ERR, "\
+%s: failed parsing resreq %s", __func__, resReq);
         return;
     }
 
     mustSendLoad = TRUE;
-    jtime = time(0);
-    for (j=0; j<numHosts; j++) {
+    jtime = time(NULL);
+    for (j = 0; j < numHosts; j++) {
 
 
-        dupfactor =  MIN((float) destHostPtr[j]->use,
-                         (float) destHostPtr[j]->statInfo.maxCpus);
+        dupfactor= MIN((float) destHostPtr[j]->use,
+                       (float) destHostPtr[j]->statInfo.maxCpus);
 
         if (dupfactor < 0)
             dupfactor = 1.0;
@@ -1229,9 +1226,8 @@ updExtraLoad(struct hostNode **destHostPtr, char *resReq, int numHosts)
 
         destHostPtr[j]->lastJackTime = jtime;
         for (lidx = 0; lidx < NBUILTINDEX; lidx++) {
-            if ( lidx == R15M)
+            if (lidx == R15M)
                 continue;
-
 
             if (resVal.genClass & (1 << lidx)) {
                 exval = fabs(resVal.val[lidx]);
@@ -1250,15 +1246,13 @@ updExtraLoad(struct hostNode **destHostPtr, char *resReq, int numHosts)
             }
             jackup(lidx, destHostPtr[j],  exval*dupfactor);
 
-
             if (limParams[LSF_LIM_JACKUP_BUSY].paramValue != NULL) {
                 setBusyIndex(lidx, destHostPtr[j]);
             }
         }
     }
 
-    freeResVal (&resVal);
-
+    freeResVal(&resVal);
 }
 
 static void
@@ -1271,7 +1265,6 @@ jackup(int lidx, struct hostNode *hostPtr, float exval)
     if (lidx == R15S || lidx == R1M || lidx == R15M) {
 
         hostPtr->uloadIndex[lidx] += exval;
-
 
         hostPtr->loadIndex[lidx] = normalizeRq(hostPtr->uloadIndex[lidx],
                                                (hostPtr->hModelNo >= 0) ?
@@ -1296,7 +1289,6 @@ jackup(int lidx, struct hostNode *hostPtr, float exval)
         jobxfer = keepTime;
         extraload[lidx] = exval;
     }
-
 }
 
 void
@@ -1428,7 +1420,6 @@ loadReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr, int s)
         reply.nEntry = ncandidates;
     }
 
-
     reply.nIndex = resVal.nindex;
     hlSize   =  ALIGNWORD_(reply.nEntry * sizeof(struct hostLoad));
     lvecSize =  ALIGNWORD_(reply.nIndex * sizeof(float));
@@ -1449,18 +1440,17 @@ loadReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr, int s)
         reply.loadMatrix[i].status = (int *)currp;
 
     limReplyCode = LIME_NO_ERR;
-    if (!(reply.indicies=(char **)malloc((allInfo.numIndx+1)*sizeof(char *)))) {
+    if (!(reply.indicies=malloc((allInfo.numIndx+1)*sizeof(char *)))) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
         return;
     }
 
-
-    for (j=0; j < resVal.nindex; j++)  {
+    for (j = 0; j < resVal.nindex; j++)  {
         k = resVal.indicies[j];
         reply.indicies[j] = allInfo.resTable[k].name;
     }
 
-    for (i=0; i < reply.nEntry; i++) {
+    for (i = 0; i < reply.nEntry; i++) {
         strcpy(reply.loadMatrix[i].hostName, candidates[i]->hostName);
         if (definedSharedResource(candidates[i], &allInfo) == TRUE) {
             reply.flags |= LOAD_REPLY_SHARED_RESOURCE;
@@ -1477,7 +1467,7 @@ loadReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr, int s)
 
         for (j = 0; j < GET_INTNUM(reply.nIndex); j++)
             reply.loadMatrix[i].status[j+1] = 0;
-        for (j=0; j < reply.nIndex; j++) {
+        for (j = 0; j < reply.nIndex; j++) {
             int indx;
             indx =  resVal.indicies[j];
             if (LS_ISBUSYON(candidates[i]->status, indx))

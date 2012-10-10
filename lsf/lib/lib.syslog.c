@@ -207,7 +207,7 @@ openLogFile(const char *ident, char *myname)
 }
 
 void
-ls_syslog (int level, const char *fmt, ...)
+ls_syslog(int level, const char *fmt, ...)
 {
     int save_errno = errno;
     va_list ap;

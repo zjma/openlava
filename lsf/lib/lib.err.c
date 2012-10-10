@@ -187,7 +187,7 @@ verrlog_(int level, FILE *fp, const char *fmt, va_list ap)
     static char buf[16384];
     static char tmpbuf[4096];
     static char verBuf[16384];
-    time_t now;
+    struct timeval now;
     int save_errno = errno;
 
     memset(buf, 0, sizeof(buf));
@@ -195,22 +195,27 @@ verrlog_(int level, FILE *fp, const char *fmt, va_list ap)
     memset(verBuf, 0, sizeof(verBuf));
 
     vsnprintf(buf, sizeof(buf), err_str_(save_errno, fmt, tmpbuf), ap);
-    now = time(0);
+    gettimeofday(&now, NULL);
 
-    if (lastmsg[0] && (strcmp(buf, lastmsg) == 0) && (now - lastime < 600)) {
+    if (lastmsg[0]
+        && (strcmp(buf, lastmsg) == 0)
+        && (now.tv_sec - lastime < 600)) {
         count++;
-        lastcall = now;
+        lastcall = now.tv_sec;
         return;
-    } else {
-        if (count) {
-            fprintf(fp, "%.15s %d ", ctime(&lastcall) + 4, (int)getpid());
-            fprintf(fp, "Last message repeated %d times\n", count);
-        }
-        fprintf(fp, "%.15s %d ", ctime(&now) + 4, (int)getpid());
     }
 
+    if (count) {
+        fprintf(fp, "\
+%.15s.%d %d ", ctime(&lastcall) + 4, (int)now.tv_usec, (int)getpid());
+        fprintf(fp, "Last message repeated %d times\n", count);
+    }
+    fprintf(fp, "\
+%.15s.%d %d ", ctime(&now.tv_sec) + 4, (int)now.tv_usec, (int)getpid());
+
     if (level >= 0)
-        snprintf(verBuf, sizeof(verBuf), "%d %d %s", level, OPENLAVA_VERSION, buf);
+        snprintf(verBuf, sizeof(verBuf), "\
+%d %d %s", level, OPENLAVA_VERSION, buf);
     else
         snprintf(verBuf, sizeof(verBuf), "%d %s", OPENLAVA_VERSION, buf);
 
@@ -219,7 +224,7 @@ verrlog_(int level, FILE *fp, const char *fmt, va_list ap)
     fflush(fp);
     strcpy(lastmsg, buf);
     count = 0;
-    lastime = now;
+    lastime = now.tv_sec;
 }
 
 char *

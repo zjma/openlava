@@ -19,33 +19,22 @@
  *
  */
 
-#include "lim.common.h"
+#include "lim.h"
 
-#include <sys/sysmacros.h>
-#include <sys/statvfs.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <dirent.h>
+static char buf[BUFSIZ];
+static unsigned long long int mem;
+static unsigned long long int maxmem;
+static unsigned long long int swap;
+static unsigned long long int maxswap;
+static int numcpus;
 
-#define  CPUSTATES 4
-#define ut_name   ut_user
+static int getmeminfo(void);
 
-static char buffer[MSGSIZE];
-static long long int main_mem, free_mem, shared_mem, buf_mem, cashed_mem;
-static long long int swap_mem, free_swap;
-
-#define nonuser(ut) ((ut).ut_type != USER_PROCESS)
-
-static double prev_time = 0, prev_idle = 0;
-static double prev_cpu_user, prev_cpu_nice, prev_cpu_sys, prev_cpu_idle;
-static unsigned long    prevRQ;
-static int getPage(double *page_in, double *page_out, bool_t isPaging);
-static int readMeminfo(void);
-
-static int
-numCpus(void)
+/* numCPUs()
+ */
+int
+numCPUs(void)
 {
-    int cpu_number;
     FILE *fp;
 
     fp = fopen("/proc/cpuinfo","r");
@@ -53,331 +42,260 @@ numCpus(void)
         ls_syslog(LOG_ERR, "\
 %s: fopen() failed on proc/cpuinfo: %m", __FUNCTION__);
         ls_syslog(LOG_ERR, "%s: assuming one CPU only", __FUNCTION__);
-        cpu_number = 1;
-        return(1);
+        numcpus = 1;
+        return numcpus;
     }
 
-    cpu_number = 0;
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        if (strncmp (buffer, "processor", sizeof("processor") - 1) == 0) {
-            cpu_number++;
+    while (fgets(buf, sizeof(buf), fp)) {
+        if (strncmp(buf, "processor", sizeof("processor") - 1) == 0) {
+            ++numcpus;
         }
     }
-
     fclose(fp);
 
-    return cpu_number;
+    return numcpus;
 }
 
-static float queueLength();
-static int
-queueLengthEx(float *r15s, float *r1m, float *r15m)
+/* queuelength()
+ */
+int
+queuelength(float *r15s, float *r1m, float *r15m)
 {
-#define LINUX_LDAV_FILE "/proc/loadavg"
-    char ldavgbuf[40];
-    double loadave[3];
-    int    fd, count;
+    FILE *fp;
+    int cc;
 
-    fd = open(LINUX_LDAV_FILE, O_RDONLY);
-    if (fd < 0) {
-        ls_syslog(LOG_ERR,"%s: %m", __FUNCTION__);
+    fp = fopen("/proc/loadavg", "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: fopen() /proc/loadavg failed", __func__);
         return -1;
     }
 
-    count = read(fd, ldavgbuf, sizeof(ldavgbuf));
-    if ( count < 0) {
-        ls_syslog(LOG_ERR,"%s:%m", __FUNCTION__);
-        close(fd);
+    cc = fscanf(fp, "%f %f %f", r15s, r1m, r15m);
+    if (cc != 3) {
+        ls_syslog(LOG_ERR, "\
+%s: failed fcanf()/proc/loadavg %m", __FUNCTION__);
         return -1;
     }
+    fclose(fp);
 
-    close(fd);
-    count = sscanf(ldavgbuf, "\
-%lf %lf %lf", &loadave[0], &loadave[1], &loadave[2]);
-    if (count != 3) {
-        ls_syslog(LOG_ERR,"%s: %m", __FUNCTION__);
-        return -1;
-    }
-
-    *r15s = (float)queueLength();
-    *r1m  = (float)loadave[0];
-    *r15m = (float)loadave[2];
+    ls_syslog(LOG_DEBUG, "\
+%s: Got run queue length r15s %4.2f r1m %4.2f r15m %4.2f",
+              __func__, *r15s, *r1m, *r15m);
 
     return 0;
 }
 
-static float
-queueLength(void)
+/* cputime()
+ */
+float
+cputime(void)
 {
-    float ql;
-    struct dirent *process;
-    int fd;
-    unsigned long size;
-    char status;
-    DIR *dir_proc_fd;
-    char filename[120];
-    unsigned int running = 0;
+    FILE *fp;
+    float ut;
+    unsigned long long int user;
+    unsigned long long int nice;
+    unsigned long long int system;
+    time_t t;
+    uint32_t dt;
+    static float before;
+    static time_t tb;
+    static int jifs;
 
-    dir_proc_fd = opendir("/proc");
-    if (dir_proc_fd == (DIR*)0 ) {
-        ls_syslog(LOG_ERR, "%s: opendir() /proc failed: %m", __FUNCTION__);
-        return(0.0);
-    }
-
-    while ((process = readdir(dir_proc_fd))) {
-
-        if (isdigit(process->d_name[0])) {
-
-            sprintf(filename, "/proc/%s/stat", process->d_name);
-
-            fd = open( filename, O_RDONLY, 0);
-            if (fd == -1) {
-                ls_syslog(LOG_DEBUG, "\
-%s: cannot open [%s], %m", __FUNCTION__, filename);
-                continue;
-            }
-            if (read(fd, buffer, sizeof( buffer) - 1 ) <= 0 ) {
-                ls_syslog(LOG_DEBUG, "\
-%s: cannot read [%s], %m", __FUNCTION__, filename);
-                close( fd );
-                continue;
-            }
-            close( fd );
-            sscanf(buffer, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %*u %*u %*d %*u %lu %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u\n", &status, &size );
-            if (status == 'R' && size > 0)
-                running++;
-        }
-    }
-    closedir( dir_proc_fd );
-
-    if (running > 0) {
-        ql = running - 1;
-        if ( ql < 0 )
-            ql = 0;
-    } else {
-        ql = 0;
-    }
-
-    prevRQ = ql;
-
-    return ql;
-}
-
-static void
-cpuTime (double *itime, double *etime)
-{
-    double ttime;
-    int stat_fd;
-    double cpu_user, cpu_nice, cpu_sys, cpu_idle;
-
-    stat_fd = open("/proc/stat", O_RDONLY, 0);
-    if (stat_fd == -1) {
+    fp = fopen("/proc/stat", "r");
+    if (fp == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: open() /proc/stat failed: %m:", __FUNCTION__);
-        return;
+%s: open() /proc/stat failed: %m:", __func__);
+        return 0.0;
     }
 
-    if (read( stat_fd, buffer, sizeof( buffer ) - 1 ) <= 0 ) {
-        ls_syslog(LOG_ERR, "\
-%s: read() /proc/stat failed: %m", __FUNCTION__);
-        close( stat_fd );
-        return;
+    fscanf(fp,"%*s %llu %llu %llu", &user, &nice, &system);
+    fclose(fp);
+
+    if (before == 0) {
+        before = user + nice + system;
+        tb = time(NULL);
+        jifs = sysconf(_SC_CLK_TCK);
+        /* Get runtime memory info since at it.
+         */
+        getmeminfo();
+        return 0.0;
     }
-    close(stat_fd);
 
-    sscanf( buffer, "cpu  %lf %lf %lf %lf",
-            &cpu_user, &cpu_nice, &cpu_sys, &cpu_idle );
+    t = time(NULL);
+    ut = (user + nice + system) - before;
+    /* The first line of the /proc/stat has the
+     * global counters, however it seems we do have to
+     * normalize them respect to the total number of
+     * cpus.
+     */
+    dt = (t - tb) * jifs * numcpus;
 
+    tb = t;
+    before = user + nice + system;
 
-    *itime = (cpu_idle - prev_idle);
-    prev_idle = cpu_idle;
+    ls_syslog(LOG_DEBUG, "\
+%s: Got cpu ut %4.2f", __func__, ut/(float)dt);
 
-    ttime = cpu_user + cpu_nice + cpu_sys + cpu_idle;
-    *etime = ttime - prev_time;
+    /* Get runtime memory info since at it.
+     */
+    getmeminfo();
 
-    prev_time = ttime;
-
-    if (*etime == 0 )
-        *etime = 1;
-
-    return;
+    return ut/(float)dt;
 }
 
-static int
-realMem(float extrafactor)
+unsigned long long int
+freemem(void)
 {
-    int realmem;
-
-    if (readMeminfo() == -1)
-        return(0);
-
-    realmem = (free_mem + buf_mem + cashed_mem) / 1024;
-
-    realmem -= 2;
-    realmem +=  extraload[MEM] * extrafactor;
-    if (realmem < 0)
-        realmem = 0;
-
-    return(realmem);
+    /* These values are in kilobytes.
+     */
+    return mem;
 }
 
-static float
-tmpspace(void)
+unsigned long long int
+freetmp(void)
 {
-    static float tmps = 0.0;
-    static int tmpcnt;
     struct statvfs fs;
-
-    if ( tmpcnt >= TMP_INTVL_CNT )
-        tmpcnt = 0;
-
-    tmpcnt++;
-    if (tmpcnt != 1)
-        return tmps;
+    int tmp;
 
     if (statvfs("/tmp", &fs) < 0) {
         ls_syslog(LOG_ERR, "%s: statfs() /tmp failed: %m", __FUNCTION__);
-        return(tmps);
+        return 0;
     }
 
-    if (fs.f_bavail > 0)
-        tmps = (float) fs.f_bavail / ((float) (1024 *1024)/fs.f_bsize);
-    else
-        tmps = 0.0;
+    /* Convert the bytes in MB.
+     */
+    tmp = (fs.f_bavail * fs.f_bsize)/(1024 * 1024);
 
-    return tmps;
-
+    return tmp;
 }
 
-static float
-getswap(void)
+unsigned long long int
+freeswap(void)
 {
-    static short tmpcnt;
-    static float swap;
-
-    if (tmpcnt >= SWP_INTVL_CNT)
-        tmpcnt = 0;
-
-    tmpcnt++;
-    if (tmpcnt != 1)
-        return swap;
-
-    if (readMeminfo() == -1)
-        return(0);
-    swap = free_swap / 1024.0;
-
+    /* These values are in kilobytes.
+     */
     return swap;
 }
 
-static float
-getpaging(float etime)
+float
+paging(void)
 {
-    static float smoothpg = 0.0;
-    static char first = TRUE;
-    static double prev_pages;
-    double page, page_in, page_out;
+    FILE *fp;
+    char name[64];
+    unsigned long long int pagein;
+    unsigned long long int pageout;
+    static unsigned long long int ppagein;
+    static unsigned long long int ppageout;
+    unsigned long long int v;
+    float curr;
+    static time_t pt;
+    time_t t;
 
-    if (getPage(&page_in, &page_out, TRUE) == -1 ) {
-        return(0.0);
-    }
-
-    page = page_in + page_out;
-    if (first) {
-        first = FALSE;
-    }
-    else {
-        if (page < prev_pages)
-            smooth(&smoothpg, (prev_pages - page) / etime, EXP4);
-        else
-            smooth(&smoothpg, (page - prev_pages) / etime, EXP4);
-    }
-
-    prev_pages = page;
-
-    return smoothpg;
-}
-
-static float
-getIoRate(float etime)
-{
-    float kbps;
-    static char first = TRUE;
-    static double prev_blocks = 0;
-    static float smoothio = 0;
-    double page_in, page_out;
-
-    if (getPage(&page_in, &page_out, FALSE) == -1) {
-        return(0.0);
-    }
-
-    if (first) {
-        kbps = 0;
-        first = FALSE;
-
-        if (myHostPtr->statInfo.nDisks == 0)
-            myHostPtr->statInfo.nDisks = 1;
-    } else
-        kbps = page_in + page_out - prev_blocks;
-
-    if (kbps > 100000.0) {
-        ls_syslog(LOG_DEBUG, "\
-%s:: IO rate=%f bread=%d bwrite=%d", __FUNCTION__, kbps, page_in, page_out);
-    }
-
-    prev_blocks = page_in + page_out;
-    smooth(&smoothio, kbps, EXP4);
-
-    return smoothio;
-}
-
-static int
-readMeminfo(void)
-{
-    FILE *f;
-    char lineBuffer[80];
-    long long int value;
-    char tag[80];
-
-    if ((f = fopen("/proc/meminfo", "r")) == NULL) {
+    pagein = pageout = 0;
+    if ((fp = fopen("/proc/vmstat", "r")) == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: open() failed /proc/meminfo: %m", __FUNCTION__);
+%s: fopen() failed /proc/vmstat: %m", __FUNCTION__);
         return -1;
     }
 
-    while (fgets(lineBuffer, sizeof(lineBuffer), f)) {
+    t = time(NULL);
+    while (fgets(buf, sizeof(buf), fp)) {
 
-        if (sscanf(lineBuffer, "%s %lld kB", tag, &value) != 2)
+        if (sscanf(buf, "%s %llu", name, &v) != 2)
             continue;
+        /* Paging is a natural system activity
+         * so we measure the load in terms
+         * of swapping.
+         * Instead of using pgpin and pgpout
+         * we consider pswpin pswpout instead.
+         */
+        if (strcmp(name, "pswpin") == 0)
+            pagein = v;
+        if (strcmp(name, "pswpout") == 0)
+            pageout = v;
 
-        if (strcmp(tag, "MemTotal:") == 0)
-            main_mem = value;
-        if (strcmp(tag, "MemFree:") == 0)
-            free_mem = value;
-        if (strcmp(tag, "MemShared:") == 0)
-            shared_mem = value;
-        if (strcmp(tag, "Buffers:") == 0)
-            buf_mem = value;
-        if (strcmp(tag, "Cached:") == 0)
-            cashed_mem = value;
-        if (strcmp(tag, "SwapTotal:") == 0)
-            swap_mem = value;
-        if (strcmp(tag, "SwapFree:") == 0)
-            free_swap = value;
+        /* optimize...
+         */
+        if (pagein != 0
+            && pageout != 0)
+            break;
     }
-    fclose(f);
+    fclose(fp);
 
+    if (ppagein == 0) {
+        ppagein = pagein;
+        ppageout = pageout;
+        pt = t;
+        return 0;
+    }
+    /* Normalize the paging to the time interval and
+     * the number of cpus.
+     */
+    curr = (pagein - ppagein) + (pageout - ppageout);
+    curr = curr/((t - pt) * numcpus);
+    /* Save state...
+     */
+    pt = t;
+    ppagein = pagein;
+    ppageout = pageout;
+
+    ls_syslog(LOG_DEBUG, "\
+%s: Got paging rate %4.2f in %llu out %llu", __func__,
+              curr, (pagein - ppagein), (pageout - ppageout));
+
+    return curr;
+}
+
+float
+iorate(void)
+{
+    return 0.0;
+}
+
+/* getmeminfo()
+ */
+static int
+getmeminfo(void)
+{
+    FILE *fp;
+    unsigned long long int v;
+    char name[64];
+
+    if ((fp = fopen("/proc/meminfo", "r")) == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: open() failed /proc/meminfo: %m", __FUNCTION__);
+        mem = swap = 0.0;
+        return -1;
+    }
+
+    while (fgets(buf, sizeof(buf), fp)) {
+
+        if (sscanf(buf, "%s %llu", name, &v) != 2)
+            continue;
+        /* These values are in kilobytes.
+         */
+        if (strcmp(name, "MemTotal:") == 0)
+            maxmem = v;
+        if (strcmp(name, "MemFree:") == 0)
+            mem = v;
+        if (strcmp(name, "SwapTotal:") == 0)
+            maxswap = v;
+        if (strcmp(name, "SwapFree:") == 0)
+            swap = v;
+    }
+    fclose(fp);
+
+    ls_syslog(LOG_DEBUG, "\
+%s: Got maxmem %llu freemem %llu maxswap %llu freeswap %llu.",
+              __func__, maxmem, mem, maxswap, swap);
     return 0;
 }
 
 void
-initReadLoad(int checkMode, int *kernelPerm)
+initReadLoad(int checkMode)
 {
-    float  maxmem;
-    unsigned long maxSwap;
     struct statvfs fs;
-    int stat_fd;
-
-    k_hz = (float) sysconf(_SC_CLK_TCK);
 
     myHostPtr->loadIndex[R15S] =  0.0;
     myHostPtr->loadIndex[R1M]  =  0.0;
@@ -394,38 +312,11 @@ initReadLoad(int checkMode, int *kernelPerm)
             (float)fs.f_blocks/((float)(1024 * 1024)/fs.f_bsize);
     }
 
-    stat_fd = open("/proc/stat", O_RDONLY, 0);
-    if (stat_fd == -1) {
-        ls_syslog(LOG_ERR, "\
-%s: open() on /proc/stat failed: %m", __FUNCTION__);
-        *kernelPerm = -1;
-        return;
-    }
-
-    if (read(stat_fd, buffer, sizeof(buffer) - 1) <= 0 ) {
-        ls_syslog(LOG_ERR, "%s: read() /proc/stat failed: %m", __FUNCTION__);
-        close( stat_fd );
-        *kernelPerm = -1;
-        return;
-    }
-    close(stat_fd);
-    sscanf(buffer, "cpu  %lf %lf %lf %lf",
-           &prev_cpu_user, &prev_cpu_nice, &prev_cpu_sys, &prev_cpu_idle );
-
-    prev_idle = prev_cpu_idle;
-    prev_time = prev_cpu_user + prev_cpu_nice + prev_cpu_sys + prev_cpu_idle;
-
-    if (readMeminfo() == -1)
+    if (getmeminfo() == -1)
         return;
 
-    maxmem = main_mem / 1024;
-    maxSwap = swap_mem / 1024;
-
-    if (maxmem < 0.0)
-        maxmem = 0.0;
-
-    myHostPtr->statInfo.maxMem = maxmem;
-    myHostPtr->statInfo.maxSwap = maxSwap;
+    myHostPtr->statInfo.maxMem = maxmem / 1024;
+    myHostPtr->statInfo.maxSwap = maxswap / 1024;
 }
 
 char *
@@ -485,40 +376,4 @@ getHostModel(void)
     }
 
     return model;
-}
-
-static int
-getPage(double *page_in, double *page_out,bool_t isPaging)
-{
-    FILE *f;
-    char lineBuffer[80];
-    double value;
-    char tag[80];
-
-    if ((f = fopen("/proc/vmstat", "r")) == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: fopen() failed /proc/vmstat: %m", __FUNCTION__);
-        return -1;
-    }
-
-    while (fgets(lineBuffer, sizeof(lineBuffer), f)) {
-
-        if (sscanf(lineBuffer, "%s %lf", tag, &value) != 2)
-            continue;
-
-        if (isPaging){
-            if (strcmp(tag, "pswpin") == 0)
-                *page_in = value;
-            if (strcmp(tag, "pswpout") == 0)
-                *page_out = value;
-        } else {
-            if (strcmp(tag, "pgpgin") == 0)
-                *page_in = value;
-            if (strcmp(tag, "pgpgout") == 0)
-                *page_out = value;
-        }
-    }
-    fclose(f);
-
-    return 0 ;
 }

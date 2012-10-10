@@ -217,6 +217,8 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      * exchIntvl = 15
      * sampleIntvl = 5
      * periods = (5 - 1) * 15/5 = 60/5 = 12
+     *         = 4 * 30/5 = 24
+     *         = 4 * 60/5 = 48
      */
     periods = (hostInactivityLimit - 1) * exchIntvl/sampleIntvl;
     if (!all && (++cnt > (periods - 1))) {

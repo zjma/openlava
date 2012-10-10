@@ -44,6 +44,14 @@
 #define MIN_FLOAT16  2.328306E-10
 #define LIM_EVENT_MAXSIZE  (1024 * 1024)
 
+/* Exponential smooth intervals.
+ */
+#define  EXP3   0.716531311
+#define  EXP4   0.77880078
+#define  EXP6   0.846481725
+#define  EXP12  0.920044415
+#define  EXP180 0.994459848
+
 #ifndef MIN
 #define MIN(x,y)        ((x) < (y) ? (x) : (y))
 #endif
@@ -434,16 +442,22 @@ extern int  callMasterTcp(enum limReqCode, struct hostNode *, void *, bool_t(*)(
 extern int validateHost(char *, int);
 extern int validateHostbyAddr(struct sockaddr_in *, int);
 extern void checkAfterHourWindow();
-extern void runLoadCollector(void);
-extern int numCpus(void);
-extern int queueLengthEx(float *, float *, float *);
-extern void cpuTime(float *, float *);
-extern int realMem(float);
-extern float getIoRate(float);
-extern float getpaging(float);
-extern float getswap(void);
-extern int getLogin(void);
-extern float tmpspace(void);
+
+/* Load collection function. The details are implemented
+ * in each system module, lim.linux.c or lim.solaris.c
+ * here we define the interfaces to the system modules.
+ */
+extern int numCPUs(void);
+extern int queuelength(float *, float *, float *);
+extern float cputime(void);
+extern unsigned long long int freemem(void);
+extern unsigned long long int freetmp(void);
+extern unsigned long long int freeswap(void);
+extern float paging(void);
+extern float iorate(void);
+
+/* Load exchanging routines.
+ */
 extern void sendLoad(void);
 extern void rcvLoad(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void copyIndices(float *, int , int, struct hostNode *);
@@ -451,14 +465,10 @@ extern float normalizeRq(float, float, int);
 extern struct resPair *getResPairs(struct hostNode *);
 extern void satIndex(void);
 extern void loadIndex(void);
-extern void initReadLoad(int, int *);
+extern void initReadLoad(int);
 extern void initConfInfo(void);
 extern void readLoad(int);
 extern char *getHostModel(void);
-extern int queueLengthEx(float *, float *, float *);
-extern float queueLength(void);
-extern void getLastActiveTime(void);
-extern void putLastActiveTime(void);
 
 extern void lim_Exit(const char *);
 extern int equivHostAddr(struct hostNode *, u_int);

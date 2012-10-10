@@ -283,7 +283,7 @@ Reading configuration from %s/lsf.conf\n", env_dir);
     initSignals();
 
     ls_syslog(LOG_INFO, "\
-%s: Daemon running (%d %d %d)", __func__, myClusterPtr->checkSum,
+%s: Daemon LIM running (%d %d %d)", __func__, myClusterPtr->checkSum,
               ntohs(myHostPtr->statInfo.portno), OPENLAVA_VERSION);
     ls_syslog(LOG_DEBUG, "\
 %s: sampleIntvl %f exchIntvl %f hostInactivityLimit %d masterInactivityLimit %d retryLimit %d", __func__, sampleIntvl, exchIntvl,
@@ -685,7 +685,7 @@ initAndConfig(int checkMode, int *kernelPerm)
         lim_Exit("initTcl");
     initParse(&allInfo);
 
-    initReadLoad(checkMode, kernelPerm);
+    initReadLoad(checkMode);
     initTypeModel(myHostPtr);
 
     if (! checkMode) {

@@ -23,4 +23,3 @@
 extern char infofile[];
 extern int pimPort;
 extern int scan_procs(void);
-extern void logProcessInfo(void);

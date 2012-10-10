@@ -43,6 +43,7 @@
 #include <limits.h>
 #include <sys/param.h>
 #include <sys/time.h>
+#include <sys/statvfs.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
