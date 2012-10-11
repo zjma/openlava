@@ -102,7 +102,7 @@ chanServSocket_(int type, u_short port, int backlog, int options)
     }
 
     if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-        (void)close(s);
+        close(s);
         lserrno = LSE_SOCK_SYS;
         return (-2);
     }
@@ -599,9 +599,10 @@ chanClose_(int chfd)
     FREEUP(channels[chfd].send);
     channels[chfd].state = CH_FREE;
     channels[chfd].handle = INVALID_HANDLE;
-    channels[chfd].send  = (struct Buffer *)NULL;
-    channels[chfd].recv  = (struct Buffer *)NULL;
-    return(0);
+    channels[chfd].send  = NULL;
+    channels[chfd].recv  = NULL;
+
+    return 0;
 }
 
 void

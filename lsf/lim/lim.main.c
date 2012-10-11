@@ -836,7 +836,10 @@ initSock(int checkMode)
         return -1;
     }
 
-    limSock = chanServSocket_(SOCK_DGRAM, lim_port, -1,  0);
+    /* Tell the channel code to set the reuse option
+     * for the socket.
+     */
+    limSock = chanServSocket_(SOCK_DGRAM, lim_port, -1, CHAN_OP_SOREUSE);
     if (limSock < 0) {
         ls_syslog(LOG_ERR, "\
 %s: unable to create datagram socket port %d; another LIM running?: %M ",
