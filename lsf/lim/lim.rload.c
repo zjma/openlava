@@ -462,24 +462,19 @@ isResourceSharedByHost(struct hostNode *host, char * resName)
         }                                                       \
     } while (0)
 
-#define ELIMNAME "elim"
-#define MAXEXTRESLEN 4096
+/* getusr()
+ * Read the pipe with elim and gather the external
+ * load indexes or shared resources.
+ */
 static void
 getusr(void)
 {
-    static char fname[]="getusr";
     static FILE *fp;
     static time_t lastStart;
-    int i, nfds;
+    int i;
+    int nfds;
     struct timeval timeout;
-    static char *masterResStr = "Y";
-    static char *resStr = NULL;
-    int size;
-    struct sharedResourceInstance *tmpSharedRes;
-    char * hostNamePtr;
-    struct timeval t, expire;
-    struct timeval time0 = {0,0};
-    int bw, scc;
+    static char resbuf[BUFSIZ];
 
     if (!callElim()) {
         return;
@@ -500,30 +495,15 @@ getusr(void)
             }
 
             if (!myClusterPtr->eLimArgv) {
-                char *path = malloc(strlen(limParams[LSF_SERVERDIR].paramValue) +
-                                    strlen(ELIMNAME) + 8);
-                if (!path) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-                    setUnkwnValues();
-                    return;
-                }
+                static char path[PATH_MAX];
+
                 strcpy(path, limParams[LSF_SERVERDIR].paramValue);
                 strcat(path, "/");
-                strcat(path, ELIMNAME);
+                strcat(path, "elim");
 
-                if (logclass & LC_EXEC) {
-                    ls_syslog(LOG_DEBUG, "%s : the elim's name is <%s>\n",
-                              fname, path);
-                }
-
-
-                myClusterPtr->eLimArgv = parseCommandArgs(
-                    path, myClusterPtr->eLimArgs);
-                if (!myClusterPtr->eLimArgv) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-                    setUnkwnValues();
-                    return;
-                }
+                myClusterPtr->eLimArgv
+                    = parseCommandArgs(path,
+                                       myClusterPtr->eLimArgs);
             }
 
             if (fp) {
@@ -531,43 +511,18 @@ getusr(void)
                 fp = NULL;
             }
 
-            lastStart = time(0);
+            lastStart = time(NULL);
 
             if (masterMe)
-                putEnv("LSF_MASTER", masterResStr);
+                putEnv("LSF_MASTER", "Y");
             else
                 putEnv("LSF_MASTER", "N");
 
-            if (resStr != NULL) free(resStr);
-
-            hostNamePtr = ls_getmyhostname();
-
-            size = 0;
-            for (tmpSharedRes=sharedResourceHead;
-                 tmpSharedRes ;
-                 tmpSharedRes=tmpSharedRes->nextPtr ){
-                size += strlen(tmpSharedRes->resName) + sizeof(char) ;
-            }
             for (i = NBUILTINDEX; i < allInfo.nRes; i++) {
+
                 if (allInfo.resTable[i].flags & RESF_EXTERNAL)
                     continue;
-                if ((allInfo.resTable[i].flags & RESF_DYNAMIC)
-                    && !(allInfo.resTable[i].flags & RESF_BUILTIN)){
 
-                    size += strlen(allInfo.resTable[i].name) + sizeof(char);
-                }
-            }
-            resStr = calloc(size + 1, sizeof(char)) ;
-            if (!resStr) {
-                ls_syslog(LOG_ERR, "%s: calloc() failed %m", __func__);
-                setUnkwnValues();
-                return;
-            }
-            resStr[0] = '\0' ;
-
-            for (i = NBUILTINDEX; i < allInfo.nRes; i++) {
-                if (allInfo.resTable[i].flags & RESF_EXTERNAL)
-                    continue;
                 if ((allInfo.resTable[i].flags & RESF_DYNAMIC)
                     && !(allInfo.resTable[i].flags & RESF_BUILTIN)){
 
@@ -577,18 +532,19 @@ getusr(void)
                         continue;
                     }
 
-                    if( (allInfo.resTable[i].flags & RESF_SHARED)
+                    if ((allInfo.resTable[i].flags & RESF_SHARED)
                         && (!isResourceSharedByHost(myHostPtr, allInfo.resTable[i].name)) )
                         continue;
 
-                    if (resStr[0] == '\0')
-                        sprintf(resStr, "%s", allInfo.resTable[i].name);
+                    if (resbuf[0] == '\0')
+                        sprintf(resbuf, "%s ", allInfo.resTable[i].name);
                     else {
-                        sprintf(resStr,"%s %s", resStr, allInfo.resTable[i].name);
+                        sprintf(resbuf + strlen(resbuf), "\
+%s ", allInfo.resTable[i].name);
                     }
                 }
             }
-            putEnv ("LSF_RESOURCES",resStr);
+            putEnv ("LSF_RESOURCES", resbuf);
 
             if ((fp = lim_popen(myClusterPtr->eLimArgv, "r")) == NULL) {
                 ls_syslog(LOG_ERR, "\
@@ -597,13 +553,14 @@ getusr(void)
 
                 return;
             }
-            ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5930,
-                                               "%s: Started ELIM %s pid %d")), fname, /* catgets 5930 */
+            ls_syslog(LOG_INFO, "\
+%s: Started ELIM %s pid %d", __func__,
                       myClusterPtr->eLimArgv[0], (int)elim_pid);
+            ls_syslog(LOG_DEBUG, "\
+%s: elim LSF_RESOURCES %s", __func__, resbuf);
+
             mustSendLoad = TRUE ;
-
         }
-
     }
 
     if (elim_pid < 0) {
@@ -622,67 +579,35 @@ getusr(void)
         ls_syslog(LOG_ERR, "%s: rd_select() failed %m", __func__);
         lim_pclose(fp);
         fp = NULL;
-
         return;
     }
 
     if (nfds == 1) {
-        int numIndx, cc;
-        char name[MAXLSFNAMELEN], valueString[MAXEXTRESLEN];
+        int numIndx;
+        int cc;
+        static char name[MAXLSFNAMELEN];
+        static char svalue[MAXLSFNAMELEN];
         float value;
         sigset_t  oldMask;
         sigset_t  newMask;
-
-        static char *fromELIM = NULL;
-        static int sizeOfFromELIM = MAXLINELEN;
-        char *elimPos;
-        int spaceLeft, spaceRequired;
-
-        if( !fromELIM ) {
-            fromELIM = malloc(sizeOfFromELIM);
-            if (!fromELIM) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-
-                ls_syslog(LOG_ERR, "\
-%s: Received from ELIM: <out of memory to record contents>", __func__);
-
-                setUnkwnValues();
-                lim_pclose(fp);
-                fp = NULL;
-                return;
-            }
-        }
-
-        elimPos = fromELIM;
-        *elimPos = '\0';
 
         blockSigs_(0, &newMask, &oldMask);
 
         if (logclass & LC_TRACE) {
             ls_syslog(LOG_DEBUG,"\
-%s: Signal mask has been changed, all are signals blocked now", fname);
+%s: Signal mask has been changed, all are signals blocked now", __func__);
         }
 
-        if (ELIMblocktime >= 0) {
-            io_nonblock_(fileno(fp));
-        }
-
-        cc = fscanf(fp,"%d",&numIndx);
-        if ( cc != 1) {
+        cc = fscanf(fp, "%d", &numIndx);
+        if (cc != 1) {
             ls_syslog(LOG_ERR, "\
 %s: Protocol error numIndx not read (cc=%d): %m", __func__, cc);
             lim_pclose(fp);
             fp = NULL;
             unblockSigs_(&oldMask);
-
             return;
         }
-
-
-        bw = sprintf (elimPos, "%d ", numIndx);
-        elimPos += bw;
-
-        if ( numIndx < 0) {
+        if (numIndx < 0) {
             ls_syslog(LOG_ERR, "%\
 s: Protocol error numIndx %d", __func__, numIndx);
             setUnkwnValues();
@@ -692,107 +617,30 @@ s: Protocol error numIndx %d", __func__, numIndx);
             return;
         }
 
-        if (ELIMblocktime >= 0) {
-            gettimeofday(&t, NULL);
-            expire.tv_sec = t.tv_sec + ELIMblocktime;
-            expire.tv_usec = t.tv_usec;
-        }
-
-        i = numIndx * 2;
-        while(i) {
-
-            if( i%2 ) {
-                cc = fscanf (fp, "%4096s", valueString);
-                valueString[MAXEXTRESLEN-1] = '\0';
-            } else {
-                cc = fscanf (fp, "%40s", name);
-                name[MAXLSFNAMELEN-1] = '\0';
+        for (i = 0; i < numIndx; i++) {
+            cc = fscanf(fp,"%s %s", name, svalue);
+            if (cc != 2) {
+                ls_syslog(LOG_ERR, "\
+%s: Protocol error on indx %d (cc = %d): %m", __func__, i, cc);
+                lim_pclose(fp);
+                return;
             }
 
-            if (cc == -1) {
-                int scanerrno = errno;
-                if (scanerrno == EAGAIN) {
+            ls_syslog(LOG_DEBUG, "\
+%s: numIndx %d name %s value %s", __func__, numIndx, name, svalue);
 
-
-                    gettimeofday(&t, NULL);
-                    timersub(&expire, &t, &timeout);
-                    if (timercmp(&timeout, &time0, <)) {
-                        timerclear(&timeout);
-                    }
-                    scc = rd_select_(fileno(fp), &timeout);
-                }
-
-                if (scanerrno != EAGAIN || scc <= 0) {
-
-                    ls_syslog(LOG_ERR, "\
-%s: Protocol error, expected %d more tokens (cc=%d): %m",
-                              __func__, i, cc);
-
-                    ls_syslog(LOG_ERR, "\
-%s: Received from ELIM: %s.", __func__, fromELIM);
-
-                    setUnkwnValues();
-                    lim_pclose(fp);
-                    fp = NULL;
-                    unblockSigs_(&oldMask);
-                    return;
-                }
+            /* Shared resource.
+             */
+            if (saveSBValue(name, svalue) == 0)
                 continue;
-            }
-
-            spaceLeft = sizeOfFromELIM - (elimPos - fromELIM)-1;
-            spaceRequired = strlen((i%2)? valueString: name)+1;
-
-            if( spaceLeft < spaceRequired ) {
-
-                char *oldFromElim = fromELIM;
-                int oldSizeOfFromELIM = sizeOfFromELIM;
-
-
-                sizeOfFromELIM += (spaceRequired - spaceLeft);
-
-                fromELIM = realloc(fromELIM, sizeOfFromELIM);
-                if (!fromELIM) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-
-                    ls_syslog(LOG_ERR, "\
-%s: Received from ELIM: <out of memory to record contents>", fname);
-
-                    sizeOfFromELIM = oldSizeOfFromELIM;
-                    fromELIM = oldFromElim;
-
-                    setUnkwnValues();
-                    lim_pclose(fp);
-                    fp = NULL;
-                    unblockSigs_(&oldMask);
-                    return;
-                }
-                elimPos = fromELIM + strlen(fromELIM);
-            }
-
-            bw = sprintf (elimPos, "%s ", (i%2)? valueString: name);
-            elimPos += bw;
-
-            if (i%2) {
-
-                if (saveSBValue (name, valueString) == 0) {
-                    i--;
-                    continue;
-                }
-
-
-                value = atof (valueString);
-                saveIndx(name, value);
-            }
-            i--;
+            value = atof(svalue);
+            /* Load index.
+             */
+            saveIndx(name, value);
         }
 
         unblockSigs_(&oldMask);
-
-        if (ELIMdebug) {
-            ls_syslog(LOG_WARNING, "%s: ELIM: %s.", __func__, fromELIM);
-        }
-    }
+    } /* if (nfds == 1) */
 }
 
 void
@@ -832,12 +680,13 @@ setUnkwnValues(void)
 }
 
 static int
-saveSBValue (char *name, char *value)
+saveSBValue(char *name, char *value)
 {
-    static char fname[] = "saveSBValue()";
-    int i, indx, j, myHostNo = -1, updHostNo = -1;
-    char *temp = NULL;
-    time_t  currentTime = 0;
+    int i;
+    int indx;
+    int j;
+    int myHostNo = -1;
+    int updHostNo = -1;
 
     if ((indx = getResEntry(name)) < 0)
         return (-1);
@@ -855,19 +704,22 @@ saveSBValue (char *name, char *value)
         return (-1);
 
     for (i = 0; i < myHostPtr->numInstances; i++) {
-        if (strcmp (myHostPtr->instances[i]->resName, name))
+
+        if (strcmp(myHostPtr->instances[i]->resName, name))
             continue;
-        if (currentTime == 0)
-            currentTime = time(0);
+
         if (masterMe) {
 
             for (j = 0; j < myHostPtr->instances[i]->nHosts; j++) {
+
                 if (myHostPtr->instances[i]->updHost
                     && (myHostPtr->instances[i]->updHost
                         == myHostPtr->instances[i]->hosts[j]))
                     updHostNo = j;
+
                 if (myHostPtr->instances[i]->hosts[j] == myHostPtr)
                     myHostNo = j;
+
                 if (myHostNo >= 0
                     && (updHostNo >= 0
                         || myHostPtr->instances[i]->updHost == NULL))
@@ -876,26 +728,29 @@ saveSBValue (char *name, char *value)
             if (updHostNo >= 0
                 && (myHostNo < 0
                     || ((updHostNo < myHostNo)
-                        && strcmp (myHostPtr->instances[i]->value, "-"))))
-                return(0);
+                        && strcmp(myHostPtr->instances[i]->value, "-"))))
+                return 0;
         }
 
-        if ((temp = (char *)malloc (strlen(value) + 1)) == NULL) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            FREEUP (temp);
-            return (0);
+        FREEUP(myHostPtr->instances[i]->value);
+        myHostPtr->instances[i]->value = strdup(value);
+        if (myHostPtr->instances[i]->value == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: strdup() %d bytes for %s failed, %m.", __func__,
+                      strlen(value), value);
+            return -1;
         }
-        strcpy (temp, value);
-        FREEUP (myHostPtr->instances[i]->value);
-        myHostPtr->instances[i]->value = temp;
-        myHostPtr->instances[i]->updateTime = currentTime;
+        myHostPtr->instances[i]->updateTime = time(NULL);
         myHostPtr->instances[i]->updHost = myHostPtr;
-        if (logclass & LC_LOADINDX)
-            ls_syslog(LOG_DEBUG3, "saveSBValue: i = %d, resName=%s, value=%s, newValue=%s, updHost=%s", i, myHostPtr->instances[i]->resName, myHostPtr->instances[i]->value, temp, myHostPtr->instances[i]->updHost->hostName);
-        return (0);
-    }
-    return (-1);
 
+        ls_syslog(LOG_DEBUG, "\
+%s: i %d resName %s value %s updHost %s",
+                  __func__, i, myHostPtr->instances[i]->resName,
+                  myHostPtr->instances[i]->value,
+                  myHostPtr->instances[i]->updHost->hostName);
+        return 0;
+    }
+    return -1;
 }
 
 void
@@ -917,13 +772,11 @@ initConfInfo(void)
     myHostPtr->statInfo.portno = lim_tcp_port;
     myHostPtr->statInfo.hostNo = myHostPtr->hostNo;
     myHostPtr->infoValid = TRUE;
-
 }
 
 static char *
 getElimRes(void)
 {
-
     int i;
     int numEnv;
     int resNo;
@@ -1045,7 +898,6 @@ startElim(void)
 
     return startElim;
 }
-
 
 static void
 termElim(void)
