@@ -28,7 +28,7 @@ esac
 # Initialize the automake
 AM_INIT_AUTOMAKE
 
-# Expirimental scheduling module
+# Experimental scheduling module
 # Leave for future 
 #AM_CONDITIONAL([SCHED_EXPERIMENTAL], [false])
 
