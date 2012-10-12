@@ -64,7 +64,6 @@ typedef long long int LS_LONG_INT;
 typedef unsigned long long LS_UNS_LONG_INT;
 
 #define LS_LONG_FORMAT ("%lld")
-#define _OPENLAVA_PROJECT_ "openlava project 2.0"
 
 /* This is our identifier printed out by all daemons
  * and commands.
@@ -74,10 +73,6 @@ typedef unsigned long long LS_UNS_LONG_INT;
 #else
 #define _LS_VERSION_ (_OPENLAVA_PROJECT_", " __DATE__"\n")
 #endif
-
-/* This is our current version.
- */
-#define OPENLAVA_VERSION   20
 
 #define LSF_DEFAULT_SOCKS       15
 #define MAXLINELEN              512

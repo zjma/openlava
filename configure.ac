@@ -6,7 +6,9 @@
 AC_INIT(openlava, 2.1)
 AC_CONFIG_HEADERS(config.h)
 AC_PREFIX_DEFAULT([/opt/openlava-2.1])
-
+AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 2.1", "Set project string in binaries.")
+AC_DEFINE(OPENLAVA_VERSION, 20, "Current openlava version.")
+#AC_DEFINE(REL_DATE, "Jan 31 2012", "Set the release date.")
 
 # Set some cluster configuration variables .
 AC_SUBST([openlavadmin], [openlava])
@@ -43,8 +45,6 @@ AC_PROG_YACC
 AC_PROG_LEX
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-
-#AC_DEFINE(REL_DATE, "Jan 31 2012", "Set the release date.")
 
 # Force warnings on for gcc
 if test "x$ac_compiler_gnu" = xyes; then

@@ -517,19 +517,6 @@ dotypelist(FILE *fp, int *LineNum, char *lsfile)
     if (isSectionEnd(linep, lsfile, LineNum, "HostType"))
         return FALSE;
 
-    if (allInfo.nTypes <= 0) {
-        allInfo.nTypes = 2;
-    }
-
-    if (shortInfo.nTypes <= 0) {
-        shortInfo.nTypes = 2;
-    }
-
-    strcpy(allInfo.hostTypes[0], "UNKNOWN_AUTO_DETECT");
-    shortInfo.hostTypes[0] = allInfo.hostTypes[0];
-    strcpy(allInfo.hostTypes[1], "DEFAULT");
-    shortInfo.hostTypes[1] = allInfo.hostTypes[1];
-
     if (strchr(linep, '=') == NULL) {
         if (! keyMatch(keyList, linep, TRUE)) {
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5230,
@@ -584,10 +571,13 @@ dotypelist(FILE *fp, int *LineNum, char *lsfile)
     return FALSE;
 }
 
+/* dohostmodel()
+ * Process the hostmodel section and load the information
+ * in the allInfo structure.
+ */
 static char
 dohostmodel(FILE *fp, int *LineNum, char *lsfile)
 {
-    static char fname[] = "dohostmodel()";
     static char first = TRUE;
     char  *linep;
     int new;
@@ -599,23 +589,24 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
         {"ARCHITECTURE", NULL, 0},
         {NULL, NULL, 0}
     };
-    char *sp, *word;
+    char *sp;
+    char *word;
 
     if (first) {
         int i;
-        for(i = 0; i < MAXMODELS; ++i) {
+        for(i = 0; i < MAXMODELS; i++) {
             allInfo.cpuFactor[i] = 1.0;
             allInfo.modelRefs[i] = 0;
         }
-
         h_initTab_(&hostModelTbl, 11);
         first = FALSE;
     }
 
     linep = getNextLineC_(fp, LineNum, TRUE);
     if (! linep) {
-        ls_syslog(LOG_ERR, I18N_PREMATURE_EOF, fname, lsfile, *LineNum,
-                  "hostmodel");
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): Premature EOF in section %s",
+                  __func__, lsfile, *LineNum, "hostmodel");
         return FALSE;
     }
 
@@ -626,42 +617,33 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
         memset(allInfo.modelRefs, 0, sizeof(int) * MAXMODELS);
         allInfo.nModels = 2;
     }
-    if (shortInfo.nModels <= 0) {
-        shortInfo.nModels = 2;
-    }
-
-    strcpy(allInfo.hostModels[0], "UNKNOWN_AUTO_DETECT");
-    strcpy(allInfo.hostArchs[0], "UNKNOWN_AUTO_DETECT");
-    allInfo.cpuFactor[0] = 1;
-    shortInfo.hostModels[0] = allInfo.hostModels[0];
-    strcpy(allInfo.hostModels[1], "DEFAULT");
-    strcpy(allInfo.hostArchs[1], "");
-    allInfo.cpuFactor[1] = 1;
-    shortInfo.hostModels[1] = allInfo.hostModels[1];
 
     if (strchr(linep, '=') == NULL) {
         if (! keyMatch(keyList, linep, FALSE)) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5237,
-                                             "%s: %s(%d): keyword line format error for section hostmodel, ignoring section"), fname, lsfile, *LineNum); /* catgets 5237 */
+            ls_syslog(LOG_ERR, "\
+%s: %s(%d): keyword line format error for section hostmodel, ignoring section", __func__, lsfile, *LineNum);
             doSkipSection(fp, LineNum, lsfile, "dohostmodel");
             return FALSE;
         }
 
         while ((linep = getNextLineC_(fp, LineNum, TRUE)) != NULL) {
+
             if (isSectionEnd(linep, lsfile, LineNum, "hostmodel")) {
                 return TRUE;
             }
+
             if (mapValues(keyList, linep) < 0) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5238,
-                                                 "%s: %s(%d): values do not match keys for section hostmodel, ignoring line"), fname, lsfile, *LineNum); /* catgets 5238 */
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): values do not match keys for section hostmodel, ignoring line",
+                          __func__, lsfile, *LineNum);
                 lim_CheckError = WARNING_ERR;
                 continue;
             }
 
             if (! isanumber_(keyList[1].val) || atof(keyList[1].val) <= 0) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5239,
-                                                 "%s: %s(%d): Bad cpuFactor for host model %s, ignoring line"), /* catgets 5239 */
-                          fname, lsfile, *LineNum, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): Bad cpuFactor for host model %s, ignoring line",
+                          __func__, lsfile, *LineNum, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -670,9 +652,10 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             }
 
             if (strpbrk(keyList[0].val, ILLEGAL_CHARS) != NULL) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5240,
-                                                 "%s: %s(%d): illegal character (one of %s), ignoring model %s"), /* catgets 5240 */
-                          fname, lsfile, *LineNum, ILLEGAL_CHARS, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): illegal character (one of %s), ignoring model %s",
+                          __func__, lsfile, *LineNum,
+                          ILLEGAL_CHARS, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -680,8 +663,9 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
                 continue;
             }
             if (IS_DIGIT (keyList[0].val[0])) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5241,
-                                                 "%s: %s(%d): Model name <%s> begun with a digit is illegal; ignored"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5241 */
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): Model name <%s> begun with a digit is illegal; ignored",
+                          __func__, lsfile, *LineNum, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -692,11 +676,13 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             sp = keyList[2].val;
             if (sp && sp[0]) {
                 while ((word = getNextWord_(&sp)) != NULL) {
+
                     if (!addHostModel(keyList[0].val, word,
                                       atof(keyList[1].val))) {
-                        ls_syslog(LOG_ERR,
-                                  _i18n_msg_get(ls_catd , NL_SETN, 5242,
-                                                "%s: %s(%d): Too many host models, ignoring model %s"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5242 */
+                        ls_syslog(LOG_ERR, "\
+%s: %s(%d): Too many host models, ignoring model %s",
+                                  __func__, lsfile,
+                                  *LineNum, keyList[0].val);
                         lim_CheckError = WARNING_ERR;
                         goto next_value;
                     }
@@ -704,21 +690,20 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             } else {
                 if (!addHostModel(keyList[0].val, NULL,
                                   atof(keyList[1].val))) {
-                    ls_syslog(LOG_ERR,
-                              _i18n_msg_get(ls_catd , NL_SETN, 5242,
-                                            "%s: %s(%d): Too many host models, ignoring model %s"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5242 */
+                    ls_syslog(LOG_ERR, "\
+%s: %s(%d): Too many host models, ignoring model %s", __func__,
+                              lsfile, *LineNum, keyList[0].val);
                     lim_CheckError = WARNING_ERR;
                     goto next_value;
                 }
-
             }
 
             hashEntPtr = h_addEnt_(&hostModelTbl, keyList[0].val, &new);
             if (new) {
                 floatp  = malloc(sizeof(float));
                 if (floatp == NULL) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,
-                              fname, "malloc", sizeof(float));
+                    ls_syslog(LOG_ERR, "\
+%s: malloc() %d failed: %m.", __func__, sizeof(float));
                     doSkipSection(fp, LineNum, lsfile, "HostModel");
                     return FALSE;
                 }
@@ -736,14 +721,15 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             FREEUP(keyList[2].val);
         }
     } else {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5244,
-                                         "%s: %s(%d): horizontal HostModel section not implemented yet, ignoring section"),  fname, lsfile, *LineNum); /* catgets 5244 */
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): horizontal HostModel section not implemented yet, ignoring section",  __func__, lsfile, *LineNum);
         doSkipSection(fp, LineNum, lsfile, "HostModel");
         return FALSE;
     }
 
-    ls_syslog(LOG_ERR, I18N_PREMATURE_EOF,
-              fname, lsfile, *LineNum, "HostModel");
+    ls_syslog(LOG_ERR, "\
+%s: %s(%d): Premature EOF in section %s", __func__,
+              lsfile, *LineNum, "HostModel");
     return FALSE;
 }
 
@@ -3801,93 +3787,68 @@ validHostModel(const char *hModel)
 
 }
 
-
-static int cntofdefault=0;
 static char
 addHostType(char *type)
 {
-    static char fname[] = "addHostType()";
     int i;
 
     if (allInfo.nTypes == MAXTYPES) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5353,
-                                         "%s: Too many host types defined in section HostType. You can only define up to %d host types; host type %s ignored"),  /* catgets 5353 */
-                  fname, MAXTYPES, type);
+        ls_syslog(LOG_ERR, "\
+%s: Too many host types defined in section HostType. You can only define up to %d host types; host type %s ignored", __func__, MAXTYPES, type);
         return(FALSE);
     }
 
+    for (i = 0; i < allInfo.nTypes; i++) {
 
-    for (i=0;i<allInfo.nTypes;i++) {
         if (strcmp(allInfo.hostTypes[i], type) != 0)
             continue;
-        if (strcmp(type,"DEFAULT")==0)
-        {
-            cntofdefault++;
-            if (cntofdefault<=1) break;
-        }
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5354,
-                                         "%s: host type %s multiply defined"), /* catgets 5354 */
-                  fname, type);
-        return(FALSE);
+
+        ls_syslog(LOG_ERR, "\
+%s: host type %s multiply defined", __func__, type);
+        return FALSE;
     }
 
     strcpy(allInfo.hostTypes[allInfo.nTypes], type);
-    shortInfo.hostTypes[shortInfo.nTypes] =
-        allInfo.hostTypes[allInfo.nTypes];
+    shortInfo.hostTypes[shortInfo.nTypes]
+        = allInfo.hostTypes[allInfo.nTypes];
+
     allInfo.nTypes++;
     shortInfo.nTypes++;
-    return(TRUE);
 
+    return TRUE;
 }
 
 static char
 addHostModel(char *model, char *arch, float factor)
 {
-    static char fname[] = "addHostModel()";
     int i;
 
     if (allInfo.nModels == MAXMODELS) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5355,
-                                         "%s: Too many host models defined in section HostModel. You can only define up to %d host models; host model %s ignored"),  /* catgets 5355 */
-                  fname, MAXMODELS, model);
-        return(FALSE);
-    }
-
-    if (!strcmp(model,"DEFAULT"))
-    {
-        strcpy(allInfo.hostArchs[1], arch? arch: "");
-        allInfo.cpuFactor[1] = factor;
-        return(TRUE);
+        ls_syslog(LOG_ERR, "\
+%s: Too many host models defined in section HostModel. You can only define up to %d host models; host model %s ignored",
+                  __func__, MAXMODELS, model);
+        return FALSE;
     }
 
     for (i = 0; i < allInfo.nModels; ++i) {
 
-        if (!arch && strcmp(allInfo.hostModels[i], model) == 0) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5357,
-                                             "%s: host model %s multiply defined"), /* catgets 5357 */
-                      fname, model);
-            return(TRUE);
+        if (strcmp(allInfo.hostModels[i], model) == 0) {
+            ls_syslog(LOG_ERR, "\
+%s: host model %s multiply defined, ignored.", __func__, model);
+            return TRUE;
         }
-
-        if (!arch || strcmp(allInfo.hostArchs[i], arch) != 0)
-            continue;
-
-        ls_syslog(LOG_ERR, I18N(5479,
-                                "%s: host architecture %s defined multiple times"),/*catgets 5479*/
-                  fname, arch);
-
-        return(TRUE);
     }
 
     strcpy(allInfo.hostModels[allInfo.nModels], model);
-    strcpy(allInfo.hostArchs[allInfo.nModels], arch? arch: "");
+    strcpy(allInfo.hostArchs[allInfo.nModels], arch);
     allInfo.cpuFactor[allInfo.nModels] = factor;
-    shortInfo.hostModels[shortInfo.nModels] =
-        allInfo.hostModels[allInfo.nModels];
+    shortInfo.hostModels[shortInfo.nModels]
+        = allInfo.hostModels[allInfo.nModels];
+
     allInfo.nModels++;
     shortInfo.nModels++;
-    return(TRUE);
 
+    return TRUE;
 }
 
 static struct clusterNode *
