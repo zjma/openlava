@@ -94,7 +94,7 @@ struct hostNode {
     short   hTypeNo;
     short   hostNo;
     u_short naddr;
-    in_addr_t   *addr;
+    in_addr_t *addr;
     struct  statInfo statInfo;
     char    infoValid;
     unsigned char protoVersion;
@@ -227,8 +227,6 @@ struct loadVectorStruct {
     int     numResPairs;
     struct resPair *resPairs;
 };
-
-#define DETECTMODELTYPE 0
 
 #define MAX_SRES_INDEX	2
 
@@ -406,10 +404,6 @@ extern int validLoadIndex(const  char *);
 extern int validHostType(const char *);
 extern int validHostModel(const char *);
 extern char *stripIllegalChars(char *);
-extern int initTypeModel(struct hostNode *);
-extern char *getHostType(void);
-extern struct hostNode *addFloatClientHost(struct hostent *);
-extern int removeFloatClientHost(struct hostNode *);
 extern int typeNameToNo(const char *);
 extern int archNameToNo(const char *);
 extern void reconfigReq(XDR *, struct sockaddr_in *, struct LSFHeader *);

@@ -685,7 +685,6 @@ initAndConfig(int checkMode, int *kernelPerm)
     initParse(&allInfo);
 
     initReadLoad(checkMode);
-    initTypeModel(myHostPtr);
 
     if (! checkMode) {
         initConfInfo();
@@ -1097,31 +1096,19 @@ initLiStruct(void)
     li[10].sigdiff=3.0;
 }
 
+/* lim -t
+ */
 static void
 printTypeModel(void)
 {
-    printf("Host Type             : %s\n", getHostType());
-    printf("Host Architecture     : %s\n", getHostModel());
-    printf("Matched Type          : %s\n",
+    printf("Host Type          : %s\n",
            allInfo.hostTypes[myHostPtr->hTypeNo]);
-    printf("Matched Architecture  : %s\n",
+    printf("Host Architecture  : %s\n",
            allInfo.hostArchs[myHostPtr->hModelNo]);
-    printf("Matched Model         : %s\n",
+    printf("Host Model         : %s\n",
            allInfo.hostModels[myHostPtr->hModelNo]);
-    printf("CPU Factor            : %.1f\n",
+    printf("CPU Factor         : %.1f\n",
            allInfo.cpuFactor[myHostPtr->hModelNo]);
-
-    if (myHostPtr->hTypeNo == 1 || myHostPtr->hModelNo == 1) {
-        printf("When automatic detection of host type or model fails, the type or\n");
-        printf("model is set to DEFAULT. LSF will still work on the host. A DEFAULT\n");
-        printf("model may be inefficient because of incorrect CPU factor. A DEFAULT\n");
-        printf("type may cause binary incompatibility - a job from a DEFAULT host \n");
-        printf("type can be dispatched or migrated to another DEFAULT host type.\n\n");
-        printf("User can use lim -t to detect the real model or type for a host. \n");
-        printf("Change a DEFAULT host model by adding a new model in HostModel in\n");
-        printf("lsf.shared.  Change a DEFAULT host type by adding a new type in \n");
-        printf("HostType in lsf.shared.\n\n");
-    }
 }
 
 /* initMiscLiStruct()
