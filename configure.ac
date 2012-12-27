@@ -51,7 +51,10 @@ if test "x$ac_compiler_gnu" = xyes; then
     CFLAGS="$CFLAGS -Wall"
 fi
 
-AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"])
+AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
+ AC_MSG_ERROR([cannot build openlava without ncurses])
+])
+
 # Check for tcl, we try tcl and all 8.X versions
 AC_CHECK_HEADERS([tcl.h], [], [
  AC_CHECK_HEADERS([tcl/tcl.h], [], [
