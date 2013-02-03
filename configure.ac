@@ -10,12 +10,6 @@ AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 2.1", "Set project string in bin
 AC_DEFINE(OPENLAVA_VERSION, 20, "Current openlava version.")
 #AC_DEFINE(REL_DATE, "Jan 31 2012", "Set the release date.")
 
-# Set some cluster configuration variables .
-AC_SUBST([openlavadmin], [openlava])
-AC_ARG_VAR([openlavaadmin], "")
-AC_SUBST([openlavacluster], [openlava])
-AC_ARG_VAR([openlavacluster], "")
-
 # Non Linux support
 AC_CANONICAL_SYSTEM
 AM_CONDITIONAL([CYGWIN], [false]) 
@@ -92,6 +86,18 @@ AC_CHECK_LIB([tcl], [Tcl_CreateInterp], [], [
        AC_CHECK_LIB([tcl80], [Tcl_CreateInterp], [], [
  AC_MSG_ERROR([cannot build openlava without tcl8.*])
 ])])])])])])])])])])])])])])])
+
+# Set some cluster configuration variables .
+AC_ARG_VAR([openlavaadmin], [Username of the openlava admin])
+AC_ARG_VAR([openlavacluster], [Name of the cluster])
+# Set some defaults.
+: ${openlavaadmin:=openlava}
+: ${openlavacluster:=openlava}
+AC_SUBST([openlavaadmin])
+AC_SUBST([openlavacluster])
+AC_MSG_RESULT([username for openlava admin ... ${openlavaadmin}])
+AC_MSG_RESULT([name for openlava cluster ... ${openlavacluster}])
+
 
 AC_CONFIG_FILES([
 	Makefile                 \
