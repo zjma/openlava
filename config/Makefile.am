@@ -12,7 +12,7 @@ include $(top_srcdir)/common.mk
 # script in the etc directory.
 etcdir = $(prefix)/etc
 etc_DATA = openlava.sh openlava.csh \
-	lsf.conf lsf.cluster.openlava lsf.shared lsf.task \
+	lsf.conf lsf.cluster.@openlavacluster@ lsf.shared lsf.task \
 	lsb.hosts lsb.params lsb.queues lsb.users 
 
 etc_SCRIPTS = openlava
