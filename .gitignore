@@ -21,7 +21,8 @@ config/lsb.hosts
 config/lsb.params
 config/lsb.queues
 config/lsb.users
-config/lsf.cluster.openlava
+config/lsf.cluster.*
+!config/lsf.cluster.*.in
 config/lsf.conf
 config/lsf.shared
 config/lsf.task
