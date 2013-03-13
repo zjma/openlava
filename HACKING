@@ -1,5 +1,5 @@
 
-openlava source code style guide:
+openlava source code style guide: use K&R 2nd edition.
 
  - 4 level indent
  - spaces-only (no tabs)
