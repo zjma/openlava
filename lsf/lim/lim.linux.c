@@ -283,7 +283,6 @@ getmeminfo(void)
         if (strcmp(name, "MemTotal:") == 0)
             maxmem = v;
         if (strcmp(name, "MemFree:") == 0)
-            //mem = v;
             memfree = v;
         if (strcmp(name, "SwapTotal:") == 0)
             maxswap = v;
