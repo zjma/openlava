@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2013 David Bigagli
  *
  * $Id: lim.linux.h 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
@@ -23,6 +23,8 @@
 
 static char buf[BUFSIZ];
 static unsigned long long int mem;
+static unsigned long long int memfree;
+static unsigned long long int memcache;
 static unsigned long long int maxmem;
 static unsigned long long int swap;
 static unsigned long long int maxswap;
@@ -254,6 +256,9 @@ iorate(void)
 }
 
 /* getmeminfo()
+ *
+ *   http://git.kernel.org/cgit/linux/kernel/git/torvalds/
+ *    linux.git/tree/Documentation/filesystems/proc.txt?id=HEAD#l451
  */
 static int
 getmeminfo(void)
@@ -278,12 +283,16 @@ getmeminfo(void)
         if (strcmp(name, "MemTotal:") == 0)
             maxmem = v;
         if (strcmp(name, "MemFree:") == 0)
-            mem = v;
+            //mem = v;
+            memfree = v;
         if (strcmp(name, "SwapTotal:") == 0)
             maxswap = v;
         if (strcmp(name, "SwapFree:") == 0)
             swap = v;
+        if (strcmp(name, "Cached:") == 0)
+            memcache = v;
     }
+    mem = memfree + memcache;
     fclose(fp);
 
     ls_syslog(LOG_DEBUG, "\
