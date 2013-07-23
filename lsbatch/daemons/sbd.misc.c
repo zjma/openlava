@@ -196,9 +196,9 @@ child_handler(int sig)
                         errno = 0;
                         sbd_finish_sleep = atoi(daemonParams[LSB_SBD_FINISH_SLEEP].paramValue);
                         if (errno)
-                            sbd_finish_sleep = 1000;
+                            sbd_finish_sleep = 0;
                     } else {
-                        sbd_finish_sleep=1000;
+                        sbd_finish_sleep=0;
                     }
                 }
                 if (sbd_finish_sleep > 0) {
