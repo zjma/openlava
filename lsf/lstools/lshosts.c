@@ -98,7 +98,7 @@ print_long(struct hostInfo *hostInfo)
     static char line[132];
     static char newFmt[10];
     int newIndexLen, retVal;
-    char **indxnames;
+    static char **indxnames;
     char **shareNames, **shareValues, **formats;
     char strbuf1[30],strbuf2[30],strbuf3[30];
 
