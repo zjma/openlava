@@ -17,7 +17,7 @@
 #
 
 %define major 2
-%define minor 0
+%define minor 1
 %define release 1
 
 %define version %{major}.%{minor}
@@ -33,7 +33,7 @@
 
 Summary: openlava Distributed Batch Scheduler
 Name: openlava
-Version: 2.0
+Version: 2.1
 Release: 1
 License: GPLv2
 Group: Applications/Productivity
