@@ -6,7 +6,7 @@ set -x
 #
 
 major="2"
-minor="0"
+minor="1"
 
 grep 4.6 /etc/redhat-release > /dev/null
 if [ "$?" == "0" ]; then
