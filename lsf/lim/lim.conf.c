@@ -4594,6 +4594,7 @@ addMigrantHost(XDR *xdrs,
         opCode = LIME_BAD_DATA;
         goto hosed;
     }
+    myClusterPtr->numHosts++;
 
     /* log the lim event HOST_ADD
      */
@@ -4664,6 +4665,8 @@ addHostByTab(hTab *tab)
 %s: failed adding runtime host %s", __func__, hPtr.hostName);
             continue;
         }
+        myClusterPtr->numHosts++;
+
         /* mark the node as migrant.
          */
         node->migrant = 1;
@@ -4727,6 +4730,7 @@ rmMigrantHost(XDR *xdrs,
     }
 
     rmHost(hPtr);
+    myClusterPtr->numHosts--;
 
     memset(&hEnt, 0, sizeof(struct hostEntry));
     strcpy(hEnt.hostName, hPtr->hostName);
