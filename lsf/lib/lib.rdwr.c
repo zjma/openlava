@@ -219,6 +219,10 @@ rd_select_(int rd, struct timeval *timeout)
     int cc;
     fd_set rmask;
 
+    if (rd < 0) {
+        return (-1);
+    }
+
     for (;;) {
 	FD_ZERO(&rmask);
 	FD_SET(rd, &rmask);
