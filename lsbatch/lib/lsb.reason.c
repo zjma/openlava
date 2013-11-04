@@ -29,17 +29,16 @@ struct msgMap {
 };
 
 static void userIndexReasons(char *, int, int, struct loadIndexLog *);
-static char *getMsg (struct msgMap *msgMap, int *msgId, int number);
 static void getMsgByRes(int, int, char **, struct loadIndexLog *);
 
 static char *
-getMsg(struct msgMap *msgMap, int *msg_ID,  int number)
+getMsg(struct msgMap *msgMap, int number)
 {
 	int i;
 
 	for (i = 0; msgMap[i].message != NULL; i++)
 		if (msgMap[i].number == number)
-			return msgMap[i].message;
+			return (msgMap[i].message);
 
 	return "";
 }
@@ -127,27 +126,22 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
                struct loadIndexLog *ld)
 {
 	static char fname[] = "lsb_pendreason";
-	int i, j, num;
-	int hostId, reason, hostIdJ, reasonJ;
-	static int *reasonTb, memSize = 0;
-	static char *hostList = NULL, *retMsg = NULL;
+	int i;
+	int j;
+	int num;
+	int hostId;
+	int reason;
+	int hostIdJ;
+	int reasonJ;
+	static int *reasonTb;
+	static int memSize;
+	static char *hostList = NULL;
+	static char *retMsg = NULL;
 	char *sp;
-
-	int pendMsg_ID[] = { 550, 551, 552, 553, 554, 555, 556, 557, 558, 559,
-	                     560, 561, 562, 563, 564, 566, 567, 568,
-	                     571, 583,
-	                     655, 656, 586, 587,
-	                     588, 589, 590, 591, 592, 596, 597, 598, 599, 600,
-	                     662, 601, 602, 603, 604, 605, 606, 607,
-	                     608, 609, 610, 611, 612,
-	                     614, 615, 616, 617, 618, 619, 667, 620, 621, 622,
-	                     623, 624, 625, 626, 627, 628, 629, 630, 631,
-	                     633, 634, 635, 636, 638, 639, 640, 641, 642,
-	                     664, 646, 647, 648, 649, 650, 651, 652, 653, 654,
-	                     644, 645, 665, 666
-	};
-
 	struct msgMap pendMsg[] = {
+		/*
+		 * Job Related Reasons (001 - 300)
+		 */
 		{ PEND_JOB_NEW,
 		  "New job is waiting for scheduling"},
 		{ PEND_JOB_START_TIME,
@@ -182,14 +176,11 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		 "Failed to get user password"},
 		{PEND_JOB_MODIFY,
 		 "Waiting for re-scheduling after parameters have been changed"},
-		{ PEND_JOB_REQUEUED,
-		  "Requeue the job for the next run"},
 		{ PEND_SYS_UNABLE,
 		  "System is unable to schedule the job" },
-		{PEND_JOB_ARRAY_JLIMIT,
-		 "The job array has reached its running element limit"},
-		{ PEND_CHKPNT_DIR,
-		  "Checkpoint directory is invalid"},
+		/*
+		 * Queue and System Related Reasons (301 - 599)
+		 */
 		{ PEND_QUE_INACT,
 		  "The queue is inactivated by the administrator"},
 		{ PEND_QUE_WINDOW,
@@ -214,8 +205,9 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Not enough hosts to meet the queue's spanning requirement"},
 		{ PEND_QUE_WINDOW_WILL_CLOSE,
 		  "Job will not finish before queue's run window is closed"},
-		{ PEND_QUE_PROCLIMIT,
-		  "Job no longer satisfies queue PROCLIMIT configuration"},
+		/*
+		 * User Related Reasons (601 - 800)
+		 */
 		{ PEND_USER_JOB_LIMIT,
 		  "The user has reached his/her job slot limit"},
 		{ PEND_UGRP_JOB_LIMIT,
@@ -234,12 +226,18 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Unable to determine user account for execution"},
 		{ PEND_RMT_PERMISSION,
 		  "The user has no permission to run the job on remote host/cluster"},
+		/*
+		 * NON-EXCLUSIVE PENDING REASONS
+		 * A job may still start even though non-exclusive reasons exist.
+		 *
+		 * Job and Host(sbatchd) Related Reasons (1001 - 1300)
+		 */
 		{ PEND_HOST_RES_REQ,
 		  "Job's resource requirements not satisfied"},
 		{ PEND_HOST_NONEXCLUSIVE,
 		  "Job's requirement for exclusive execution not satisfied"},
 		{ PEND_HOST_JOB_SSUSP,
-		  "Higher or equal priority jobs suspended by host load"},
+		  "Higher or equal priority jobs already suspended by system"},
 		{ PEND_SBD_GETPID,
 		  "Unable to get the PID of the restarting job"},
 		{ PEND_SBD_LOCK,
@@ -252,12 +250,13 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Job will not finish on the host before queue's run window is closed"},
 		{ PEND_HOST_MISS_DEADLINE,
 		  "Job will not finish on the host before job's termination deadline"},
-		{ PEND_FIRST_HOST_INELIGIBLE,
-		  "The specified first exection host is not eligible for this job at this time"},
+		/*
+		 * Host Related Reasons (1301 - 1600)
+		 */
 		{ PEND_HOST_DISABLED,
 		  "Closed by LSF administrator"},
 		{ PEND_HOST_LOCKED,
-		  "Host is locked by LSF administrator"},
+		  "Host is locked"},
 		{ PEND_HOST_LESS_SLOTS,
 		  "Not enough job slot(s)"},
 		{ PEND_HOST_WINDOW,
@@ -278,6 +277,8 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Not usable to the queue"},
 		{ PEND_HOST_USR_SPEC,
 		  "Not specified in job submission"},
+		{ PEND_HOST_PART_USER,
+		  "User has no access to the host partition"},
 		{ PEND_HOST_NO_USER,
 		  "There is no such user account"},
 		{ PEND_HOST_ACCPT_ONE,
@@ -296,8 +297,13 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Not enough processors to meet the queue's spanning requirement"},
 		{ PEND_HOST_EXCLUSIVE,
 		  "Running an exclusive job"},
-		{ PEND_HOST_LOCKED_MASTER,
-		  "Host is locked by master LIM"},
+		{ PEND_HOST_QUE_RUSAGE,
+		  "Queue's requirements for resource reservation not satisfied"},
+		{ PEND_HOST_JOB_RUSAGE,
+		  "Job's requirements for resource reservation not satisfied"},
+/*
+ * sbatchd Related Reasons (1601 - 1900)
+ */
 		{ PEND_SBD_UNREACH,
 		  "Unable to reach slave batch server"},
 		{ PEND_SBD_JOB_QUOTA,
@@ -314,16 +320,11 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		  "Unable to communicate with job process"},
 		{ PEND_SBD_JOB_ACCEPT,
 		  "Slave batch server failed to accept job"},
+/*
+ * Load Related Reasons (2001 - 2300)
+ */
 		{ PEND_HOST_LOAD,
 		  "Load threshold reached"},
-		{ PEND_HOST_QUE_RUSAGE,
-		  "Queue's requirements for resource reservation not satisfied"},
-		{ PEND_HOST_JOB_RUSAGE,
-		  "Job's requirements for resource reservation not satisfied"},
-		{ PEND_BAD_HOST,
-		  "Bad host name, host group name or cluster name"},
-		{ PEND_QUEUE_HOST,
-		  "Host or host group is not used by the queue"},
 		{ 0, NULL}
 	};
 
@@ -376,11 +377,6 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 		if (logclass & (LC_TRACE | LC_SCHED | LC_EXEC))
 			ls_syslog(LOG_DEBUG2, "%s: hostId=%d, reason=%d reasonTb[%d]=%d",
 			          fname, hostId, reason, i, reasonTb[i]);
-		if (!hostId) {
-			sprintf(msgline, " %s;\n", getMsg(pendMsg, pendMsg_ID,  reason));
-			strcat(retMsg, msgline);
-			continue;
-		}
 		if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL)
 			strcpy(hostList, jInfoH->hostNames[hostId]);
 		else
@@ -427,7 +423,7 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 			            ld);
 
 		} else {
-			sp = getMsg(pendMsg, pendMsg_ID,  reason);
+			sp = getMsg(pendMsg, reason);
 		}
 
 		if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL)
@@ -436,11 +432,10 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
 			sprintf(retMsg, "%s %s: 1 host;\n", retMsg, sp);
 		else
 			sprintf (retMsg, "%s %s: %d hosts;\n", retMsg, sp, num);
-}
+	}
 
 	return retMsg;
 }
-
 
 static void
 userIndexReasons(char *msgline,
