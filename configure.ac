@@ -42,7 +42,7 @@ AC_PROG_MAKE_SET
 
 # Force warnings on for gcc
 if test "x$ac_compiler_gnu" = xyes; then
-    CFLAGS="$CFLAGS -Wall"
+    CFLAGS="$CFLAGS -Wall -fPIC"
 fi
 
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
