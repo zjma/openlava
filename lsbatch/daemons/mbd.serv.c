@@ -474,8 +474,11 @@ packJobInfo(struct jData * jobData,
     jobInfoReply.reasonTb = reasonTb;
 
     if (logclass & LC_PEND)
-        ls_syslog(LOG_DEBUG3, "%s: job=%s, rs=%d, nrs=%d srs=%d, qNrs=%d, jNrs=%d nLsb=%d nQU=%d mStage=%d", fname, lsb_jobid2str(jobData->jobId), jobData->oldReason, jobData->newReason, jobData->subreasons, jobData->qPtr->numReasons, job_numReasons, numLsbUsable, jobData->qPtr->numUsable, mSchedStage);
-
+        ls_syslog(LOG_DEBUG, "\
+%s: job=%s, rs=%d, nrs=%d srs=%d, qNrs=%d, jNrs=%d nLsb=%d nQU=%d mStage=%d", __func__,
+				  lsb_jobid2str(jobData->jobId), jobData->oldReason, jobData->newReason,
+				  jobData->subreasons, jobData->qPtr->numReasons, job_numReasons, numLsbUsable,
+				  jobData->qPtr->numUsable, mSchedStage);
 
 	jobInfoReply.numReasons = 0;
     if (IS_PEND (jobData->jStatus) && !(options & NO_PEND_REASONS)) {
@@ -497,19 +500,6 @@ packJobInfo(struct jData * jobData,
             pkHReasonTb = hReasonTb[0];
             pkQReasonTb = jobData->qPtr->reasonTb[0];
             pkUReasonTb = jobData->uPtr->reasonTb[0];
-
-            for (i = 0; i < numofhosts(); i ++) {
-
-				jReasonTb[i] = 0;
-                if (jobData->numAskedPtr > 0
-                    && jobData->askedOthPrio < 0)
-                    jReasonTb[i] = PEND_HOST_USR_SPEC;
-            }
-
-            for (i = 0; i < jobData->numAskedPtr; i++) {
-                k = jobData->askedPtr[i].hData->hostId;
-                jReasonTb[k] = 0;
-            }
 
             for (i = 0; i < job_numReasons; i++) {
 
@@ -546,9 +536,6 @@ packJobInfo(struct jData * jobData,
 					jobInfoReply.reasonTb[k] = pkHReasonTb[i];
 					PUT_HIGH(jobInfoReply.reasonTb[k], i);
 					k++;
-					if (debug && (logclass & LC_PEND))
-						ls_syslog(LOG_DEBUG2, "%s: hReasonTb[%d]=%d",
-								  fname, i, pkHReasonTb[i]);
 					continue;
 				}
 
@@ -556,9 +543,6 @@ packJobInfo(struct jData * jobData,
 					jobInfoReply.reasonTb[k] = pkQReasonTb[i];
 					PUT_HIGH(jobInfoReply.reasonTb[k], i);
 					k++;
-					if (debug && (logclass & LC_PEND))
-						ls_syslog(LOG_DEBUG2, "%s: qReason[%d]=%d",
-								  fname, i, pkQReasonTb[i]);
 					continue;
 				}
 
@@ -566,20 +550,11 @@ packJobInfo(struct jData * jobData,
 					jobInfoReply.reasonTb[k] = pkUReasonTb[i];
 					PUT_HIGH(jobInfoReply.reasonTb[k], i);
 					k++;
-					if (debug && (logclass & LC_PEND))
-						ls_syslog(LOG_DEBUG2, "%s: uReason[%d]=%d",
-								  fname, i, pkUReasonTb[i]);
 					continue;
 				}
 
 				if (jReasonTb[i]) {
 					jobInfoReply.reasonTb[k++] = jReasonTb[i];
-					if (debug && (logclass & LC_PEND)) {
-						int rs;
-						GET_LOW(rs, jReasonTb[i]);
-						ls_syslog(LOG_DEBUG2, "%s: jReason[%d]=%d",
-								  fname, i, rs);
-					}
 					continue;
 				}
 
