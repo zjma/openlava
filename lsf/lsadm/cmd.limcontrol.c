@@ -52,7 +52,8 @@ limCtrl(int argc, char **argv, int opCode)
     char *optName;
     char *localHost;
     int vFlag = 0;
-    int config = 0, checkReply;
+    int config = 0;
+	int checkReply = 0;
 
     fFlag = 0;
     if (strcmp(argv[optind-1], "reconfig") == 0) {
