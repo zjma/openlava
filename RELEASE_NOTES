@@ -4,6 +4,8 @@ Release Notes for openlava version 2.2.
 
 HIGHLIGHTS
 ----------
+-- RPM files are no longer distributed, however they can still be built
+   from the tarball.
 -- When migrant hosts are added or removed, we must increment or
    decrement the numHosts field in the struct clusterNode (myClusterPtr)
    to allow the periodic master announcement to be sent to dynamic
@@ -21,3 +23,17 @@ HIGHLIGHTS
    code into a library for use in third party tools.
 -- Fixed bsub -I, now the the job data are correcty sent to the
    user terminal and viceversa.
+-- Accept `DESTDIR` environment variable, allowing staged installs.
+-- Avoid announcing all LIMs at the same time.
+-- Install the config.h in include directory.
+-- Fixed lshosts -l core dump.
+-- Change the behaviour of the SBD SIGCHLD handler. By default, the
+   handler would sleep for 1 second for each child reaped, which would
+   cause long waits on machines with lots of slots when lots of jobs
+   finished at the same time (e.g. lots of short jobs). The default is
+   now to not sleep at all.
+-- Count cached memory as free memory.
+-- Added error exit message for missing ncurses.h
+-- Added MANPATH to shell profile scripts.
+-- Allow multiple hosttypes and hostmodels in the shared and cluster file.
+   LIM now can be configured with any type and model.
