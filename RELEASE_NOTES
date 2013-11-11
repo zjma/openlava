@@ -19,3 +19,5 @@ HIGHLIGHTS
    overwriting production configuration files.
 -- Added -fPIC option to configure.ac - needed when compiling the object
    code into a library for use in third party tools.
+-- Fixed bsub -I, now the the job data are correcty sent to the
+   user terminal and viceversa.
