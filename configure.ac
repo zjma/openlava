@@ -1,18 +1,18 @@
 #
 # openlava project
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2013 David Bigagli
 #
-AC_INIT(openlava, 2.1)
+AC_INIT(openlava, 2.2)
 AC_CONFIG_HEADERS(config.h)
-AC_PREFIX_DEFAULT([/opt/openlava-2.1])
-AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 2.1", "Set project string in binaries.")
-AC_DEFINE(OPENLAVA_VERSION, 20, "Current openlava version.")
-#AC_DEFINE(REL_DATE, "Jan 31 2012", "Set the release date.")
+AC_PREFIX_DEFAULT([/opt/openlava-2.2])
+AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 2.2", "Set project string in binaries.")
+AC_DEFINE(OPENLAVA_VERSION, 22, "Current openlava version.")
+#AC_DEFINE(REL_DATE, "Nov 11 2013", "Set the release date.")
 
 # Non Linux support
 AC_CANONICAL_SYSTEM
-AM_CONDITIONAL([CYGWIN], [false]) 
+AM_CONDITIONAL([CYGWIN], [false])
 AM_CONDITIONAL([SOLARIS], [false])
 case "${target_os}" in
   *cygwin*)
@@ -25,11 +25,11 @@ esac
 AM_INIT_AUTOMAKE
 
 # Experimental scheduling module
-# Leave for future 
+# Leave for future
 #AM_CONDITIONAL([SCHED_EXPERIMENTAL], [false])
 
 # Clean output if possible
-#m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
+m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 # Check for programs
 AC_PROG_CC
