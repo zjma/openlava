@@ -5490,10 +5490,10 @@ donios_sock(struct child **children, int op)
                 xdr_destroy(&xdrs);
 
                 rtag = msgHdr.reserved;
-				/* FIXME this has to be reviewed
-				 * treat it as tmp fix for bsub -I.
-				 */
-				rtag = 0;
+                /* FIXME this has to be reviewed
+                 * treat it as tmp fix for bsub -I.
+                 */
+                rtag = 0;
 
                 switch(msgHdr.opCode) {
                     case NIOS2RES_STDIN:
