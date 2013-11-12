@@ -17,7 +17,7 @@
 #
 
 %define major 2
-%define minor 1
+%define minor 2
 %define release 1
 
 %define version %{major}.%{minor}
