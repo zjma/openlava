@@ -4,6 +4,7 @@ FIXES
 -----
 
 -- Fix the problem of host going periodically -ok.
+-- Fix timer initialization in LIM.
 
 2.2 is a bug fix release.
 

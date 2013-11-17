@@ -341,7 +341,7 @@ Reading configuration from %s/lsf.conf\n", env_dir);
             /* reset the start time
              */
             t0.tv_sec = t1.tv_sec;
-            t0.tv_usec = t1.tv_sec;
+            t0.tv_usec = 0;
             alarmed = 1;
         } else {
             timer.tv_sec = 5 - (t1.tv_sec - t0.tv_sec);
