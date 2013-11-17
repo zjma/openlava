@@ -1,4 +1,9 @@
-Release Notes for openlava version 2.2.
+Release Notes for openlava version 2.2.1
+
+FIXES
+-----
+
+-- Fix the problem of host going periodically -ok.
 
 2.2 is a bug fix release.
 

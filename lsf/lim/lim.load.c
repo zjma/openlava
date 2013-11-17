@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2013 David Bigagli
  *
  * $Id: lim.load.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
@@ -61,9 +61,8 @@ sendLoad(void)
     limReqCode = LIM_LOAD_UPD;
     resInactivityCount++;
 
-    if (resInactivityCount > resInactivityLimit) {
+    if (resInactivityCount > resInactivityLimit)
         myHostPtr->status[0] |= LIM_RESDOWN;
-    }
 
     if (time(0) - lastSbdActiveTime > SBD_ACTIVE_TIME)
         myHostPtr->status[0] |= LIM_SBDDOWN;
