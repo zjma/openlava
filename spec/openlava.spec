@@ -33,8 +33,8 @@
 
 Summary: openlava Distributed Batch Scheduler
 Name: openlava
-Version: 2.1
-Release: 1
+Version: %{version}
+Release: %{release}
 License: GPLv2
 Group: Applications/Productivity
 Vendor: openlava foundation
