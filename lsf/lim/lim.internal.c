@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
- *
- * $Id: lim.h 397 2007-11-26 19:04:00Z mblack $
+ * Copyright (C) 2011-2013 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -190,7 +188,6 @@ announceElimInstance(struct clusterNode *clPtr)
             }
         }
     }
-
 }
 
 void
@@ -220,6 +217,8 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      * exchIntvl = 15
      * sampleIntvl = 5
      * periods = (5 - 1) * 15/5 = 60/5 = 12
+     *         = 4 * 30/5 = 24
+     *         = 4 * 60/5 = 48
      */
     periods = (hostInactivityLimit - 1) * exchIntvl/sampleIntvl;
     if (!all && (++cnt > (periods - 1))) {
@@ -531,7 +530,7 @@ initNewMaster(void)
     myClusterPtr->prevMasterPtr = myClusterPtr->masterPtr;
     myClusterPtr->masterPtr = myHostPtr;
 
-    announceMaster(myClusterPtr, 1, TRUE);
+    announceMaster(myClusterPtr, 1, FALSE);
     myClusterPtr->masterInactivityCount = 0;
     masterMe = 1;
 

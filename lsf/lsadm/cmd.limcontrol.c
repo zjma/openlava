@@ -31,8 +31,6 @@
 #include "../lib/lsi18n.h"
 #define NL_SETN 25
 
-extern int  optind;
-extern char *optarg;
 
 extern void millisleep_(int);
 extern char isint_(char *word);
@@ -54,7 +52,8 @@ limCtrl(int argc, char **argv, int opCode)
     char *optName;
     char *localHost;
     int vFlag = 0;
-    int config = 0, checkReply;
+    int config = 0;
+	int checkReply = 0;
 
     fFlag = 0;
     if (strcmp(argv[optind-1], "reconfig") == 0) {
@@ -205,8 +204,6 @@ int
 limLock(int argc, char **argv)
 {
     u_long duration = 0;
-    extern int optind;
-    extern char *optarg;
     char *optName;
 
     while ((optName = myGetOpt(argc, argv, "l:")) != NULL) {
@@ -244,7 +241,6 @@ limLock(int argc, char **argv)
 int
 limUnlock(int argc, char **argv)
 {
-    extern int optind;
 
     if (argc > optind) {
 	fprintf(stderr, I18N(261, "Syntax error: too many arguments.\n")); /* catgets 261 */

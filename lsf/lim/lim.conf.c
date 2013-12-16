@@ -77,7 +77,6 @@ static struct sharedResource *addResource (char *, int, char **, char *, char *,
 static void freeSharedRes (struct sharedResource *);
 static int addHostInstance (struct sharedResource *,  int, char **, char *, int);
 static struct resourceInstance * addInstance (struct sharedResource *,  int, char **, char *);
-static struct resourceInstance * initInstance (void);
 static void freeInstance (struct resourceInstance *);
 static int addHostList (struct resourceInstance *, int, char **);
 static int doresourcemap(FILE *, char *, int *);
@@ -94,8 +93,8 @@ static int saveHostIPAddr(struct hostNode *, struct hostent *);
 
 extern int  convertNegNotation_(char**, struct HostsArray*);
 
-FILE * confOpen(char *filename, char *type);
-float mykey(void);
+static FILE * confOpen(char *, char *);
+static float mykey(void);
 
 static void setExtResourcesDefDefault(char *);
 static int setExtResourcesDef(char *);
@@ -105,23 +104,23 @@ extern char *getExtResourcesLoc(char *);
 static char *getExtResourcesValDefault(char *);
 extern char *getExtResourcesVal(char *);
 
-/* getHostType()
+/* readShared()
+ * Read the openlava base lsf.shared configuration file.
+ * This file contains all the host model, types, cpu factors,
+ * architecture and resources defined in the openlava cluster.
  */
-char *
-getHostType(void)
-{
-    return HOST_TYPE_STRING;
-}
-
 int
 readShared(void)
 {
-    static char fname[] = "readShared()";
-    FILE   *fp;
-    char   *cp;
-    char lsfile[MAXFILENAMELEN];
+    FILE *fp;
+    char *cp;
+    char lsfile[PATH_MAX];
     char *word;
-    char modelok, resok, clsok, indxok, typeok;
+    char modelok;
+    char resok;
+    char clsok;
+    char indxok;
+    char typeok;
     int LineNum = 0;
 
     modelok = FALSE;
@@ -134,106 +133,106 @@ readShared(void)
 
     sprintf(lsfile, "%s/lsf.shared", limParams[LSF_CONFDIR].paramValue);
 
-
+    /* Actually there is no need for the checksum of this
+     * file, it was used in older versions of multicluster
+     * where LIMs must have the same exact configuration.
+     */
     if (configCheckSum(lsfile, &lsfSharedCkSum) < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "configCheckSum");
-        return (-1);
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh configCheckSum() on %s failed.", __func__, lsfile);
+        return -1;
     }
+
     fp = confOpen(lsfile, "r");
     if (!fp) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5200,
-                                         "%s: Can't open configuration file <%s>: %m"), /* catgets 5200 */
-                  fname, lsfile);
-        return(-1);
+        ls_syslog(LOG_ERR, "\
+%s: Can't open configuration file %s: %m", __func__, lsfile);
+        return -1;
     }
 
     for (;;) {
+
         if ((cp = getBeginLine(fp, &LineNum)) == NULL) {
-            FCLOSEUP(&fp);
+            /* No more Begin sections
+             */
+            fclose(fp);
+
             if (! modelok) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5201,
-                                                 "%s: HostModel section missing or invalid in %s"), /* catgets 5201 */
-                          fname, lsfile);
+                ls_syslog(LOG_ERR, "\
+%s: HostModel section missing or invalid in %s.", __func__, lsfile);
             }
             if (!resok) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5202,
-                                                 "%s: Warning: Resource section missing or invalid in %s"), /* catgets 5202 */
-                          fname, lsfile);
+                ls_syslog(LOG_ERR, "\
+%s: Resource section missing or invalid in %s.", __func__, lsfile);
             }
             if (!typeok) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5203,
-                                                 "%s: HostType section missing or invalid"), /* catgets 5203 */
-                          lsfile);
+                ls_syslog(LOG_ERR, "\
+%s: HostType section missing or invalid in %s.", __func__, lsfile);
             }
             if (!indxok) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5204,
-                                                 "%s: Warning: attempt to define too many new indices"), /* catgets 5204 */
-                          lsfile);
+                ls_syslog(LOG_ERR, "\
+%s: Attempt to define too many new indices.", __func__, lsfile);
             }
             if (!clsok) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5205,
-                                                 "%s: Cluster section missing or invalid"), /* catgets 5205 */
-                          lsfile);
+                ls_syslog(LOG_ERR, "\
+%s: Cluster section missing or invalid in %s.", __func__, lsfile);
             }
+
             if (modelok && resok && clsok && typeok)
-                return(0);
-            else
-                return(-1);
+                return 0;
+            /* crap out
+             */
+            return -1;
         }
-
-
+        /* Get the string after Begin, e.g. Begin Hosttype
+         */
         word = getNextWord_(&cp);
         if (!word) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5206,
-                                             "%s: %s(%d): Section name expected after Begin; ignoring section"), /* catgets 5206 */
-                      fname, lsfile, LineNum);
+            ls_syslog(LOG_ERR, "\
+%s: %s(%d): Section name expected after Begin; ignoring section.",
+                      __func__, lsfile, LineNum);
             lim_CheckError = WARNING_ERR;
             doSkipSection(fp, &LineNum, lsfile, "unknown");
             continue;
-        } else {
-            if (strcasecmp(word, "host") == 0) {
-                ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd, NL_SETN, 5380, "%s: %s(%d): section %s no longer needed in this version, ignored")), /* catgets 5380 */ "readShared", lsfile, LineNum, word);
-                continue;
-            }
-
-            if (strcasecmp(word, "hosttype") == 0) {
-                if (dotypelist(fp, &LineNum, lsfile))
-                    typeok = TRUE;
-                continue;
-            }
-
-            if (strcasecmp(word, "hostmodel") == 0) {
-                if (dohostmodel(fp, &LineNum, lsfile))
-                    modelok = TRUE;
-                continue;
-            }
-
-            if (strcasecmp(word, "resource") == 0) {
-                if (doresources(fp, &LineNum, lsfile))
-                    resok = TRUE;
-                continue;
-            }
-
-            if (strcasecmp(word, "cluster") == 0)  {
-                if (doclist(fp, &LineNum, lsfile))
-                    clsok = TRUE;
-                continue;
-            }
-
-            if (strcasecmp(word, "newindex") == 0) {
-                if (! doindex(fp, &LineNum, lsfile))
-                    indxok = FALSE;
-                continue;
-            }
-
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5207,
-                                             "%s: %s(%d): Invalid section name %s; ignoring section"), /* catgets 5207 */
-                      fname, lsfile, LineNum, word);
-            lim_CheckError = WARNING_ERR;
-            doSkipSection(fp, &LineNum, lsfile, word);
         }
-    }
 
+        if (strcasecmp(word, "hosttype") == 0) {
+            if (dotypelist(fp, &LineNum, lsfile))
+                typeok = TRUE;
+            continue;
+        }
+
+        if (strcasecmp(word, "hostmodel") == 0) {
+            if (dohostmodel(fp, &LineNum, lsfile))
+                modelok = TRUE;
+            continue;
+        }
+
+        if (strcasecmp(word, "resource") == 0) {
+            if (doresources(fp, &LineNum, lsfile))
+                resok = TRUE;
+            continue;
+        }
+
+        if (strcasecmp(word, "cluster") == 0)  {
+            if (doclist(fp, &LineNum, lsfile))
+                clsok = TRUE;
+            continue;
+        }
+
+        if (strcasecmp(word, "newindex") == 0) {
+            if (! doindex(fp, &LineNum, lsfile))
+                indxok = FALSE;
+            continue;
+        }
+
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): Invalid section name %s; ignoring section.",
+                  __func__, lsfile, LineNum, word);
+        lim_CheckError = WARNING_ERR;
+        doSkipSection(fp, &LineNum, lsfile, word);
+
+    } /* for(;;) */
 }
 
 static char
@@ -499,10 +498,12 @@ doclist(FILE *fp, int *LineNum, char *lsfile)
     return FALSE;
 }
 
+/* dotypelist()
+ * Process all hosttypes in the cluster.
+ */
 static char
 dotypelist(FILE *fp, int *LineNum, char *lsfile)
 {
-    static char fname[] = "dotypelist()";
     struct keymap keyList[] = {
         {"TYPENAME", NULL, 0},
         {NULL, NULL, 0}
@@ -511,7 +512,8 @@ dotypelist(FILE *fp, int *LineNum, char *lsfile)
 
     linep = getNextLineC_(fp, LineNum, TRUE);
     if (!linep) {
-        ls_syslog(LOG_ERR, I18N_PREMATURE_EOF, fname, lsfile, *LineNum,
+        ls_syslog(LOG_ERR,"\
+%s: %s(%d): Premature EOF in section %s.", __func__, lsfile, *LineNum,
                   "HostType");
         return FALSE;
     }
@@ -519,77 +521,78 @@ dotypelist(FILE *fp, int *LineNum, char *lsfile)
     if (isSectionEnd(linep, lsfile, LineNum, "HostType"))
         return FALSE;
 
-    if (allInfo.nTypes <= 0) {
-        allInfo.nTypes = 2;
-    }
-
-    if (shortInfo.nTypes <= 0) {
-        shortInfo.nTypes = 2;
-    }
-
-    strcpy(allInfo.hostTypes[0], "UNKNOWN_AUTO_DETECT");
-    shortInfo.hostTypes[0] = allInfo.hostTypes[0];
-    strcpy(allInfo.hostTypes[1], "DEFAULT");
-    shortInfo.hostTypes[1] = allInfo.hostTypes[1];
-
     if (strchr(linep, '=') == NULL) {
+
         if (! keyMatch(keyList, linep, TRUE)) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5230,
-                                             "%s: %s(%d): keyword line format error for section HostType, ignoring section"), fname, lsfile, *LineNum); /* catgets 5230 */
+            /* See if we find all sections we need.
+             */
+            ls_syslog(LOG_ERR, "\
+%s: %s(%d): keyword line format error for section HostType, ignoring section.", __func__, lsfile, *LineNum);
             doSkipSection(fp, LineNum, lsfile, "HostType");
             return FALSE;
         }
 
         while ((linep = getNextLineC_(fp, LineNum, TRUE)) != NULL) {
+
             if (isSectionEnd(linep, lsfile, LineNum, "HostType"))
-            {
                 return TRUE;
-            }
+
             if (mapValues(keyList, linep) < 0) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5231,
-                                                 "%s: %s(%d): values do not match keys for section cluster, ignoring line"), fname, lsfile, *LineNum); /* catgets 5231 */
+
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): values do not match keys for section cluster, ignoring line.",
+                          __func__, lsfile, *LineNum);
                 lim_CheckError = WARNING_ERR;
                 continue;
             }
 
             if (strpbrk(keyList[0].val, ILLEGAL_CHARS) != NULL) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5232,
-                                                 "%s: %s(%d): illegal character (one of %s), ignoring type %s"), /* catgets 5232 */
-                          fname, lsfile, *LineNum, ILLEGAL_CHARS, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): illegal character (one of %s), ignoring type %s.",
+                          __func__, lsfile, *LineNum,
+                          ILLEGAL_CHARS, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 continue;
             }
+
             if (IS_DIGIT (keyList[0].val[0])) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5233,
-                                                 "%s: %s(%d): Type name <%s> begun with a digit is illegal; ignored"), /* catgets 5233 */
-                          fname, lsfile, *LineNum, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): Type name %s begun with a digit is illegal; ignored.",
+                          __func__, lsfile, *LineNum, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 continue;
             }
+            /* All validation done add this hosttype
+             * to the list of all cluster types.
+             */
             if (!addHostType(keyList[0].val))
                 lim_CheckError = WARNING_ERR;
 
             FREEUP(keyList[0].val);
         }
     } else {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5234,
-                                         "%s: %s(%d): horizontal HostType section not implemented yet, ignoring section"), fname, lsfile, *LineNum); /* catgets 5234 */
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): horizontal HostType section not implemented yet, ignoring section.", __func__, lsfile, *LineNum);
         doSkipSection(fp, LineNum, lsfile, "HostType");
         return FALSE;
     }
 
-    ls_syslog(LOG_ERR, I18N_PREMATURE_EOF, fname, lsfile, *LineNum,
-              "HostType");
+    ls_syslog(LOG_ERR, "\
+%s: %s(%d): Premature EOF in section HostType",
+              __func__, lsfile, *LineNum);
 
     return FALSE;
 }
 
+/* dohostmodel()
+ * Process the hostmodel section and load the information
+ * in the allInfo structure.
+ */
 static char
 dohostmodel(FILE *fp, int *LineNum, char *lsfile)
 {
-    static char fname[] = "dohostmodel()";
     static char first = TRUE;
     char  *linep;
     int new;
@@ -601,69 +604,56 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
         {"ARCHITECTURE", NULL, 0},
         {NULL, NULL, 0}
     };
-    char *sp, *word;
+    char *sp;
+    char *word;
 
     if (first) {
         int i;
-        for(i = 0; i < MAXMODELS; ++i) {
+        for(i = 0; i < MAXMODELS; i++) {
             allInfo.cpuFactor[i] = 1.0;
             allInfo.modelRefs[i] = 0;
         }
-
         h_initTab_(&hostModelTbl, 11);
         first = FALSE;
     }
 
     linep = getNextLineC_(fp, LineNum, TRUE);
     if (! linep) {
-        ls_syslog(LOG_ERR, I18N_PREMATURE_EOF, fname, lsfile, *LineNum,
-                  "hostmodel");
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): Premature EOF in section %s",
+                  __func__, lsfile, *LineNum, "hostmodel");
         return FALSE;
     }
 
     if (isSectionEnd(linep, lsfile, LineNum, "hostmodel"))
         return FALSE;
 
-    if (allInfo.nModels <= 0) {
-        memset(allInfo.modelRefs, 0, sizeof(int) * MAXMODELS);
-        allInfo.nModels = 2;
-    }
-    if (shortInfo.nModels <= 0) {
-        shortInfo.nModels = 2;
-    }
-
-    strcpy(allInfo.hostModels[0], "UNKNOWN_AUTO_DETECT");
-    strcpy(allInfo.hostArchs[0], "UNKNOWN_AUTO_DETECT");
-    allInfo.cpuFactor[0] = 1;
-    shortInfo.hostModels[0] = allInfo.hostModels[0];
-    strcpy(allInfo.hostModels[1], "DEFAULT");
-    strcpy(allInfo.hostArchs[1], "");
-    allInfo.cpuFactor[1] = 1;
-    shortInfo.hostModels[1] = allInfo.hostModels[1];
-
     if (strchr(linep, '=') == NULL) {
         if (! keyMatch(keyList, linep, FALSE)) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5237,
-                                             "%s: %s(%d): keyword line format error for section hostmodel, ignoring section"), fname, lsfile, *LineNum); /* catgets 5237 */
+            ls_syslog(LOG_ERR, "\
+%s: %s(%d): keyword line format error for section hostmodel, ignoring section", __func__, lsfile, *LineNum);
             doSkipSection(fp, LineNum, lsfile, "dohostmodel");
             return FALSE;
         }
 
         while ((linep = getNextLineC_(fp, LineNum, TRUE)) != NULL) {
+
             if (isSectionEnd(linep, lsfile, LineNum, "hostmodel")) {
                 return TRUE;
             }
+
             if (mapValues(keyList, linep) < 0) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5238,
-                                                 "%s: %s(%d): values do not match keys for section hostmodel, ignoring line"), fname, lsfile, *LineNum); /* catgets 5238 */
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): values do not match keys for section hostmodel, ignoring line",
+                          __func__, lsfile, *LineNum);
                 lim_CheckError = WARNING_ERR;
                 continue;
             }
 
             if (! isanumber_(keyList[1].val) || atof(keyList[1].val) <= 0) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5239,
-                                                 "%s: %s(%d): Bad cpuFactor for host model %s, ignoring line"), /* catgets 5239 */
-                          fname, lsfile, *LineNum, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): Bad cpuFactor for host model %s, ignoring line",
+                          __func__, lsfile, *LineNum, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -672,9 +662,10 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             }
 
             if (strpbrk(keyList[0].val, ILLEGAL_CHARS) != NULL) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5240,
-                                                 "%s: %s(%d): illegal character (one of %s), ignoring model %s"), /* catgets 5240 */
-                          fname, lsfile, *LineNum, ILLEGAL_CHARS, keyList[0].val);
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): illegal character (one of %s), ignoring model %s",
+                          __func__, lsfile, *LineNum,
+                          ILLEGAL_CHARS, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -682,8 +673,9 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
                 continue;
             }
             if (IS_DIGIT (keyList[0].val[0])) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5241,
-                                                 "%s: %s(%d): Model name <%s> begun with a digit is illegal; ignored"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5241 */
+                ls_syslog(LOG_ERR, "\
+%s: %s(%d): Model name <%s> begun with a digit is illegal; ignored",
+                          __func__, lsfile, *LineNum, keyList[0].val);
                 lim_CheckError = WARNING_ERR;
                 FREEUP(keyList[0].val);
                 FREEUP(keyList[1].val);
@@ -694,11 +686,13 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             sp = keyList[2].val;
             if (sp && sp[0]) {
                 while ((word = getNextWord_(&sp)) != NULL) {
+
                     if (!addHostModel(keyList[0].val, word,
                                       atof(keyList[1].val))) {
-                        ls_syslog(LOG_ERR,
-                                  _i18n_msg_get(ls_catd , NL_SETN, 5242,
-                                                "%s: %s(%d): Too many host models, ignoring model %s"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5242 */
+                        ls_syslog(LOG_ERR, "\
+%s: %s(%d): Too many host models, ignoring model %s",
+                                  __func__, lsfile,
+                                  *LineNum, keyList[0].val);
                         lim_CheckError = WARNING_ERR;
                         goto next_value;
                     }
@@ -706,21 +700,20 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             } else {
                 if (!addHostModel(keyList[0].val, NULL,
                                   atof(keyList[1].val))) {
-                    ls_syslog(LOG_ERR,
-                              _i18n_msg_get(ls_catd , NL_SETN, 5242,
-                                            "%s: %s(%d): Too many host models, ignoring model %s"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5242 */
+                    ls_syslog(LOG_ERR, "\
+%s: %s(%d): Too many host models, ignoring model %s", __func__,
+                              lsfile, *LineNum, keyList[0].val);
                     lim_CheckError = WARNING_ERR;
                     goto next_value;
                 }
-
             }
 
             hashEntPtr = h_addEnt_(&hostModelTbl, keyList[0].val, &new);
             if (new) {
                 floatp  = malloc(sizeof(float));
                 if (floatp == NULL) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,
-                              fname, "malloc", sizeof(float));
+                    ls_syslog(LOG_ERR, "\
+%s: malloc() %d failed: %m.", __func__, sizeof(float));
                     doSkipSection(fp, LineNum, lsfile, "HostModel");
                     return FALSE;
                 }
@@ -738,17 +731,20 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
             FREEUP(keyList[2].val);
         }
     } else {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5244,
-                                         "%s: %s(%d): horizontal HostModel section not implemented yet, ignoring section"),  fname, lsfile, *LineNum); /* catgets 5244 */
+        ls_syslog(LOG_ERR, "\
+%s: %s(%d): horizontal HostModel section not implemented yet, ignoring section",  __func__, lsfile, *LineNum);
         doSkipSection(fp, LineNum, lsfile, "HostModel");
         return FALSE;
     }
 
-    ls_syslog(LOG_ERR, I18N_PREMATURE_EOF,
-              fname, lsfile, *LineNum, "HostModel");
+    ls_syslog(LOG_ERR, "\
+%s: %s(%d): Premature EOF in section %s", __func__,
+              lsfile, *LineNum, "HostModel");
     return FALSE;
 }
-
+/* initResTable()
+ * Initialize the table of all resources.
+ */
 static void
 initResTable(void)
 {
@@ -1002,7 +998,7 @@ doresources(FILE *fp, int *LineNum, char *lsfile)
                               *LineNum,
                               keyList[RKEY_INCREASING].val,
                               keyList[RKEY_RESOURCENAME].val,
-                              (allInfo.resTable[allInfo.nRes].orderType == LS_BOOLEAN)?"BOOLEAN":"STRING");
+                              (allInfo.resTable[allInfo.nRes].orderType == LS_BOOLEAN) ? "BOOLEAN":"STRING");
             } else {
                 if (allInfo.resTable[allInfo.nRes].valueType
                     == LS_NUMERIC) {
@@ -1830,7 +1826,7 @@ readCluster2(struct clusterNode *clPtr)
     for (;;) {
         cp = getBeginLine(clfp, &LineNum);
         if (!cp) {
-            FCLOSEUP(&clfp);
+            fclose(clfp);
             if (clPtr->hostList) {
                 if (Error)
                     return -1;
@@ -2594,7 +2590,7 @@ setMyClusterName: local host %s belongs to cluster %s", hname, cluster);
         }
     }
 
-    FCLOSEUP(&fp);
+    fclose(fp);
 
 endfile:
 
@@ -2864,11 +2860,11 @@ typeNameToNo(const char *typeName)
 {
     int i;
 
-    for (i=0; i < allInfo.nTypes; i++) {
+    for (i = 0; i < allInfo.nTypes; i++) {
         if (strcmp(allInfo.hostTypes[i], typeName) == 0)
-            return(i);
+            return i;
     }
-    return(-1);
+    return -1;
 }
 
 int
@@ -2928,6 +2924,9 @@ int modelNameToNo(char *modelName)
     return -1;
 }
 
+/* addHost_()
+ * Add a migrant host in the system.
+ */
 static struct hostNode *
 addHost_(struct clusterNode *clPtr,
          struct hostEntry *hEntPtr,
@@ -2939,7 +2938,6 @@ addHost_(struct clusterNode *clPtr,
     struct hostent *hp;
     char *word;
     int i;
-    int resNo;
 
     if ((hp = Gethostbyname_(hEntPtr->hostName)) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -3001,7 +2999,11 @@ addHost_(struct clusterNode *clPtr,
     }
 
     if (!hEntPtr->hostModel[0]) {
-        hPtr->hModelNo = DETECTMODELTYPE;
+        /* By default migrant host gets the first
+         * model configured in the shared file if not
+         * specified otherwise.
+         */
+        hPtr->hModelNo = 0;
     } else if ((hPtr->hModelNo = modelNameToNo(hEntPtr->hostModel)) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: %s(%d): Unknown host model %s. Ignoring host",
@@ -3011,7 +3013,11 @@ addHost_(struct clusterNode *clPtr,
     }
 
     if (!hEntPtr->hostType[0]) {
-        hPtr->hTypeNo = DETECTMODELTYPE;
+        /* The migrant host gets the first host type
+         * configured in the shared file if not specified
+         * otherwise at the command line.
+         */
+        hPtr->hTypeNo = 0;
     } else if ((hPtr->hTypeNo = typeNameToNo(hEntPtr->hostType)) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: %s(%d): Unknown host type %s. Ignoring host",
@@ -3078,136 +3084,10 @@ addHost_(struct clusterNode *clPtr,
         hPtr->hostInactivityCount = -1;
     }
 
-    if (hEntPtr->rcv)
-        for (resNo = 0; resNo < allInfo.nRes; resNo++) {
-            int isSet;
-            int j;
-            char *value;
-            char *name;;
-
-            TEST_BIT(resNo, hPtr->resBitMaps, isSet);
-            if (isSet == 0)
-                continue;
-
-            name = shortInfo.resName[resNo];
-            j = resNameDefined (shortInfo.resName[resNo]);
-            if (allInfo.resTable[j].valueType == LS_BOOLEAN)
-                value = "1";
-            else
-                value = "";
-        }
-
     numofhosts++;
 
     return hPtr;
 }
-
-struct hostNode *
-addFloatClientHost(struct hostent *hp)
-{
-    struct hostNode *hPtr, *lastHPtr;
-    int i;
-
-    if (hp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: Invalid hostAddr. Ignoring host", __func__);
-        return NULL;
-    }
-
-    if (findHostInCluster(hp->h_name)) {
-        ls_syslog(LOG_ERR, "%\
-s: %s already defined in this cluster",
-                  __func__, hp->h_name);
-        return NULL;
-    }
-
-    hPtr = initHostNode();
-    if (hPtr == NULL) {
-        return NULL;
-    }
-
-    hPtr->hTypeNo = DETECTMODELTYPE;
-    hPtr->hModelNo = DETECTMODELTYPE;
-    hPtr->hostName = putstr_(hp->h_name);
-    hPtr->hostNo = -1;
-
-    for (hPtr->naddr = 0;
-         hp->h_addr_list && hp->h_addr_list[hPtr->naddr] != NULL;
-         hPtr->naddr++);
-
-    if (hPtr->naddr){
-        hPtr->addr = malloc(hPtr->naddr * sizeof(u_int));
-    } else
-        hPtr->addr = 0;
-
-    for (i = 0; i < hPtr->naddr; i++)
-        memcpy((char *)&hPtr->addr[i], hp->h_addr_list[i], hp->h_length);
-
-    for (i = 0; i < 8; i++)
-        hPtr->week[i] = NULL;
-
-    hPtr->windows = putstr_("-");
-    hPtr->wind_edge = 0;
-
-    if (myClusterPtr->clientList == NULL) {
-
-        myClusterPtr->clientList = hPtr;
-        hPtr->nextPtr = NULL;
-    } else {
-
-        for (lastHPtr = myClusterPtr->clientList; lastHPtr->nextPtr != NULL;
-             lastHPtr = lastHPtr->nextPtr);
-        lastHPtr->nextPtr = hPtr;
-        hPtr->nextPtr = NULL;
-    }
-
-    hPtr->hostInactivityCount = -1;
-    numofhosts++;
-
-    return hPtr;
-}
-
-int
-removeFloatClientHost(struct hostNode *hPtr)
-{
-    static char fname[] = "removeFloatClientHost()";
-    struct hostNode *tempPtr = NULL;
-
-    if (logclass & LC_TRACE) {
-        ls_syslog(LOG_DEBUG, "%s Entering ... ", fname);
-    }
-
-    if (hPtr == NULL) {
-        ls_syslog(LOG_ERR, I18N(5408,
-                                "%s: hostNode is invalid"), /* catgets 5408 */
-                  fname);
-        return (-1);
-    }
-
-    if (myClusterPtr->clientList == hPtr) {
-
-        myClusterPtr->clientList = hPtr->nextPtr;
-    } else {
-
-        for (tempPtr = myClusterPtr->clientList;
-             tempPtr && tempPtr->nextPtr != hPtr; tempPtr = tempPtr->nextPtr);
-        if (tempPtr == NULL) {
-            ls_syslog(LOG_ERR, I18N(5409,
-                                    "%s: host <%s> not found in client list"), /* catgets 5409 */
-                      fname,  hPtr->hostName);
-            return(-1);
-        }
-        tempPtr->nextPtr = hPtr->nextPtr;
-    }
-    hPtr->nextPtr = NULL;
-
-
-    numofhosts--;
-    freeHostNodes(hPtr, FALSE);
-
-    return(0);
-}
-
 
 struct hostNode *
 initHostNode(void)
@@ -3620,82 +3500,68 @@ addHostList (struct resourceInstance *resourceInstance, int nHosts, char **hostN
 
 }
 static struct resourceInstance *
-addInstance (struct sharedResource *sharedResource,  int nHosts, char **hostNames, char *value)
+addInstance(struct sharedResource *sharedResource,
+            int nHosts,
+            char **hostNames,
+            char *value)
 {
-
-    static char fname[] = "addInstance()";
-    int i, resNo;
-    struct resourceInstance **insPtr, *temp;
+    int i;
+    struct resourceInstance **insPtr;
+    struct resourceInstance *temp;
     struct hostNode *hPtr;
 
     if (nHosts <= 0 || hostNames == NULL)
-        return (NULL);
+        return NULL;
 
-    if ((temp = initInstance()) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (NULL);
+    if ((temp = calloc(1, sizeof(struct resourceInstance)))== NULL) {
+        ls_syslog(LOG_ERR, "%s: initInstance() failed %m.", __func__);
+        return NULL;
     }
-    if ((temp->hosts = (struct hostNode **) malloc (nHosts * sizeof (struct hostNode *))) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (NULL);
+
+    if ((temp->hosts = calloc(nHosts, sizeof(struct hostNode *))) == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: calloc() %d bytes failed: %m.", __func__, nHosts * sizeof(struct hostNode));
+        return NULL;
     }
+
     temp->resName = sharedResource->resourceName;
-    resNo = validResource(temp->resName);
     for (i = 0; i < nHosts; i++) {
+
         if (hostNames[i] == NULL)
             continue;
 
         if ((hPtr = findHostbyList(myClusterPtr->hostList, hostNames[i])) == NULL) {
-            ls_syslog (LOG_DEBUG3, "addInstance: Host <%s> is not used by cluster <%s> as server;ignoring", hostNames[i], myClusterName);
+            ls_syslog (LOG_DEBUG, "\
+%s: Host %s is not used by cluster %s as server.",
+                       __func__, hostNames[i], myClusterName);
             continue;
         }
         temp->hosts[temp->nHosts] = hPtr;
         temp->nHosts++;
     }
+
     if (value[0] == '\0')
         strcpy (value, "-");
+
     if ((temp->value = putstr_(value)) == NULL
         || (temp->orignalValue = putstr_(value)) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
+        ls_syslog(LOG_ERR, "%s: strdup() failed: %m.", __func__);
         freeInstance (temp);
-        return (NULL);
+        return NULL;
     }
-    if ((insPtr = (struct resourceInstance **) myrealloc (sharedResource->instances,
-                                                          (sharedResource->numInstances + 1) * sizeof (char *))) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "myrealloc");
+
+    if ((insPtr = realloc(sharedResource->instances,
+                          (sharedResource->numInstances + 1) * sizeof(char *))) == NULL) {
+
+        ls_syslog(LOG_ERR, "%s: realloc() failed: %m.", __func__);
         freeInstance (temp);
-        return (NULL);
+        return NULL;
     }
     sharedResource->instances = insPtr;
     sharedResource->instances[sharedResource->numInstances] = temp;
     sharedResource->numInstances++;
 
-    return (temp);
-}
-
-
-static struct resourceInstance *
-initInstance (void)
-{
-
-    static char fname[] = "initInstance()";
-    struct resourceInstance *temp;
-
-    if ((temp = (struct resourceInstance *)
-         malloc (sizeof (struct resourceInstance))) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (NULL);
-    }
-    temp->nHosts = 0;
-    temp->resName = NULL;
-    temp->hosts = NULL;
-    temp->orignalValue = NULL;
-    temp->value = NULL;
-    temp->updateTime = 0;
-    temp->updHost = NULL;
-
-    return (temp);
-
+    return temp;
 }
 
 static void
@@ -3803,93 +3669,68 @@ validHostModel(const char *hModel)
 
 }
 
-
-static int cntofdefault=0;
 static char
 addHostType(char *type)
 {
-    static char fname[] = "addHostType()";
     int i;
 
     if (allInfo.nTypes == MAXTYPES) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5353,
-                                         "%s: Too many host types defined in section HostType. You can only define up to %d host types; host type %s ignored"),  /* catgets 5353 */
-                  fname, MAXTYPES, type);
+        ls_syslog(LOG_ERR, "\
+%s: Too many host types defined in section HostType. You can only define up to %d host types; host type %s ignored", __func__, MAXTYPES, type);
         return(FALSE);
     }
 
+    for (i = 0; i < allInfo.nTypes; i++) {
 
-    for (i=0;i<allInfo.nTypes;i++) {
         if (strcmp(allInfo.hostTypes[i], type) != 0)
             continue;
-        if (strcmp(type,"DEFAULT")==0)
-        {
-            cntofdefault++;
-            if (cntofdefault<=1) break;
-        }
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5354,
-                                         "%s: host type %s multiply defined"), /* catgets 5354 */
-                  fname, type);
-        return(FALSE);
+
+        ls_syslog(LOG_ERR, "\
+%s: host type %s multiply defined", __func__, type);
+        return FALSE;
     }
 
     strcpy(allInfo.hostTypes[allInfo.nTypes], type);
-    shortInfo.hostTypes[shortInfo.nTypes] =
-        allInfo.hostTypes[allInfo.nTypes];
+    shortInfo.hostTypes[shortInfo.nTypes]
+        = allInfo.hostTypes[allInfo.nTypes];
+
     allInfo.nTypes++;
     shortInfo.nTypes++;
-    return(TRUE);
 
+    return TRUE;
 }
 
 static char
 addHostModel(char *model, char *arch, float factor)
 {
-    static char fname[] = "addHostModel()";
     int i;
 
     if (allInfo.nModels == MAXMODELS) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5355,
-                                         "%s: Too many host models defined in section HostModel. You can only define up to %d host models; host model %s ignored"),  /* catgets 5355 */
-                  fname, MAXMODELS, model);
-        return(FALSE);
-    }
-
-    if (!strcmp(model,"DEFAULT"))
-    {
-        strcpy(allInfo.hostArchs[1], arch? arch: "");
-        allInfo.cpuFactor[1] = factor;
-        return(TRUE);
+        ls_syslog(LOG_ERR, "\
+%s: Too many host models defined in section HostModel. You can only define up to %d host models; host model %s ignored",
+                  __func__, MAXMODELS, model);
+        return FALSE;
     }
 
     for (i = 0; i < allInfo.nModels; ++i) {
 
-        if (!arch && strcmp(allInfo.hostModels[i], model) == 0) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5357,
-                                             "%s: host model %s multiply defined"), /* catgets 5357 */
-                      fname, model);
-            return(TRUE);
+        if (strcmp(allInfo.hostModels[i], model) == 0) {
+            ls_syslog(LOG_ERR, "\
+%s: host model %s multiply defined, ignored.", __func__, model);
+            return TRUE;
         }
-
-        if (!arch || strcmp(allInfo.hostArchs[i], arch) != 0)
-            continue;
-
-        ls_syslog(LOG_ERR, I18N(5479,
-                                "%s: host architecture %s defined multiple times"),/*catgets 5479*/
-                  fname, arch);
-
-        return(TRUE);
     }
 
     strcpy(allInfo.hostModels[allInfo.nModels], model);
-    strcpy(allInfo.hostArchs[allInfo.nModels], arch? arch: "");
+    strcpy(allInfo.hostArchs[allInfo.nModels], arch);
     allInfo.cpuFactor[allInfo.nModels] = factor;
-    shortInfo.hostModels[shortInfo.nModels] =
-        allInfo.hostModels[allInfo.nModels];
+    shortInfo.hostModels[shortInfo.nModels]
+        = allInfo.hostModels[allInfo.nModels];
+
     allInfo.nModels++;
     shortInfo.nModels++;
-    return(TRUE);
 
+    return TRUE;
 }
 
 static struct clusterNode *
@@ -3985,7 +3826,7 @@ findClusterServers(char *clName)
     for (;;) {
         cp = getBeginLine(clfp, &LineNum);
         if (!cp) {
-            FCLOSEUP(&clfp);
+            fclose(clfp);
             return(servers);
         }
         word = getNextWord_(&cp);
@@ -4001,7 +3842,7 @@ findClusterServers(char *clName)
 
             while ((linep = getNextLineC_(clfp, &LineNum, TRUE)) != NULL) {
                 if (isSectionEnd(linep, fileName, &LineNum, "host")) {
-                    FCLOSEUP(&clfp);
+                    fclose(clfp);
                     return(servers);
                 }
 
@@ -4019,7 +3860,7 @@ findClusterServers(char *clName)
                 if (nServers > MAXCANDHOSTS)
                     break;
             }
-            FCLOSEUP(&clfp);
+            fclose(clfp);
             return(servers);
         } else {
             doSkipSection(clfp, &LineNum, fileName, word);
@@ -4233,14 +4074,13 @@ reCheckClass(void)
 static int
 configCheckSum(char *file, u_short *checkSum)
 {
-    static char fname[] = "configCheckSum()";
     unsigned int sum;
     int i,linesum;
     FILE *fp;
     char *line;
 
     if ((fp = confOpen(file, "r")) == NULL) {
-        ls_syslog(LOG_ERR, I18N_CANNOT_OPEN, fname, file);
+        ls_syslog(LOG_ERR, "%s: open() failed %m", __func__);
         return -1;
     }
 
@@ -4270,7 +4110,7 @@ configCheckSum(char *file, u_short *checkSum)
             linesum = linesum >> 8;
         }
     }
-    FCLOSEUP(&fp);
+    fclose(fp);
     *checkSum = (u_short)sum;
 
     return 0;
@@ -4385,12 +4225,11 @@ confOpen(char *filename, char *type)
         fp = fopen(filename, type);
         if (fp != NULL)
             break;
-        if (errno == ENOENT && max >0) {
+        if (errno == ENOENT && max > 0) {
             int sleeptime;
             sleeptime = interval * mykey() * 1000;
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5369,
-                                             "%s: %m Still trying ..."),  /* catgets 5369 */
-                      filename);
+            ls_syslog(LOG_ERR, "\
+%s: %m still trying ...", filename);
             millisleep_(sleeptime);
             max--;
             continue;
@@ -4657,58 +4496,6 @@ getExtResourcesVal(char *resName)
     return(getExtResourcesValDefault(resName));
 }
 
-int
-initTypeModel(struct hostNode *me)
-{
-    static char fname[] = "initTypeModel";
-
-    if (me->hTypeNo == DETECTMODELTYPE) {
-        me->hTypeNo = typeNameToNo(getHostType());
-        if (me->hTypeNo < 0) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 5456,
-                                             "%s: Unknown host type <%s>, using <DEFAULT>"), /* catgets 5456 */
-                      fname, getHostType());
-            me->hTypeNo = 1;
-        }
-
-        myClusterPtr->typeClass |= ( 1 << me->hTypeNo);
-        SET_BIT(me->hTypeNo, myClusterPtr->hostTypeBitMaps);
-
-    }
-
-    strcpy(me->statInfo.hostType, allInfo.hostTypes[me->hTypeNo]);
-
-    if (me->hModelNo == DETECTMODELTYPE) {
-        const char* arch = getHostModel();
-
-        me->hModelNo = archNameToNo (arch);
-        if (me->hModelNo < 0) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 5458,
-                                             "%s: Unknown host architecture <%s>, using <DEFAULT>"), /* catgets 5458 */ fname, arch);
-            me->hModelNo = 1;
-        } else {
-            if (strcmp(allInfo.hostArchs[me->hModelNo], arch) != 0) {
-                if ( logclass & LC_EXEC )  {
-                    ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd, NL_SETN, 5457,
-                                                         "%s: Unknown host architecture <%s>, using best match <%s>, model <%s>"), /* catgets 5457 */
-                              fname, arch, allInfo.hostArchs[me->hModelNo],
-                              allInfo.hostModels[me->hModelNo]);
-                }
-            }
-
-        }
-
-        myClusterPtr->modelClass |= ( 1 << me->hModelNo);
-        SET_BIT(me->hModelNo, myClusterPtr->hostModelBitMaps);
-
-    }
-    strcpy(me->statInfo.hostArch, allInfo.hostArchs[me->hModelNo]);
-
-
-    ++allInfo.modelRefs[me->hModelNo];
-    return 0;
-}
-
 char *
 stripIllegalChars(char *str)
 {
@@ -4807,6 +4594,7 @@ addMigrantHost(XDR *xdrs,
         opCode = LIME_BAD_DATA;
         goto hosed;
     }
+    myClusterPtr->numHosts++;
 
     /* log the lim event HOST_ADD
      */
@@ -4877,6 +4665,8 @@ addHostByTab(hTab *tab)
 %s: failed adding runtime host %s", __func__, hPtr.hostName);
             continue;
         }
+        myClusterPtr->numHosts++;
+
         /* mark the node as migrant.
          */
         node->migrant = 1;
@@ -4940,6 +4730,7 @@ rmMigrantHost(XDR *xdrs,
     }
 
     rmHost(hPtr);
+    myClusterPtr->numHosts--;
 
     memset(&hEnt, 0, sizeof(struct hostEntry));
     strcpy(hEnt.hostName, hPtr->hostName);

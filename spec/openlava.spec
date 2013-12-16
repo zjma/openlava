@@ -17,7 +17,7 @@
 #
 
 %define major 2
-%define minor 0
+%define minor 2
 %define release 1
 
 %define version %{major}.%{minor}
@@ -33,8 +33,8 @@
 
 Summary: openlava Distributed Batch Scheduler
 Name: openlava
-Version: 2.0
-Release: 1
+Version: %{version}
+Release: %{release}
 License: GPLv2
 Group: Applications/Productivity
 Vendor: openlava foundation
@@ -138,6 +138,8 @@ install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsmon      $RPM_BUI
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsplace    $RPM_BUILD_ROOT%{_openlavatop}/bin
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsrcp      $RPM_BUILD_ROOT%{_openlavatop}/bin
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsrun      $RPM_BUILD_ROOT%{_openlavatop}/bin
+install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsaddhost  $RPM_BUILD_ROOT%{_openlavatop}/bin
+install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/lsf/lstools/lsrmhost   $RPM_BUILD_ROOT%{_openlavatop}/bin
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/scripts/mpich2-mpiexec $RPM_BUILD_ROOT%{_openlavatop}/bin
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/scripts/mpich-mpirun   $RPM_BUILD_ROOT%{_openlavatop}/bin
 install -m 755 $RPM_BUILD_DIR/%{name}-%{version}/scripts/openmpi-mpirun $RPM_BUILD_ROOT%{_openlavatop}/bin
@@ -341,6 +343,8 @@ exit 0
 %{_bindir}/lsplace
 %{_bindir}/lsrcp
 %{_bindir}/lsrun
+%{_bindir}/lsaddhost
+%{_bindir}/lsrmhost
 
 # Man pages
 %{_mandir}/man1/bbot.1

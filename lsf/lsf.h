@@ -43,6 +43,7 @@
 #include <limits.h>
 #include <sys/param.h>
 #include <sys/time.h>
+#include <sys/statvfs.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
@@ -63,7 +64,6 @@ typedef long long int LS_LONG_INT;
 typedef unsigned long long LS_UNS_LONG_INT;
 
 #define LS_LONG_FORMAT ("%lld")
-#define _OPENLAVA_PROJECT_ "openlava project 2.0"
 
 /* This is our identifier printed out by all daemons
  * and commands.
@@ -74,13 +74,9 @@ typedef unsigned long long LS_UNS_LONG_INT;
 #define _LS_VERSION_ (_OPENLAVA_PROJECT_", " __DATE__"\n")
 #endif
 
-/* This is our current version.
- */
-#define OPENLAVA_VERSION   20
-
 #define LSF_DEFAULT_SOCKS       15
 #define MAXLINELEN              512
-#define MAXLSFNAMELEN           40
+#define MAXLSFNAMELEN           128
 #define MAXSRES                 32
 #define MAXRESDESLEN            256
 #define NBUILTINDEX             11
@@ -515,6 +511,11 @@ struct clusterConf {
     LS_SHARED_RESOURCE_INFO_T *shareRes;
 };
 
+/* Maximum number of processes reported by PIM
+ * and read by the PIM library.
+ */
+#define MAX_PROC_ENT (2 * 1024)
+
 struct pidInfo {
     int pid;
     int ppid;
@@ -759,7 +760,11 @@ typedef void (*SIGFUNCTYPE)(int);
 #define MSGSIZE   8192
 #endif
 
+#ifdef __CYGWIN__
+#define NICE_LEAST -19
+#else
 #define NICE_LEAST -40
+#endif
 #define NICE_MIDDLE 20
 
 #ifndef WCOREDUMP
@@ -948,5 +953,12 @@ struct extResInfo {
     char *increasing;
     char *des;
 };
+
+#ifndef __CYGWIN__
+extern int optind;
+extern char *optarg;
+extern int  opterr;
+extern int  optopt;
+#endif
 
 #endif /* _lsf_h_ */

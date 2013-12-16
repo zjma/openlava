@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2011 David Bigagli
- *
- * $Id: lim.h 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,6 +44,14 @@
 #define MIN_FLOAT16  2.328306E-10
 #define LIM_EVENT_MAXSIZE  (1024 * 1024)
 
+/* Exponential smooth intervals.
+ */
+#define  EXP3   0.716531311
+#define  EXP4   0.77880078
+#define  EXP6   0.846481725
+#define  EXP12  0.920044415
+#define  EXP180 0.994459848
+
 #ifndef MIN
 #define MIN(x,y)        ((x) < (y) ? (x) : (y))
 #endif
@@ -88,7 +94,7 @@ struct hostNode {
     short   hTypeNo;
     short   hostNo;
     u_short naddr;
-    in_addr_t   *addr;
+    in_addr_t *addr;
     struct  statInfo statInfo;
     char    infoValid;
     unsigned char protoVersion;
@@ -222,8 +228,6 @@ struct loadVectorStruct {
     struct resPair *resPairs;
 };
 
-#define DETECTMODELTYPE 0
-
 #define MAX_SRES_INDEX	2
 
 struct masterReg {
@@ -288,7 +292,7 @@ struct minSLimConfData {
 extern struct sharedResourceInstance *sharedResourceHead ;
 
 #define  BYTE(byte)  (((int)byte)&0xff)
-#define THRLDOK(inc,a,thrld)    (inc ? a <= thrld : a >= thrld)
+#define THRLDOK(inc, a, thrld)    (inc ? a <= thrld : a >= thrld)
 
 extern int getpagesize(void);
 
@@ -368,7 +372,6 @@ extern struct lsInfo allInfo;
 extern struct shortLsInfo shortInfo;
 extern int clientHosts[];
 extern struct floatClientInfo floatClientPool;
-extern int ncpus;
 extern struct clientNode  *clientMap[];
 
 extern pid_t elim_pid;
@@ -386,8 +389,6 @@ extern int isMasterCandidate;
 extern int limConfReady;
 extern int kernelPerm;
 
-
-
 extern int readShared(void);
 extern int readCluster(int);
 extern void reCheckRes(void);
@@ -403,24 +404,14 @@ extern int validLoadIndex(const  char *);
 extern int validHostType(const char *);
 extern int validHostModel(const char *);
 extern char *stripIllegalChars(char *);
-extern int initTypeModel(struct hostNode *);
-extern char *getHostType(void);
-extern struct hostNode *addFloatClientHost(struct hostent *);
-extern int removeFloatClientHost(struct hostNode *);
-extern void slaveOnlyInit(int checkMode, int *kernelPerm);
-extern int slaveOnlyPreConf();
-extern int slaveOnlyPostConf(int checkMode, int *kernelPerm);
 extern int typeNameToNo(const char *);
 extern int archNameToNo(const char *);
-
-
 extern void reconfigReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void shutdownReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void limDebugReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void lockReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern int limPortOk(struct sockaddr_in *);
 extern void servAvailReq(XDR *, struct hostNode *, struct sockaddr_in *, struct LSFHeader *);
-
 extern void pingReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void clusNameReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void masterInfoReq(XDR *, struct sockaddr_in *, struct LSFHeader *);
@@ -446,22 +437,34 @@ extern int validateHost(char *, int);
 extern int validateHostbyAddr(struct sockaddr_in *, int);
 extern void checkAfterHourWindow();
 
+/* Load collection function. The details are implemented
+ * in each system module, lim.linux.c or lim.solaris.c
+ * here we define the interfaces to the system modules.
+ */
+extern int numCPUs(void);
+extern int queuelength(float *, float *, float *);
+extern float cputime(void);
+extern unsigned long long int freemem(void);
+extern unsigned long long int freetmp(void);
+extern unsigned long long int freeswap(void);
+extern float paging(void);
+extern float iorate(void);
+
+/* Load exchanging routines.
+ */
 extern void sendLoad(void);
 extern void rcvLoad(XDR *, struct sockaddr_in *, struct LSFHeader *);
 extern void copyIndices(float *, int , int, struct hostNode *);
-extern float normalizeRq(float rawql, float cpuFactor, int nprocs);
-extern struct resPair * getResPairs (struct hostNode *);
+extern float normalizeRq(float, float, int);
+extern struct resPair *getResPairs(struct hostNode *);
 extern void satIndex(void);
 extern void loadIndex(void);
-extern void initReadLoad(int, int *);
+extern void initReadLoad(int);
 extern void initConfInfo(void);
 extern void readLoad(int);
-extern const char* getHostModel(void);
+extern char *getHostModel(void);
 
-extern void getLastActiveTime(void);
-extern void putLastActiveTime(void);
-
-extern void lim_Exit(const char *fname);
+extern void lim_Exit(const char *);
 extern int equivHostAddr(struct hostNode *, u_int);
 extern struct hostNode *findHost(char *);
 extern struct hostNode *findHostbyAddr(struct sockaddr_in *,
@@ -516,5 +519,5 @@ extern int logLIMDown(void);
 extern int logAddHost(struct hostEntry *);
 extern int logRmHost(struct hostEntry *);
 extern int addHostByTab(hTab *);
-
+extern int lim_system(const char *);
 #endif

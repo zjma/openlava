@@ -1,4 +1,5 @@
-/* $Id: mbd.serv.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2011-2013 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -447,8 +448,8 @@ packJobInfo(struct jData * jobData,
     job_reasonTb = jobData->reasonTb;
 
     if (reasonTb == NULL) {
-        reasonTb = my_calloc(numofhosts() + 1, sizeof(int), fname);
-        jReasonTb = my_calloc(numofhosts() + 1, sizeof(int), fname);
+        reasonTb = my_calloc(numofhosts(), sizeof(int), fname);
+        jReasonTb = my_calloc(numofhosts(), sizeof(int), fname);
     }
 
     jobInfoReply.jobId = jobData->jobId;
@@ -462,6 +463,7 @@ packJobInfo(struct jData * jobData,
         jobInfoReply.status = JOB_STAT_UNKWN;
     else
         jobInfoReply.status = jobData->jStatus;
+
     jobInfoReply.status &= MASK_INT_JOB_STAT;
 
     if (IS_SUSP (jobData->jStatus))
@@ -472,9 +474,13 @@ packJobInfo(struct jData * jobData,
     jobInfoReply.reasonTb = reasonTb;
 
     if (logclass & LC_PEND)
-        ls_syslog(LOG_DEBUG3, "%s: job=%s, rs=%d, nrs=%d srs=%d, qNrs=%d, jNrs=%d nLsb=%d nQU=%d mStage=%d", fname, lsb_jobid2str(jobData->jobId), jobData->oldReason, jobData->newReason, jobData->subreasons, jobData->qPtr->numReasons, job_numReasons, numLsbUsable, jobData->qPtr->numUsable, mSchedStage);
+        ls_syslog(LOG_DEBUG, "\
+%s: job=%s, rs=%d, nrs=%d srs=%d, qNrs=%d, jNrs=%d nLsb=%d nQU=%d mStage=%d", __func__,
+				  lsb_jobid2str(jobData->jobId), jobData->oldReason, jobData->newReason,
+				  jobData->subreasons, jobData->qPtr->numReasons, job_numReasons, numLsbUsable,
+				  jobData->qPtr->numUsable, mSchedStage);
 
-
+	jobInfoReply.numReasons = 0;
     if (IS_PEND (jobData->jStatus) && !(options & NO_PEND_REASONS)) {
         int useNewRs = TRUE;
 
@@ -488,26 +494,15 @@ packJobInfo(struct jData * jobData,
 
         jobInfoReply.numReasons = 0;
         if (svReason) {
-
             jobInfoReply.reasonTb[jobInfoReply.numReasons++] = svReason;
         } else {
 
             pkHReasonTb = hReasonTb[0];
             pkQReasonTb = jobData->qPtr->reasonTb[0];
             pkUReasonTb = jobData->uPtr->reasonTb[0];
-            for (i = 0; i <= numofhosts(); i ++) {
-                if (i > 0 && jobData->numAskedPtr > 0
-                    && jobData->askedOthPrio < 0)
-                    jReasonTb[i] = PEND_HOST_USR_SPEC;
-                else
-                    jReasonTb[i] = 0;
-            }
 
-            for (i = 0; i < jobData->numAskedPtr; i++) {
-                k = jobData->askedPtr[i].hData->hostId;
-                jReasonTb[k] = 0;
-            }
             for (i = 0; i < job_numReasons; i++) {
+
                 if (job_reasonTb[i]) {
                     GET_HIGH(k, job_reasonTb[i]);
                     if (k > numofhosts()
@@ -516,84 +511,58 @@ packJobInfo(struct jData * jobData,
                     jReasonTb[k] = job_reasonTb[i];
                 }
             }
-            if (svReason == 0) {
-                if (logclass & LC_PEND)
-                    ls_syslog(LOG_DEBUG2, "%s: Get h/u/q reasons", fname);
-                k = 0;
 
-                /* traverse the list of hosts
-                 */
-                for (hPtr = (struct hData *)hostList->back;
-                     hPtr != (void *)hostList;
-                     hPtr = (struct hData *)hPtr->back) {
+			k = 0;
+			/* traverse the list of hosts
+			 */
+			for (hPtr = (struct hData *)hostList->back;
+				 hPtr != (void *)hostList;
+				 hPtr = (struct hData *)hPtr->back) {
 
-                    /* Use the same index to read the host
-                     * table we used to populate it.
-                     */
-                    i = hPtr->hostId;
-                    if (jReasonTb[i] == PEND_HOST_USR_SPEC)
-                        continue;
+				/* Use the same index to read the host
+				 * table we used to populate it.
+				 */
+				i = hPtr->hostId;
+				if (jReasonTb[i] == PEND_HOST_USR_SPEC)
+					continue;
 
-                    if (pkQReasonTb[i] == PEND_HOST_QUE_MEMB)
-                        continue;
+				if (pkQReasonTb[i] == PEND_HOST_QUE_MEMB)
+					continue;
 
-                    if (!isHostQMember(hPtr, jobData->qPtr))
-                        continue;
+				if (!isHostQMember(hPtr, jobData->qPtr))
+					continue;
 
-                    if (pkHReasonTb[i]) {
-                        jobInfoReply.reasonTb[k] = pkHReasonTb[i];
-                        PUT_HIGH(jobInfoReply.reasonTb[k], i);
-                        k++;
-                        if (debug && (logclass & LC_PEND))
-                            ls_syslog(LOG_DEBUG2, "%s: hReasonTb[%d]=%d",
-                                      fname, i, pkHReasonTb[i]);
-                        continue;
-                    }
-                    if (pkQReasonTb[i]) {
-                        jobInfoReply.reasonTb[k] = pkQReasonTb[i];
-                        PUT_HIGH(jobInfoReply.reasonTb[k], i);
-                        k++;
-                        if (debug && (logclass & LC_PEND))
-                            ls_syslog(LOG_DEBUG2, "%s: qReason[%d]=%d",
-                                      fname, i, pkQReasonTb[i]);
-                        continue;
-                    }
-                    if (pkUReasonTb[i]) {
-                        jobInfoReply.reasonTb[k] = pkUReasonTb[i];
-                        PUT_HIGH(jobInfoReply.reasonTb[k], i);
-                        k++;
-                        if (debug && (logclass & LC_PEND))
-                            ls_syslog(LOG_DEBUG2, "%s: uReason[%d]=%d",
-                                      fname, i, pkUReasonTb[i]);
-                        continue;
-                    }
-                    if (jReasonTb[i]) {
-                        jobInfoReply.reasonTb[k++] = jReasonTb[i];
-                        if (debug && (logclass & LC_PEND)) {
-                            int rs;
-                            GET_LOW(rs, jReasonTb[i]);
-                            ls_syslog(LOG_DEBUG2, "%s: jReason[%d]=%d",
-                                      fname, i, rs);
-                        }
-                        continue;
-                    }
+				if (pkHReasonTb[i]) {
+					jobInfoReply.reasonTb[k] = pkHReasonTb[i];
+					PUT_HIGH(jobInfoReply.reasonTb[k], i);
+					k++;
+					continue;
+				}
 
-                } /* for (hPtr = hostList->back; ...; ...) */
+				if (pkQReasonTb[i]) {
+					jobInfoReply.reasonTb[k] = pkQReasonTb[i];
+					PUT_HIGH(jobInfoReply.reasonTb[k], i);
+					k++;
+					continue;
+				}
 
-                if (jReasonTb[0] != 0) {
+				if (pkUReasonTb[i]) {
+					jobInfoReply.reasonTb[k] = pkUReasonTb[i];
+					PUT_HIGH(jobInfoReply.reasonTb[k], i);
+					k++;
+					continue;
+				}
 
-                    jobInfoReply.reasonTb[k++] = jReasonTb[0];
-                    if (debug && (logclass & LC_PEND)) {
-                        ls_syslog(LOG_DEBUG2, "%s: jReason[0]=%d",
-                                  fname, jReasonTb[0]);
-                    }
-                }
-            }
+				if (jReasonTb[i]) {
+					jobInfoReply.reasonTb[k++] = jReasonTb[i];
+					continue;
+				}
+
+			} /* for (hPtr = hostList->back; ...; ...) */
+
             jobInfoReply.numReasons = k;
         }
-    } else
-        jobInfoReply.numReasons = 0;
-
+    }
 
     if (jobData->numHostPtr > 0) {
         jobInfoReply.toHosts = my_calloc(jobData->numHostPtr,

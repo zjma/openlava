@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2013 David Bigagli
  *
  * $Id: bjobs.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
@@ -25,8 +25,6 @@
 #include "../lib/lsb.h"
 #include <netdb.h>
 #include <errno.h>
-#define NL_SETN 8
-
 
 #define ALL_PROJ_STR "all"
 
@@ -66,7 +64,7 @@ usage (char *cmd)
     fprintf(stderr, I18N_Usage);
 
     fprintf(stderr, \
-": %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r]", cmd);
+            ": %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r]", cmd);
 
     if (lsbMode_ == LSB_MODE_BATCH)
         fprintf(stderr, " [-A]\n");
@@ -117,8 +115,17 @@ main (int argc, char **argv)
         exit(-1);
     }
 
-
-    TIMEIT(0, do_options(argc, argv, &options, &user, &queue, &host, &jobName, &cpuFactor, &format, &projectName), "do_options");
+    TIMEIT(0, do_options(argc,
+                         argv,
+                         &options,
+                         &user,
+                         &queue,
+                         &host,
+                         &jobName,
+                         &cpuFactor,
+                         &format,
+                         &projectName),
+           "do_options");
 
     if ((format == LONG_FORMAT) && (options & PEND_JOB))
         options |= HOST_NAME;
@@ -184,8 +191,10 @@ main (int argc, char **argv)
 
         exit(-1);
     }
+
     options &= ~NO_PEND_REASONS;
     jobDisplayed = 0;
+
     for (i = 0; i < jInfoH->numJobs; i++) {
 
         TIMEIT(0, (job = lsb_readjobinfo(NULL)), "lsb_readjobinfo");
@@ -264,18 +273,24 @@ main (int argc, char **argv)
         exit(-1);
     }
     _i18n_end ( ls_catd );
-    return(0);
+    return 0;
 
 }
 
 static void
-do_options (int argc, char **argv, int *options, char **user, char **queue,
-            char **host, char **jobName, float *cpuFactor, int *format, char **projectName)
+do_options (int argc,
+            char **argv,
+            int *options,
+            char **user,
+            char **queue,
+            char **host,
+            char **jobName,
+            float *cpuFactor,
+            int *format,
+            char **projectName)
 {
-    extern char *optarg;
     int cc, Nflag = 0;
     char *norOp = NULL;
-
 
     *options = 0;
     *user = NULL;
@@ -458,15 +473,15 @@ displayJobs (struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
     if (first) {
         first = FALSE;
         if (job->jType == JGRP_NODE_ARRAY)
-            printf((_i18n_msg_get(ls_catd,NL_SETN,1459, "JOBID    ARRAY_SPEC  OWNER   NJOBS PEND DONE  RUN EXIT SSUSP USUSP PSUSP\n"))); /* catgets  1459  */
+            printf("JOBID    ARRAY_SPEC  OWNER   NJOBS PEND DONE  RUN EXIT SSUSP USUSP PSUSP\n");
         else if (options == PEND_JOB) {
-            printf((_i18n_msg_get(ls_catd,NL_SETN,1460, "JOBID   USER    STAT  QUEUE       FROM_HOST      JOB_NAME           SUBMIT_TIME\n"))); /* catgets  1460  */
+            printf("JOBID   USER    STAT  QUEUE       FROM_HOST      JOB_NAME           SUBMIT_TIME\n");
             exechostfmt = "  ";
         } else {
-            printf((_i18n_msg_get(ls_catd,NL_SETN,1461, "JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME"))); /* catgets  1461  */
+            printf("JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME");
 
             if (Wflag == TRUE) {
-                printf((_i18n_msg_get(ls_catd,NL_SETN,1462, "  PROJ_NAME CPU_USED MEM SWAP PIDS START_TIME FINISH_TIME"))); /* catgets  1462  */
+                printf("  PROJ_NAME CPU_USED MEM SWAP PIDS START_TIME FINISH_TIME");
             }
 
             printf("\n");
@@ -700,8 +715,7 @@ skip_job(struct jobInfoEnt *job)
 {
     int i;
 
-
-    for (i=0; i < numJids; i++) {
+    for (i = 0; i < numJids; i++) {
         if (job->jobId == usrJids[i] ||
             LSB_ARRAY_JOBID(job->jobId) == usrJids[i]) {
             numJobs[i]++;
@@ -726,23 +740,21 @@ isLSFAdmin(void)
 
     if ((mycluster = ls_getclustername()) == NULL) {
         if (logclass & (LC_TRACE))
-            ls_syslog(LOG_ERR,
-                      "%s: ls_getclustername(): %M", fname);
-        return (FALSE);
+            ls_syslog(LOG_ERR, "%s: ls_getclustername(): %M", fname);
+        return FALSE;
     }
 
     num = 0;
     if ((clusterInfo = ls_clusterinfo(NULL, &num, NULL, 0, 0)) == NULL) {
         if (logclass & (LC_TRACE))
-            ls_syslog(LOG_ERR,
-                      "%s: ls_clusterinfo(): %M", fname);
-        return (FALSE);
+            ls_syslog(LOG_ERR, "%s: ls_clusterinfo(): %M", fname);
+        return FALSE;
     }
 
 
     if (getLSFUser_(lsfUserName, MAXLINELEN) != 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
-        return (FALSE);
+        return FALSE;
     }
 
     for (i = 0; i < num; i++) {
@@ -755,7 +767,7 @@ isLSFAdmin(void)
         }
     }
 
-    return(FALSE);
+    return FALSE;
 
 }
 
@@ -776,7 +788,7 @@ Timer2String(float timer)
             Minute,
             Second,
             Point);
-    return(TimerStr);
+    return TimerStr;
 }
 
 static char *
@@ -796,5 +808,5 @@ Time2String(int timer)
             Time->tm_min,
             Time->tm_sec);
 
-    return(TimeStr);
+    return TimeStr;
 }
