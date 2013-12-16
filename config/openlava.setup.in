@@ -5,7 +5,7 @@
 #
 # exit if LSF_ENVDIR is not set
 #
-f [ -z "$LSF_ENVDIR" ]; then
+if [ -z "$LSF_ENVDIR" ]; then
     echo "LSF_ENVDIR is not set. Exiting..."
     exit 1
 fi
