@@ -30,12 +30,12 @@
 #include "res.h"
 #include "../lib/lproto.h"
 
-#define NL_SETN		29
+#define RES_SLEEP_TIME 60
 
 extern void child_channel_clear(struct child *, outputChannel *);
 extern char **environ;
 
-int	rexecPriority = 0;
+int rexecPriority = 0;
 
 struct client  *clients[MAXCLIENTS_HIGHWATER_MARK+1];
 int client_cnt;
@@ -177,8 +177,6 @@ main(int argc, char **argv)
         }
     }
 
-
-
     if ((ls_readconfenv(resConfParams, NULL) < 0) ||
         (initenv_(resParams, pathname) < 0) ) {
         if ((sp = getenv("LSF_LOGDIR")) != NULL)
@@ -193,7 +191,9 @@ main(int argc, char **argv)
 
     restart_argc = argc;
     restart_argv = argv;
-    for (i=1; i<argc; i++) {
+
+    for (i = 1; i < argc; i++) {
+
 	if (strcmp(argv[i], "-d") == 0 && argv[i+1] != NULL) {
 	    pathname = argv[i+1];
 	    i++;
@@ -338,8 +338,7 @@ main(int argc, char **argv)
 
     maxfd = FD_SETSIZE;
 
-    gettimeofday(&t0, NULL);
-    tv.tv_sec = 60;
+    tv.tv_sec = RES_SLEEP_TIME;
     tv.tv_usec = 0;
 
     for (;;) {
@@ -407,14 +406,14 @@ main(int argc, char **argv)
 	    continue;
 	}
 
+	gettimeofday(&t0, NULL);
 	nready = select(maxfd, &readmask, &writemask, &exceptmask, &tv);
 	gettimeofday(&t1, NULL);
 	if (t1.tv_sec - t0.tv_sec >= 60) {
 	    tv.tv_sec = 60;
 	    tv.tv_usec = 0;
-	    memcpy(&t0, &t1, sizeof(struct timeval));
 	} else {
-	    tv.tv_sec = 60 - time(NULL);
+	    tv.tv_sec = t1.tv_sec - t0.tv_sec;
 	    tv.tv_usec = 0;
 	}
 	selectError = errno;
