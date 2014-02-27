@@ -409,11 +409,14 @@ main(int argc, char **argv)
 	gettimeofday(&t0, NULL);
 	nready = select(maxfd, &readmask, &writemask, &exceptmask, &tv);
 	gettimeofday(&t1, NULL);
-	if (t1.tv_sec - t0.tv_sec >= 60) {
-	    tv.tv_sec = 60;
+	if (t1.tv_sec - t0.tv_sec >= RES_SLEEP_TIME) {
+	    tv.tv_sec = RES_SLEEP_TIME;
 	    tv.tv_usec = 0;
 	} else {
 	    tv.tv_sec = t1.tv_sec - t0.tv_sec;
+            if (tv.tv_sec <= 0) {
+                tv.tv_sec = 1;
+            }
 	    tv.tv_usec = 0;
 	}
 	selectError = errno;
