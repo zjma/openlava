@@ -151,8 +151,6 @@ main(int argc, char **argv)
     char **sbdArgv = NULL;
     int selectError = 0;
     struct timeval tv;
-    struct timeval t0;
-    struct timeval t1;
 
     saveDaemonDir_(argv[0]);
 
@@ -338,9 +336,6 @@ main(int argc, char **argv)
 
     maxfd = FD_SETSIZE;
 
-    tv.tv_sec = RES_SLEEP_TIME;
-    tv.tv_usec = 0;
-
     for (;;) {
     loop:
         didSomething = 0;
@@ -406,19 +401,10 @@ main(int argc, char **argv)
 	    continue;
 	}
 
-	gettimeofday(&t0, NULL);
+	tv.tv_sec = RES_SLEEP_TIME;
+	tv.tv_usec = 0;
+
 	nready = select(maxfd, &readmask, &writemask, &exceptmask, &tv);
-	gettimeofday(&t1, NULL);
-	if (t1.tv_sec - t0.tv_sec >= RES_SLEEP_TIME) {
-	    tv.tv_sec = RES_SLEEP_TIME;
-	    tv.tv_usec = 0;
-	} else {
-	    tv.tv_sec = t1.tv_sec - t0.tv_sec;
-            if (tv.tv_sec <= 0) {
-                tv.tv_sec = 1;
-            }
-	    tv.tv_usec = 0;
-	}
 	selectError = errno;
 
 	blockSignals();
