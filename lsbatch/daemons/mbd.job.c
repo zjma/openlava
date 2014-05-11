@@ -3274,6 +3274,7 @@ jStatusChange(struct jData *jData,
         inStartJobList (jData);
 
     } else if (IS_FINISH (newStatus)) {
+	int i;
 
         if (!(jData->jStatus & JOB_STAT_ZOMBIE)) {
             if (jData->newReason != EXIT_INIT_ENVIRON &&
@@ -3296,6 +3297,14 @@ jStatusChange(struct jData *jData,
             jData->runCount = MAX(0, jData->runCount-1);
 
         handleFinishJob(jData, oldStatus, eventTime);
+
+	/* Clean up exclusive flag since updCounters()
+	 * is not invoked during reply.
+	 */
+	for (i = 0; i < jData->numHostPtr; i++) {
+	    if (jData->hPtr[i]->hStatus & HOST_STAT_EXCLUSIVE)
+		jData->hPtr[i]->hStatus &= ~HOST_STAT_EXCLUSIVE;
+	}
 
     } else if ((newStatus & JOB_STAT_PEND) && IS_START (oldStatus)) {
 
@@ -8921,4 +8930,3 @@ static int checkSubHost(struct jData *job)
 
     return LSBE_NO_ERROR;
 }
-
