@@ -1119,7 +1119,7 @@ logfile_check(struct bhistReq *Req)
     struct eventLogHandle eLogHandle;
 
     if ((envdir = getenv("LSF_ENVDIR")) == NULL)
-        envdir = "/etc";
+        envdir = LSETCDIR;
 
     if (ls_readconfenv(bhistParams, envdir) < 0) {
         ls_perror("ls_readconfenv");
