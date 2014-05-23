@@ -6345,16 +6345,8 @@ hostHasEnoughSlots(struct jData *jPtr,
     int   slots;
 
     slots = jobMaxUsableSlotsOnHost(jPtr, hPtr);
-    if (slots >= requestedProcs) {
-        /*
-         * if (HOST_HAS_ENOUGH_PROCS(jp, host, requestedProcs)) {
-         */
-        if (numSlots < requestedProcs) {
-
-            addReason(jPtr, hPtr->hostId, reason);
-        }
-
-    } else {
+    slots = MIN(slots, numSlots);
+    if (slots < requestedProcs) {
         *hreason = reason;
     }
 }
