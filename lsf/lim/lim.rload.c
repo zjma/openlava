@@ -101,7 +101,7 @@ idletime(void)
 
         if (stat(buf, &statbuf) < 0) {
             ls_syslog(LOG_ERR, "\
-%s: stats() failed %s %s %s %m", __func__, u->ut_user, u->ut_line);
+%s: stats() failed %s %s %m", __func__, u->ut_user, u->ut_line);
             continue;
         }
 
