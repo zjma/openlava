@@ -1179,9 +1179,13 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
                         foundJobRec[0] =jpbw;
                         numJob = 1;
                     }
-                }
-                else
+                } else if (matchName(jobName, jpbw->shared->jobBill.jobName)) {
+		    /* make sure we match the job name not only
+		     * the user.
+		     */
 		    foundJobRec [numJob++] = jpbw;
+		}
+
 		if (numJob >= numRec) {
 		    tempJobRec = (struct jData **) realloc (foundJobRec,
 			       2 * numRec * sizeof (struct jData *));
