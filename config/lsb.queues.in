@@ -145,7 +145,7 @@
 # Jobs submitted to the queue with this option will be rerunnable.
 # The default value is 'n'. 
 
-# ROUND_ROBIN = Y | y
+# ROUND_ROBIN_POLICY = Y | y
 # If defined the jobs in the queue are scheduled using a round robin
 # algorithm weighted on the number of users' jobs.
 #
@@ -182,6 +182,7 @@ NICE         = 20
 #PRE_EXEC     = /usr/local/lsf/misc/testq_pre >> /tmp/pre.out
 #POST_EXEC    = /usr/local/lsf/misc/testq_post |grep -v "Hey"
 #REQUEUE_EXIT_VALUES = 55 34 78
+#ROUND_ROBIN_POLICY = y
 DESCRIPTION  = For normal low priority jobs, running only if hosts are \
 lightly loaded.
 End Queue
