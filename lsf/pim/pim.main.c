@@ -81,7 +81,7 @@ main(int argc, char **argv)
     char *sp;
     char *traceVal;
     char *myHost;
-    char *env_dir;
+    char *env_dir=NULL;
     int cc;
 
     myHost = "localhost";
