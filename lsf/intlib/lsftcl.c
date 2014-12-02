@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
-
+#define USE_INTERP_RESULT 1
 #include "../lsf.h"
 #include "resreq.h"
 #if defined(HAVE_TCL_TCL_H)
