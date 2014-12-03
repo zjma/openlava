@@ -1,5 +1,6 @@
-/* $Id: lshosts.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -28,9 +29,6 @@
 #include "../intlib/intlibout.h"
 
 #include <math.h>
-
-#define NL_SETN 27
-
 
 static void usage(char *);
 static void print_long(struct hostInfo *hostInfo);
@@ -298,10 +296,6 @@ main(int argc, char **argv)
     int     unknown;
     int     options=0;
     int isClus;
-    int rc;
-
-
-    rc = _i18n_init ( I18N_CAT_MIN );
 
     if (ls_initdebug(argv[0]) < 0) {
         ls_perror("ls_initdebug");
@@ -518,9 +512,6 @@ main(int argc, char **argv)
 
             fputs(")\n", stdout);
         }
-
-
-        _i18n_end ( ls_catd );
         exit(0);
     }
 

@@ -1,10 +1,10 @@
 #
-# Copyright (C) 2011 David Bigagli
+# Copyright (C) 2011-2014 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
-INCLUDES = -I../
+AM_CPPFLAGS += -I../
 
 lib_LIBRARIES = liblsf.a
 

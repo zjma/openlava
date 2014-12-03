@@ -4,7 +4,7 @@
 
 include $(top_srcdir)/common.mk
 
-INCLUDES = -I../lsf
+AM_CPPFLAGS += -I../lsf
 
 sbin_PROGRAMS = echkpnt erestart
 
