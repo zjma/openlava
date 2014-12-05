@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -451,8 +452,6 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     char            msg[512];
     int             i;
     int             num;
-    GETGROUPS_T rootgroups[NGROUPS_MAX];
-    int             ngroups;
     int             cc;
 
     if (logclass & LC_TRACE) {
@@ -614,9 +613,6 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     if (logclass & LC_TRACE) {
         dumpClient(cli_ptr, "new client created");
     }
-
-    ngroups = getgroups(NGROUPS_MAX, rootgroups);
-
 
     if ((getuid() == 0) && (initgroups(cli_ptr->username, pw->pw_gid) < 0)) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "initgroups",
@@ -5928,11 +5924,11 @@ notify_nios(int retsock, int rpid, int opCode)
 }
 
 static int
-resUpdatetty(struct LSFHeader msgHdr) {
+resUpdatetty(struct LSFHeader msgHdr)
+{
     static char fname[] = "resUpdatetty";
     XDR xdrs;
     struct resStty restty;
-    ttyStruct ttyInfo;
     char *tempBuf;
     int cc;
 
@@ -5970,14 +5966,7 @@ resUpdatetty(struct LSFHeader msgHdr) {
     xdr_destroy(&xdrs);
     free(tempBuf);
 
-
-    ttyInfo.attr = restty.termattr;
-    ttyInfo.ws = restty.ws;
-
-
-
     return 0;
-
 }
 
 static void

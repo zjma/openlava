@@ -1,5 +1,6 @@
-/* $Id: lim.conf.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -104,6 +105,7 @@ extern char *getExtResourcesLoc(char *);
 static char *getExtResourcesValDefault(char *);
 extern char *getExtResourcesVal(char *);
 
+#pragma GCC diagnostic ignored "-Wenum-compare"
 /* readShared()
  * Read the openlava base lsf.shared configuration file.
  * This file contains all the host model, types, cpu factors,
@@ -332,7 +334,7 @@ setIndex(struct keymap *keyList, char *lsfile, int linenum)
         lim_CheckError = WARNING_ERR;
         return(TRUE);
     }
-    if (IS_DIGIT (keyList[3].val[0])) {
+    if (isdigit (keyList[3].val[0])) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5215,
                                          "%s: %s(%d): Index name <%s> begun with a digit is illegal; ignored"), /* catgets 5215 */
                   fname, lsfile, linenum, keyList[3].val);
@@ -556,7 +558,7 @@ dotypelist(FILE *fp, int *LineNum, char *lsfile)
                 continue;
             }
 
-            if (IS_DIGIT (keyList[0].val[0])) {
+            if (isdigit (keyList[0].val[0])) {
                 ls_syslog(LOG_ERR, "\
 %s: %s(%d): Type name %s begun with a digit is illegal; ignored.",
                           __func__, lsfile, *LineNum, keyList[0].val);
@@ -672,7 +674,7 @@ dohostmodel(FILE *fp, int *LineNum, char *lsfile)
                 FREEUP(keyList[2].val);
                 continue;
             }
-            if (IS_DIGIT (keyList[0].val[0])) {
+            if (isdigit (keyList[0].val[0])) {
                 ls_syslog(LOG_ERR, "\
 %s: %s(%d): Model name <%s> begun with a digit is illegal; ignored",
                           __func__, lsfile, *LineNum, keyList[0].val);
@@ -895,7 +897,7 @@ doresources(FILE *fp, int *LineNum, char *lsfile)
                 freeKeyList (keyList);
                 continue;
             }
-            if (IS_DIGIT (keyList[RKEY_RESOURCENAME].val[0])) {
+            if (isdigit(keyList[RKEY_RESOURCENAME].val[0])) {
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5253,
                                                  "%s: %s(%d): Resource name <%s> begun with a digit is illegal; ignored"), fname, lsfile, *LineNum, keyList[0].val); /* catgets 5253 */
                 lim_CheckError = WARNING_ERR;

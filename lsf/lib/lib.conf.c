@@ -1,5 +1,6 @@
-/* $Id: lib.conf.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -163,21 +164,23 @@ static struct clusterInfo clinfo;
 static void freeKeyList(struct keymap *);
 static int validType (char *type);
 static int doResourceMap(FILE *fp, char *lsfile, int *LineNum);
-static int addResourceMap (char *resName, char *location, char *lsfile,
+static int addResourceMap(char *resName, char *location, char *lsfile,
                            int LineNum);
-static int parseHostList (char *hostList, char *lsfile, int LineNum,
+static int parseHostList(char *hostList, char *lsfile, int LineNum,
                           char ***hosts);
-static struct lsSharedResourceInfo *addResource (char *resName, int nHosts,
-                                                 char **hosts, char *value,
-                                                 char *fileName, int LineNum);
-static int addHostInstance (struct lsSharedResourceInfo *sharedResource,
+static struct lsSharedResourceInfo *addResource(char *resName, int nHosts,
+                                                char **hosts, char *value,
+                                                char *fileName, int LineNum);
+static int addHostInstance(struct lsSharedResourceInfo *sharedResource,
                             int nHosts, char **hostNames, char *value);
 
 int convertNegNotation_(char**, struct HostsArray*);
 static int resolveBaseNegHosts(char*, char**, struct HostsArray*);
 
+#pragma GCC diagnostic ignored "-Wenum-compare"
+
 struct sharedConf *
-ls_readshared ( char *fname )
+ls_readshared (char *fname)
 {
     FILE   *fp;
     char   *cp;
@@ -769,20 +772,29 @@ do_Resources(FILE *fp, int *lineNum, char *fname)
 
             if (keyList[RKEY_INCREASING].val != NULL
                 && keyList[RKEY_INCREASING].val[0] != '\0') {
+
                 if (lsinfo.resTable[lsinfo.nRes].valueType == LS_NUMERIC) {
                     if (!strcasecmp (keyList[RKEY_INCREASING].val, "N"))
                         lsinfo.resTable[lsinfo.nRes].orderType = DECR;
                     else if (!strcasecmp(keyList[RKEY_INCREASING].val, "Y"))
                         lsinfo.resTable[lsinfo.nRes].orderType = INCR;
                     else {
-                        ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5094, "%s: %s(%d): INCREASING <%s> for resource <%s> is not valid; ignoring resource <%s> in section resource")),  /* catgets 5094 */
-                                  "do_Resources", fname, *lineNum, keyList[RKEY_INCREASING].val, keyList[RKEY_RESOURCENAME].val, keyList[RKEY_RESOURCENAME].val);
+                        ls_syslog(LOG_ERR,"\
+%s: (%d): INCREASING <%s> for resource <%s> is not valid; ignoring resource <%s> in section resource", __func__, *lineNum,
+                                  keyList[RKEY_INCREASING].val,
+                                  keyList[RKEY_RESOURCENAME].val,
+                                  keyList[RKEY_RESOURCENAME].val);
                         freeKeyList (keyList);
                         continue;
                     }
                 } else
-                    ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5095, "%s: %s(%d): INCREASING <%s> is not used by the resource <%s> with type <%s>; ignoring INCREASING")),    /* catgets 5095 */
-                              "do_Resources", fname, *lineNum, keyList[RKEY_INCREASING].val, keyList[RKEY_RESOURCENAME].val, (lsinfo.resTable[lsinfo.nRes].orderType == LS_BOOLEAN)?"BOOLEAN":"STRING");
+                    ls_syslog(LOG_ERR, "\
+%s: %s(%d): INCREASING <%s> is not used by the resource <%s> with type <%s>;\
+ ignoring INCREASING", __func__, *lineNum,
+                        keyList[RKEY_INCREASING].val,
+                        keyList[RKEY_RESOURCENAME].val,
+                        (lsinfo.resTable[lsinfo.nRes].orderType == LS_BOOLEAN)
+                        ? "BOOLEAN":"STRING");
             } else {
                 if (lsinfo.resTable[lsinfo.nRes].valueType
                     == LS_NUMERIC) {

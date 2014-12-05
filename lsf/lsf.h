@@ -235,7 +235,7 @@ struct connectEnt {
     int csock[2];
 };
 
-#define INTEGER_BITS       32
+#define INTEGER_BITS   32
 #define GET_INTNUM(i) ((i)/INTEGER_BITS + 1)
 
 #define LIM_UNAVAIL  0x00010000

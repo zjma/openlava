@@ -784,7 +784,12 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
 static int
 resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
-    int i, s, t, len, entry, hasFunction = FALSE, hasQuote;
+    int i;
+    int s;
+    int t;
+    int len;
+    int entry;
+    int hasQuote;
     char res[MAXLSFNAMELEN], val[MAXLSFNAMELEN];
     char tmpbuf[MAXLSFNAMELEN*2];
     char *sp, *op;
@@ -792,35 +797,38 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     len = strlen(resReq);
 
     sp = resVal->selectStr;
-    strcpy(sp,"expr ");
+    strcpy(sp, "expr ");
     s = 0;
     t = strlen(sp);
 
     while (s < len) {
+
         if (t >= (resVal->selectStrSize - MAXLSFNAMELEN))
             return PARSE_BAD_EXP;
-
 
         if (resReq[s] == ' ') {
             s++;
             continue;
         }
 
-        if ( resReq[s] == '(' || resReq[s] == ')' || resReq[s] == '=' ||
-             resReq[s] == '!' || resReq[s] == '>' || resReq[s] == '<' ||
-             resReq[s] == '|' || resReq[s] == '&' || resReq[s] == '+' ||
-             resReq[s] == '-' || resReq[s] == '*' || resReq[s] == '/' ||
-             resReq[s] == '.' || IS_DIGIT(resReq[s])) {
+        if (resReq[s] == '(' || resReq[s] == ')' || resReq[s] == '=' ||
+            resReq[s] == '!' || resReq[s] == '>' || resReq[s] == '<' ||
+            resReq[s] == '|' || resReq[s] == '&' || resReq[s] == '+' ||
+            resReq[s] == '-' || resReq[s] == '*' || resReq[s] == '/' ||
+            resReq[s] == '.' || isdigit(resReq[s])) {
 
             sp[t++] = resReq[s++];
             continue;
         }
 
-        if (IS_LETTER(resReq[s])) {
+        if (! isalpha(resReq[s]))
+            return PARSE_BAD_EXP;
+
+        if (isalpha(resReq[s])) {
 
             i = 0;
-            while(IS_LETTER(resReq[s]) || IS_DIGIT(resReq[s]) ||
-                  IS_VALID_OTHER(resReq[s]))
+            while (isalnum(resReq[s])
+                   || ispunct(resReq[s]))
                 res[i++] = resReq[s++];
             res[i] = '\0';
 
@@ -834,8 +842,8 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                         return (PARSE_BAD_EXP);
                     i = 0;
 		    s++;
-                    while (IS_LETTER(resReq[s]) || IS_DIGIT(resReq[s]) ||
-                           IS_VALID_OTHER(resReq[s]))
+                    while (isalnum(resReq[s])
+                           || ispunct(resReq[s]))
                         res[i++] = resReq[s++];
                     res[i] = '\0';
                     entry = getResEntry(res);
@@ -849,13 +857,15 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                     while (resReq[s] == ' ')
                         s++;
                     if (resReq[s] != ')')
-                        return (PARSE_BAD_EXP);
+                        return PARSE_BAD_EXP;
                     s++;
                     continue;
                 }
                 return PARSE_BAD_NAME;
             }
+
             switch(lsInfo->resTable[entry].valueType) {
+
                 case LS_NUMERIC:
                 case LS_BOOLEAN:
                     strcat(res,"()");
@@ -868,9 +878,8 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                     while(resReq[s] == ' ')
                         s++;
 
-
                     if (resReq[s] == '\0' || resReq[s+1] == '\0')
-                        return(PARSE_BAD_EXP);
+                        return PARSE_BAD_EXP;
 
 
                     op = NULL;
@@ -906,24 +915,28 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                         hasQuote = FALSE;
                     i = 0;
                     if (!hasQuote){
-                        while(IS_LETTER(resReq[s]) || IS_DIGIT(resReq[s]) ||
-                              IS_VALID_OTHER(resReq[s]))
+                        while(isalnum(resReq[s])
+                              || ispunct(resReq[s]))
                             val[i++] = resReq[s++];
                     } else {
+
                         while(resReq[s] && resReq[s] != '\'' && i < MAXLSFNAMELEN)
                             val[i++] = resReq[s++];
-                        if (i-1 == MAXLSFNAMELEN)
-                            return(PARSE_BAD_VAL);
+
+                        if (i - 1 == MAXLSFNAMELEN)
+                            return PARSE_BAD_VAL;
+
                         if (resReq[s] == '\'')
                             s++;
                     }
+
                     val[i] = '\0';
                     if (i == 0) {
-                        return(PARSE_BAD_VAL);
+                        return PARSE_BAD_VAL;
                     }
 
                     if (validValue(val, lsInfo, entry) < 0) {
-                        return(PARSE_BAD_VAL);
+                        return PARSE_BAD_VAL;
                     }
 
                     sprintf(tmpbuf,"[%s \"%s\" \"%s\"]",lsInfo->resTable[entry].name
@@ -934,17 +947,16 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                 default:
                     break;
             }
-	    hasFunction = FALSE;
-        } else {
-            return (PARSE_BAD_EXP);
         }
-
     }
     sp[t] = '\0';
     resVal->options |= PR_SELECT;
-    return(PARSE_OK);
+
+    return PARSE_OK;
 }
 
+/* Old pre 2.0 resource request format long time obsolete
+ */
 static int
 resToClassOld(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
@@ -972,16 +984,13 @@ resToClassOld(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     t = strlen(resVal->selectStr);
 
     while ((token = getNextToken(&resReq)) != NULL) {
+
         negate = FALSE;
-
-
 
         if (t >= (resVal->selectStrSize - MAXLSFNAMELEN))
             return PARSE_BAD_EXP;
 
-
-
-        if (IS_DIGIT(token[0]))
+        if (isdigit(token[0]))
             return(PARSE_BAD_EXP);
 
         if (token[0] == '-') {
@@ -1075,31 +1084,28 @@ setDefaults(struct resVal *resVal, struct lsInfo *lsInfo, int options)
 {
     int i;
 
-
     if (options & PR_DEFFROMTYPE)
         strcpy(resVal->selectStr, "expr [type \"eq\" \"local\"]");
     else
         strcpy(resVal->selectStr, "expr [type \"eq\" \"any\"]");
 
-
-
     resVal->nphase = 2;
     resVal->order[0] = R15S + 1;
     resVal->order[1] = PG + 1;
-    resVal->val=malloc(lsInfo->nRes*sizeof(float));
-    resVal->indicies=malloc((lsInfo->numIndx)*sizeof(int));
-    if ((!resVal->val) || (!resVal->indicies)) {
+    resVal->val = calloc(lsInfo->nRes, sizeof(float));
+    resVal->indicies = calloc((lsInfo->numIndx), sizeof(int));
+    if (!resVal->val || !resVal->indicies) {
 	freeResVal (resVal);
-        lserrno=LSE_MALLOC;
+        lserrno = LSE_MALLOC;
         ls_perror("intlib:resreq");
-        return( PARSE_BAD_MEM );
+        return PARSE_BAD_MEM;
     }
 
-    for (i=0; i < lsInfo->nRes; i++)
+    for (i = 0; i < lsInfo->nRes; i++)
         resVal->val[i] = INFINIT_LOAD;
 
     resVal->genClass =  0;
-    if (!(options &PR_BATCH)) {
+    if (!(options & PR_BATCH)) {
         resVal->genClass |=  1 << R15S;
         resVal->genClass |=  1 << R1M;
         resVal->genClass |=  1 << R15M;
@@ -1108,18 +1114,18 @@ setDefaults(struct resVal *resVal, struct lsInfo *lsInfo, int options)
         resVal->val[R15M] = 1.0;
     }
 
-
     resVal->nindex = lsInfo->numIndx;
-    for(i=0; i < resVal->nindex; i++)
+    for(i = 0; i < resVal->nindex; i++)
         resVal->indicies[i] = i;
 
     resVal->rusgBitMaps =
-        (int *)malloc (GET_INTNUM(lsInfo->nRes) * sizeof (int));
+        calloc (GET_INTNUM(lsInfo->nRes), sizeof(int));
     if (resVal->rusgBitMaps == NULL) {
-	lserrno=LSE_MALLOC;
+	lserrno = LSE_MALLOC;
 	freeResVal (resVal);
-        return (PARSE_BAD_MEM);
+        return PARSE_BAD_MEM;
     }
+
     for (i = 0; i < GET_INTNUM(lsInfo->nRes); i++)
 	resVal->rusgBitMaps[i] = 0;
 
@@ -1135,13 +1141,12 @@ setDefaults(struct resVal *resVal, struct lsInfo *lsInfo, int options)
     resVal->maxNumHosts = INFINIT_INT;
     resVal->pTile = INFINIT_INT;
 
-
     resVal->options = 0;
-    return (0);
+    return 0;
 }
 
 void
-freeResVal (struct resVal *resVal)
+freeResVal(struct resVal *resVal)
 {
     if (resVal == NULL)
 	return;
@@ -1153,9 +1158,9 @@ freeResVal (struct resVal *resVal)
     FREEUP (resVal->rusgBitMaps);
     if (resVal->xorExprs) {
         int i;
-	for (i=0; resVal->xorExprs[i]; i++)
-	    FREEUP (resVal->xorExprs[i]);
-	FREEUP (resVal->xorExprs);
+	for (i = 0; resVal->xorExprs[i]; i++)
+	    FREEUP(resVal->xorExprs[i]);
+	FREEUP(resVal->xorExprs);
     }
 }
 

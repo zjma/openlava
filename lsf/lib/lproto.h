@@ -129,7 +129,7 @@ extern int sharedResConfigured_;
 #define TRIM_LEFT(sp) if (sp != NULL) { \
                           while (isspace(*(sp))) (sp)++; \
                       }
-#define TRIM_RIGHT(sp)     while (isspace(*(sp+strlen(sp)-1))) *(sp+strlen(sp)-1)='\0';
+#define TRIM_RIGHT(sp) while (isspace(*(sp+strlen(sp)-1))) *(sp+strlen(sp)-1)='\0';
 
 #define ALIGNWORD_(s)    (((s)&0xfffffffc) + 4)
 #define NET_INTADDR_(a) ((char *) (a))
@@ -139,7 +139,6 @@ extern int sharedResConfigured_;
 #define XDR_DECODE_SIZE_(a) (a)
 
 #define LS_EXEC_T "LS_EXEC_T"
-
 
 #define GET_INTNUM(i) ((i)/INTEGER_BITS + 1)
 #define SET_BIT(bitNo, integers)           \

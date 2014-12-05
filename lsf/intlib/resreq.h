@@ -16,10 +16,14 @@
  *
  */
 
+#if 0
+/* Use ctype.h here... isdigit() isalpha() ispunct()
+ */
 #define IS_DIGIT(s)  ( (s) >= '0' && (s) <= '9')
 #define IS_LETTER(s) ( ((s) >= 'a' && (s) <= 'z') || \
 		       ((s) >= 'A' && (s) <= 'Z'))
 #define IS_VALID_OTHER(s) ((s) == '_'|| (s) == '~')
+#endif
 
 #define WILDCARD_STR  "any"
 #define LOCAL_STR     "local"

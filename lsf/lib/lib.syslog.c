@@ -33,6 +33,10 @@
 #define HAS_VSNPRINTF
 #endif
 
+/* Ignore warning when calling syslog()
+ */
+#pragma GCC diagnostic ignored "-Wformat-security"
+
 extern struct config_param genParams_[];
 
 extern const char *err_str_(int errnum, const char *fmt, char *buf);
@@ -296,7 +300,6 @@ ls_syslog(int level, const char *fmt, ...)
 #else
         vsprintf(otherbuf, err_str_(save_errno, fmt, buf), ap);
 #endif
-
         if (!strcmp(otherbuf, lastMsg)) {
             counter++;
             if (counter > 10) {

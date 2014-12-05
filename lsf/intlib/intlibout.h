@@ -23,6 +23,7 @@
 #include "listset.h"
 #include "list2.h"
 #include "link.h"
+#include <ctype.h>
 
 #define MINPASSWDLEN_LS		(3)
 #define EXIT_NO_ERROR 		(0)
