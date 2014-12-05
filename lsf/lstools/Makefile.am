@@ -1,10 +1,10 @@
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2014 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
-INCLUDES = -I..
+AM_CPPFLAGS += -I..
 
 bin_PROGRAMS = lsacct lseligible lshosts lsid lsinfo lsloadadj \
  		lsload lsplace lsrcp lsrun lsaddhost lsrmhost lsmon

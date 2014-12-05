@@ -1,10 +1,10 @@
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2014 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
-INCLUDES = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsf/lib \
+AM_CPPFLAGS += -I$(top_srcdir)/lsf -I$(top_srcdir)/lsf/lib \
            -I$(top_srcdir)/lsbatch -I./
 
 lib_LIBRARIES = liblsbatch.a

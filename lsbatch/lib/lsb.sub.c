@@ -1,3 +1,4 @@
+
 /* $Id: lsb.sub.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
  *
@@ -1351,7 +1352,7 @@ getChkDir(char *givenDir, char *chkPath)
 
 static LS_LONG_INT
 subJob(struct submit  *jobSubReq, struct submitReq *submitReq,
-	   struct submitReply *submitRep, struct lsfAuth *auth)
+       struct submitReply *submitRep, struct lsfAuth *auth)
 {
 
     char homeDir[MAXFILENAMELEN];

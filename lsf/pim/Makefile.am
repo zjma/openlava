@@ -1,10 +1,10 @@
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2014 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
-INCLUDES = -I$(top_srcdir)/lsf
+AM_CPPFLAGS += -I$(top_srcdir)/lsf
 
 sbin_PROGRAMS = pim
 pim_SOURCES  = pim.main.c pim.h

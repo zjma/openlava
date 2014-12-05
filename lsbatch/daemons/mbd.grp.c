@@ -1,5 +1,6 @@
-/* $Id: mbd.grp.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -19,8 +20,6 @@
 #include <stdlib.h>
 #include "mbd.h"
 
-#define NL_SETN		10	
-
 struct uStackEntry {
     struct gData*  myGData;
     struct uData*  myUData;
@@ -35,11 +34,11 @@ static struct groupInfoEnt*    getGroupInfoEnt(char**, int*, char);
 static struct groupInfoEnt*    getGroupInfoEntFromUdata(struct uData*, char);
 static void 	    	       getAllHostGroup(struct gData **, int, int,
 		    	    	    	       struct groupInfoEnt *, int *);
-static void    	       	       getSpecifiedHostGroup(char **, int, 
+static void    	       	       getSpecifiedHostGroup(char **, int,
 						     struct gData **, int, int,
-						     struct groupInfoEnt *, 
+						     struct groupInfoEnt *,
 						     int *);
-static void    	       	       copyHostGroup(struct gData *, int, 
+static void    	       	       copyHostGroup(struct gData *, int,
 					     struct groupInfoEnt *);
 
 LS_BITSET_T                    *allUsersSet = NULL;
@@ -48,13 +47,13 @@ LS_BITSET_T                    *uGrpAllSet;
 
 LS_BITSET_T                    *uGrpAllAncestorSet;
 
-int 
-checkGroups (struct infoReq *groupInfoReq, 
+int
+checkGroups (struct infoReq *groupInfoReq,
 	     struct groupInfoReply *groupInfoReply)
 {
     int                   recursive;
     struct gData **        gplist;
-    int                    ngrp;    
+    int                    ngrp;
 
     if (groupInfoReq->options & HOST_GRP) {
         gplist = hostgroups;
@@ -71,25 +70,25 @@ checkGroups (struct infoReq *groupInfoReq,
     else
         recursive = FALSE;
 
-    
+
     if (groupInfoReq->options & HOST_GRP) {
 	if (groupInfoReq->options & GRP_ALL) {
-	    getAllHostGroup(gplist, ngrp, recursive, groupInfoReply->groups, 
+	    getAllHostGroup(gplist, ngrp, recursive, groupInfoReply->groups,
 			    &groupInfoReply->numGroups);
 	} else {
-	    getSpecifiedHostGroup(groupInfoReq->names, groupInfoReq->numNames, 
-				  gplist, ngrp, recursive, 
-				  groupInfoReply->groups, 
+	    getSpecifiedHostGroup(groupInfoReq->names, groupInfoReq->numNames,
+				  gplist, ngrp, recursive,
+				  groupInfoReply->groups,
 				  &groupInfoReply->numGroups);
 
-	    if (groupInfoReply->numGroups == 0 || 
+	    if (groupInfoReply->numGroups == 0 ||
 		groupInfoReply->numGroups != groupInfoReq->numNames) {
 		return (LSBE_BAD_GROUP);
 	    }
 	}
     }
 
-    
+
     if (groupInfoReq->options & USER_GRP) {
 
 	if (groupInfoReq->options & GRP_ALL) {
@@ -97,47 +96,47 @@ checkGroups (struct infoReq *groupInfoReq,
 
 	    groupInfoReply->groups = getGroupInfoEnt(NULL, &num, recursive);
 	    groupInfoReply->numGroups = num;
-		
+
 	} else {
 	    int num = 0;
-	    
+
 	    num = groupInfoReq->numNames;
-	    groupInfoReply->groups = getGroupInfoEnt(groupInfoReq->names, 
-						     &num, 
+	    groupInfoReply->groups = getGroupInfoEnt(groupInfoReq->names,
+						     &num,
 						     recursive);
 	    groupInfoReply->numGroups = num;
 	    if ( num == 0 || num != groupInfoReq->numNames )
-		 
+
 		return (LSBE_BAD_GROUP);
-	} 
+	}
     }
 
     return (LSBE_NO_ERROR);
 
-} 
+}
 static struct groupInfoEnt *
 getGroupInfoEnt(char **groups, int *num, char recursive)
 {
-    static char              fname[] = "getGroupInfoEnt()"; 
+    static char              fname[] = "getGroupInfoEnt()";
     struct groupInfoEnt *    groupInfoEnt;
 
     if (groups == NULL) {
 	struct uData *u;
 	int i;
-	
-	
+
+
 	groupInfoEnt = (struct groupInfoEnt *)
 	    my_calloc(numofugroups,
 		      sizeof(struct groupInfoEnt),
 			     fname);
 
 	i = 0;
-	
+
 	for (i = 0; i < numofugroups; i++) {
 	    struct groupInfoEnt *g;
 
 	    u = getUserData(usergroups[i]->group);
-	    
+
 	    g = getGroupInfoEntFromUdata(u, recursive);
 	    if (g == NULL) {
 		FREEUP(groupInfoEnt);
@@ -146,9 +145,9 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	    }
 	    memcpy(groupInfoEnt + i, g, sizeof(struct groupInfoEnt));
 	}
-	  
-	*num = numofugroups;        
-    } else {             
+
+	*num = numofugroups;
+    } else {
 	struct uData * u;
 	int            j = 0;
 	int            k;
@@ -161,7 +160,7 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	    struct groupInfoEnt *g;
 	    bool_t  validUGrp = FALSE;
 
-	    
+
 	    for (k = 0; k < numofugroups; k++) {
 		if (strcmp(usergroups[k]->group, groups[i]) == 0) {
 		    validUGrp = TRUE;
@@ -172,10 +171,10 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	    if (validUGrp == FALSE) {
 	        struct groupInfoEnt *  tmpgroupInfoEnt;
 		lsberrno = LSBE_BAD_USER;
-		*num = i;   
+		*num = i;
 
-		if ( i == 0 )  {  
-		    
+		if ( i == 0 )  {
+
 		    FREEUP(groupInfoEnt);
 		    return NULL;
 		}
@@ -193,28 +192,28 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 
 	    u = getUserData(groups[i]);
 	    if (u == NULL) {
-		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, 
+		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL,
 		    fname, "getUserData", groups[i]);
 		continue;
 	    }
-	    
+
 	    g = getGroupInfoEntFromUdata(u, recursive);
 	    if (g == NULL){
 		lsberrno = LSBE_NO_MEM;
 		FREEUP(groupInfoEnt);
 		return (NULL);
 	    }
-	    
+
 	    memcpy(groupInfoEnt + j, g, sizeof(struct groupInfoEnt));
-	    
-	    j++;           
+
+	    j++;
 	}
-	*num = j;          
+	*num = j;
     }
-	    
+
     return (groupInfoEnt);
 
-} 
+}
 static struct groupInfoEnt *
 getGroupInfoEntFromUdata(struct uData *u, char recursive)
 {
@@ -223,11 +222,11 @@ getGroupInfoEntFromUdata(struct uData *u, char recursive)
     memset((struct groupInfoEnt *)&group, 0, sizeof(struct groupInfoEnt));
 
     group.group = u->user;
-    group.memberList = getGroupMembers(u->gData, 
+    group.memberList = getGroupMembers(u->gData,
 				      recursive);
     return (&group);
 
-} 
+}
 char *
 getGroupMembers (struct gData *gp, char r)
 {
@@ -236,7 +235,7 @@ getGroupMembers (struct gData *gp, char r)
 
     numMembers = sumMembers(gp, r, 1);
     if (numMembers == 0) {
-	members = safeSave("all");        
+	members = safeSave("all");
 	return (members);
     }
 
@@ -245,34 +244,34 @@ getGroupMembers (struct gData *gp, char r)
     catMembers(gp, members, r);
     return members;
 
-} 
+}
 
-int 
+int
 sumMembers (struct gData *gp, char r, int first)
 {
     int i;
     static int num;
-   
+
     if (first)
 	num = 0;
 
     if (gp->numGroups == 0 && gp->memberTab.numEnts == 0 && r)
-        return (0);          
+        return (0);
 
     num += gp->memberTab.numEnts;
 
-    if (!r) 
+    if (!r)
 	num += gp->numGroups;
     else {
-	for (i=0; i<gp->numGroups; i++) 
+	for (i=0; i<gp->numGroups; i++)
             if (sumMembers (gp->gPtr[i], r, 0) == 0)
                 return (0);
     }
 
     return (num);
-} 
+}
 
-static void 
+static void
 catMembers(struct gData *gp, char *cbuf, char r)
 {
     sTab hashSearchPtr;
@@ -291,15 +290,15 @@ catMembers(struct gData *gp, char *cbuf, char r)
         if (!r) {
             int lastChar = strlen(gp->gPtr[i]->group)-1;
             strcat(cbuf, gp->gPtr[i]->group);
-            if ( gp->gPtr[i]->group[lastChar] != '/' ) 
+            if ( gp->gPtr[i]->group[lastChar] != '/' )
                 strcat(cbuf, "/ ");
-            else 
+            else
                 strcat(cbuf, " ");
         } else {
             catMembers(gp->gPtr[i], cbuf, r);
         }
     }
-} 
+}
 
 char *
 catGnames (struct gData *gp)
@@ -318,7 +317,7 @@ catGnames (struct gData *gp)
 	strcat (buf, "/ ");
     }
     return buf;
-} 
+}
 
 char **
 expandGrp (struct gData *gp, char *gName, int *num)
@@ -337,8 +336,8 @@ expandGrp (struct gData *gp, char *gName, int *num)
     fillMembers(gp, memberTab, TRUE);
     return memberTab;
 
-} 
-void 
+}
+void
 fillMembers (struct gData *gp, char **memberTab, char first)
 {
     sTab hashSearchPtr;
@@ -353,16 +352,16 @@ fillMembers (struct gData *gp, char **memberTab, char first)
 
     hashEntryPtr = h_firstEnt_(&gp->memberTab, &hashSearchPtr);
 
-    while (hashEntryPtr) {                   
+    while (hashEntryPtr) {
         memberTab[mcnt] = hashEntryPtr->keyname;
         mcnt++;
         hashEntryPtr = h_nextEnt_(&hashSearchPtr);
     }
 
-    for (i=0; i<gp->numGroups; i++)          
+    for (i=0; i<gp->numGroups; i++)
         fillMembers(gp->gPtr[i], memberTab, FALSE);
 
-}  
+}
 struct gData *
 getGroup (int groupType, char *member)
 {
@@ -375,16 +374,16 @@ getGroup (int groupType, char *member)
     } else if (groupType == USER_GRP) {
         gplist = usergroups;
         ngrp = numofugroups;
-    } else 
+    } else
         return NULL;
 
-    for (i = 0; i < ngrp; i++) 
+    for (i = 0; i < ngrp; i++)
         if (gMember(member, gplist[i]))
             return (gplist[i]);
 
     return NULL;
 
-} 
+}
 
 char
 gDirectMember (char *word, struct gData *gp)
@@ -394,15 +393,15 @@ gDirectMember (char *word, struct gData *gp)
         return FALSE;
 
     if (gp->numGroups == 0 && gp->memberTab.numEnts == 0)
-        return TRUE;    
-                        
+        return TRUE;
+
     if (h_getEnt_(&gp->memberTab, word))
-        return TRUE;              
-    return FALSE;                           
+        return TRUE;
+    return FALSE;
 
-}                   
+}
 
- 
+
 char
 gMember (char *word, struct gData *gp)
 {
@@ -422,7 +421,7 @@ gMember (char *word, struct gData *gp)
     }
     return FALSE;
 
-} 
+}
 
 
 int
@@ -434,26 +433,26 @@ countEntries (struct gData *gp, char first)
     if (first)
         num = 0;
 
-    num += gp->memberTab.numEnts;   
+    num += gp->memberTab.numEnts;
 
     for (i=0;i<gp->numGroups;i++)
         countEntries(gp->gPtr[i], FALSE);
 
     return num;
 
-} 
+}
 
 struct gData *
 getUGrpData (char *gname)
 {
     return (getGrpData (usergroups, gname, numofugroups));
-} 
+}
 
 struct gData *
 getHGrpData (char *gname)
 {
     return (getGrpData (hostgroups, gname, numofhgroups));
-} 
+}
 
 struct gData *
 getGrpData (struct gData *groups[], char *name, int num)
@@ -470,7 +469,7 @@ getGrpData (struct gData *groups[], char *name, int num)
 
     return NULL;
 
-} 
+}
 
 void
 uDataGroupCreate()
@@ -480,25 +479,25 @@ uDataGroupCreate()
 
     for (i = 0; i < numofugroups; i++) {
 	struct uData *u;
-	
-	
+
+
 	if ((u = getUserData(usergroups[i]->group)) == NULL) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, 
+	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
 		fname, "getUserData", usergroups[i]->group);
 	    mbdDie(MASTER_FATAL);
 	}
 	u->flags |= USER_GROUP;
-	
+
 	if (logclass & (LC_TRACE))
 	    ls_syslog(LOG_DEBUG2, "\
 %s: removing user group <%s> from all user set",
 		      fname, u->user);
-	
+
 	setRemoveElement(allUsersSet, (void *)u);
-	
+
 	if (USER_GROUP_IS_ALL_USERS(usergroups[i]) == TRUE) {
 	    u->flags |= USER_ALL;
-	    
+
             if(u->children){
 	    setDestroy(u->children);
             }
@@ -511,11 +510,11 @@ uDataGroupCreate()
 	    setAddElement(uGrpAllSet, (void *)u);
 	}
 
-	
+
 	u->gData = usergroups[i];
-	
+
     }
-} 
+}
 void
 uDataPtrTbInitialize(void)
 {
@@ -527,7 +526,7 @@ uDataPtrTbInitialize(void)
 
     currentIndex = 0;
     hashEntryPtr = h_firstEnt_(&uDataList, &hashSearchPtr);
-    
+
     while (hashEntryPtr) {
 	struct uData *uData;
 
@@ -535,12 +534,12 @@ uDataPtrTbInitialize(void)
 
 	uData->uDataIndex = currentIndex;
 	++currentIndex;
-        
-	
+
+
 	uDataTableAddEntry(uDataPtrTb, uData);
 
-	
-	hashEntryPtr = h_nextEnt_(&hashSearchPtr);	
+
+	hashEntryPtr = h_nextEnt_(&hashSearchPtr);
     }
 
 }
@@ -560,7 +559,7 @@ getuDataByIndex(int index)
     if (index > uDataPtrTb->_size_)
 	return (NULL);
 
-    return ((struct uData *)uDataPtrTb->_base_[index]); 
+    return ((struct uData *)uDataPtrTb->_base_[index]);
 }
 void
 setuDataCreate()
@@ -569,17 +568,17 @@ setuDataCreate()
     struct uData *u;
 
     while ((u = uDataTableGetNextEntry(uDataPtrTb))) {
-	if ((u->flags & USER_GROUP) 
+	if ((u->flags & USER_GROUP)
 	    && (strncmp(u->user, "others", 6) != 0)) {
-	    
+
 	    traverseGroupTree(u->gData);
         }
     }
 
-    
+
     while ((u = uDataTableGetNextEntry(uDataPtrTb)) != NULL)
     {
-	
+
 	if (! u->flags & USER_GROUP) {
 	    struct uData              *allUserGrp;
 	    LS_BITSET_ITERATOR_T      iter;
@@ -594,19 +593,19 @@ setuDataCreate()
 		setAddElement(u->ancestors, (void *)allUserGrp);
 	    }
 	}
-	
-	if (u->flags & USER_ALL) 
+
+	if (u->flags & USER_ALL)
 	    FOR_EACH_USER_ANCESTOR_UGRP(u, ancestor) {
 	        if (setIsMember(uGrpAllAncestorSet, (void *)ancestor)==FALSE)
 		{
 		    char                      strBuf[512];
 		    LS_BITSET_OBSERVER_T      *observer;
 
-		    
+
 		    sprintf(strBuf,
 			    "User <%s>'s all user set observer",
 			    ancestor->user);
-		    
+
 		    observer = setObserverCreate(strBuf,
 						 (void *)ancestor->descendants,
 						 (LS_BITSET_ENTRY_SELECT_OP_T)
@@ -625,20 +624,20 @@ setuDataCreate()
 		    setAddElement(uGrpAllAncestorSet, ancestor);
 		}
             } END_FOR_EACH_USER_ANCESTOR_UGRP;
-    }    
+    }
 }
 static void
 traverseGroupTree(struct gData *grp)
 {
     static char         fname[] = "traverseGroupTree";
-    struct uStackEntry  uStack[MAX_GROUPS]; 
+    struct uStackEntry  uStack[MAX_GROUPS];
     int                 uStackTop;
     int                 uStackCur;
 
     uStackTop = 0;
     uStackCur = -1;
 
-    
+
     uStack[uStackTop].myGData = grp;
     uStack[uStackTop].myUData = getUserData(grp->group);
     uStack[uStackTop].parentGData = NULL;
@@ -654,98 +653,98 @@ traverseGroupTree(struct gData *grp)
 	sTab hashSearchPtr;
 	hEnt *hashEntryPtr;
 
-        
+
         curGData = uStack[uStackCur].myGData;
         curUData = uStack[uStackCur].myUData;
 
-	
+
 	checkuDataSet(curUData);
 
-	
+
 	hashEntryPtr = h_firstEnt_(&curGData->memberTab, &hashSearchPtr);
-	
+
 	while (hashEntryPtr) {
 	    char *user;
 	    struct uData *u;
-	    
+
 	    user =  hashEntryPtr->keyname;
 
 	    u = getUserData(user);
 	    if (u == NULL) {
-		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, 
+		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL,
 		    fname, "getUserData", user);
 		continue;
 	    }
-	    
-	    
+
+
 	    checkuDataSet(u);
-	    
-	    
+
+
 	    setAddElement(u->parents, curUData);
 	    setAddElement(u->ancestors, curUData);
-	    
-	    
+
+
 	    setOperate(u->ancestors, curUData->ancestors,
 		       LS_SET_UNION);
-		
-	    
+
+
 	    setAddElement(curUData->children, u);
 	    setAddElement(curUData->descendants, u);
-	    
-	    
+
+
 	    hashEntryPtr = h_nextEnt_(&hashSearchPtr);
 	}
-	
-	
+
+
 	for (i = 0; i < curGData->numGroups; i++) {
-	    struct gData *subGData;  
+	    struct gData *subGData;
 	    struct uData *subUData;
-	    
+
 	    subGData = curGData->gPtr[i];
 	    subUData = getUserData(subGData->group);
-	    
+
 	    uStack[uStackTop].myGData = subGData;
 	    uStack[uStackTop].myUData = subUData;
 	    uStack[uStackTop].parentGData = curGData;
 	    uStack[uStackTop].parentUData = curUData;
-	    
-	    
+
+
 	    checkuDataSet(subUData);
-	    
-	    
+
+
 	    setAddElement(subUData->parents, curUData);
 	    setAddElement(subUData->ancestors, curUData);
-	    setOperate(subUData->ancestors, curUData->ancestors, 
+	    setOperate(subUData->ancestors, curUData->ancestors,
 		       LS_SET_UNION);
 
-	    
+
 	    setAddElement(curUData->children, subUData);
 	    setAddElement(curUData->descendants, subUData);
-	    
+
 	    ++uStackTop;
 	}
 
 	++uStackCur;
     }
-    
+
     --uStackTop;
     while (uStackTop > 0 ) {
         struct uData *curUData;
 	struct uData *parentUData;
-	
+
         curUData = uStack[uStackTop].myUData;
 	parentUData = uStack[uStackTop].parentUData;
 
- 	
+
 	checkuDataSet(parentUData);
 
-	setOperate(parentUData->descendants, curUData->descendants, 
+	setOperate(parentUData->descendants, curUData->descendants,
 		   LS_SET_UNION);
 
         --uStackTop;
     }
 }
-static void 
+static void
 checkuDataSet(struct uData *u)
 {
     static char fname[] = "checkuDataSet()";
@@ -754,8 +753,8 @@ checkuDataSet(struct uData *u)
     if (u->children == NULL) {
 	memset(strBuf, 0, 128);
 	sprintf(strBuf, "%s children set", u->user);
-	u->children = setCreate(MAX_GROUPS, 
-				getIndexByuData, 
+	u->children = setCreate(MAX_GROUPS,
+				getIndexByuData,
 				getuDataByIndex ,
 				strBuf);
     }
@@ -763,8 +762,8 @@ checkuDataSet(struct uData *u)
     if (u->descendants == NULL) {
 	memset(strBuf, 0, 128);
 	sprintf(strBuf, "%s descendants set", u->user);
-	u->descendants = setCreate(MAX_GROUPS, 
-				 getIndexByuData, 
+	u->descendants = setCreate(MAX_GROUPS,
+				 getIndexByuData,
 				 getuDataByIndex ,
 				 strBuf);
     }
@@ -772,8 +771,8 @@ checkuDataSet(struct uData *u)
     if (u->parents == NULL) {
 	memset(strBuf, 0, 128);
 	sprintf(strBuf, "%s parents set", u->user);
-	u->parents = setCreate(MAX_GROUPS, 
-			       getIndexByuData, 
+	u->parents = setCreate(MAX_GROUPS,
+			       getIndexByuData,
 			       getuDataByIndex ,
 			       strBuf);
     }
@@ -781,8 +780,8 @@ checkuDataSet(struct uData *u)
     if (u->ancestors == NULL) {
        	memset(strBuf, 0, 128);
 	sprintf(strBuf, "%s ancestors set", u->user);
-	u->ancestors = setCreate(MAX_GROUPS, 
-				getIndexByuData, 
+	u->ancestors = setCreate(MAX_GROUPS,
+				getIndexByuData,
 				getuDataByIndex ,
 				strBuf);
     }
@@ -792,7 +791,7 @@ checkuDataSet(struct uData *u)
 	u->ancestors == NULL) {
 	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5904,
 	    "%s: Failed in creating user set %s"), /* catgets 5904 */
-	    fname, 
+	    fname,
 	    setPerror(bitseterrno));
 	mbdDie(MASTER_FATAL);
     }
@@ -813,9 +812,9 @@ uDataTableCreate()
 
     return (this);
 
-} 
+}
 
-void 
+void
 uDataTableFree(UDATA_TABLE_T *uTab)
 {
 
@@ -825,7 +824,7 @@ uDataTableFree(UDATA_TABLE_T *uTab)
     FREEUP(uTab);
     return;
 
-} 
+}
 
 void
 uDataTableAddEntry(UDATA_TABLE_T *this, struct uData *new)
@@ -845,15 +844,15 @@ uDataTableAddEntry(UDATA_TABLE_T *this, struct uData *new)
 	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "realloc");
 	    mbdDie(MASTER_FATAL);
 	}
-			
-	memset(this->_base_ + this->_size_, 0, 
+
+	memset(this->_base_ + this->_size_, 0,
 	       (this->_size_)*(sizeof(struct uData *)));
 	this->_size_ = 2*(this->_size_);
     }
 
     this->_base_[this->_cur_++] = new ;
 
-} 
+}
 int
 uDataTableGetNumEntries(UDATA_TABLE_T *this)
 {
@@ -873,8 +872,8 @@ uDataTableGetNextEntry(UDATA_TABLE_T *this)
 }
 
 int
-userSetOnNewUser(LS_BITSET_T *subjectSet, 
-		 void *extra, 
+userSetOnNewUser(LS_BITSET_T *subjectSet,
+		 void *extra,
 		 LS_BITSET_EVENT_T *event)
 {
     static char        fname[] = "userSetOnNewUser";
@@ -884,16 +883,16 @@ userSetOnNewUser(LS_BITSET_T *subjectSet,
     set = (LS_BITSET_T *) extra;
     newUser = (struct uData *)event->entry;
 
-    if (logclass & (LC_TRACE)) 
+    if (logclass & (LC_TRACE))
 	ls_syslog(LOG_DEBUG, "\
-%s: added new user <%s> to <%s>", 
+%s: added new user <%s> to <%s>",
 		  fname, newUser->user,  set->setDescription);
-	
+
     setAddElement(set, (void *)newUser);
 
     return (0);
 
-} 
+}
 
 #define SKIP_HOST_GROUP(group) (strstr(group, "others") != NULL)
 
@@ -902,7 +901,7 @@ getAllHostGroup(struct gData **gplist, int ngrp, int recursive,
 		struct groupInfoEnt *groupInfoEnt, int *numHostGroup)
 {
     int i, count;
-    
+
     for (i = 0, count = 0; i < ngrp; i++) {
 	if (SKIP_HOST_GROUP(gplist[i]->group)) {
 	    continue;
@@ -914,16 +913,16 @@ getAllHostGroup(struct gData **gplist, int ngrp, int recursive,
     *numHostGroup = count;
 }
 
-static void 
-getSpecifiedHostGroup(char **grpName, int numGrpName, struct gData **gplist, 
-		      int ngrp, int recursive, 
+static void
+getSpecifiedHostGroup(char **grpName, int numGrpName, struct gData **gplist,
+		      int ngrp, int recursive,
 		      struct groupInfoEnt *groupInfoEnt, int *numHostGroup)
 {
     int i, count;
-    
+
     for (count = 0; count < numGrpName; count++) {
 	int groupFound = FALSE;
-	
+
 	for (i = 0; i < ngrp; i++) {
 	    if (SKIP_HOST_GROUP(gplist[i]->group)) {
 		continue;
@@ -937,15 +936,15 @@ getSpecifiedHostGroup(char **grpName, int numGrpName, struct gData **gplist,
 	    copyHostGroup(gplist[i], recursive,
 			  &(groupInfoEnt[count]));
 	} else {
-	    
+
 	    break;
 	}
     }
     *numHostGroup = count;
 }
-	    
+
 static void
-copyHostGroup(struct gData *grp, int recursive, 
+copyHostGroup(struct gData *grp, int recursive,
 	      struct groupInfoEnt *groupInfoEnt)
 {
     groupInfoEnt->group = grp->group;
@@ -953,28 +952,28 @@ copyHostGroup(struct gData *grp, int recursive,
 }
 
 int
-sizeofGroupInfoReply(struct groupInfoReply *ugroups) 
+sizeofGroupInfoReply(struct groupInfoReply *ugroups)
 {
     int              len;
     int              i;
 
     len = 0;
 
-    
-    len += ALIGNWORD_(sizeof(struct groupInfoReply) 
+
+    len += ALIGNWORD_(sizeof(struct groupInfoReply)
 		      + ugroups->numGroups * sizeof(struct groupInfoEnt)
 		      + ugroups->numGroups * NET_INTSIZE_);
-    
+
     for (i = 0; i < ugroups->numGroups; i++) {
 	struct groupInfoEnt      *ent;
-	
+
 	ent = &(ugroups->groups[i]);
-	
-	
+
+
 	len += ALIGNWORD_(strlen(ent->group) + 1);
 	len += ALIGNWORD_(strlen(ent->memberList) + 1);
     }
 
     return(len);
 
-} 
+}

@@ -6,6 +6,8 @@ FIXES
 -- Fix the problem of host going periodically -ok.
 -- Fix timer initialization in LIM.
 -- Fix mbatchd to clean HOST_STAT_EXCLUSIVE when reply lsb.events.
+-- Fix job dependencies by name. The dependencies by name incorrectly
+   included all jobs belong to the user submitting the jobs.
 
 2.2 is a bug fix release.
 

@@ -1,5 +1,6 @@
-/* $Id: lsacct.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -699,9 +701,6 @@ static int ininterval(time_t time, struct interval inter)
 int
 main(int argc, char *argv[])
 {
-   int rt;
-
-    rt = _i18n_init ( I18N_CAT_MIN );
 
     setdefaults();
     getoptions(argc, argv);
@@ -711,8 +710,6 @@ main(int argc, char *argv[])
     processlogfile();
     printsummary();
 
-    _i18n_end ( ls_catd );
-    return(0);
-
+    return 0;
 }
 
