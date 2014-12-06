@@ -16,7 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
-
 #ifndef _LSF_H_
 #define _LSF_H_
 
@@ -52,6 +51,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/file.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <rpc/types.h>

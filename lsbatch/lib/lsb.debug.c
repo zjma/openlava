@@ -1,5 +1,6 @@
-/* $Id: lsb.debug.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,20 +17,11 @@
  *
  */
 
-#include <string.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <pwd.h>
-
 #include "lsb.h"
 
-int 
-lsb_debugReq (struct debugReq  *pdebug , char *host)
+int
+lsb_debugReq(struct debugReq  *pdebug , char *host)
 {
-
-
     static struct debugReq  debug;
 
     mbdReqType mbdReqtype;
@@ -38,7 +30,7 @@ lsb_debugReq (struct debugReq  *pdebug , char *host)
     char *reply_buf;
     int cc;
     struct LSFHeader hdr;
-    struct lsfAuth auth; 
+    struct lsfAuth auth;
     char *toHost = NULL;
 
 
@@ -52,34 +44,34 @@ lsb_debugReq (struct debugReq  *pdebug , char *host)
     if (host) {
         if (strlen (host) >= MAXHOSTNAMELEN - 1) {
             lsberrno = LSBE_BAD_ARG;
-	    return (-1);
-	}
-  	strcpy(debug.hostName, host);
+            return (-1);
+        }
+        strcpy(debug.hostName, host);
     } else {
         char *h;
         if ((h = ls_getmyhostname()) == NULL) {
-	    lsberrno = LSBE_LSLIB;
-	    return(-1);
-	}
+            lsberrno = LSBE_LSLIB;
+            return(-1);
+        }
         strcpy(debug.hostName, h);
     }
-     
-    
+
+
     if ( debug.opCode == MBD_DEBUG || debug.opCode == MBD_TIMING){
-	
+
         mbdReqtype = BATCH_DEBUG;
-	toHost = NULL;
+        toHost = NULL;
     } else {
-	
+
         mbdReqtype = CMD_SBD_DEBUG;
-	toHost = host;
+        toHost = host;
     }
-   
-    
+
+
     if (authTicketTokens_(&auth, toHost) == -1){
-	return (-1);
+        return (-1);
     }
-    
+
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
     initLSFHeader_(&hdr);
 
@@ -90,34 +82,32 @@ lsb_debugReq (struct debugReq  *pdebug , char *host)
         return(-1);
     }
 
-    
+
 
     if ( debug.opCode == MBD_DEBUG || debug.opCode == MBD_TIMING) {
-        if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, 
+        if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                            &hdr, NULL, NULL, NULL)) == -1) {
-            xdr_destroy(&xdrs); 
-	    return (-1);
+            xdr_destroy(&xdrs);
+            return (-1);
         }
     }
     else {
         if ((cc = cmdCallSBD_(debug.hostName, request_buf,
-        	              XDR_GETPOS(&xdrs), &reply_buf, 
-			      &hdr, NULL)) == -1) {
+                              XDR_GETPOS(&xdrs), &reply_buf,
+                              &hdr, NULL)) == -1) {
             xdr_destroy(&xdrs);
-	    return (-1);
+            return (-1);
         }
     }
-    xdr_destroy(&xdrs); 
+    xdr_destroy(&xdrs);
 
-    
 
     lsberrno = hdr.opCode;
     if (cc)
-	free(reply_buf);    
-    if (lsberrno == LSBE_NO_ERROR) 
-        return(0);        
+        free(reply_buf);
+    if (lsberrno == LSBE_NO_ERROR)
+        return(0);
 
     return(-1);
 
-} 
-
+}

@@ -1,4 +1,4 @@
-/* $Id: lsb.conf.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,17 +16,7 @@
  *
  */
 
-#include <stdlib.h>
-#include <math.h>
-#include <pwd.h>
-#include <grp.h>
-#include <netdb.h>
-#include <ctype.h>
 #include "lsb.h"
-#include "lsb.sig.h"
-#include "../../lsf/intlib/intlibout.h"
-
-#define   NL_SETN     13
 
 #define USEREQUIVALENT "userequivalent"
 #define USERMAPPING "usermap"

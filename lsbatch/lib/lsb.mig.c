@@ -1,5 +1,6 @@
-/* $Id: lsb.mig.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,13 +17,9 @@
  *
  */
 
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <pwd.h>
 #include "lsb.h"
 
-int 
+int
 lsb_mig (struct submig *mig, int *badHostIdx)
 {
     struct migReq migReq;
@@ -36,35 +33,35 @@ lsb_mig (struct submig *mig, int *badHostIdx)
 
 
     if (mig->jobId <= 0) {
-	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+        lsberrno = LSBE_BAD_ARG;
+        return(-1);
     }
 
     if (authTicketTokens_(&auth, NULL) == -1)
-	return (-1);
-    
+        return (-1);
+
     migReq.jobId = mig->jobId;
     migReq.options = 0;
     if (mig->options & LSB_CHKPNT_FORCE)
-	migReq.options |= LSB_CHKPNT_FORCE;
-    
+        migReq.options |= LSB_CHKPNT_FORCE;
+
     if (mig->numAskedHosts > 0) {
-	for (migReq.numAskedHosts = 0;
-	     migReq.numAskedHosts < mig->numAskedHosts;
-	     migReq.numAskedHosts++) {
-            if (strlen (mig->askedHosts[migReq.numAskedHosts]) 
-                                              >= MAXHOSTNAMELEN - 1) {
+        for (migReq.numAskedHosts = 0;
+             migReq.numAskedHosts < mig->numAskedHosts;
+             migReq.numAskedHosts++) {
+            if (strlen (mig->askedHosts[migReq.numAskedHosts])
+                >= MAXHOSTNAMELEN - 1) {
                 lsberrno = LSBE_BAD_HOST;
                 return(-1);
             }
         }
-	migReq.askedHosts = mig->askedHosts;
+        migReq.askedHosts = mig->askedHosts;
     } else {
-	migReq.numAskedHosts = 0;
+        migReq.numAskedHosts = 0;
     }
 
-    
-    
+
+
     mbdReqtype = BATCH_JOB_MIG;
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
     hdr.opCode = mbdReqtype;
@@ -73,42 +70,42 @@ lsb_mig (struct submig *mig, int *badHostIdx)
         return(-1);
     }
 
-    
-    if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, 
+
+    if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                        &hdr, NULL, NULL, NULL)) == -1) {
-	xdr_destroy(&xdrs);
-	return (-1);
+        xdr_destroy(&xdrs);
+        return (-1);
     }
 
     xdr_destroy(&xdrs);
 
     lsberrno = hdr.opCode;
     if (lsberrno != LSBE_NO_ERROR) {
-	struct submitMbdReply reply;
+        struct submitMbdReply reply;
 
-	if (cc == 0) {
-	    *badHostIdx = 0;
-	    return (-1);
-	}
-	
-	xdrmem_create(&xdrs, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
-	if (!xdr_submitMbdReply(&xdrs, &reply, &hdr)) {
-	    lsberrno = LSBE_XDR;
-	    xdr_destroy(&xdrs);
-	    free(reply_buf);
-	    return (-1);
-	}
+        if (cc == 0) {
+            *badHostIdx = 0;
+            return (-1);
+        }
 
-	xdr_destroy(&xdrs);
-	free(reply_buf);
-	
-	*badHostIdx = reply.badReqIndx;
-	return (-1);
+        xdrmem_create(&xdrs, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
+        if (!xdr_submitMbdReply(&xdrs, &reply, &hdr)) {
+            lsberrno = LSBE_XDR;
+            xdr_destroy(&xdrs);
+            free(reply_buf);
+            return (-1);
+        }
+
+        xdr_destroy(&xdrs);
+        free(reply_buf);
+
+        *badHostIdx = reply.badReqIndx;
+        return (-1);
     }
 
 
     if (cc)
-	free(reply_buf);	
+        free(reply_buf);
     return (0);
 
-} 
+}

@@ -1,5 +1,6 @@
-/* $Id: listset.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,9 +17,12 @@
  *
  */
 
+#ifndef _LIST_SET_H_
+#define _LIST_SET_H_
+
 struct listSet {
-    long            elem;             
-    struct listSet *next;  
+    long            elem;
+    struct listSet *next;
 };
 
 struct listSetIterator {
@@ -42,10 +46,12 @@ extern void   collectFreeSet(void);
 extern int    listSetMember(long, struct listSet *);
 
 extern struct listSetIterator *listSetIteratorCreate(void);
-extern void   listSetIteratorAttach(struct  listSet  *, 
+extern void   listSetIteratorAttach(struct  listSet  *,
 				    struct  listSetIterator *);
 extern long  *listSetIteratorBegin(struct listSetIterator *);
 extern long  *listSetIteratorEnd(struct listSetIterator   *);
 extern long  *listSetIteratorGetNext(struct listSetIterator *);
 extern void  listSetIteratorDestroy(struct listSetIterator *);
 extern void  listSetIteratorDetach(struct listSetIterator *);
+
+#endif

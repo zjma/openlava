@@ -1,5 +1,6 @@
-/* $Id: cmd.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -30,11 +31,11 @@
 #include "../../lsf/lib/lib.table.h"
 #include "../../lsf/lib/mls.h"
 
-#define MIN_CPU_TIME 0.0001 
+#define MIN_CPU_TIME 0.0001
 
 #define SIGCHK   -1
 #define SIGDEL   -2
-#define SIGFORCE -3   
+#define SIGFORCE -3
 
 #define MAX_JOB_IDS  100
 
@@ -56,11 +57,11 @@
 
 #ifndef MIN
 #define MIN(x,y)        ((x) < (y) ? (x) : (y))
-#endif 
+#endif
 
 #ifndef MAX
 #define MAX(x,y)        ((x) > (y) ? (x) : (y))
-#endif 
+#endif
 
 #define TRUNC_STR(s,len) \
 { \
@@ -77,7 +78,7 @@ struct histReq {
     int    opCode;
     char   **names;
     time_t eventTime[2];
-    char   *eventFileName;               
+    char   *eventFileName;
     int    found;
 };
 

@@ -1,5 +1,6 @@
-/* $Id: lsb.jobs.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,29 +17,18 @@
  *
  */
 
-#include <unistd.h>
-#include <time.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
 #include "lsb.h"
-
-extern int errno;
-
-
-extern void copyJUsage(struct jRusage *to, struct jRusage *from);
-extern int _lsb_recvtimeout;
 
 static int mbdSock = -1;
 
 int
-lsb_openjobinfo (LS_LONG_INT jobId, char *jobName, char *userName,
-                 char *queueName, char *hostName, int options)
+lsb_openjobinfo(LS_LONG_INT jobId, char *jobName, char *userName,
+                char *queueName, char *hostName, int options)
 {
     struct jobInfoHead *jobInfoHead;
 
     jobInfoHead = lsb_openjobinfo_a (jobId, jobName, userName, queueName,
-				     hostName, options);
+                                     hostName, options);
     if (!jobInfoHead)
         return (-1);
     return (jobInfoHead->numJobs);
@@ -47,7 +37,7 @@ lsb_openjobinfo (LS_LONG_INT jobId, char *jobName, char *userName,
 
 struct jobInfoHead *
 lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
-                 char *queueName, char *hostName, int options)
+                   char *queueName, char *hostName, int options)
 {
     static int first = TRUE;
     static struct jobInfoReq jobInfoReq;
@@ -61,9 +51,9 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
     char lsfUserName[MAXLINELEN];
     if (first) {
         if (   !(jobInfoReq.jobName  = (char *) malloc(MAX_CMD_DESC_LEN))
-            || !(jobInfoReq.queue    = (char *) malloc(MAX_LSB_NAME_LEN))
-            || !(jobInfoReq.userName = (char *) malloc(MAX_LSB_NAME_LEN))
-            || !(jobInfoReq.host     = (char *) malloc(MAXHOSTNAMELEN))) {
+               || !(jobInfoReq.queue    = (char *) malloc(MAX_LSB_NAME_LEN))
+               || !(jobInfoReq.userName = (char *) malloc(MAX_LSB_NAME_LEN))
+               || !(jobInfoReq.host     = (char *) malloc(MAXHOSTNAMELEN))) {
             lsberrno = LSBE_SYS_CALL;
             return(NULL);
         }
@@ -77,7 +67,7 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
             lsberrno = LSBE_BAD_QUEUE;
             return(NULL);
         }
-	TIMEIT(1, strcpy(jobInfoReq.queue, queueName), "strcpy");
+        TIMEIT(1, strcpy(jobInfoReq.queue, queueName), "strcpy");
     }
 
     if (hostName == NULL)
@@ -90,28 +80,28 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
         } else {
             struct hostent *hp;
 
-	    TIMEIT(0, (hp = Gethostbyname_(hostName)), "getHostOfficialByName_");
-	    if (hp != NULL) {
-		struct hostInfo *hostinfo;
+            TIMEIT(0, (hp = Gethostbyname_(hostName)), "getHostOfficialByName_");
+            if (hp != NULL) {
+                struct hostInfo *hostinfo;
                 char officialNameBuf[MAXHOSTNAMELEN];
 
                 strcpy(officialNameBuf, hp->h_name);
-		hostinfo = ls_gethostinfo("-",
+                hostinfo = ls_gethostinfo("-",
                                           NULL,
                                           (char **)&hp->h_name,
                                           1,
                                           LOCAL_ONLY);
-		if (hostinfo == NULL) {
-		    strcpy(jobInfoReq.host, hostName);
-		} else {
-	            strcpy(jobInfoReq.host, officialNameBuf);
-		}
+                if (hostinfo == NULL) {
+                    strcpy(jobInfoReq.host, hostName);
+                } else {
+                    strcpy(jobInfoReq.host, officialNameBuf);
+                }
             } else {
                 if (strlen (hostName) >= MAXHOSTNAMELEN - 1) {
                     lsberrno = LSBE_BAD_HOST;
                     return(NULL);
                 }
-	        strcpy(jobInfoReq.host, hostName);
+                strcpy(jobInfoReq.host, hostName);
             }
         }
 
@@ -124,30 +114,30 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
             lsberrno = LSBE_BAD_JOB;
             return(NULL);
         }
-	strcpy(jobInfoReq.jobName, jobName);
+        strcpy(jobInfoReq.jobName, jobName);
     }
 
     if (userName == NULL ) {
         TIMEIT(0, (cc = getLSFUser_(lsfUserName, MAXLINELEN)), "getLSFUser_");
         if (cc  != 0) {
-           return (NULL);
+            return (NULL);
         }
-	TIMEIT(1, strcpy(jobInfoReq.userName, lsfUserName), "strcpy");
+        TIMEIT(1, strcpy(jobInfoReq.userName, lsfUserName), "strcpy");
     } else {
         if (strlen (userName) >= MAX_LSB_NAME_LEN - 1) {
             lsberrno = LSBE_BAD_USER;
             return(NULL);
         }
-	strcpy(jobInfoReq.userName, userName);
+        strcpy(jobInfoReq.userName, userName);
     }
     if ((options & ~(JOBID_ONLY | JOBID_ONLY_ALL | HOST_NAME | NO_PEND_REASONS)) == 0)
-	jobInfoReq.options = CUR_JOB;
+        jobInfoReq.options = CUR_JOB;
     else
         jobInfoReq.options = options;
 
     if (jobId < 0) {
-	lsberrno = LSBE_BAD_ARG;
-	return(NULL);
+        lsberrno = LSBE_BAD_ARG;
+        return(NULL);
     }
     jobInfoReq.jobId = jobId;
 
@@ -157,7 +147,7 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
 
     hdr.opCode = mbdReqtype;
     TIMEIT(1, (aa = xdr_encodeMsg(&xdrs, (char *) &jobInfoReq , &hdr,
-                           xdr_jobInfoReq, 0, NULL)), "xdr_encodeMsg");
+                                  xdr_jobInfoReq, 0, NULL)), "xdr_encodeMsg");
     if (aa == FALSE) {
         lsberrno = LSBE_XDR;
         return(NULL);
@@ -166,10 +156,10 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
 
 
     TIMEIT(0, (cc = callmbd (clusterName, request_buf, XDR_GETPOS(&xdrs),
-                    &reply_buf, &hdr, &mbdSock, NULL, NULL)), "callmbd");
+                             &reply_buf, &hdr, &mbdSock, NULL, NULL)), "callmbd");
     if (cc  == -1) {
         xdr_destroy(&xdrs);
-	return (NULL);
+        return (NULL);
     }
 
     xdr_destroy(&xdrs);
@@ -180,22 +170,22 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
     if (lsberrno == LSBE_NO_ERROR) {
 
 
-	xdrmem_create(&xdrs2, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
-	if (! xdr_jobInfoHead (&xdrs2, &jobInfoHead, &hdr)) {
-	    lsberrno = LSBE_XDR;
+        xdrmem_create(&xdrs2, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
+        if (! xdr_jobInfoHead (&xdrs2, &jobInfoHead, &hdr)) {
+            lsberrno = LSBE_XDR;
             xdr_destroy(&xdrs2);
-	    if (cc)
-		free(reply_buf);
-	    return(NULL);
+            if (cc)
+                free(reply_buf);
+            return(NULL);
         }
-	xdr_destroy(&xdrs2);
-	if (cc)
-	    free(reply_buf);
+        xdr_destroy(&xdrs2);
+        if (cc)
+            free(reply_buf);
         return (&jobInfoHead);
     }
 
     if (cc)
-	free(reply_buf);
+        free(reply_buf);
     return(NULL);
 
 }
@@ -218,45 +208,45 @@ lsb_readjobinfo(int *more)
 
 
     TIMEIT(0, (num = readNextPacket(&buffer, _lsb_recvtimeout, &hdr,
-				    mbdSock)), "readNextPacket");
+                                    mbdSock)), "readNextPacket");
     if (num < 0) {
-	closeSession(mbdSock);
+        closeSession(mbdSock);
         lsberrno = LSBE_EOF;
-	return NULL;
+        return NULL;
     }
 
     if (first) {
-	if ( (submitReq.fromHost = malloc(MAXHOSTNAMELEN)) == NULL
-	    || (submitReq.jobFile = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.inFile  = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.outFile = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.errFile = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.inFileSpool = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.commandSpool = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.hostSpec = malloc(MAXHOSTNAMELEN)) == NULL
-	    || (submitReq.chkpntDir = malloc(MAXFILENAMELEN)) == NULL
-	    || (submitReq.subHomeDir = malloc(MAXFILENAMELEN)) == NULL
-	    || (jobInfoReply.userName  = malloc(MAXLSFNAMELEN)) == NULL
-	    || (submitReq.cwd       = malloc(MAXFILENAMELEN)) == NULL) {
-	    lsberrno = LSBE_NO_MEM;
-	    FREEUP(submitReq.fromHost);
-	    FREEUP(submitReq.jobFile);
-	    FREEUP(submitReq.inFile);
-	    FREEUP(submitReq.outFile);
-	    FREEUP(submitReq.errFile);
-	    FREEUP(submitReq.inFileSpool);
-	    FREEUP(submitReq.commandSpool);
-	    FREEUP(submitReq.hostSpec);
-	    FREEUP(submitReq.chkpntDir);
-	    FREEUP(submitReq.subHomeDir);
-	    FREEUP(jobInfoReply.userName);
-	    FREEUP(submitReq.cwd);
+        if ( (submitReq.fromHost = malloc(MAXHOSTNAMELEN)) == NULL
+             || (submitReq.jobFile = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.inFile  = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.outFile = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.errFile = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.inFileSpool = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.commandSpool = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.hostSpec = malloc(MAXHOSTNAMELEN)) == NULL
+             || (submitReq.chkpntDir = malloc(MAXFILENAMELEN)) == NULL
+             || (submitReq.subHomeDir = malloc(MAXFILENAMELEN)) == NULL
+             || (jobInfoReply.userName  = malloc(MAXLSFNAMELEN)) == NULL
+             || (submitReq.cwd       = malloc(MAXFILENAMELEN)) == NULL) {
+            lsberrno = LSBE_NO_MEM;
+            FREEUP(submitReq.fromHost);
+            FREEUP(submitReq.jobFile);
+            FREEUP(submitReq.inFile);
+            FREEUP(submitReq.outFile);
+            FREEUP(submitReq.errFile);
+            FREEUP(submitReq.inFileSpool);
+            FREEUP(submitReq.commandSpool);
+            FREEUP(submitReq.hostSpec);
+            FREEUP(submitReq.chkpntDir);
+            FREEUP(submitReq.subHomeDir);
+            FREEUP(jobInfoReply.userName);
+            FREEUP(submitReq.cwd);
 
-	    free(buffer);
-	    return NULL;
-	}
+            free(buffer);
+            return NULL;
+        }
 
-	submitReq.xf = NULL;
+        submitReq.xf = NULL;
         submitReq.nxf = 0;
         jobInfoReply.numToHosts = 0;
         submitReq.numAskedHosts = 0;
@@ -266,15 +256,15 @@ lsb_readjobinfo(int *more)
     jobInfoReply.jobBill = &submitReq;
 
     if (jobInfoReply.numToHosts > 0) {
-	for (i=0; i<jobInfoReply.numToHosts; i++)
-	    FREEUP(jobInfoReply.toHosts[i]);
+        for (i=0; i<jobInfoReply.numToHosts; i++)
+            FREEUP(jobInfoReply.toHosts[i]);
         FREEUP(jobInfoReply.toHosts);
-	jobInfoReply.numToHosts = 0;
-	jobInfoReply.toHosts = NULL;
+        jobInfoReply.numToHosts = 0;
+        jobInfoReply.toHosts = NULL;
     }
 
     if (submitReq.xf) {
-	free(submitReq.xf);
+        free(submitReq.xf);
         submitReq.xf = NULL;
     }
 
@@ -288,12 +278,12 @@ lsb_readjobinfo(int *more)
     TIMEIT(1, xdrmem_create(&xdrs, buffer, XDR_DECODE_SIZE_(hdr.length), XDR_DECODE), "xdrmem_create");
     TIMEIT(1, (aa = xdr_jobInfoReply(&xdrs, &jobInfoReply, &hdr)), "xdr_jobInfoReply");
     if (aa == FALSE) {
-	lsberrno = LSBE_XDR;
-	xdr_destroy(&xdrs);
-	free(buffer);
-	jobInfoReply.toHosts = NULL;
-	jobInfoReply.numToHosts = 0;
-	return NULL;
+        lsberrno = LSBE_XDR;
+        xdr_destroy(&xdrs);
+        free(buffer);
+        jobInfoReply.toHosts = NULL;
+        jobInfoReply.numToHosts = 0;
+        return NULL;
     }
 
     TIMEIT(1, xdr_destroy(&xdrs), "xdr_destroy");
@@ -355,7 +345,7 @@ lsb_readjobinfo(int *more)
 
 
     for (i=0; i<LSF_RLIM_NLIMITS; i++) {
-	jobInfo.submit.rLimits[i] = jobInfoReply.jobBill->rLimits[i];
+        jobInfo.submit.rLimits[i] = jobInfoReply.jobBill->rLimits[i];
     }
     jobInfo.submit.hostSpec = jobInfoReply.jobBill->hostSpec;
     jobInfo.submit.sigValue = jobInfoReply.jobBill->sigValue;
@@ -400,7 +390,7 @@ lsb_readjobinfo(int *more)
     }
 
     if (more)
-	*more = hdr.reserved;
+        *more = hdr.reserved;
 
     return &jobInfo;
 }
@@ -409,82 +399,75 @@ lsb_readjobinfo(int *more)
 void
 lsb_closejobinfo()
 {
-     closeSession(mbdSock);
+    closeSession(mbdSock);
 }
 
 int
 lsb_runjob(struct runJobRequest* runJobRequest)
 {
-    XDR                   xdrs;
-    struct LSFHeader      lsfHeader;
-    struct lsfAuth        auth;
-    mbdReqType            mbdReqType;
-    char                  request_buf[MSGSIZE/2];
-    char*                 reply_buf;
-    int                   retVal;
-    int                   cc;
-
+    XDR xdrs;
+    struct LSFHeader lsfHeader;
+    struct lsfAuth auth;
+    mbdReqType mbdReqType;
+    char request_buf[MSGSIZE/2];
+    char *reply_buf;
+    int retVal;
+    int cc;
 
     if (runJobRequest == NULL
-	|| runJobRequest->numHosts == 0
-	|| runJobRequest->hostname == NULL
-	|| runJobRequest->jobId < 0
-	|| (   runJobRequest->options != 0
-	    && ! (runJobRequest->options &
-		  (RUNJOB_OPT_NORMAL | RUNJOB_OPT_NOSTOP))))
-
-    {
-	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+        || runJobRequest->numHosts == 0
+        || runJobRequest->hostname == NULL
+        || runJobRequest->jobId < 0
+        || (runJobRequest->options != 0
+            && ! (runJobRequest->options &
+                  (RUNJOB_OPT_NORMAL | RUNJOB_OPT_NOSTOP)))) {
+        lsberrno = LSBE_BAD_ARG;
+        return(-1);
     }
 
-
-    if (!( runJobRequest->options & (RUNJOB_OPT_NORMAL | RUNJOB_OPT_NOSTOP))) {
-	runJobRequest->options |= RUNJOB_OPT_NORMAL;
+    if (!( runJobRequest->options & (RUNJOB_OPT_NORMAL
+                                     | RUNJOB_OPT_NOSTOP))) {
+        runJobRequest->options |= RUNJOB_OPT_NORMAL;
     }
-
 
     if (authTicketTokens_(&auth, NULL) == -1) {
-	lsberrno = LSBE_LSBLIB;
-	return (-1);
+        lsberrno = LSBE_LSBLIB;
+        return (-1);
     }
 
 
     mbdReqType = BATCH_JOB_FORCE;
 
-
     xdrmem_create(&xdrs,
-		  request_buf,
-		  MSGSIZE/2,
-		  XDR_ENCODE);
+                  request_buf,
+                  MSGSIZE/2,
+                  XDR_ENCODE);
 
     initLSFHeader_(&lsfHeader);
 
     lsfHeader.opCode = mbdReqType;
 
     if (!xdr_encodeMsg(&xdrs,
-		       (char *)runJobRequest,
-		       &lsfHeader,
-		       xdr_runJobReq,
-		       0,
-		       &auth)) {
-	lsberrno = LSBE_XDR;
-	xdr_destroy(&xdrs);
-	return(-1);
+                       (char *)runJobRequest,
+                       &lsfHeader,
+                       xdr_runJobReq,
+                       0,
+                       &auth)) {
+        lsberrno = LSBE_XDR;
+        xdr_destroy(&xdrs);
+        return(-1);
     }
 
-
-
     if ((cc = callmbd(NULL,
-		      request_buf,
-		      XDR_GETPOS(&xdrs),
-		      &reply_buf,
-		      &lsfHeader,
-		      NULL,
-		      NULL,
-		      NULL)) == -1) {
-	xdr_destroy(&xdrs);
-	return(-1);
+                      request_buf,
+                      XDR_GETPOS(&xdrs),
+                      &reply_buf,
+                      &lsfHeader,
+                      NULL,
+                      NULL,
+                      NULL)) == -1) {
+        xdr_destroy(&xdrs);
+        return(-1);
     }
 
 
@@ -494,26 +477,24 @@ lsb_runjob(struct runJobRequest* runJobRequest)
     lsberrno = lsfHeader.opCode;
 
     if (lsberrno == LSBE_NO_ERROR)
-	retVal = 0;
+        retVal = 0;
     else
-	retVal = -1;
+        retVal = -1;
 
     return(retVal);
-
 }
 
 char *
 lsb_jobid2str (LS_LONG_INT jobId)
 {
-    static  char string[32];
-
+    static char string[32];
 
     if (LSB_ARRAY_IDX(jobId) == 0) {
-	sprintf(string, "%d",  LSB_ARRAY_JOBID(jobId));
+        sprintf(string, "%d",  LSB_ARRAY_JOBID(jobId));
     }
     else {
-	sprintf(string, "%d[%d]",  LSB_ARRAY_JOBID(jobId),
-	    LSB_ARRAY_IDX(jobId));
+        sprintf(string, "%d[%d]",  LSB_ARRAY_JOBID(jobId),
+                LSB_ARRAY_IDX(jobId));
     }
 
     return(string);
@@ -527,5 +508,4 @@ lsb_jobidinstr(LS_LONG_INT jobId)
 
     sprintf(string, LS_LONG_FORMAT, jobId);
     return(string);
-
 }

@@ -17,16 +17,20 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#ifndef _LSB_LIB_H_
+#define _LSB_LIB_H_
+
 #include "../../lsf/lsf.h"
+#include "../lsbatch.h"
+#include "../../lsf/lib/lib.h"
+#include "../../lsf/lib/lib.table.h"
+#include "../../lsf/lib/mls.h"
+#include "../../lsf/intlib/intlibout.h"
+#include "../daemons/daemonout.h"
+#include "lsb.spool.h"
 #include "../../lsf/lib/lib.hdr.h"
 #include "../../lsf/lib/lproto.h"
-#include "../lsbatch.h"
-#include "../daemons/daemonout.h"
-#include <sys/types.h>
-#include <unistd.h>
+#include "../../lsf/lib/lib.queue.h"
 
 #ifndef MIN
 #define MIN(x,y)        ((x) < (y) ? (x) : (y))
@@ -36,7 +40,15 @@
 #define MAX(x,y)        ((x) > (y) ? (x) : (y))
 #endif
 
-#define DEF_COMMITTED_RUN_TIME_FACTOR 0.0
+extern char **environ;
+
+/* In lsb.init.c
+ */
+extern int lsbMode_;
+
+extern int _lsb_conntimeout;
+extern int _lsb_recvtimeout;
+extern int _lsb_fakesetuid;
 
 extern struct config_param lsbParams[];
 extern int initenv_(struct config_param *, char *);
@@ -105,3 +117,17 @@ extern int chUserRemoveSpoolFile(const char *,
 extern void prtBETime_(struct submit *);
 extern int runBatchEsub(struct lenData *, struct submit *);
 
+extern void makeCleanToRunEsub();
+extern char *translateString(char *);
+extern void modifyJobInformation(struct submit *);
+extern void compactXFReq(struct submit *);
+extern char *wrapCommandLine(char *);
+extern char *unwrapCommandLine(char *);
+extern int  checkEmptyString(char *);
+extern int  stringIsToken(char *,char *);
+extern int  stringIsDigitNumber(char *);
+extern int processXFReq(char *, char *, struct submit *);
+extern char *extractStringValue(char *);
+extern void copyJUsage(struct jRusage *, struct jRusage *);
+
+#endif

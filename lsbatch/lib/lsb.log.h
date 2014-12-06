@@ -1,5 +1,6 @@
-/* $Id: lsb.log.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,14 +17,14 @@
  *
  */
 
-#include <string.h>
-#include <stdlib.h>
+#if !defined(_LSB_LOG_H_)
+#define _LSB_LOG_H_
 
 #include "lsb.h"
 
-#define MAXFILENAMELEN          256  
-#define MAXVERSIONLEN            12  
-#define MAXEVENTNAMELEN          12  
+#define MAXFILENAMELEN    256
+#define MAXVERSIONLEN     12
+#define MAXEVENTNAMELEN   12
 
 
 struct newJobLog {
@@ -149,5 +150,6 @@ struct eventRec {
 
 extern int putEventRec(FILE *, struct eventRec *);
 extern struct eventRec *getEventRec(char *);
-extern char *getNextValue0(char **line, char, char);
+extern char *getNextValue0(char **, char, char);
 
+#endif

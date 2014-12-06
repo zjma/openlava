@@ -479,7 +479,9 @@ chanOpen_(u_int iaddr, u_short port, int options)
         return -1;
     }
 
-    cc = connect(channels[i].handle, (struct sockaddr *) &addr, sizeof(addr));
+    cc = connect(channels[i].handle,
+                 (struct sockaddr *)&addr,
+                 sizeof(addr));
     if (cc < 0) {
 
         if (errno != EINPROGRESS) {

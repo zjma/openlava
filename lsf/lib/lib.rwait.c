@@ -1,5 +1,6 @@
-/* $Id: lib.rwait.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -25,27 +26,24 @@
 #include "../res/resout.h"
 #include "lproto.h"
 
-#define SIGEMT SIGBUS
-
-
-static int rwait_(int tid, LS_WAIT_T *status, int block, struct rusage *ru);
-static int readWaitReply(LS_WAIT_T *status, struct rusage *ru);
+static int rwait_(int, LS_WAIT_T *, int, struct rusage *);
+static int readWaitReply(LS_WAIT_T *, struct rusage *);
 static void restartRWait(sigset_t);
 static void usr1Handler(int);
-int isPamBlockWait = 0;
+static int isPamBlockWait;
 
 int
 ls_rwait(LS_WAIT_T *status, int options, struct rusage *ru)
 {
    return (rwait_(0, status, options, ru));
-} 
+}
 
 
 int
 ls_rwaittid(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
 {
     return (rwait_(tid, status, options, ru));
-} 
+}
 
 static int
 rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
@@ -58,24 +56,23 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
     sigset_t newMask, oldMask;
     int cc;
 
-    if (tid < 0) { 
+    if (tid < 0) {
 	lserrno = LSE_BAD_ARGS;
 	return (-1);
     }
 
-    if (!nios_ok_)  {                
+    if (!nios_ok_)  {
 	lserrno = LSE_NORCHILD;
 	return (-1);
     }
 
-    
     blockALL_SIGS_(&newMask, &oldMask);
 
   Start:
 
     FD_ZERO(&rmask);
     FD_SET(cli_nios_fd[0], &rmask);
-    timeout.tv_sec = NIOS_TIMEOUT; 
+    timeout.tv_sec = NIOS_TIMEOUT;
     timeout.tv_usec = 0;
 
     SET_LSLIB_NIOS_HDR(req.hdr, LIB_NIOS_RWAIT, sizeof(req.r));
@@ -85,34 +82,34 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
     if (b_write_fix(cli_nios_fd[0], (char *) &req, sizeof(req))
 	!= sizeof(req)) {
 	lserrno = LSE_MSG_SYS;
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return(-1);
     }
 
-    
+
     cc = select(cli_nios_fd[0] + 1, &rmask, 0, 0, &timeout);
     if (cc <= 0) {
 	if (cc < 0)
 	    lserrno = LSE_SELECT_SYS;
 	else
 	    lserrno = LSE_TIME_OUT;
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return(-1);
     }
 
     if (b_read_fix(cli_nios_fd[0], (char *) &hdr, sizeof(hdr)) == -1) {
 	lserrno = LSE_MSG_SYS;
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return(-1);
     }
 
     if (WAIT_BLOCK(options) && hdr.opCode == NONB_RETRY) {
-	
+
 	restartRWait(oldMask);
 
-	
+
 	if(!isPamBlockWait){
-	
+
 	    goto Start;
 	}
     }
@@ -120,26 +117,26 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
     switch (hdr.opCode) {
       case CHILD_FAIL:
 	lserrno = LSE_NORCHILD;
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return(-1);
 
       case NONB_RETRY:
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return(0);
 
       case CHILD_OK:
 	rpid = readWaitReply(status, ru);
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return (rpid);
 
       default:
-	
+
 	lserrno = LSE_PROTOC_NIOS;
-        sigprocmask(SIG_SETMASK, &oldMask, NULL); 
+        sigprocmask(SIG_SETMASK, &oldMask, NULL);
 	return (-1);
     }
 
-} 
+}
 
 static int
 readWaitReply(LS_WAIT_T *status, struct rusage *ru)
@@ -158,7 +155,7 @@ readWaitReply(LS_WAIT_T *status, struct rusage *ru)
 	*ru = reply.r.ru;
 
     return (reply.r.pid);
-} 
+}
 
 
 static void
@@ -168,20 +165,20 @@ restartRWait(sigset_t oldMask)
     struct sigaction act, oact, usr1sigact;
     sigset_t pauseMask;
 
-    
-   
+
+
     sigaction(SIGUSR1, NULL, &oact);
-    
+
     if (oact.sa_handler == SIG_ERR ||
 #ifdef SIG_HOLD
 	oact.sa_handler == SIG_HOLD ||
-#endif 
+#endif
 #ifdef SIG_CATCH
 	oact.sa_handler == SIG_CATCH ||
-#endif 
+#endif
 	oact.sa_handler == SIG_IGN ||
 	oact.sa_handler == SIG_DFL) {
-	
+
 	usr1handler = TRUE;
 	usr1sigact = oact;
 	act.sa_handler = (SIGFUNCTYPE) usr1Handler;
@@ -189,22 +186,22 @@ restartRWait(sigset_t oldMask)
 	act.sa_flags = 0;
 	sigaction(SIGUSR1, &act, NULL);
     }
-   
-    
+
+
     pauseMask = oldMask;
     sigdelset(&pauseMask, SIGUSR1);
-    sigsuspend(&pauseMask); 
+    sigsuspend(&pauseMask);
 
-    
+
     lserrno = LSE_SIG_SYS;
-    
-    
+
+
     if (usr1handler)
 	sigaction(SIGUSR1, &usr1sigact, NULL);
 
-} 
+}
 
 static void
 usr1Handler (int sig)
 {
-} 
+}

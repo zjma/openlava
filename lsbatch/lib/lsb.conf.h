@@ -1,5 +1,6 @@
-/* $Id: lsb.conf.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -31,51 +32,48 @@ static char do_Groups(struct groupInfoEnt **, struct Conf *, char *,
 
 static char addHost(struct hostInfoEnt *, char *, int);
 static char addQueue(struct queueInfoEnt *, char *, int);
-static char addUser (char *, int, float, char *, int, int); 
+static char addUser (char *, int, float, char *, int, int);
 static char addMember(struct groupInfoEnt *, char *, int, char *,
 					int, char *);
 
 static char isInGrp (char *, struct groupInfoEnt *, int);
 static char **expandGrp(char *, int *, int);
-static struct groupInfoEnt *addGroup(struct groupInfoEnt **, char *, int *, int);
-
-
-static char *parseGroups (char *, char *, int *, char *, int);
-
+static struct groupInfoEnt *addGroup(struct groupInfoEnt **,
+                                     char *,
+                                     int *,
+                                     int);
+static char *parseGroups(char *, char *, int *, char *, int);
 static struct groupInfoEnt *getUGrpData(char *);
 static struct groupInfoEnt *getHGrpData(char *);
 static struct groupInfoEnt *getGrpData(struct groupInfoEnt **, char *, int);
 static struct userInfoEnt *getUserData(char *);
 static struct hostInfoEnt *getHostData(char *);
 static struct queueInfoEnt *getQueueData(char *);
-
-static void initParameterInfo ( struct parameterInfo *);
-static void freeParameterInfo ( struct parameterInfo *);
-static void initUserInfo ( struct userInfoEnt *);
-static void freeUserInfo ( struct userInfoEnt *);
-static void initGroupInfo ( struct groupInfoEnt *);
-static void freeGroupInfo ( struct groupInfoEnt *);
-static void initHostInfo ( struct hostInfoEnt *);
-static void freeHostInfo ( struct hostInfoEnt *);
-static void initQueueInfo ( struct queueInfoEnt *);
-static void freeQueueInfo ( struct queueInfoEnt *);
-
-static void freeWorkUser ( int, int );
-static void freeWorkHost ( int, int, int );
-static void freeWorkQueue ( int );
-
+static void initParameterInfo(struct parameterInfo *);
+static void freeParameterInfo(struct parameterInfo *);
+static void initUserInfod(struct userInfoEnt *);
+static void freeUserInfo(struct userInfoEnt *);
+static void initGroupInfo(struct groupInfoEnt *);
+static void freeGroupInfo(struct groupInfoEnt *);
+static void initHostInfo(struct hostInfoEnt *);
+static void freeHostInfo(struct hostInfoEnt *);
+static void initQueueInfo(struct queueInfoEnt *);
+static void freeQueueInfo(struct queueInfoEnt *);
+static void freeWorkUser(int, int );
+static void freeWorkHost(int, int, int );
+static void freeWorkQueue(int );
 static char threshValue(struct lsInfo *, float *, float *);
 static void initThresholds(struct lsInfo *, float *, float *);
 static void getThresh(struct lsInfo *, struct keymap *, float *, float *,
-					char *, int *, char *);
-
+                      char *, int *, char *);
 static char searchAll(char *);
 static char checkRequeEValues(struct queueInfoEnt *, char *, char *, int *);
-static char parseCpuLimit(struct keymap, struct queueInfoEnt *, char *,
-					int *, char *);
+static char parseCpuLimit(struct keymap,
+                          struct queueInfoEnt *,
+                          char *,
+                          int *, char *);
 static char parseNqsQueues(struct queueInfoEnt *, char *, char *, int *);
-
 static int my_atoi(char *, int, int);
 static float my_atof (char *, float, float);
 
-#endif  
+#endif

@@ -1,5 +1,6 @@
-/* $Id: lsb.init.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +17,6 @@
  *
  */
 
-#include <netdb.h>
 #include "lsb.h"
 
 struct config_param lsbParams[] = {
@@ -27,14 +27,14 @@ struct config_param lsbParams[] = {
      {"LSB_DEBUG_CMD", NULL},
      {"LSB_TIME_CMD", NULL},
      {"LSB_CMD_LOGDIR", NULL},
-     {"LSB_CMD_LOG_MASK", NULL}, 
+     {"LSB_CMD_LOG_MASK", NULL},
      {"LSF_LOG_MASK", NULL},
      {"LSB_API_CONNTIMEOUT",NULL},
      {"LSB_API_RECVTIMEOUT",NULL},
      {"LSF_SERVERDIR", NULL},
      {"LSB_MODE", NULL},
      {"LSB_SHORT_HOSTLIST", NULL},
-     {"LSF_INTERACTIVE_STDERR", NULL}, 
+     {"LSF_INTERACTIVE_STDERR", NULL},
      {"LSB_32_PAREN_ESC", NULL},
      {"LSB_API_QUOTE_CMD", NULL},
      {NULL, NULL}
@@ -51,42 +51,39 @@ int _lsb_fakesetuid = 0;
 
 int lsbMode_ = LSB_MODE_BATCH;
 
-extern int bExceptionTabInit(void);
 extern int mySubUsage_(void *);
 
-int 
-lsb_init (char *appName)
+int
+lsb_init(char *appName)
 {
     static int lsbenvset = FALSE;
     char *logMask;
 
     if (lsbenvset)
-        return 0;                           
+        return 0;
 
-    
-    if (initenv_(lsbParams, NULL) < 0)
-    {
+    if (initenv_(lsbParams, NULL) < 0) {
 	lsberrno = LSBE_LSLIB;
-	return(-1);
+	return -1;
     }
 
     if (lsbParams[LSB_API_CONNTIMEOUT].paramValue) {
-	
+
 	_lsb_conntimeout = atoi(lsbParams[LSB_API_CONNTIMEOUT].paramValue);
-	if (_lsb_conntimeout < 0) 
+	if (_lsb_conntimeout < 0)
 	   _lsb_conntimeout = DEFAULT_API_CONNTIMEOUT;
     }
 
     if (lsbParams[LSB_API_RECVTIMEOUT].paramValue) {
-	
-	_lsb_recvtimeout = atoi(lsbParams[LSB_API_RECVTIMEOUT].paramValue); 
-	if (_lsb_recvtimeout < 0) 
+
+	_lsb_recvtimeout = atoi(lsbParams[LSB_API_RECVTIMEOUT].paramValue);
+	if (_lsb_recvtimeout < 0)
 	   _lsb_recvtimeout = DEFAULT_API_RECVTIMEOUT;
     }
 
     if (! lsbParams[LSB_SHAREDIR].paramValue) {
 	lsberrno = LSBE_NO_ENV;
-	return(-1);
+	return -1;
     }
 
     lsbenvset = TRUE;
@@ -99,23 +96,14 @@ lsb_init (char *appName)
     if (appName == NULL)
         ls_openlog ("bcmd", lsbParams[LSB_CMD_LOGDIR].paramValue,
            (lsbParams[LSB_CMD_LOGDIR].paramValue == NULL), logMask);
-    else 
+    else
         ls_openlog (appName, lsbParams[LSB_CMD_LOGDIR].paramValue,
                (lsbParams[LSB_CMD_LOGDIR].paramValue == NULL), logMask);
-     
+
     getLogClass_(lsbParams[LSB_DEBUG_CMD].paramValue,
                  lsbParams[LSB_TIME_CMD].paramValue);
 
-    
-    if (bExceptionTabInit()) {
-	lsberrno = LSBE_LSBLIB;
-	return(-1);
-    }
-
-    if (lsb_catch("LSB_BAD_BSUBARGS", mySubUsage_))
-	return(-1);
 
     return(0);
-
-} 
+}
 

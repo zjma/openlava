@@ -1,5 +1,6 @@
-/* $Id: lsb.comm.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,34 +17,12 @@
  *
  */
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <rpc/types.h>
-#include <rpc/xdr.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/signal.h>
-#include <sys/file.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <netinet/in.h>
-#include <math.h>
-#include <pwd.h>
-#include <sys/ioctl.h>
-
 #include "lsb.h"
 
-#define   NL_SETN     13
-
-extern int _lsb_conntimeout;
-extern int _lsb_recvtimeout;
-extern int _lsb_fakesetuid;
 static int mbdTries(void);
 int lsb_mbd_version = -1;
 
-#define MAXMSGLEN     (1<<24)
+#define MAXMSGLEN  (16 * 1024 * 1024)
 
 int
 serv_connect (char *serv_host, ushort serv_port, int timeout)

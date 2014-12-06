@@ -18,11 +18,6 @@
  */
 
 #include "lsb.h"
-#include <errno.h>
-
-#define   NL_SETN     13
-
-#include "../../lsf/lib/lib.queue.h"
 
 bool_t  logMapFileEnable = FALSE;
 
@@ -38,7 +33,6 @@ static int readJobMove(char *, struct jobMoveLog *);
 static int readJobFinish (char *, struct jobFinishLog *, time_t);
 static int readQueueCtrl(char *, struct queueCtrlLog *);
 static int readHostCtrl(char *, struct hostCtrlLog *);
-
 static int readMbdStart(char *, struct mbdStartLog *);
 static int readMbdDie (char *, struct mbdDieLog *);
 static int readChkpnt (char *, struct chkpntLog *);
@@ -46,15 +40,12 @@ static int readJobSigAct (char *, struct sigactLog *);
 static int readMig (char *, struct migLog *);
 static int readUnfulfill (char *, struct unfulfillLog *);
 static int readLoadIndex (char *, struct loadIndexLog *);
-
 static int readJobRequeue (char *, struct jobRequeueLog *);
-
 static int readJobSignal (char *, struct signalLog *);
 static int readJobMsg (char *, struct jobMsgLog *);
 static int readJobMsgAck(char *, struct jobMsgAckLog *);
 static int readJobClean(char *, struct jobCleanLog *);
 static int readLogSwitch(char *, struct logSwitchLog *);
-
 static int writeJobNew(FILE *, struct jobNewLog *);
 static int writeJobMod(FILE *, struct jobModLog *);
 static int writeJobStart(FILE *, struct jobStartLog *);
@@ -64,7 +55,6 @@ static int writeJobStatus(FILE *, struct jobStatusLog *);
 static int writeSbdJobStatus(FILE *, struct sbdJobStatusLog *);
 static int writeJobSwitch(FILE *, struct jobSwitchLog *);
 static int writeJobMove(FILE *, struct jobMoveLog *);
-
 static int writeQueueCtrl(FILE *, struct queueCtrlLog *);
 static int writeHostCtrl(FILE *, struct hostCtrlLog *);
 static int writeMbdStart(FILE *, struct mbdStartLog *);
@@ -75,22 +65,17 @@ static int writeChkpnt (FILE *, struct chkpntLog *);
 static int writeJobSigAct (FILE *, struct sigactLog *);
 static int writeJobFinish (FILE *, struct jobFinishLog *);
 static int writeLoadIndex (FILE *, struct loadIndexLog *);
-
 static int writeJobSignal(FILE *, struct signalLog *);
 static int writeJobMsg(FILE *, struct jobMsgLog *);
 static int writeJobMsgAck(FILE *, struct jobMsgLog *);
 static int writeJobRqueue(FILE *, struct jobRequeueLog *);
 static int writeJobClean (FILE *, struct jobCleanLog *);
-
 static int writeLogSwitch(FILE* , struct logSwitchLog*);
 static int writeJobForce(FILE* , struct jobForceRequestLog*);
 static int readJobForce(char *, struct jobForceRequestLog* );
-
 static int writeJobAttrSet(FILE* , struct jobAttrSetLog*);
 static int readJobAttrSet(char *, struct jobAttrSetLog* );
-
 static void freeLogRec(struct eventRec *);
-
 struct eventRec * lsbGetNextJobEvent(struct eventLogHandle *,
                                      int *,
                                      int,
@@ -103,7 +88,8 @@ static struct eventRec * lsbGetNextJobRecFromFile(FILE *,
 static int checkJobEventAndJobId(char *, int, int, LS_LONG_INT *);
 static int getEventTypeAndKind(char *, int *);
 static void readEventRecord(char *, struct eventRec *);
-int lsb_readeventrecord(char *, struct eventRec *);
+static int lsb_readeventrecord(char *, struct eventRec *);
+
 #define   EVENT_JOB_RELATED     1
 #define   EVENT_NON_JOB_RELATED 0
 
@@ -144,8 +130,13 @@ int lsb_readeventrecord(char *, struct eventRec *);
         FREEUP (tmpLine);                                       \
     }
 
-float version;
+static float version;
 
+static void
+phony(void)
+{
+    lsb_readeventrecord(NULL, NULL);
+}
 
 struct eventLogHandle *
 lsb_openelog(struct eventLogFile *ePtr, int *lineNum)
@@ -270,6 +261,9 @@ lsb_openelog(struct eventLogFile *ePtr, int *lineNum)
     strcpy (eLogHandle->openEventFile, eventFile);
     eLogHandle->curOpenFile = curOpenFile;
     eLogHandle->lastOpenFile = lastOpenFile;
+
+    if (0)
+        phony();
 
     return (eLogHandle);
 }
@@ -3209,7 +3203,7 @@ getEventTypeAndKind(char *typeStr, int *eventKind)
 
 
 
-int
+static int
 lsb_readeventrecord(char *line, struct eventRec *logRec)
 {
     char etype[MAX_LSB_NAME_LEN];
@@ -3379,7 +3373,6 @@ getJobIdIndexFromEventFile (char *eventFile, struct sortIntList *header,
     char nameBuf[MAXLINELEN];
     int eventKind;
     int eventType;
-    time_t eventTime;
     int tempTimeStamp;
     int cc;
 
@@ -3396,7 +3389,7 @@ getJobIdIndexFromEventFile (char *eventFile, struct sortIntList *header,
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,  __func__, "fseek", 0);
         *timeStamp = 0;
     }
-    *timeStamp=tempTimeStamp;
+    *timeStamp = tempTimeStamp;
 
     while(TRUE) {
 
@@ -3433,8 +3426,6 @@ getJobIdIndexFromEventFile (char *eventFile, struct sortIntList *header,
         cc = sscanf(line, "%d%n", &tempTimeStamp,&ccount);
         if (cc != 1)
             continue;
-
-        eventTime = tempTimeStamp;
 
         line += ccount + 1;
 

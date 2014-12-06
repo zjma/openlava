@@ -1,5 +1,6 @@
-/* $Id: intlibout.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -15,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
+
+#ifndef _INT_LIBOUT_H_
+#define _INT_LIBOUT_H_
 
 #include "../lsf.h"
 #include "resreq.h"
@@ -63,18 +67,18 @@ extern void           myexecv_(char *, char **, struct hostent *);
 extern int            myunlink_(char *, struct hostent *, int);
 extern int            myrename_(char *, char *, struct hostent *);
 extern char           chosenPath[MAXPATHLEN];
-extern int            addWindow(char *wordpair,
-				 windows_t *week[],
-				 char *context);
-extern void           insertW(windows_t **window, float ohour, float chour);
-extern void           checkWindow (struct dayhour *dayhour,
-				   char *active,
-				   time_t *wind_edge,
-				   windows_t *wp,
-				   time_t now);
-extern void           getDayHour (struct dayhour *dayPtr,
-				  time_t nowtime);
-extern void           delWindow (windows_t *wp);
+extern int            addWindow(char *,
+				 windows_t *[],
+				 char *);
+extern void           insertW(windows_t **, float,  float);
+extern void           checkWindow(struct dayhour *,
+                                  char *,
+                                  time_t *,
+                                  windows_t *,
+                                  time_t);
+extern void           getDayHour (struct dayhour *,
+				  time_t);
+extern void           delWindow (windows_t *);
 extern int            userok(int,
 			     struct sockaddr_in *,
 			     char *,
@@ -83,15 +87,15 @@ extern int            userok(int,
 			     int);
 extern int            hostOk(char *, int);
 extern int            hostIsLocal(char *);
-extern int getHostAttribNonLim(char *hname, int updateIntvl);
+extern int getHostAttribNonLim(char *, int);
 extern int            parseResReq (char *,
 				   struct resVal *,
 				   struct lsInfo *,
 				   int);
 extern void           initParse(struct lsInfo *);
 extern int            getResEntry(const char *);
-extern void           freeResVal(struct resVal *resVal);
-extern void           initResVal(struct resVal *resVal);
+extern void           freeResVal(struct resVal *);
+extern void           initResVal(struct resVal *);
 extern int            hostValue(void);
 extern int            getBootTime(time_t *);
 extern int            procChangeUser_(char *);
@@ -102,15 +106,15 @@ extern char *decryptByKey_(char *, char *);
 extern int            matchName(char *, char *);
 extern int            readPassword(char *);
 extern char **parseCommandArgs(char *, char *);
-extern int   FCLOSEUP(FILE **fp);
+extern int   FCLOSEUP(FILE **);
 #define MAXADDRSTRING 256
-extern int            withinAddrRange(char *addrRange, char *address);
-extern int            validateAddrRange(char *addrRange);
-extern char *mystrncpy(char *s1, const char *s2, size_t n);
-extern void openChildLog(const char *defLogFileName,
-                         const char *confLogDir,
-                         int use_stderr,
-                         char **confLogMaskPtr);
+extern int            withinAddrRange(char *, char *);
+extern int            validateAddrRange(char *);
+extern char *mystrncpy(char *, const char *, size_t);
+extern void openChildLog(const char *,
+                         const char *,
+                         int,
+                         char **);
 extern void cleanDynDbgEnv(void);
 extern struct         listEntry *mkListHeader(void);
 extern void           offList(struct listEntry *);
@@ -118,5 +122,7 @@ extern void           inList(struct listEntry *, struct listEntry *);
 extern int  getResourceNames (int, char **, int, char **);
 extern void displayShareResource(int, char **, int, int, int);
 extern int makeShareField(char *, int, char ***, char ***, char ***);
-extern char *getMAC(int *length);
-extern char *mac2hex(char *mac, int len);
+extern char *getMAC(int *);
+extern char *mac2hex(char *, int);
+
+#endif

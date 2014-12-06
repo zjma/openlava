@@ -1,18 +1,19 @@
-Release Notes for openlava version 2.2.1
+Release notes for openlava versions
 
-FIXES
------
-
+2.3-0rc 
+========
 -- Fix the problem of host going periodically -ok.
 -- Fix timer initialization in LIM.
 -- Fix mbatchd to clean HOST_STAT_EXCLUSIVE when reply lsb.events.
 -- Fix job dependencies by name. The dependencies by name incorrectly
    included all jobs belong to the user submitting the jobs.
+-- Fix all compiler warnings using gcc version 4.9.1 
+-- Restructure header files inclusion and protection.
+-- The daemons are not using priviledge ports anymore even if
+   running as root.
 
-2.2 is a bug fix release.
-
-HIGHLIGHTS
-----------
+2.2
+====
 -- RPM files are no longer distributed, however they can still be built
    from the tarball.
 -- When migrant hosts are added or removed, we must increment or

@@ -19,6 +19,9 @@
 
 #ifndef LSBATCH_H
 #define LSBATCH_H
+
+/* Include all Unix and openlava base definition.
+ */
 #include <lsf.h>
 
 #define _PATH_NULL      "/dev/null"

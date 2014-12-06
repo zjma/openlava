@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -15,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
+
+#ifndef _RES_REQ_H_
+#define _RES_REQ_H_
 
 #if 0
 /* Use ctype.h here... isdigit() isalpha() ispunct()
@@ -68,3 +72,5 @@ struct resVal {
 };
 
 extern int getValPair(char **resReq, int *val1, int *val2);
+
+#endif
