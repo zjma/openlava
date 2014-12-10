@@ -319,14 +319,11 @@ struct jData {
     int     restartPid;
     time_t  chkpntPeriod;
     u_short port;
-
-
     int     jSubPriority;
     int     jobPriority;
     char    *jobSpoolDir;
     struct hData **rsrcPreemptHPtr;
     int numRsrcPreemptHPtr;
-
     struct groupCandHosts *groupCands;
     int    numOfGroups;
     int    reservedGrp;

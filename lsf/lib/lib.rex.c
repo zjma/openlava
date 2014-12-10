@@ -1,5 +1,6 @@
-/* $Id: lib.rex.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -42,7 +43,7 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
     struct resCmdBill    cmdmsg;
     int                  resTimeout;
 
-    if (genParams_[LSF_RES_TIMEOUT].paramValue) 
+    if (genParams_[LSF_RES_TIMEOUT].paramValue)
 	resTimeout = atoi(genParams_[LSF_RES_TIMEOUT].paramValue);
     else
         resTimeout = RES_TIMEOUT;
@@ -61,23 +62,23 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
         }
     }
 
-    cmdmsg.options = options & ~REXF_TASKPORT; 
+    cmdmsg.options = options & ~REXF_TASKPORT;
     if (cmdmsg.options & REXF_SHMODE)
 	cmdmsg.options |= REXF_USEPTY;
-    
+
     if (!isatty(0) && !isatty(1))
-	cmdmsg.options &= ~REXF_USEPTY; 
+	cmdmsg.options &= ~REXF_USEPTY;
     else if ( cmdmsg.options & REXF_USEPTY ) {
         if (rstty_(host) < 0) {
-	    
+
 	    _lostconnection_(host);
             return (-1);
         }
     }
 
-    
+
     if ( (genParams_[LSF_INTERACTIVE_STDERR].paramValue != NULL)
-	 && (strcasecmp(genParams_[LSF_INTERACTIVE_STDERR].paramValue, 
+	 && (strcasecmp(genParams_[LSF_INTERACTIVE_STDERR].paramValue,
 			"y") == 0) ) {
 	cmdmsg.options |= REXF_STDERR;
     }
@@ -88,14 +89,14 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
         lserrno = LSE_WDIR;
         return (-1);
     }
-    
+
     if (envp) {
         if (ls_rsetenv(host, envp) < 0) {
             _lostconnection_(host);
             return (-1);
         }
     }
-    
+
     if ((retsock = TcpCreate_(TRUE, 0)) < 0) {
         closesocket(s);
         _lostconnection_(host);
@@ -113,9 +114,9 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
 
     cmdmsg.retport = sin.sin_port;
 
-    cmdmsg.rpid = 0;    
+    cmdmsg.rpid = 0;
     cmdmsg.argv = argv;
-    cmdmsg.priority = 0;   
+    cmdmsg.priority = 0;
 
     timeout.tv_usec = 0;
     timeout.tv_sec  = resTimeout;
@@ -142,7 +143,7 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
 	if (cmdmsg.options & REXF_SHMODE)
 	    new_argv[3] = "2";
 	else
-	    new_argv[3] = "1";	
+	    new_argv[3] = "1";
     }
     else
 	new_argv[3] = "0";
@@ -159,14 +160,14 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
     close(retsock);
     close(s);
     return (-1);
-} 
+}
 
 int
 ls_rexecv(char *host, char **argv, int options)
 {
     ls_rexecve(host, argv, options, environ);
     return (-1);
-} 
+}
 
 /* ls_startserver()
  */
@@ -182,12 +183,12 @@ ls_startserver(char *host, char **server, int options)
     struct resCmdBill    cmdmsg;
     int                  resTimeout;
     socklen_t            len;
-    
-    if (genParams_[LSF_RES_TIMEOUT].paramValue) 
+
+    if (genParams_[LSF_RES_TIMEOUT].paramValue)
         resTimeout = atoi(genParams_[LSF_RES_TIMEOUT].paramValue);
     else
         resTimeout = RES_TIMEOUT;
-    
+
     if (_isconnected_(host, descriptor))
         s = descriptor[0];
     else if ((s = ls_connect(host)) < 0)
@@ -203,7 +204,7 @@ ls_startserver(char *host, char **server, int options)
     }
 
     if (!isatty(0) && !isatty(1))
-        options &= ~REXF_USEPTY;               
+        options &= ~REXF_USEPTY;
     else if ( options & REXF_USEPTY ) {
         if (rstty_(host) < 0) {
             _lostconnection_(host);
@@ -217,13 +218,13 @@ ls_startserver(char *host, char **server, int options)
         lserrno = LSE_WDIR;
         return (-1);
     }
-    
+
     if ((retsock = TcpCreate_(TRUE, 0)) < 0) {
         closesocket(s);
         _lostconnection_(host);
         return (-1);
     }
-    
+
     len = sizeof(sin);
     if (getsockname (retsock, (struct sockaddr *) &sin, &len) < 0) {
         closesocket (retsock);
@@ -235,10 +236,10 @@ ls_startserver(char *host, char **server, int options)
 
     cmdmsg.retport = sin.sin_port;
 
-    cmdmsg.options = options & ~REXF_TASKPORT; 
+    cmdmsg.options = options & ~REXF_TASKPORT;
     cmdmsg.rpid = 0;
     cmdmsg.argv = server;
-    
+
     timeout.tv_usec = 0;
     timeout.tv_sec  = resTimeout;
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -2235,10 +2236,10 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
     }
 
     if (!qp->prepostUsername) {
-	strcpy (jobSpecs->prepostUsername, "");
+        strcpy (jobSpecs->prepostUsername, "");
     }
     else {
-	strcpy (jobSpecs->prepostUsername, qp->prepostUsername);
+        strcpy (jobSpecs->prepostUsername, qp->prepostUsername);
     }
 
     if ((jDataPtr->shared->jobBill.options & SUB_RESTART) && (jDataPtr->execCwd))
@@ -3228,7 +3229,7 @@ jStatusChange(struct jData *jData,
 
     if (eventTime == LOG_IT && JOB_PREEMPT_WAIT(jData) &&
         ((!IS_PEND(newStatus) && !(newStatus & JOB_STAT_SSUSP))
-          || (newStatus & JOB_STAT_PSUSP) || IS_FINISH(newStatus))) {
+         || (newStatus & JOB_STAT_PSUSP) || IS_FINISH(newStatus))) {
         freeReservePreemptResources(jData);
     }
 
@@ -3274,7 +3275,7 @@ jStatusChange(struct jData *jData,
         inStartJobList (jData);
 
     } else if (IS_FINISH (newStatus)) {
-	int i;
+        int i;
 
         if (!(jData->jStatus & JOB_STAT_ZOMBIE)) {
             if (jData->newReason != EXIT_INIT_ENVIRON &&
@@ -3298,13 +3299,13 @@ jStatusChange(struct jData *jData,
 
         handleFinishJob(jData, oldStatus, eventTime);
 
-	/* Clean up exclusive flag since updCounters()
-	 * is not invoked during reply.
-	 */
-	for (i = 0; i < jData->numHostPtr; i++) {
-	    if (jData->hPtr[i]->hStatus & HOST_STAT_EXCLUSIVE)
-		jData->hPtr[i]->hStatus &= ~HOST_STAT_EXCLUSIVE;
-	}
+        /* Clean up exclusive flag since updCounters()
+         * is not invoked during reply.
+         */
+        for (i = 0; i < jData->numHostPtr; i++) {
+            if (jData->hPtr[i]->hStatus & HOST_STAT_EXCLUSIVE)
+                jData->hPtr[i]->hStatus &= ~HOST_STAT_EXCLUSIVE;
+        }
 
     } else if ((newStatus & JOB_STAT_PEND) && IS_START (oldStatus)) {
 
@@ -4530,7 +4531,7 @@ removeJob(LS_LONG_INT jobId)
 
 
 void
-inPendJobList (struct jData *job, int listno, time_t requeueTime)
+inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
     static char fname[] = "inPendJobList";
     struct jData      *jp;
@@ -4566,8 +4567,6 @@ inPendJobList (struct jData *job, int listno, time_t requeueTime)
             if (!jobsOnSameSegment(job, jp, jDataList[listno])) {
 
 
-
-
                 if ((job->shared->jobBill.submitTime
                      > jp->shared->jobBill.submitTime)
                     && lastJob == NULL) {
@@ -4598,7 +4597,6 @@ inPendJobList (struct jData *job, int listno, time_t requeueTime)
                      !(jp->shared->jobBill.options & SUB_INTERACTIVE))
                     continue;
             }
-
 
             if ( job->jobPriority < jp->jobPriority ) {
                 break;

@@ -62,6 +62,7 @@
 
 typedef long long int LS_LONG_INT;
 typedef unsigned long long LS_UNS_LONG_INT;
+extern char **environ;
 
 #define LS_LONG_FORMAT ("%lld")
 

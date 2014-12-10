@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2011 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2011-2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -4437,13 +4437,17 @@ again:
             jR0 = jR;
         }
 
+        /* Get the next job
+         */
         jPtr0 = jR->back->job;
         if (jR->back == (void *)jRefList
+            || jPtr->jobPriority != jPtr0->jobPriority
             || jPtr->qPtr->priority != jPtr0->qPtr->priority) {
             /* either at the end of the list, in which case
-             * jPtr0 is bogus, or we just hit another queue
+             * jPtr0 is bogus, or the job belongs to another
+             * priority group or we just hit another queue
              * so we have to give to the dispatcher the current
-             * higher priority job.
+             * highest priority job.
              */
             listRemoveEntry(jRefList, (struct _listEntry *)jR0);
             jPtr = jR0->job;

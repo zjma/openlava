@@ -1,5 +1,6 @@
-/* $Id: badmin.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -28,23 +29,20 @@ extern int linux_opterr;
 static int doBatchCmd (int argc, char *argv[]);
 static int badminDebug (int nargc, char *nargv[], int opCode);
 
-#define NL_SETN 8
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     int cc,  myIndex;
     char *prompt = "badmin>";
     static char line[MAXLINELEN];
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init(argv[0]) < 0) {
-	lsb_perror("lsb_init");
-        _i18n_end ( ls_catd );
-	exit(-1);
+        lsb_perror("lsb_init");
+        exit(-1);
     }
+
+    setbuf(stdout, NULL);
 
     while ((cc = getopt(argc, argv, "Vh")) != EOF) {
         switch (cc) {
@@ -54,41 +52,39 @@ main (int argc, char **argv)
             case 'h':
             default:
 
-
-                cmdsUsage("badmin", cmdList, _i18n_msgArray_get( ls_catd, NL_SETN, cmdInfo_ID, cmdInfo) );
+                cmdsUsage("badmin",
+                          cmdList,
+                          cmdInfo);
         }
     }
     if (argc > optind) {
         int rc;
 
         if ((myIndex=adminCmdIndex(argv[optind], cmdList)) == -1) {
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,2552, "Invalid command <%s> \n")), argv[optind]); /* catgets  2552  */
+            fprintf(stderr, "Invalid command <%s> \n", argv[optind]);
 
-            cmdsUsage("badmin", cmdList, _i18n_msgArray_get(ls_catd,NL_SETN, cmdInfo_ID, cmdInfo));
-	}
-	optind++;
-	rc = doBatchCmd (argc, argv);
+            cmdsUsage("badmin", cmdList, cmdInfo);
+        }
+        optind++;
+        rc = doBatchCmd (argc, argv);
         _i18n_end ( ls_catd );
-	exit ( rc );
+        exit ( rc );
     }
 
     for (;;) {
         printf("%s", prompt);
-        fflush(stdout);
-	if (fgets(line, MAXLINELEN, stdin) == NULL) {
-	    printf("\n");
-    	    _i18n_end ( ls_catd );
+        if (fgets(line, MAXLINELEN, stdin) == NULL) {
+            printf("\n");
             exit(-1);
         }
 
         parseAndDo (line, doBatchCmd);
     }
-    return(0);
-
+    return 0;
 }
 
 static int
-doBatchCmd (int argc, char *argv[])
+doBatchCmd(int argc, char *argv[])
 {
     int cmdRet = 0, myIndex;
 
@@ -167,11 +163,9 @@ breconfig(int argc, char **argv, int configFlag)
     int fd;
     FILE *fp;
     char *linep;
-    char tmpfile[256];
-    char* tmpname = "tmpXXXXXX";
 
     while ((optName = myGetOpt(argc, argv, "f|v|")) != NULL) {
-	switch(optName[0]) {
+        switch(optName[0]) {
             case 'v':
                 vFlag = 1;
                 break;
@@ -180,10 +174,10 @@ breconfig(int argc, char **argv, int configFlag)
                 break;
             default:
                 return(-2);
-	}
+        }
     }
     if ( optind < argc ) {
-	return(-2);
+        return(-2);
     }
 
     if (!vFlag && !fFlag) {
@@ -191,9 +185,7 @@ breconfig(int argc, char **argv, int configFlag)
         fprintf(stderr, "\nChecking configuration files ...\n\n");
 
         stdoutsave = dup(1);
-        sprintf(tmpfile, "/tmp/%s", tmpname);
-        mktemp(tmpfile);
-        fd = open(tmpfile, O_RDWR | O_CREAT | O_TRUNC, 0666);
+        fd = mkstemp("lsbatch");
         if (fd > 0 ) {
 
             dup2(fd, 1);
@@ -203,7 +195,8 @@ breconfig(int argc, char **argv, int configFlag)
             close(fd);
             dup2(stdoutsave, 1);
             dup2(stdoutsave, 2);
-            fp = fopen(tmpfile, "r");
+
+            fp = fdopen(fd, "r");
             if (fp != 0) {
                 if (checkReply == EXIT_FATAL_ERROR
                     || checkReply == EXIT_WARNING_ERROR) {
@@ -213,17 +206,16 @@ breconfig(int argc, char **argv, int configFlag)
                         fprintf(stderr, "There are warning errors.\n\n");
                     fflush(stderr);
 
-                    if (getConfirm((_i18n_msg_get(ls_catd,NL_SETN,2563, "Do you want to see detailed messages? [y/n] ")))) /* catgets  2563  */
+                    if (getConfirm("Do you want to see detailed messages? [y/n] "))
                         while ((linep = getNextLine_(fp, 0)))
                             fprintf(stderr, "%s\n", linep);
                 }
                 else
-                    fprintf(stderr, I18N(2586,
-                                         "No errors found.\n\n"));  /* catgets 2586 */
+                    fprintf(stderr, "No errors found.\n\n");
                 fflush(stderr);
             }
             fclose(fp);
-            unlink(tmpfile);
+            close(fd);
         }
         else
             checkReply = checkConf(0, 2);
@@ -231,7 +223,7 @@ breconfig(int argc, char **argv, int configFlag)
         checkReply = checkConf(vFlag, 2);
 
     if (configFlag == MBD_CKCONFIG ) {
-        return(0);
+        return 0;
     }
 
     switch (checkReply)  {
@@ -241,14 +233,14 @@ breconfig(int argc, char **argv, int configFlag)
             if (fFlag)
                 break;
             if ( configFlag == MBD_RECONFIG ) {
-                if (!getConfirm((_i18n_msg_get(ls_catd,NL_SETN,2564, "\nDo you want to reconfigure? [y/n] ")))) { /* catgets  2564  */
-                    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,2565, "Reconfiguration aborted.\n"))); /* catgets  2565  */
-                    return(-1);
+                if (!getConfirm("\nDo you want to reconfigure? [y/n] ")) {
+                    fprintf(stderr, "Reconfiguration aborted.\n");
+                    return -1;;
                 }
             } else {
-                if (!getConfirm(I18N(2570, "\nDo you want to restart MBD? [y/n] "))) { /* catgets  2570  */
-                    fprintf(stderr, (I18N(2571, "MBD restart aborted.\n"))); /* catgets  2571  */
-                    return(-1);
+                if (!getConfirm("\nDo you want to restart MBD? [y/n] ")) {
+                    fprintf(stderr, "MBD restart aborted.\n");
+                    return -1;;
                 }
             }
         default :
@@ -256,8 +248,8 @@ breconfig(int argc, char **argv, int configFlag)
     }
 
     if (lsb_reconfig(configFlag) < 0) {
-    	lsb_perror((_i18n_msg_get(ls_catd,NL_SETN,2566, "Failed"))); /* catgets  2566  */
-	return(-1);
+        lsb_perror("Failed");
+        return -1;;
     }
 
     if ( configFlag == MBD_RECONFIG ) {
@@ -267,31 +259,25 @@ breconfig(int argc, char **argv, int configFlag)
         printf("%s\n",
                I18N(2569, "MBD restart initiated")); /* catgets  2569  */
     }
-    return(0);
+    return 0;
 
 }
 
 
 
 static int
-badminDebug (int nargc, char *nargv[], int opCode)
+badminDebug(int nargc, char *nargv[], int opCode)
 {
-
     struct hostInfoEnt *hostInfo;
-
     char  opt[10];
     char **hostPoint;
     char *word;
-
     char **hosts=NULL;
     int i, c;
     int send;
     int retCode = 0;
     int  all = FALSE, numHosts = 0;
     struct debugReq  debug;
-
-
-
 
     debug.opCode = opCode ;
     debug.logClass = 0;
@@ -310,7 +296,7 @@ badminDebug (int nargc, char *nargv[], int opCode)
     linux_optind = 1;
     linux_opterr = 1;
     if (strstr(nargv[0],"badmin")) {
-	linux_optind++;
+        linux_optind++;
     }
     while ((c = getopt(nargc, nargv, opt )) != EOF) {
 
@@ -382,7 +368,7 @@ badminDebug (int nargc, char *nargv[], int opCode)
                 if (debug.logClass == 0)
                 {
                     fprintf(stderr,I18N(2572,"Command denied.Invalid class name\n")); /* catgets 2572 */
-                    return (-1);
+                    return -1;
                 }
                 break;
 
@@ -390,19 +376,19 @@ badminDebug (int nargc, char *nargv[], int opCode)
                 for (i=0;i<strlen(optarg);i++) {
                     if (!isdigit(optarg[i])) {
                         fprintf(stderr,I18N(2573,"Command denied. Invalid level value\n")); /* catgets 2573 */
-                        return(-1);
+                        return -1;;
                     }
                 }
                 debug.level = atoi(optarg);
                 if (opCode == MBD_DEBUG || opCode == SBD_DEBUG) {
                     if (debug.level < 0 || debug.level > 3) {
                         fprintf(stderr,I18N(2574,"Command denied. Valid debug level is [0-3] \n")); /* catgets 2574 */
-                        return(-1);
+                        return -1;;
                     }
                 }
                 else if (debug.level < 1 || debug.level > 5) {
                     fprintf(stderr,I18N(2575,"Command denied. Valid timing level is [1-5]\n")); /* catgets 2575 */
-                    return(-1);
+                    return -1;;
                 }
                 break;
 
@@ -410,7 +396,7 @@ badminDebug (int nargc, char *nargv[], int opCode)
                 if (strstr(optarg,"/") && strstr(optarg,"\\")) {
                     fprintf(stderr,I18N(2576,
                                         "Command denied. Invalid file name\n")); /*  catgets 2576 */
-                    return(-1);
+                    return -1;;
                 }
                 memset(debug.logFileName,0,sizeof(debug.logFileName));
                 ls_strcat(debug.logFileName,sizeof(debug.logFileName),optarg);
@@ -418,7 +404,7 @@ badminDebug (int nargc, char *nargv[], int opCode)
                     debug.logFileName[strlen(debug.logFileName)-1] == '\\') {
                     fprintf(stderr,I18N(2577,
                                         "Command denied. File name is needed after the path\n")); /*  catgets 2577 */
-                    return(-1);
+                    return -1;;
                 }
                 break;
             case 'o':
@@ -426,14 +412,14 @@ badminDebug (int nargc, char *nargv[], int opCode)
                 break;
 
             default:
-                return (-2);
+                return -2;
         }
     }
 
 
-    if ( opCode == SBD_DEBUG || opCode == SBD_TIMING) {
+    if (opCode == SBD_DEBUG || opCode == SBD_TIMING) {
 
-        numHosts = getNames (nargc, nargv, optind, &hosts, &all, "hostC");
+        numHosts = getNames(nargc, nargv, optind, &hosts, &all, "hostC");
         hostPoint = NULL;
         if (!numHosts && !all)
             numHosts = 1;
@@ -442,7 +428,7 @@ badminDebug (int nargc, char *nargv[], int opCode)
 
         if ((hostInfo = lsb_hostinfo (hostPoint, &numHosts)) == NULL) {
             lsb_perror(NULL);
-            return (-1);
+            return -1;
         }
 
         for (i = 0; i < numHosts; i++) {
@@ -453,44 +439,46 @@ badminDebug (int nargc, char *nargv[], int opCode)
                 continue;
             }
 
-            fflush(stderr);
             if (hostInfo[i].hStatus
                 & (HOST_STAT_UNAVAIL | HOST_STAT_UNREACH)) {
                 if (hostInfo[i].hStatus & HOST_STAT_UNAVAIL)
-                    fprintf(stderr, I18N(2578,"failed : LSF daemon (LIM) is unavailable on host %s\n"), /* catgets 2578 */
+                    fprintf(stderr, "\
+failed : LSF daemon (LIM) is unavailable on host %s\n",
                             hostInfo[i].host);
                 else
-		    fprintf(stderr, I18N(2579,"failed : Slave batch daemon (sbatchd) is unreachable now on host %s\n"), /* catgets 2579 */
-			    hostInfo[i].host);
+                    fprintf(stderr, "\
+failed : Slave batch daemon (sbatchd) is unreachable now on host %s\n",
+                            hostInfo[i].host);
                 continue;
             }
 
             if ((send = lsb_debugReq (&debug, hostInfo[i].host)) < 0) {
-                char msg[100];
-                sprintf(msg,
-			I18N(2580,"Operation denied by SBD on <%s>"), /* catgets 2580 */
-			hostInfo[i].host);
+                char msg[118];
+                sprintf(msg, "Operation denied by SBD on <%s>",
+                        hostInfo[i].host);
                 lsb_perror(msg);
                 retCode = -1;
             }
         }
-	return(retCode);
+        return retCode;
     }
 
     else {
-        numHosts = getNames (nargc, nargv, optind, &hosts, &all, "hostC");
-	if (numHosts > 0) {
-	    fprintf(stderr, I18N(2581,"Host name does not need to be specified, set debug to the host which runs MBD\n"));  /* catgets 2581 */
-	}
-	if ((send = lsb_debugReq (&debug, NULL)) < 0) {
+        numHosts = getNames(nargc, nargv, optind, &hosts, &all, "hostC");
+        if (numHosts > 0) {
+            fprintf(stderr, "\
+Host name does not need to be specified, set debug to the host which runs MBD\n");
+        }
 
-	    char msg[100];
- 	    sprintf(msg, I18N(2582, "Operation denied by MBD")); /* catgets 2582 */
- 	    lsb_perror(msg);
-	    return (-1);
+        if ((send = lsb_debugReq (&debug, NULL)) < 0) {
+
+            char msg[128];
+            sprintf(msg, "Operation denied by MBD");
+            lsb_perror(msg);
+            return -1;
         }
     }
-    return (0);
+    return 0;
 
 }
 
