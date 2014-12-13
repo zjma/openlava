@@ -1,5 +1,6 @@
-/* $Id: list.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -16,6 +17,31 @@
  *
  */
 
+
+/* Job list is such that the back points to the highest priority
+ * job. This in my opinion should be the other way around the forw pointer
+ * the farthermost on the X axes and the back pointer closes to the 0 of the
+ * X axes. In this way list->forw would access the highes priority job, the
+ * one at the front of the queue and viceversa list->back the lowest priority
+ * one.
+ *
+ *                    +---------------------------------------------------+
+ *   	              |                                                   |
+ *             list   v	      entry N    entry N-1,     ....,    entry 0  |
+ *     	         +-------+   +------+	+------+	       +------+	  |
+ *  listPtr ---->|  forw |-->| forw |-->| forw |-->         -->| forw |---+
+ *             <-|  back |<--| back |<--| back |<--     ... <--| back |
+ *             | |numEnts|   + -  - +   + -  - +               + -  - +
+ *             | | obsvrs|   | ...  |	| ...  |	       | ...  |
+ *             | +-------+   | ...  |	| ...  |	       | ...  |
+ *             |             |	    |	|      |	       |      |
+ *	       |             +------+   +------+               +---^--+
+ *	       |      		                                   |
+ *	       +-->---------------------------------------------->-+
+ *
+ *                  Back ->
+ *
+ */
 
 #include "intlibout.h"
 
@@ -94,6 +120,34 @@ listGetBackEntry(LIST_T *list)
     return list->back;
 }
 
+/* listPop()
+ *
+ * Remove the element from the forw pointer of the
+ * list.
+ */
+LIST_ENTRY_T *
+listPop(LIST_T *list)
+{
+    LIST_ENTRY_T *ent;
+
+    if (LIST_IS_EMPTY(list))
+        return NULL;
+
+    ent = list->forw;
+    listRemoveEntry(list, ent);
+
+    return ent;
+}
+
+/*  Before:
+ *
+ *  a->b->s->c
+ *
+ * After:
+ *
+ *  a->b->s->e->c
+ *
+ */
 int
 listInsertEntryBefore(LIST_T * list,
                       LIST_ENTRY_T *succ,
@@ -115,7 +169,7 @@ listInsertEntryBefore(LIST_T * list,
 
     list->numEnts++;
 
-    return (0);
+    return 0;
 }
 
 int
@@ -125,6 +179,13 @@ listInsertEntryAfter(LIST_T * list, LIST_ENTRY_T *pred, LIST_ENTRY_T *entry)
 
 }
 
+/* listInsertEntryAtFront()
+ *
+ * Push items in from of the list:
+ *
+ * L->3->2->1
+ *
+ */
 int
 listInsertEntryAtFront(LIST_T * list, LIST_ENTRY_T *entry)
 {

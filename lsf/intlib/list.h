@@ -1,5 +1,6 @@
-/* $Id: list.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -26,19 +27,18 @@ typedef struct _listObserver       LIST_OBSERVER_T;
 typedef struct _listIterator       LIST_ITERATOR_T;
 
 struct _listEntry {
-    struct _listEntry *           forw;
-    struct _listEntry *           back;
+    struct _listEntry *forw;
+    struct _listEntry *back;
 };
 
 struct _list {
-    LIST_ENTRY_T *               forw;
-    LIST_ENTRY_T *               back;
-    char *                       name;
-    int                          numEnts;
-    bool_t                       allowObservers;
-    LIST_T *                     observers;
+    LIST_ENTRY_T *forw;
+    LIST_ENTRY_T *back;
+    char *name;
+    int numEnts;
+    bool_t allowObservers;
+    LIST_T *observers;
 };
-
 
 #define LIST_IS_EMPTY(List) ((List)->forw == (LIST_ENTRY_T *)List)
 
@@ -57,6 +57,7 @@ extern void             listDestroy(LIST_T *list,
 extern int              listAllowObservers(LIST_T *list);
 extern LIST_ENTRY_T *   listGetFrontEntry(LIST_T *list);
 extern LIST_ENTRY_T *   listGetBackEntry(LIST_T *list);
+extern LIST_ENTRY_T     *listPop(LIST_T *);
 extern int              listInsertEntryBefore(LIST_T *list,
                                               LIST_ENTRY_T *succ,
                                               LIST_ENTRY_T *entry);

@@ -32,8 +32,6 @@
 #define ABS(a) ((a) < 0 ? -(a) : (a))
 #endif
 
-
-
 struct listSet  *voidJobList = NULL;
 
 void                 freeNewJob(struct jData *newjob);
@@ -117,41 +115,38 @@ extern int statusChanged;
 
 #define DEFAULT_LISTSIZE    200
 
-
-int            numRemoveJobs = 0;
-int            eventPending = FALSE;
+int  numRemoveJobs = 0;
+int  eventPending = FALSE;
 
 extern int     rusageUpdateRate;
 extern int     rusageUpdatePercent;
 
-static void    rLimits2lsfLimits(int*, struct lsfLimit*, int, int);
-
-static int     setUrgentJobExecHosts(struct runJobRequest*, struct jData*);
-
-extern int  jobsOnSameSegment(struct jData *, struct jData *, struct jData *);
-
-extern int chkFirstHost( char*, int*);
-
+static void rLimits2lsfLimits(int *, struct lsfLimit*, int, int);
+static int setUrgentJobExecHosts(struct runJobRequest *, struct jData*);
+extern int chkFirstHost(char *, int *);
 void cleanCandHosts (struct jData *);
-void cleanSbdNode(struct jData *jpbw);
+void cleanSbdNode(struct jData *);
 
-void setNewSub(struct jData *, struct jData *, struct submitReq *, struct
-               submitReq *, int, int );
+void setNewSub(struct jData *,
+               struct jData *,
+               struct submitReq *,
+               struct submitReq *,
+               int,
+               int);
 static void updateStopJobPreemptResources(struct jData *);
-
 extern int getXdrStrlen(char *);
 
 static int rusgMatch(struct resVal* resValPtr, const char *resName);
 
 static int   switchAJob(struct jobSwitchReq *,
-                        struct lsfAuth      *,
-                        struct qData        *);
-static int   moveAJob (struct jobMoveReq *, int log, struct lsfAuth *);
+                        struct lsfAuth *,
+                        struct qData *);
+static int   moveAJob (struct jobMoveReq *, int, struct lsfAuth *);
 
 int
-newJob (struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
-        struct lsfAuth *auth, int *schedule, int dispatch,
-        struct jData **jobData)
+newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
+       struct lsfAuth *auth, int *schedule, int dispatch,
+       struct jData **jobData)
 {
     static char fname[] = "newJob";
     static struct jData *newjob;
@@ -4529,132 +4524,61 @@ removeJob(LS_LONG_INT jobId)
     }
 }
 
-
+/* inPendJobList()
+ *
+ * Put jobs in PJL using insertion sort. There is a experimental code that
+ * uses qsort9) instead but since at runtime PJL is sorted there
+ * is no benefit to it. We could perhaps speed up replay by simply
+ * putting jobs in PJL and then qsort() it once.
+ *
+ */
 void
 inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
-    static char fname[] = "inPendJobList";
-    struct jData      *jp;
-    time_t compareTime;
+    struct jData *jp;
 
-    struct jData *lastJob = NULL;
+    /* Start from the forw point which points to
+     * the latest submitted job to the lowest
+     * priority queue. In the simplest case the
+     * jobs are sorted like 106 105 104 103
+     */
+   for (jp = jDataList[listno]->forw;
+        jp != jDataList[listno];
+        jp = jp->forw) {
 
-    if (requeueTime && (listno == PJL) &&
-        (requeueToBottom || (job->pendEvent.sigDel & DEL_ACTION_REQUEUE))) {
-
-        if (logclass & (LC_TRACE | LC_PEND)) {
-            ls_syslog(LOG_DEBUG, "%s: put the requeued or migrated job the bottom of the queue.", fname);
-        }
-        compareTime = requeueTime;
-    } else {
-        compareTime = job->shared->jobBill.submitTime;
-    }
-
-
-    if (job->pendEvent.sigDel & DEL_ACTION_REQUEUE) {
-        job->pendEvent.sigDel &= ~DEL_ACTION_REQUEUE;
-    }
-
-
-    for (jp = jDataList[listno]->forw;
-         jp != jDataList[listno]; jp = jp->forw)
-    {
-
-        if (job->qPtr->priority < jp->qPtr->priority) {
+       /* If the job A ahead of me has higher priority
+        * then me I go before him BA
+        */
+       if (job->qPtr->priority < jp->qPtr->priority)
             break;
-        } else if (job->qPtr->priority == jp->qPtr->priority) {
 
-            if (!jobsOnSameSegment(job, jp, jDataList[listno])) {
+       /* Jobs have the same priority
+        */
+       if (job->qPtr->priority == jp->qPtr->priority) {
 
+           /* If B priority is higher then job ahead
+            * keep moving ahead until we find one with
+            * higher priority or equal one in which
+            * the jobid will decide.
+            */
+           if (job->jobPriority > jp->jobPriority)
+               continue;
 
-                if ((job->shared->jobBill.submitTime
-                     > jp->shared->jobBill.submitTime)
-                    && lastJob == NULL) {
-                    lastJob = jp;
-                } else if ((job->shared->jobBill.submitTime
-                            == jp->shared->jobBill.submitTime)
-                           && lastJob == NULL) {
-                    if (job->jobId == -1 || jp->jobId == -1) {
-                        lastJob = jp;
-                    } else if (job->jobId > jp->jobId) {
-                        lastJob = jp;
-                    }
-                }
+           if (job->jobPriority < jp->jobPriority)
+               break;
 
-                if ((jp->forw != jDataList[listno])
-                    && jobsOnSameSegment(jp->forw, job, jDataList[listno])) {
+           if (job->jobId > jp->jobId)
+               break;
+       }
+   }
 
-                    lastJob = NULL;
-                }
-                continue;
-            }
-
-
-            if (job->qPtr->qAttrib & Q_ATTRIB_ENQUE_INTERACTIVE_AHEAD) {
-
-                if ( (job->shared->jobBill.options & SUB_INTERACTIVE)
-                     &&
-                     !(jp->shared->jobBill.options & SUB_INTERACTIVE))
-                    continue;
-            }
-
-            if ( job->jobPriority < jp->jobPriority ) {
-                break;
-            }
-
-            if ( job->jobPriority == jp->jobPriority) {
-                if (compareTime > jp->shared->jobBill.submitTime) {
-
-                    break;
-                } else if (compareTime == jp->shared->jobBill.submitTime) {
-
-                    if (arraySchedOrder && LSB_ARRAY_IDX(job->jobId))
-                        break;
-
-                    if (job->jobId == -1 || jp->jobId == -1) {
-
-                        break;
-                    } else if (job->jobId > jp->jobId)
-                        break;
-                }
-            }
-            if ((jp->forw != jDataList[listno])
-                && jobsOnSameSegment(job, jp, jDataList[listno])
-                && !jobsOnSameSegment(job, jp->forw, jDataList[listno])) {
-
-
-                jp = jp->forw;
-                break;
-            }
-        }
-    }
-
-
-    if (lastJob != NULL) {
-        struct jData *nextLastJob;
-
-        if (!jobsOnSameSegment(job, lastJob, jDataList[listno])) {
-
-
-            for (nextLastJob = lastJob->back;
-                 nextLastJob != jDataList[listno];
-                 lastJob = nextLastJob, nextLastJob = nextLastJob->back) {
-
-                if (!jobsOnSameSegment(lastJob, nextLastJob, jDataList[listno])){
-
-                    break;
-                }
-            }
-        }
-
-        jp = lastJob;
-    }
-
-
-    listInsertEntryBefore((LIST_T *)jDataList[listno],
-                          (LIST_ENTRY_T *)jp,
-                          (LIST_ENTRY_T *)job);
-
+   /* If the new jobs comes in a A and the finds the
+    * job B which is the one that has higher priority
+    * it has be put before it BA. The head is A.
+    */
+   listInsertEntryBefore((LIST_T *)jDataList[listno],
+			 (LIST_ENTRY_T *)jp,
+                         (LIST_ENTRY_T *)job);
 }
 
 void
@@ -4671,8 +4595,8 @@ inStartJobList (struct jData *job)
 
 
     for (jp = jDataList[SJL]->forw;
-         jp != jDataList[SJL]; jp = jp->forw)
-    {
+         jp != jDataList[SJL]; jp = jp->forw) {
+
         if (job->qPtr->priority < jp->qPtr->priority)
             break;
         else if (job->qPtr->priority == jp->qPtr->priority) {
@@ -4759,11 +4683,11 @@ destroySharedRef(struct jShared *shared)
 
 
 struct jData *
-initJData (struct jShared  *shared)
+initJData(struct jShared  *shared)
 {
     struct jData *job;
 
-    job = (struct jData *) my_calloc(1, sizeof (struct jData), "initJData");
+    job = my_calloc(1, sizeof (struct jData), "initJData");
     job->shared = createSharedRef(shared);
     job->jobId = 0;
     job->userId = -1;
@@ -4807,7 +4731,9 @@ initJData (struct jShared  *shared)
     job->pendEvent.sigDel = FALSE;
     job->pendEvent.notModified = FALSE;
     job->reqHistoryAlloc = 16;
-    job->reqHistory = (struct rqHistory *) my_malloc (job->reqHistoryAlloc*sizeof(struct rqHistory), "initJData");
+    job->reqHistory = my_calloc(job->reqHistoryAlloc,
+                                sizeof(struct rqHistory),
+                                __func__);
     job->reqHistory[0].host = NULL;
     job->lastDispHost = -1;
     job->requeMode = -1;
@@ -4834,7 +4760,7 @@ initJData (struct jShared  *shared)
     job->jRusageUpdateTime = 0;
     job->schedHost = NULL;
 
-    memset((char *) &job->runRusage, 0, sizeof(job->runRusage));
+    memset(&job->runRusage, 0, sizeof(job->runRusage));
     job->numUserGroup = 0;
     job->userGroup = NULL;
 
@@ -8928,3 +8854,77 @@ static int checkSubHost(struct jData *job)
 
     return LSBE_NO_ERROR;
 }
+
+/* jcompare()
+ *
+ * Job sorting function.
+ *
+ */
+#if 0
+inPendJobList(struct jData *job, int listno, time_t requeueTime))
+{
+    LIST_T *l;
+    struct jData *jPtr;
+    struct jData **jArray;
+    int num;
+    int cc;
+
+    listInsertEntryAtFront((LIST_T *)jDataList[listno],
+                           (LIST_ENTRY_T *)job);
+    l = (LIST_T *)jDataList[listno];
+    num = LIST_NUM_ENTRIES(l);
+    if (num == 1)
+        return;
+
+    jArray = calloc(num, sizeof(struct jData *));
+
+    cc = 0;
+    while ((jPtr = (struct jData *)listPop(l))) {
+        jArray[cc] = jPtr;
+        ++cc;
+    }
+
+    qsort(jArray, num, sizeof(struct jData *), jcompare);
+
+    for (cc = 0; cc < num; cc++) {
+        jPtr = jArray[cc];
+        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
+    }
+    free(jArray);
+}
+
+static int
+jcompare(const void *j1, const void *j2)
+{
+    struct jData *jPtr1;
+    struct jData *jPtr2;
+
+    jPtr1 = *(struct jData **)j1;
+    jPtr2 = *(struct jData **)j2;
+
+    /* Different queues
+     */
+    if (jPtr1->qPtr->priority > jPtr2->qPtr->priority)
+        return 1;
+    if (jPtr1->qPtr->priority < jPtr2->qPtr->priority)
+        return -1;
+
+    /* Same queue compare priority
+     */
+    if (jPtr1->priority > jPtr2->priority)
+        return 1;
+    if (jPtr1->priority < jPtr2->priority)
+        return -1;
+
+    /* Same priority compare jobids
+     */
+    if (jPtr1->jobId > jPtr2->jobId)
+        return 1;
+    if (jPtr1->jobId < jPtr2->jobId)
+        return -1;
+
+    abort();
+
+    return 0;
+}
+#endif
