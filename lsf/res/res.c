@@ -30,7 +30,7 @@
 #include "res.h"
 #include "../lib/lproto.h"
 
-#define RES_SLEEP_TIME 60
+#define RES_SLEEP_TIME 15
 
 extern void child_channel_clear(struct child *, outputChannel *);
 extern char **environ;
