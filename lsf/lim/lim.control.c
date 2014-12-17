@@ -352,16 +352,6 @@ servAvailReq(XDR *xdrs,
         return;
     }
 
-    if (! lim_debug) {
-        if (ntohs(from->sin_port) >= IPPORT_RESERVED
-            || ntohs(from->sin_port) < IPPORT_RESERVED/2) {
-            ls_syslog(LOG_WARNING, "\
-%s: Request from non-privileged port: <%d>",
-                      __func__, ntohs(from->sin_port));
-            return;
-        }
-    }
-
     if (! xdr_int(xdrs, &servId)) {
         ls_syslog(LOG_ERR, "\
 %s: failed decoding servID from host %s port %d",
