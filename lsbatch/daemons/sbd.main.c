@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -35,9 +36,6 @@ static void houseKeeping(void);
 static int authCmdRequest(struct clientNode *client, XDR *xdrs,
 			  struct LSFHeader *reqHdr);
 static int isLSFAdmin(struct lsfAuth *auth);
-#ifdef INTER_DAEMON_AUTH
-static int authMbdRequest(struct clientNode *, XDR *, struct LSFHeader *);
-#endif
 static int get_new_master(struct sockaddr_in *from);
 
 extern void do_modifyjob(XDR *, int, struct LSFHeader *);
@@ -553,51 +551,6 @@ processMsg(struct clientNode *client)
 	sbdReqtype == MBD_SWIT_JOB || sbdReqtype == MBD_PROBE ||
 	sbdReqtype == MBD_REBOOT || sbdReqtype == MBD_SHUTDOWN ||
 	sbdReqtype == MBD_MODIFY_JOB) {
-#ifdef INTER_DAEMON_AUTH
-	if (daemonParams[LSF_AUTH_DAEMONS].paramValue) {
-	    char *aux_file, aux_file_buf[MAXPATHLEN];
-
-
-	    putEauthAuxDataEnvVar(NULL);
-
-	    if (sbdReqtype == MBD_NEW_JOB ) {
-		aux_file = tempnam(LSTMPDIR, ".auxs");
-		if (aux_file) {
-		    putEauthAuxDataEnvVar(aux_file);
-		    free(aux_file);
-		}
-		else {
-
-		    sprintf(aux_file_buf, "/tmp/.auxsbd_%lu", time(0));
-		    putEauthAuxDataEnvVar(aux_file_buf);
-		}
-	    }
-
-	    if (authMbdRequest(client, &xdrs, &reqHdr) != LSBE_NO_ERROR) {
-		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "authMbdRequest",
-			  sockAdd2Str_(&client->from));
-		shutDownClient(client);
-		xdr_destroy(&xdrs);
-		chanFreeBuf_(buf);
-		return;
-	    }
-	}
-	else {
-#endif
-	    if (!portok(&client->from)) {
-		ls_syslog(LOG_ERR,
-			  _i18n_msg_get(ls_catd , NL_SETN, 5010,
-					"%s: Received request %d from bad port <%s>"), /* catgets 5010 */
-			  fname, sbdReqtype, sockAdd2Str_(&client->from));
-		shutDownClient(client);
-		xdr_destroy(&xdrs);
-		chanFreeBuf_(buf);
-		return;
-	    }
-#ifdef INTER_DAEMON_AUTH
-	}
-#endif
-
 
         if (get_new_master(&client->from) < 0) {
             errorBack(client->chanfd, LSBE_NOLSF_HOST, &client->from);
@@ -606,6 +559,7 @@ processMsg(struct clientNode *client)
 	    xdr_destroy(&xdrs);
 	    return;
         }
+
     } else if (sbdReqtype == CMD_SBD_REBOOT ||
 	       sbdReqtype == CMD_SBD_SHUTDOWN ||
                sbdReqtype == CMD_SBD_DEBUG) {

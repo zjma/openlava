@@ -122,29 +122,7 @@ die (int sig)
 }
 
 int
-portok (struct sockaddr_in *from)
-{
-    static char fname[] = "portok";
-    if (from->sin_family != AF_INET) {
-        ls_syslog(LOG_ERR, "%s: sin_family(%d) != AF_INET(%d)",
-            fname,
-            from->sin_family,
-            AF_INET);
-        return FALSE;
-    }
-
-    if (debug)
-        return TRUE;
-
-    if (  ntohs(from->sin_port) >= IPPORT_RESERVED
-        || ntohs(from->sin_port) <  IPPORT_RESERVED/2)
-        return FALSE;
-
-    return TRUE;
-}
-
-int
-get_ports (void)
+get_ports(void)
 {
 
     static char fname[] = "get_ports";

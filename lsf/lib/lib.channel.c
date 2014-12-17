@@ -1,5 +1,6 @@
-/* $Id: lib.channel.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -27,8 +28,6 @@
 
 #define DEFAULT_MAX_CHANNELS 64
 #define INVALID_HANDLE  -1
-
-#define NL_SETN   23
 
 #define CLOSEIT(i) {                            \
         CLOSESOCKET(channels[i].handle);        \
@@ -127,10 +126,9 @@ chanServSocket_(int type, u_short port, int backlog, int options)
 int
 chanClientSocket_(int domain, int type, int options)
 {
-    int ch, i, s0;
-    int s1;
-    static char first=TRUE;
-    static ushort port;
+    int ch;
+    int sock;
+    int cc;
     struct sockaddr_in cliaddr;
 
     if (domain != AF_INET) {
@@ -148,92 +146,36 @@ chanClientSocket_(int domain, int type, int options)
     else
         channels[ch].type = CH_TYPE_UDP;
 
-    s0 = socket(domain, type, 0);
+    sock = socket(domain, type, 0);
 
-    if (SOCK_INVALID(s0)) {
+    if (SOCK_INVALID(sock)) {
         lserrno = LSE_SOCK_SYS;
         return(-1);
     }
 
     channels[ch].state = CH_DISC;
-    channels[ch].handle = s0;
-    if (s0 < 3) {
-        s1 = get_nonstd_desc_(s0);
-        if (s1 < 0)
-            close(s0);
-        channels[ch].handle = s1;
+    channels[ch].handle = sock;
+    if (sock < 3) {
+        sock = get_nonstd_desc_(sock);
+        if (sock < 0)
+            close(sock);
+        channels[ch].handle = sock;
     }
 
-
-    if (options & CHAN_OP_PPORT) {
-        if  (first) {
-            first = FALSE;
-            port = IPPORT_RESERVED - 1;
-        }
-        if (port < IPPORT_RESERVED/2) {
-            port = IPPORT_RESERVED - 1;
-        }
-    }
-
-
-    s0= channels[ch].handle;
-    memset((char*)&cliaddr, 0, sizeof(cliaddr));
-    cliaddr.sin_family      = AF_INET;
+    sock = channels[ch].handle;
+    memset(&cliaddr, 0, sizeof(cliaddr));
+    cliaddr.sin_family = AF_INET;
     cliaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    for (i = 0; i < IPPORT_RESERVED/2; i++) {
-
-        if (options & CHAN_OP_PPORT) {
-            cliaddr.sin_port = htons(port);
-            port--;
-        } else
-            cliaddr.sin_port = htons(0);
-
-        if (bind(s0, (struct sockaddr *)&cliaddr, sizeof(cliaddr)) == 0)
-            break;
-
-
-        if (!(options & CHAN_OP_PPORT)) {
-
-            if (errno == EADDRINUSE) {
-                port = (ushort) (time(0) | getpid());
-                port = ((port < 1024) ? (port + 1024) : port);
-                cliaddr.sin_port = htons(port);
-                if (bind(s0, (struct sockaddr *)&cliaddr, sizeof(cliaddr)) == 0)
-                    break;
-            }
-
-            chanClose_(ch);
-            lserrno = LSE_SOCK_SYS;
-            return (-1);
-        }
-        if (errno != EADDRINUSE && errno != EADDRNOTAVAIL) {
-            chanClose_(ch);
-            lserrno = LSE_SOCK_SYS;
-            return (-1);
-        }
-
-
-        if ((options & CHAN_OP_PPORT) && port < IPPORT_RESERVED/2)
-            port = IPPORT_RESERVED - 1;
+    cliaddr.sin_port = htons(0);
+    cc = bind(sock, (struct sockaddr *)&cliaddr, sizeof(cliaddr));
+    if (cc < 0) {
+        close(sock);
+        return -1;
     }
 
-    if ((options & CHAN_OP_PPORT) && i == IPPORT_RESERVED/2) {
-        chanClose_(ch);
-        lserrno = LSE_SOCK_SYS;
-        return(-1);
-    }
+    fcntl(sock, F_SETFD, (fcntl(sock, F_GETFD) | FD_CLOEXEC));
 
-# if defined(FD_CLOEXEC)
-    fcntl(s0, F_SETFD, (fcntl(s0, F_GETFD) | FD_CLOEXEC));
-# else
-#  if defined(FIOCLEX)
-    ioctl(s0, FIOCLEX, (char *)NULL);
-#  endif
-# endif
-
-    return(ch);
-
+    return ch;
 }
 
 int
@@ -444,8 +386,6 @@ chanOpen_(u_int iaddr, u_short port, int options)
 {
     int i;
     int cc;
-    int oldOpt;
-    int newOpt;
     struct sockaddr_in addr;
 
     if ((i = findAFreeChannel()) < 0) {
@@ -459,19 +399,6 @@ chanOpen_(u_int iaddr, u_short port, int options)
     addr.sin_family = AF_INET;
     memcpy((char *) &addr.sin_addr, (char *) &iaddr, sizeof(u_int));
     addr.sin_port = port;
-
-    newOpt = 0;
-    if (options & CHAN_OP_PPORT) {
-        newOpt |= LS_CSO_PRIVILEGE_PORT;
-    }
-
-    oldOpt = setLSFChanSockOpt_(newOpt | LS_CSO_ASYNC_NT);
-    channels[i].handle = CreateSock_(SOCK_STREAM);
-    setLSFChanSockOpt_(oldOpt);
-    if (channels[i].handle < 0) {
-        cherrno = CHANE_SYSCALL;
-        return -1;
-    }
 
     if (io_nonblock_(channels[i].handle) < 0) {
         CLOSEIT(i);

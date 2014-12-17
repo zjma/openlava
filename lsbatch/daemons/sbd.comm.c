@@ -1,5 +1,6 @@
-/* $Id: sbd.comm.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -593,33 +594,6 @@ msgSupervisor(struct lsbMsg *lsbMsg, struct clientNode *cliPtr)
     xdr_destroy(&xdrs);
     return (0);
 }
-
-#ifdef INTER_DAEMON_AUTH
-int
-getSbdAuth(struct lsfAuth *auth)
-{
-    static char fname[] = "getSbdAuth";
-    int rc;
-    char buf[1024];
-
-    if (daemonParams[LSF_AUTH_DAEMONS].paramValue == NULL)
-        return 0;
-
-    putEauthClientEnvVar("sbatchd");
-    sprintf(buf, "mbatchd@%s", clusterName);
-    putEauthServerEnvVar(buf);
-
-    rc = getAuth_(auth, masterHost);
-
-    if (rc) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "getAuth_");
-    }
-
-    return (rc);
-}
-
-#endif
-
 
 int
 sendUnreportedStatus (struct chunkStatusReq *chunkStatusReq)

@@ -1,5 +1,6 @@
-/* $Id: lib.channel.h 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -21,18 +22,23 @@
 #include "lib.hdr.h"
 
 
-enum chanState {CH_FREE,
-                CH_DISC,
-                CH_PRECONN,
-                CH_CONN,
-                CH_WAIT,
-                CH_INACTIVE    
-               };
+enum chanState {
+    CH_FREE,
+    CH_DISC,
+    CH_PRECONN,
+    CH_CONN,
+    CH_WAIT,
+    CH_INACTIVE
+};
 
-enum chanType {CH_TYPE_UDP, CH_TYPE_TCP, CH_TYPE_LOCAL, CH_TYPE_PASSIVE,
-	       CH_TYPE_NAMEDPIPE};
+enum chanType {
+    CH_TYPE_UDP,
+    CH_TYPE_TCP,
+    CH_TYPE_LOCAL,
+    CH_TYPE_PASSIVE,
+    CH_TYPE_NAMEDPIPE
+};
 
-#define CHAN_OP_PPORT  		0x01
 #define CHAN_OP_CONNECT		0x02
 #define CHAN_OP_RAW		0x04
 #define CHAN_OP_NONBLOCK        0x10
@@ -64,14 +70,14 @@ struct Masks {
 
 
 struct chanData {
-    int  handle;		
+    int  handle;
     enum chanType type;
     enum chanState state;
-    enum chanState prestate;   
-    int chanerr; 
+    enum chanState prestate;
+    int chanerr;
     struct Buffer *send;
     struct Buffer *recv;
-    
+
 };
 
 #define  CHANE_NOERR      0
@@ -88,20 +94,15 @@ struct chanData {
 #define  CHANE_CONNRESET  11
 
 int chanInit_(void);
-
-
 #define chanSend_  chanEnqueue_
 #define chanRecv_  chanDequeue_
-
 int chanOpen_(u_int, u_short, int);
-int chanEnqueue_(int chfd, struct Buffer *buf);
-int chanDequeue_(int chfd, struct Buffer **buf);
-
-int chanSelect_(struct Masks *, struct Masks *, struct timeval *timeout);
-int chanClose_(int chfd);
+int chanEnqueue_(int, struct Buffer *);
+int chanDequeue_(int, struct Buffer **);
+int chanSelect_(struct Masks *, struct Masks *, struct timeval *);
+int chanClose_(int);
 void chanCloseAll_(void);
-int chanSock_(int chfd);
-
+int chanSock_(int);
 int chanServSocket_(int, u_short, int, int);
 int chanAccept_(int, struct sockaddr_in *);
 
@@ -110,14 +111,17 @@ int chanConnect_(int, struct sockaddr_in *, int , int);
 
 int chanSendDgram_(int, char *, int , struct sockaddr_in *);
 int chanRcvDgram_(int , char *, int, struct sockaddr_in *, int);
-int chanRpc_(int , struct Buffer *, struct Buffer *, struct LSFHeader *, int timeout); 
+int chanRpc_(int ,
+             struct Buffer *,
+             struct Buffer *,
+             struct LSFHeader *,
+             int);
 int chanRead_(int, char *, int);
 int chanReadNonBlock_(int, char *, int, int);
 int chanWrite_(int, char *, int);
-
-int chanAllocBuf_(struct Buffer **buf, int size);
-int chanFreeBuf_(struct Buffer *buf);
-int chanFreeStashedBuf_(struct Buffer *buf);
+int chanAllocBuf_(struct Buffer **, int);
+int chanFreeBuf_(struct Buffer *);
+int chanFreeStashedBuf_(struct Buffer *);
 int chanOpenSock_(int , int);
 int chanSetMode_(int, int);
 

@@ -983,14 +983,6 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
     struct hostent         *hp;
     struct LSFHeader        replyHdr;
 
-    if (!portok(from)) {
-        ls_syslog(LOG_ERR, "\
-%s: Received status report from bad port %s",
-                  __func__, sockAdd2Str_(from));
-        if (reqHdr->opCode != BATCH_RUSAGE_JOB)
-            errorBack(chfd, LSBE_PORT, from);
-        return -1;
-    }
     hp = Gethostbyaddr_(&from->sin_addr.s_addr,
                         sizeof(in_addr_t),
                         AF_INET);
@@ -1071,13 +1063,6 @@ do_chunkStatusReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
     struct LSFHeader        replyHdr;
     int i = 0;
 
-    if (!portok(from)) {
-        ls_syslog(LOG_ERR, "\
-%s: Received status report from bad port %s",
-                  __func__, sockAdd2Str_(from));
-        errorBack(chfd, LSBE_PORT, from);
-        return -1;
-    }
     hp = Gethostbyaddr_(&from->sin_addr.s_addr,
                         sizeof(in_addr_t),
                         AF_INET);
@@ -1146,14 +1131,6 @@ do_restartReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
     struct hostent *hp;
     struct hData           *hData;
     int                    i;
-
-    if (!portok(from)) {
-        ls_syslog(LOG_ERR, "\
-%s: Received request from bad port %s",
-                  __func__, sockAdd2Str_(from));
-        errorBack(chfd, LSBE_PORT, from);
-        return -1;
-    }
 
     hp = Gethostbyaddr_(&from->sin_addr.s_addr,
                         sizeof(in_addr_t),
@@ -2035,18 +2012,6 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
         goto Leave;
     }
 
-#ifdef INTER_DAEMON_AUTH
-    if (authSbdRequest(sbdPtr, &xdrs, &replyHdr, NULL) != LSBE_NO_ERROR) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jData->jobId), "authSbdRequest");
-        if (IS_START(jData->jStatus)) {
-            jData->newReason = PEND_JOB_START_FAIL;
-            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, fname);
-        }
-        goto Leave;
-    }
-#endif
-
     if (replyHdr.opCode != ERR_NO_ERROR) {
         if (IS_START(jData->jStatus)) {
 
@@ -2218,16 +2183,6 @@ doSwitchJobReply(struct sbdNode *sbdPtr, int exception)
         goto Leave;
     }
 
-#ifdef INTER_DAEMON_AUTH
-    if (authSbdRequest(sbdPtr, &xdrs, &replyHdr, NULL) != LSBE_NO_ERROR) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jData->jobId), "authSbdRequest");
-        jData->pendEvent.notSwitched = TRUE;
-        eventPending = TRUE;
-        goto Leave;
-    }
-#endif
-
     switch (replyHdr.opCode) {
         case ERR_NO_ERROR:
             if (!xdr_jobReply (&xdrs, &jobReply, &replyHdr)
@@ -2318,15 +2273,6 @@ doSignalJobReply(struct sbdNode *sbdPtr, int exception)
         addPendSigEvent(sbdPtr);
         goto Leave;
     }
-
-#ifdef INTER_DAEMON_AUTH
-    if (authSbdRequest(sbdPtr, &xdrs, &replyHdr, NULL) != LSBE_NO_ERROR) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jData->jobId), "authSbdRequest");
-        addPendSigEvent(sbdPtr);
-        goto Leave;
-    }
-#endif
 
     if (logclass & LC_SIGNAL)
         ls_syslog(LOG_DEBUG, "%s: Job <%s> sigVal %d got reply code=%d",

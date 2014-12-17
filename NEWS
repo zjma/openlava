@@ -1,16 +1,20 @@
 Release notes for openlava versions
 
-2.3-0rc 
+2.3-0rc
 ========
 -- Fix the problem of host going periodically -ok.
 -- Fix timer initialization in LIM.
 -- Fix mbatchd to clean HOST_STAT_EXCLUSIVE when reply lsb.events.
 -- Fix job dependencies by name. The dependencies by name incorrectly
    included all jobs belong to the user submitting the jobs.
--- Fix all compiler warnings using gcc version 4.9.1 
+-- Fix all compiler warnings using gcc version 4.9.1
 -- Restructure header files inclusion and protection.
--- The daemons are not using priviledge ports anymore even if
+-- The daemons are not using privilege ports anymore even if
    running as root.
+-- Reduce the RES_SLEEP_TIME from 30s to 15s to avoid hosts appearing
+   as not available in lim.
+-- Remove obsolete INTER_DAEMON_AUTH define.
+-- Remove the need for privilege port between res and lim.
 
 2.2
 ====

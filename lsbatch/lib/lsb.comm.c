@@ -25,11 +25,10 @@ int lsb_mbd_version = -1;
 #define MAXMSGLEN  (16 * 1024 * 1024)
 
 int
-serv_connect (char *serv_host, ushort serv_port, int timeout)
+serv_connect(char *serv_host, ushort serv_port, int timeout)
 {
     int chfd;
     int cc;
-    int options;
     struct sockaddr_in serv_addr;
     const struct hostent *hp;
 
@@ -45,12 +44,7 @@ serv_connect (char *serv_host, ushort serv_port, int timeout)
            (int)hp->h_length);
     serv_addr.sin_port = serv_port;
 
-    if (geteuid() == 0)
-       options = CHAN_OP_PPORT;
-    else
-       options = 0;
-
-    chfd = chanClientSocket_(AF_INET, SOCK_STREAM, options);
+    chfd = chanClientSocket_(AF_INET, SOCK_STREAM, 0);
     if (chfd < 0) {
         lsberrno = LSBE_LSLIB;
         return(-1);

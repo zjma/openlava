@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2011 David Bigagli
- *
- * $Id: lib.lim.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -490,15 +488,11 @@ createLimSock_(struct sockaddr_in *connaddr)
 {
     int chfd;
 
-    if (geteuid() == 0)
-        chfd = chanClientSocket_(AF_INET, SOCK_DGRAM, CHAN_OP_PPORT);
-    else
-        chfd = chanClientSocket_(AF_INET, SOCK_DGRAM, 0);
-
+    chfd = chanClientSocket_(AF_INET, SOCK_DGRAM, 0);
     if (connaddr && chanConnect_(chfd, connaddr, -1, 0) < 0)
-        return(-1);
+        return -1;
 
-    return(chfd);
+    return chfd;
 
 }
 

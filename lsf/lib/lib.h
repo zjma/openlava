@@ -296,15 +296,7 @@ extern int Socket_(int, int, int);
 extern int get_nonstd_desc_(int);
 extern int TcpCreate_(int, int);
 extern int opensocks_(int);
-extern ls_svrsock_t *svrsockCreate_(u_short,
-                                    int,
-                                    struct sockaddr_in *,
-                                    int);
-extern int svrsockAccept_(ls_svrsock_t *, int);
-extern char *svrsockToString_(ls_svrsock_t *);
-extern void svrsockDestroy_(ls_svrsock_t *);
 extern int TcpConnect_(char *, u_short, struct timeval *);
-extern char *getMsgBuffer_(int, int *);
 extern int expSyntax_(char *);
 extern int tid_register(int, int, u_short, char *, int);
 extern int tid_remove(int);

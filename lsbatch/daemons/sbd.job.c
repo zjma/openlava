@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -891,26 +892,8 @@ setJobEnv(struct jobCard *jp)
     sprintf (val, "%d", jp->w_status);
     putEnv ("LSB_JOBEXIT_STAT", val);
 
-#ifdef INTER_DAEMON_AUTH
-    if(jp){
-        static char bufUid[MAXFILENAMELEN];
-        static char bufGid[MAXFILENAMELEN];
-
-        sprintf(bufUid, "LSB_EEXEC_REAL_UID=%d", jp->jobSpecs.execUid);
-        sprintf(bufGid, "LSB_EEXEC_REAL_GID=%d", jp->execGid);
-        putenv(bufUid);
-        putenv(bufGid);
-    }
-#endif
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
-#ifdef INTER_DAEMON_AUTH
-    if(jp){
-        putenv("LSB_EEXEC_REAL_UID=");
-        putenv("LSB_EEXEC_REAL_GID=");
-    }
-#endif
     return (0);
-
 }
 
 

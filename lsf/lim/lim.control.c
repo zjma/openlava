@@ -378,26 +378,10 @@ int
 limPortOk(struct sockaddr_in *from)
 {
 
-    if (from->sin_family != AF_INET) {
-        ls_syslog(LOG_ERR, "%s: %s sin_family != AF_INET",
-                  "limPortOk",
-                  sockAdd2Str_(from));
-        return (FALSE);
-    }
-
-
     if (from->sin_port == lim_port)
-        return (TRUE);
+        return TRUE;
 
-#ifndef INSECURE
-    if (! lim_debug) {
-        if (ntohs(from->sin_port) >= IPPORT_RESERVED
-            || ntohs(from->sin_port) < IPPORT_RESERVED/2)
-            return FALSE;
-    }
-#endif
-
-    return (TRUE);
+    return TRUE;
 }
 
 static int
