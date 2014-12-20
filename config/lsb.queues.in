@@ -1,5 +1,5 @@
 # Queue definition profile. This file affects the scheduling behavior of the
-# Lava Batch system on jobs submitted to queues.  Each queue is defined in a
+# openlava Batch system on jobs submitted to queues.  Each queue is defined in a
 # Queue section enclosed by Begin Queue and End Queue
 
 # Queues with higher PRIORITY (larger values) are searched first
@@ -148,6 +148,8 @@
 # ROUND_ROBIN_POLICY = Y | y
 # If defined the jobs in the queue are scheduled using a round robin
 # algorithm weighted on the number of users' jobs.
+# If the jobs are sorted by user priority then highest priority jobs
+# are round robin first, then the second highest and so on.
 #
 
 # PRE_POST_EXEC_USER = user
@@ -155,6 +157,19 @@
 # the job submission user. Use the PRE_POST_EXEC_USER parameter to 
 # specify a different user ID for queue-level pre- and post-execution 
 # commands.
+#
+
+# PREEMPT_BY_SLOT = [list of queues]
+# PREEMPT_BY_SLOT = low normal
+# If defined in a queue the list of queues specified by name and separated
+# by space can be preempted by the given queue. Any queue in the list must
+# have lower priority then the preemptive one. Only jobs that pend for slots
+# reason i.e. pending reason PEND_HOST_JOB_LIMIT (Job slot limit reached) 
+# as displayed by 'bjobs -l' can initiate preemption.
+# Note the preemptive and preemtable queue must be compatible from the
+# resource perspective by sharing the same hosts. The preemption algorithm
+# searches from the shortest running jobs until it finds a first match
+# and then requeue back to pend the preemptable jobs.
 #
 
 Begin Queue

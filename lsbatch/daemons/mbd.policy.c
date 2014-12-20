@@ -409,6 +409,7 @@ timeCollectPendReason %dms",                                            \
 static bool_t  updateAccountsInQueue;
 
 static void resetSchedulerSession(void);
+static void tryPreempt(void);
 
 /* openlava round robin
  */
@@ -4516,6 +4517,8 @@ again:
         jR = jR0;
     }
 
+    tryPreempt();
+
     DUMP_TIMERS(fname);
     DUMP_CNT();
     RESET_CNT();
@@ -7208,4 +7211,18 @@ setLsbPtilePack(const bool_t x)
         lsbPtilePack = FALSE;
     }
 
+}
+
+/* tryPreempt()
+ *
+ * Walk on the PJL and look if jobs with pending reason
+ * PEND_HOST_JOB_LIMIT belong to a preemptive queue.
+ * If so search in SJL jobs that can be preempted and
+ * from the shortest running job find a slot candidate
+ * then requeue it.
+ *
+ */
+static void
+tryPreempt(void)
+{
 }
