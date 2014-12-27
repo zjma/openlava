@@ -473,7 +473,7 @@ typedef struct uDataTable UDATA_TABLE_T;
 
 #define UDATA_TABLE_NUM_ELEMENTS(Table) ( (Table)->_cur_ )
 
-struct       userAcct {
+struct userAcct {
     struct   uData *uData;
     int      userId;
     int      numPEND;
@@ -577,6 +577,8 @@ struct qData {
     char   *chkpntDir;
     int    minProcLimit;
     int    defProcLimit;
+    char   *schedulerType;
+    struct fair_sched *scheduler;
 };
 
 

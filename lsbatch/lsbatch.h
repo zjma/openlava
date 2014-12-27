@@ -759,6 +759,7 @@ struct queueInfoEnt {
     int    defLimits[LSF_RLIM_NLIMITS];
     int    minProcLimit;
     int    defProcLimit;
+    char   *scheduler_type;
 };
 
 #define ACT_NO              0
@@ -850,6 +851,7 @@ struct loadInfoEnt {
 struct groupInfoEnt {
     char *group;
     char *memberList;
+    char *user_shares;
 };
 
 struct runJobRequest {

@@ -48,7 +48,6 @@ insList_(struct hLinks *elemPtr, struct hLinks *destPtr)
 void
 remList_(struct hLinks *elemPtr)
 {
-
     if (elemPtr == NULL || elemPtr == elemPtr->bwPtr
         || !elemPtr) {
         return;
@@ -56,7 +55,6 @@ remList_(struct hLinks *elemPtr)
 
     elemPtr->fwPtr->bwPtr = elemPtr->bwPtr;
     elemPtr->bwPtr->fwPtr = elemPtr->fwPtr;
-
 }
 
 void
@@ -64,14 +62,13 @@ initList_(struct hLinks *headPtr)
 {
     headPtr->bwPtr = headPtr;
     headPtr->fwPtr = headPtr;
-
 }
 
 void
 h_initTab_(hTab *tabPtr, int numSlots)
 {
-    int             i;
-    struct hLinks   *slotPtr;
+    int  i;
+    struct hLinks *slotPtr;
 
     tabPtr->numEnts = 0;
 
@@ -84,7 +81,6 @@ h_initTab_(hTab *tabPtr, int numSlots)
 
     for (i = 0, slotPtr = tabPtr->slotPtr; i < tabPtr->size; i++, slotPtr++)
         initList_(slotPtr);
-
 }
 
 void
@@ -145,8 +141,7 @@ h_getEnt_(hTab *tabPtr, const char *key)
     if (tabPtr->numEnts == 0)
         return NULL;
 
-    return(h_findEnt(key, &(tabPtr->slotPtr[getAddr(tabPtr, key)])));
-
+    return h_findEnt(key, &(tabPtr->slotPtr[getAddr(tabPtr, key)]));
 }
 
 /* h_addEnt_()
@@ -204,7 +199,6 @@ h_delEnt_(hTab *tabPtr, hEnt *hEntPtr)
         free((char *) hEntPtr);
         tabPtr->numEnts--;
     }
-
 }
 
 /* h_rmEnt_()
@@ -219,7 +213,6 @@ h_rmEnt_(hTab *tabPtr, hEnt *hEntPtr)
         free((char *) hEntPtr);
         tabPtr->numEnts--;
     }
-
 }
 
 
@@ -237,11 +230,8 @@ h_firstEnt_(hTab *tabPtr, sTab *sPtr)
 
     if (tabPtr->slotPtr) {
         return h_nextEnt_(sPtr);
-    } else {
-
-        return (NULL);
     }
-
+    return NULL;
 }
 /* h_nextEnt_()
  * Get the next entry from the hash table till it is
@@ -273,7 +263,6 @@ h_nextEnt_(sTab *sPtr)
     sPtr->hEntPtr = (hEnt *) ((struct hLinks *) hEntPtr)->bwPtr;
 
     return hEntPtr;
-
 }
 
 /* getAddr()
@@ -288,7 +277,6 @@ getAddr(hTab *tabPtr, const char *key)
         ha = (ha * 128 + *key++) % tabPtr->size;
 
     return ha;
-
 }
 
 static hEnt *
@@ -304,7 +292,6 @@ h_findEnt(const char *key, struct hLinks *hList)
     }
 
     return NULL;
-
 }
 
 /* resetTab()
@@ -335,19 +322,17 @@ resetTab(hTab *tabPtr)
     }
 
     free(lastSlotPtr);
-
 }
 
 void
 h_delRef_(hTab *tabPtr, hEnt *hEntPtr)
 {
-    if (hEntPtr != (hEnt *) NULL) {
+    if (hEntPtr != NULL) {
         remList_((struct hLinks *) hEntPtr);
         free(hEntPtr->keyname);
         free(hEntPtr);
         tabPtr->numEnts--;
     }
-
 }
 
 void

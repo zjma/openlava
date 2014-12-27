@@ -27,6 +27,8 @@
 #include "listset.h"
 #include "list2.h"
 #include "link.h"
+#include "hash.h"
+#include "tree.h"
 #include <ctype.h>
 
 #define MINPASSWDLEN_LS		(3)

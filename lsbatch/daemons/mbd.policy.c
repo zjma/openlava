@@ -3025,7 +3025,6 @@ dispatch_it (struct jData *jp)
 
     jp->dispTime = now_disp;
 
-
     TIMEIT (2, (reply = start_job(jp, jp->qPtr, &jobReply)), "start_job");
 
     jptr = jp;
@@ -4666,7 +4665,6 @@ dispatchAJob(struct jData *jp, int dontTryNextCandHost)
     while (1) {
 
         INC_CNT(PROF_CNT_loopdispatchAJob);
-
 
         getNumProcs(jp);
 

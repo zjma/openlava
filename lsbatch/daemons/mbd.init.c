@@ -132,8 +132,8 @@ static void freeGrp (struct gData *);
 static int validHostSpec (char *);
 static void getMaxCpufactor(void);
 static int parseFirstHostErr(int , char *, char *, struct qData *, struct askedHost *, int );
-
 static struct hData *mkLostAndFoundHost(void);
+static int init_fairshare_scheduler(void);
 
 int
 minit(int mbdInitFlags)
@@ -345,6 +345,8 @@ minit(int mbdInitFlags)
     }
 
     getMaxCpufactor();
+
+    init_fairshare_scheduler();
 
     return 0;
 }
@@ -1518,6 +1520,7 @@ initQData (void)
     }
     qPtr->chkpntPeriod = -1;
     qPtr->chkpntDir    = NULL;
+    qPtr->schedulerType = NULL;
 
     return qPtr;
 }
@@ -2240,6 +2243,8 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
                 }
             }
         }
+        if (queue->scheduler_type)
+            qPtr->schedulerType = strdup(queue->scheduler_type);
     }
 
     for (i = 0; i < queueConf->numQueues; i++) {
@@ -3368,4 +3373,12 @@ parseFirstHostErr(int returnErr, char *fname, char *hosts, struct qData *qp, str
         return 0;
     } else
         return 1;
+}
+
+/* init_fairshare_scheduler()
+ */
+static int
+init_fairshare_scheduler(void)
+{
+    return 0;
 }

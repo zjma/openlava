@@ -480,7 +480,6 @@ uDataGroupCreate()
     for (i = 0; i < numofugroups; i++) {
 	struct uData *u;
 
-
 	if ((u = getUserData(usergroups[i]->group)) == NULL) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
 		fname, "getUserData", usergroups[i]->group);
@@ -510,9 +509,7 @@ uDataGroupCreate()
 	    setAddElement(uGrpAllSet, (void *)u);
 	}
 
-
 	u->gData = usergroups[i];
-
     }
 }
 void
@@ -734,7 +731,6 @@ traverseGroupTree(struct gData *grp)
 
         curUData = uStack[uStackTop].myUData;
 	parentUData = uStack[uStackTop].parentUData;
-
 
 	checkuDataSet(parentUData);
 

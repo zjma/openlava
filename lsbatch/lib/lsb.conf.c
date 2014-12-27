@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2011 - 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1314,6 +1315,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
     struct keymap          keylist[] = {
         {"GROUP_NAME", NULL, 0},
         {"GROUP_MEMBER", NULL, 0},
+        {"USER_SHARES",  NULL, 0},
         {NULL, NULL, 0}
     };
     char *linep;
@@ -1450,8 +1452,6 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 continue;
             }
 
-
-
             if (type == HOST_GRP && (strchr(keylist[1].val, '~') != NULL
                                      && (options & CONF_NO_EXPAND) == 0)) {
                 char* outHosts = NULL;
@@ -1516,13 +1516,20 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 }
             }
 
-            if ( gp->memberList == NULL ) {
-                ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5108,
-                                                     "%s: File %s at line %d: No valid member in group <%s>; ignoring line"), __func__, fname, *lineNum, gp->group); /* catgets 5108 */
+            if (gp->memberList == NULL) {
+                ls_syslog(LOG_WARNING, "\
+%s: File %s at line %d: No valid member in group <%s>; ignoring line",
+                          __func__, fname, *lineNum, gp->group);
                 lsberrno = LSBE_CONF_WARNING;
                 FREEUP(gp->group);
                 FREEUP(gp);
                 *ngroups -= 1;
+            }
+
+            /* Copy the user shares for further processing.
+             */
+            if (keylist[2].val != NULL) {
+                gp->user_shares = strdup(keylist[2].val);
             }
 
         }
@@ -3751,7 +3758,8 @@ do_Queues(struct lsConf *conf,
 #define QKEY_ENQUE_INTERACTIVE_AHEAD info->numIndx+45
 #define QKEY_ROUND_ROBIN_POLICY info->numIndx+46
 #define QKEY_PRE_POST_EXEC_USER info->numIndx+47
-#define KEYMAP_SIZE info->numIndx+49
+#define QKEY_SCHEDULER_TYPE info->numIndx + 48
+#define KEYMAP_SIZE info->numIndx+50
 
     struct queueInfoEnt queue;
     char *linep, *sp, *word;
@@ -3816,6 +3824,7 @@ do_Queues(struct lsConf *conf,
     keylist[QKEY_ENQUE_INTERACTIVE_AHEAD].key = "ENQUE_INTERACTIVE_AHEAD";
     keylist[QKEY_ROUND_ROBIN_POLICY].key = "ROUND_ROBIN_POLICY";
     keylist[QKEY_PRE_POST_EXEC_USER].key="PRE_POST_EXEC_USER";
+    keylist[QKEY_SCHEDULER_TYPE].key = "SCHEDULER_TYPE";
     keylist[KEYMAP_SIZE - 1].key = NULL;
 
     initQueueInfo(&queue);
@@ -4567,6 +4576,19 @@ do_Queues(struct lsConf *conf,
             }
         }
 
+        if (keylist[QKEY_SCHEDULER_TYPE].val != NULL) {
+            if (strncmp(keylist[QKEY_SCHEDULER_TYPE].val, "FAIR_SHARE", 10) == 0) {
+                queue.scheduler_type = strdup(keylist[QKEY_SCHEDULER_TYPE].val);
+            } else  {
+                ls_syslog(LOG_ERR, "\
+%s: unsupported SCHEDULER_TYPE %s, ignored", __func__,keylist[QKEY_SCHEDULER_TYPE].val);
+                lsberrno = LSBE_CONF_WARNING;
+                freekeyval(keylist);
+                freeQueueInfo(&queue);
+                return FALSE;
+            }
+        }
+
         if (info->numIndx
             && (queue.loadSched = calloc(info->numIndx,
                                          sizeof(float *))) == NULL) {
@@ -4660,6 +4682,7 @@ initQueueInfo(struct queueInfoEnt *qp)
 
     qp->chkpntPeriod = -1;
     qp->chkpntDir  = NULL;
+    qp->scheduler_type = NULL;
 }
 
 static void
@@ -4668,22 +4691,22 @@ freeQueueInfo(struct queueInfoEnt *qp)
     if (qp == NULL)
         return;
 
-    FREEUP( qp->queue );
-    FREEUP( qp->description );
-    FREEUP( qp->userList );
-    FREEUP( qp->hostList );
-    FREEUP( qp->loadSched );
-    FREEUP( qp->loadStop );
-    FREEUP( qp->windows );
-    FREEUP( qp->hostSpec );
-    FREEUP( qp->windowsD );
-    FREEUP( qp->defaultHostSpec );
-    FREEUP( qp->admins );
-    FREEUP( qp->preCmd );
-    FREEUP( qp->postCmd );
-    FREEUP( qp->prepostUsername );
-    FREEUP( qp->requeueEValues );
-    FREEUP( qp->resReq );
+    FREEUP(qp->queue );
+    FREEUP(qp->description );
+    FREEUP(qp->userList );
+    FREEUP(qp->hostList );
+    FREEUP(qp->loadSched );
+    FREEUP(qp->loadStop );
+    FREEUP(qp->windows );
+    FREEUP(qp->hostSpec );
+    FREEUP(qp->windowsD );
+    FREEUP(qp->defaultHostSpec );
+    FREEUP(qp->admins );
+    FREEUP(qp->preCmd );
+    FREEUP(qp->postCmd );
+    FREEUP(qp->prepostUsername );
+    FREEUP(qp->requeueEValues );
+    FREEUP(qp->resReq );
     FREEUP(qp->jobStarter);
     FREEUP(qp->stopCond);
     FREEUP(qp->resumeCond);
@@ -4691,6 +4714,7 @@ freeQueueInfo(struct queueInfoEnt *qp)
     FREEUP(qp->suspendActCmd);
     FREEUP(qp->resumeActCmd);
     FREEUP(qp->terminateActCmd);
+    FREEUP(qp->scheduler_type);
 }
 
 char

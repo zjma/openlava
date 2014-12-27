@@ -19,9 +19,9 @@
 
 # DISPATCH_WINDOW describes the time window during which jobs are dispatched.
 # Time windows can be specified as up to 3 fields -- [day:]hour[:minute].
-# Note that day=[0-6]: 0 is Sunday, 1 is Monday and 6 is Saturday.  If only 
-# one field exists, it is assumed to be hour; if two fields exist, it is 
-# assumed to be hour[:minute]. Multiple windows can be specified.  The 
+# Note that day=[0-6]: 0 is Sunday, 1 is Monday and 6 is Saturday.  If only
+# one field exists, it is assumed to be hour; if two fields exist, it is
+# assumed to be hour[:minute]. Multiple windows can be specified.  The
 # default is any time.
 
 # RUN_WINDOW has the same function as DISPATCH_WINDOW.  In addition, jobs
@@ -45,7 +45,7 @@
 
 # PROCLIMIT is the processor limit (parallelism limit) for a parallel job
 # which can be accepted by this queue.  If a submitted job requests more
-# processors than this limit, the job is rejected.  If this is not defined, 
+# processors than this limit, the job is rejected.  If this is not defined,
 # the default value is infinity.
 
 # SWAPLIMIT specifies the maximum virtual memory of all processes in a job
@@ -56,13 +56,13 @@
 # PROCESSLIMIT specifies the number of concurrent processes that can be part
 # of a job.  SIGINT, SIGTERM, and SIGKILL are sent to the job in sequence
 # when this limit is reached.
-   
+
 # USERS limits users that can submit jobs to this queue (default is all
 # users).
 
 # HOSTS limits the hosts on which jobs submitted to this queue may execute.
 
-# ADMINISTRATORS limits the users that can operate on jobs in this queue and 
+# ADMINISTRATORS limits the users that can operate on jobs in this queue and
 # on the queue itself.
 
 # PRE_EXEC is a command which is executed before a job dispatched from this
@@ -70,12 +70,12 @@
 # with standard input, output and error redirected to /dev/null.
 
 # POST_EXEC is a command which is executed after the job dispatched from this
-# queue has finished running on the execution host. It is also run if the 
-# PRE_EXEC command exited with a 0 exit status, but the job's execution 
+# queue has finished running on the execution host. It is also run if the
+# PRE_EXEC command exited with a 0 exit status, but the job's execution
 # environment failed to be setup. It is executed under the job's user ID
 # with standard input, output and error redirected to /dev/null.
 
-# REQUEUE_EXIT_VALUES are exit values used by Lava to requeue the jobs 
+# REQUEUE_EXIT_VALUES are exit values used by Lava to requeue the jobs
 # dispatched from this queue.  The keyword, EXCLUDE, specifies that the
 # job will never be re-dispatched to a host that it has failed on.  E.g.,
 #
@@ -121,8 +121,8 @@
 
 # INTERACTIVE = Y | y | N | n | ONLY
 # INTERACTIVE specifies whether the queue should not accept Lava Batch
-# interactive jobs (INTERACTIVE = 'n' | 'N'), or should only accept 
-# interactive jobs (INTERACTIVE = ONLY).  An Lava Batch interactive job 
+# interactive jobs (INTERACTIVE = 'n' | 'N'), or should only accept
+# interactive jobs (INTERACTIVE = ONLY).  An Lava Batch interactive job
 # is submitted using the -I options of bsub.  By default, a queue
 # accepts both interactive and non-interactive jobs.
 
@@ -135,7 +135,7 @@
 # Bourne shell syntax.
 
 # CHKPNT = chkpnt_diretory [chkpnt_period_in_minute]
-# Jobs submitted to the queue with this option will be checkpoint-ed 
+# Jobs submitted to the queue with this option will be checkpoint-ed
 # automatically every chkpnt_period_in_minute's. The chkpnt_directory
 # should be created already. Otherwise, no chkpnt will be performed.
 # The chkpnt period is optional. If it is supplied, default value is
@@ -143,7 +143,7 @@
 
 # RERUNNABLE   = Y | y | N | n
 # Jobs submitted to the queue with this option will be rerunnable.
-# The default value is 'n'. 
+# The default value is 'n'.
 
 # ROUND_ROBIN_POLICY = Y | y
 # If defined the jobs in the queue are scheduled using a round robin
@@ -153,9 +153,9 @@
 #
 
 # PRE_POST_EXEC_USER = user
-# By default, both the pre- and post-execution commands are run as 
-# the job submission user. Use the PRE_POST_EXEC_USER parameter to 
-# specify a different user ID for queue-level pre- and post-execution 
+# By default, both the pre- and post-execution commands are run as
+# the job submission user. Use the PRE_POST_EXEC_USER parameter to
+# specify a different user ID for queue-level pre- and post-execution
 # commands.
 #
 
@@ -164,12 +164,17 @@
 # If defined in a queue the list of queues specified by name and separated
 # by space can be preempted by the given queue. Any queue in the list must
 # have lower priority then the preemptive one. Only jobs that pend for slots
-# reason i.e. pending reason PEND_HOST_JOB_LIMIT (Job slot limit reached) 
+# reason i.e. pending reason PEND_HOST_JOB_LIMIT (Job slot limit reached)
 # as displayed by 'bjobs -l' can initiate preemption.
 # Note the preemptive and preemtable queue must be compatible from the
 # resource perspective by sharing the same hosts. The preemption algorithm
 # searches from the shortest running jobs until it finds a first match
 # and then requeue back to pend the preemptable jobs.
+#
+
+# SCHEDULER_TYPE = FAIR_SHARE[G1,1 G2,1]
+# Define the fairshare scheduler for a given queue. The members of the
+# root groups must be defined in lsb.users
 #
 
 Begin Queue
@@ -198,6 +203,7 @@ NICE         = 20
 #POST_EXEC    = /usr/local/lsf/misc/testq_post |grep -v "Hey"
 #REQUEUE_EXIT_VALUES = 55 34 78
 #ROUND_ROBIN_POLICY = y
+SCHEDULER_TYPE = FAIR_SHARE[G1,1 G2,1]
 DESCRIPTION  = For normal low priority jobs, running only if hosts are \
 lightly loaded.
 End Queue
@@ -231,7 +237,7 @@ End Queue
 #POST_EXEC    = /usr/local/lsf/misc/testq_post |grep -v "Hey"
 #REQUEUE_EXIT_VALUES = 55 34 78
 #DESCRIPTION   = For owners of some machines. Only users listed in the HOSTS\
-#section can submit jobs to this queue. 
+#section can submit jobs to this queue.
 #End Queue
 
 
@@ -283,8 +289,8 @@ End Queue
 #USERS
 #HOSTS
 #ADMINISTRATORS
-#PRE_EXEC  
-#POST_EXEC 
+#PRE_EXEC
+#POST_EXEC
 #DESCRIPTION   = For short jobs that would not take much CPU time. \
 #Scheduled with higher priority.
 #End Queue
@@ -310,8 +316,8 @@ End Queue
 #USERS
 #HOSTS
 #ADMINISTRATORS
-#PRE_EXEC  
-#POST_EXEC  
+#PRE_EXEC
+#POST_EXEC
 #REQUEUE_EXIT_VALUES
 #DESCRIPTION  = Running only if the machine is idle and very lightly loaded.
 #End Queue

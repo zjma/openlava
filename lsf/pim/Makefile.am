@@ -19,7 +19,3 @@ if SOLARIS
 pim_LDADD += -lnsl -lsocket
 endif
 
-etags:
-	etags ../*.h *.[hc] ../intlib/*.[hc] ../lib/*.[hc] \
-	../res/*.[hc] ../lstools/*.[hc]
-

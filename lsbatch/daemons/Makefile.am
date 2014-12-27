@@ -45,7 +45,7 @@ mbatchd_LDADD += -lsocket -lnsl
 sbatchd_LDADD += -lsocket -lnsl
 endif
 
-
-etags :
-	etags *.[hc] ../*.h ../lib/*.[hc] ../../lsf/*.h \
-  	../../lsf/lib/*.[hc] ../../lsf/intlib/*.[hc]
+lib_LTLIBRARIES = libfairshare.la
+libfairshare_la_SOURCES = libfairshare.c fairshare.h 
+libfairshare_la_LDFLAGS = -no-undefined -version-info 0:1
+libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/liblsfint.la

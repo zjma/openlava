@@ -183,6 +183,3 @@ extern char *    listStrError(int listerrno);
 extern void      listPError(char *usrmsg);
 
 #endif
-
-
-

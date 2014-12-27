@@ -3,11 +3,11 @@
 #
 # Copyright (C) 2011-2014 David Bigagli
 #
-AC_INIT(openlava, 2.2)
+AC_INIT(openlava, 3.0)
 AC_CONFIG_HEADERS(config.h)
-AC_PREFIX_DEFAULT([/opt/openlava-2.2])
-AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 2.2", "Set project string in binaries.")
-AC_DEFINE(OPENLAVA_VERSION, 22, "Current openlava version.")
+AC_PREFIX_DEFAULT([/opt/openlava-3.0])
+AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 3.0", "Set project string in binaries.")
+AC_DEFINE(OPENLAVA_VERSION, 30, "Current openlava version.")
 #AC_DEFINE(REL_DATE, "Nov 11 2013", "Set the release date.")
 
 # Non Linux support
@@ -39,6 +39,7 @@ AC_PROG_YACC
 AC_PROG_LEX
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
 
 # Force warnings on for gcc
 if test "x$ac_compiler_gnu" = xyes; then
@@ -97,7 +98,7 @@ AC_SUBST([openlavaadmin])
 AC_SUBST([openlavacluster])
 AC_MSG_RESULT([username for openlava admin ... ${openlavaadmin}])
 AC_MSG_RESULT([name for openlava cluster ... ${openlavacluster}])
-
+LDFLAGS="$LDFLAGS -lm -lpthread -ldl -no-install"
 
 AC_CONFIG_FILES([
 	Makefile                 \

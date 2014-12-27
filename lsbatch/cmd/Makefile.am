@@ -239,8 +239,3 @@ install-data-local:
 	cd "$(DESTDIR)$(bindir)" && ln -sf bkill bresume
 	cd "$(DESTDIR)$(bindir)" && ln -sf bkill bchkpnt
 	cd "$(DESTDIR)$(bindir)" && ln -sf bmgroup bugroup
-
-etags :
-	etags *.[hc] ../*.h ../lib/*.[hc] ../../lsf/*.h ../../lsf/lib/*.[hc] \
-	../../lsf/intlib/*.[hc]
-

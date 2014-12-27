@@ -25,7 +25,3 @@ if SOLARIS
 lim_LDADD += -lsocket -lnsl
 endif
 
-etags:
-	etags ../*.h *.[hc] ../intlib/*.[hc] ../lib/*.[hc] \
-	../res/*.[hc] ../lstools/*.[hc]
-

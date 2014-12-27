@@ -6,9 +6,9 @@ include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I../
 
-lib_LIBRARIES = liblsf.a
+lib_LTLIBRARIES = liblsf.la
 
-liblsf_a_SOURCES = \
+liblsf_la_SOURCES = \
 lib.channel.c lib.err.c lib.limits.c lib.rcp.c lib.so.c lib.xdr.c \
 lib.comm.c lib.errno.c lib.load.c lib.rdwr.c lib.sock.c lib.xdrlim.c \
 lib.conf.c lib.esub.c lib.lsf.c lib.res.c lib.syntax.c lib.xdrmisc.c \
@@ -23,7 +23,4 @@ lib.eligible.c lib.lim.c lib.queue.c lib.sig.c lib.words.c \
 lib.channel.h lib.h lib.osal.h lib.pim.h  lib.rcp.h lib.table.h \
 lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \
 lib.rf.h lib.so.h lib.words.h lib.xdrlim.h lproto.h  mls.h
-
-etags:
-	etags ../*.h *.[hc] ../intlib/*.[hc] ../lim/*.[hc] \
-	../res/*.[hc] ../lstools/*.[hc]
+liblsf_la_LDFLAGS =  -no-undefined -version-info 0:1
