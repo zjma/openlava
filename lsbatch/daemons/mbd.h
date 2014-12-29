@@ -17,6 +17,9 @@
  *
  */
 
+#if ! defined(_MBD_HEADER_)
+#define _MBD_HEADER_
+
 #include "../lsbatch.h"
 #include "daemonout.h"
 #include "daemons.h"
@@ -1502,3 +1505,5 @@ extern struct timeWindow *newTimeWindow (void);
 extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
+
+#endif /* _MBD_HEADER_ */

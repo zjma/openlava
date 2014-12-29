@@ -48,4 +48,4 @@ endif
 lib_LTLIBRARIES = libfairshare.la
 libfairshare_la_SOURCES = libfairshare.c fairshare.h 
 libfairshare_la_LDFLAGS = -no-undefined -version-info 0:1
-libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/liblsfint.la
+libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/libtools.la

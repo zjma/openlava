@@ -1,10 +1,31 @@
 /*
+ * Copyright (C) 2014 David Bigagli
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
+ *
+ */
+
+/*
  * Elementary single linked list in C.
  * D. Knuth Art of Computer Programming Volume 1. 2.2
  *
  */
 #ifndef __LINK__
 #define __LINK__
+
+#include "intlibout.h"
 
 /* Each linked list is made of a head whose ptr is always
  * NULL, a list of following links starting from next and
@@ -23,26 +44,23 @@ typedef struct linkiter {
     link_t   *pos;
 } linkiter_t;
 
-link_t   *ecalloc(void);
-void     efree(link_t *);
-link_t   *initLink(void);
-void     finLink(link_t *);
-int      inLink(link_t *,void *);
-void     *rmLink(link_t *, void *);
-void     *peekLink(link_t *, void *val);
-int      pushLink(link_t *, void *);
-int      enqueueLink(link_t *, void *);
-void     *dequeueLink(link_t *);
-int      priorityLink(link_t *,
-		      void *,
-		      void *,
-		      int (*cmp)(const void *,
-				 const void *,
-				 const void *));
-void     *popLink(link_t *);
-void     *visitLink(link_t *);
-void     traverseInit(const link_t *,
+link_t   *make_link(void);
+void     fin_link(link_t *);
+int      in_link(link_t *,void *);
+void     *rm_link(link_t *, void *);
+void     *peek_link(link_t *, void *val);
+int      push_link(link_t *, void *);
+int      enqueue_link(link_t *, void *);
+void     *dequeue_link(link_t *);
+int      enqueue_sort_link(link_t *,
+			   void *,
+			   void *,
+			   int (*cmp)(const void *,
+				      const void *));
+void     *pop_link(link_t *);
+void     *visit_link(link_t *);
+void     traverse_init(const link_t *,
 		      linkiter_t *);
-void     *traverseLink(linkiter_t *);
+void     *traverse_link(linkiter_t *);
 
 #endif /* __LINK__ */

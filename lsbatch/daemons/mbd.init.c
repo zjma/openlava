@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -18,7 +19,8 @@
 
 #include "mbd.h"
 #include "../../lsf/lib/lsi18n.h"
-#define NL_SETN         10
+#include "fairshare.h"
+#include <dlfcn.h>
 
 extern void resetStaticSchedVariables(void);
 extern void cleanSbdNode(struct jData *);
@@ -134,6 +136,7 @@ static void getMaxCpufactor(void);
 static int parseFirstHostErr(int , char *, char *, struct qData *, struct askedHost *, int );
 static struct hData *mkLostAndFoundHost(void);
 static int init_fairshare_scheduler(void);
+static int load_fair_plugin(struct qData *);
 
 int
 minit(int mbdInitFlags)
@@ -3380,5 +3383,62 @@ parseFirstHostErr(int returnErr, char *fname, char *hosts, struct qData *qp, str
 static int
 init_fairshare_scheduler(void)
 {
+    struct qData *qPtr;
+    int cc;
+
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->schedulerType == NULL)
+            continue;
+
+        cc = load_fair_plugin(qPtr);
+        if (cc < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: failed loading fairshare plugin", __func__);
+            FREEUP(qPtr->schedulerType);
+            continue;
+        }
+    }
+
+    return 0;
+}
+
+/* load_fair_plugin()
+ */
+static int
+load_fair_plugin(struct qData *qPtr)
+{
+    char buf[PATH_MAX];
+    struct fair_sched *f;
+
+    f = qPtr->scheduler = calloc(1, sizeof(struct fair_sched));
+    assert(qPtr->scheduler);
+
+    sprintf(buf, "\
+%s/../lib/libfairshare.so", daemonParams[LSB_CONFDIR].paramValue);
+
+    f->handle = dlopen(buf, RTLD_NOW);
+    if (f->handle == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: gudness cannot open %s: %s", __func__, buf, dlerror());
+        return -1;
+    }
+
+    /* now check for scheduler symbols.
+     */
+    f->init = dlsym(f->handle, "init");
+    if (f->init == NULL) {
+        ls_syslog(LOG_ERR, "%s: ohmygosh missing init() symbol in %s: %s",
+                  __func__, buf, dlerror());
+        dlclose(f->handle);
+        return -1;
+    }
+
+    /* invoke the plugin initializer
+     */
+    (*f->init)(qPtr, userConf);
+
     return 0;
 }

@@ -23,6 +23,7 @@
 #include "intlibout.h"
 
 struct tree_ {
+    char *name;
     struct tree_node_ *root;
     struct hash_tab *node_tab;
 };
@@ -38,11 +39,11 @@ struct tree_node_ {
     void *data;
 };
 
-extern struct tree_ *tree_init(void);
+extern struct tree_ *tree_init(const char *);
 extern struct tree_node_ *tree_insert_node(struct tree_node_ *,
                                            struct tree_node_ *);
 extern struct tree_node_ *tree_rm_node(struct tree_node_ *);
-extern void tree_print(struct tree_node_ *);
+extern int tree_print(struct tree_node_ *, struct tree_ *);
 extern int tree_walk(struct tree_ *,
                      int (*f)(struct tree_node_ *, struct tree_ *));
 

@@ -18,16 +18,24 @@
  */
 
 #include "tree.h"
+#include "link.h"
 
 /* tree_init()
  */
 struct tree_ *
-tree_init(void)
+tree_init(const char *name)
 {
     struct tree_ *t;
+    int l;
 
     t = calloc(1, sizeof(struct tree_));
     assert(t);
+
+    /* /name
+     */
+    l = strlen(name) + 2;
+    t->name = calloc(l, sizeof(char));
+    sprintf(t->name, "/%s", name);
 
     t->root = calloc(1, sizeof(struct tree_node_));
     assert(t->root);
@@ -99,9 +107,17 @@ tree_rm_node(struct tree_node_ *n)
  * Print using stack traversal.
  *
  */
-void
-tree_print(struct tree_node_ *t)
+int
+tree_print(struct tree_node_ *n, struct tree_ *t)
 {
+    if (n == NULL) {
+        printf("%s: tree %s traversal done\n", __func__, t->name);
+        return 0;
+    }
+
+    printf("%s: node path %s\n", __func__, n->path);
+
+    return 0;
 }
 
 /* tree_walk()
@@ -115,7 +131,7 @@ tree_print(struct tree_node_ *t)
  */
 int
 tree_walk(struct tree_ *r,
-	  int (*f)(struct tree_node_ *, struct tree_ *))
+          int (*f)(struct tree_node_ *, struct tree_ *))
 {
     link_t  *link;
     struct tree_node_ *n;
@@ -124,56 +140,56 @@ tree_walk(struct tree_ *r,
     /* funny tree, no nodes...?
      */
     if (!r->root)
-	return -1;
+        return -1;
 
     /* All right only one node...
      */
     n = r->root;
     if (! n->child) {
-	cc = (*f)(n, r);
-	if (cc < 0)
-	    return cc;
-	/* protocol, (*f)() may want
-	 * to know when we are done.
-	 */
-	(*f)(NULL, NULL);
-	return 0;
+        cc = (*f)(n, r);
+        if (cc < 0)
+            return cc;
+        /* protocol, (*f)() may want
+         * to know when we are done.
+         */
+        (*f)(NULL, NULL);
+        return 0;
     }
 
     /* Init my stack...
      */
-    link = initLink();
+    link = make_link();
 
   Loop:
     while (n) {
 
-	/* traverse all siblings and enqueue (not push)
-	 * on the stack subroots...
-	 */
-	if (n->child)
-	    enqueueLink(link, n);
+        /* traverse all siblings and enqueue (not push)
+         * on the stack subroots...
+         */
+        if (n->child)
+            enqueue_link(link, n);
 
-	    cc = (*f)(n, r);
-	    /* protocol, the caller is asking
-	     * me to stop the traversal, sure...
-	     */
-	    if (cc < 0) {
-		finLink(link);
-		return cc;
-	    }
+            cc = (*f)(n, r);
+            /* protocol, the caller is asking
+             * me to stop the traversal, sure...
+             */
+            if (cc < 0) {
+                fin_link(link);
+                return cc;
+            }
             n = n->right;
     }
 
     /* pop each subroot and traverse
      * again...
      */
-    n = popLink(link);
+    n = pop_link(link);
     if (n) {
-	n = n->child;
-	goto Loop; /* don't you love this */
+        n = n->child;
+        goto Loop; /* don't you love this */
     }
 
-    finLink(link);
+    fin_link(link);
     /* a little protocol... tell
      * him we are done with the
      * traversal.
