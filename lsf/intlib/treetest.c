@@ -32,8 +32,9 @@ main(int argc, char **argv)
     link_t *stack;
     linkiter_t iter;
     char *p;
+    char *name;
     struct tree_node_ *n;
-    struct tree_node_ *child;
+    struct tree_node_ *N;
 
     file = argv[1];
     if (file == NULL) {
@@ -41,15 +42,18 @@ main(int argc, char **argv)
         return -1;
     }
 
+    stack = make_link();
     t = tree_init("");
+    N = t->root;
+    N->path = strdup("/");
+    name = "root";
 
+z:
     /* First build the root
      */
-    l = find_node("root");
-    if (l == NULL) {
-        printf("Ohmygosh root not found!\n");
-        return -1;
-    }
+    l = find_node(name);
+    /* if (l == NULL) leaf found
+     */
 
     traverse_init(l, &iter);
     while ((p = traverse_link(&iter))) {
@@ -57,43 +61,32 @@ main(int argc, char **argv)
         n = calloc(1, sizeof(struct tree_node_));
         n->path = strdup(p);
 
-        n = tree_insert_node(t->root, n);
+        n = tree_insert_node(N, n);
+        enqueue_link(stack, n);
         free(p);
     }
     fin_link(l);
 
-    /* The traverse the children and build their
-     * subtrees
-     */
-    n = t->root;
-    stack = make_link();
-z:
-    while (n) {
-
-        l = find_node(n->path);
-        if (l) {
-
-            traverse_init(l, &iter);
-            while ((p = traverse_link(&iter))) {
-                child = calloc(1, sizeof(struct tree_node_));
-                child->path = strdup(p);
-                child = tree_insert_node(n->child, child);
-                /* push each one on da stack
-                 */
-                push_link(stack, child);
-                free(p);
-            }
-        }
-        /* nexte
+    n = pop_link(stack);
+    if (n) {
+        /* New root and new group name
          */
-        n = n->right;
+        N = n;
+        name = n->path;
+        goto z;
     }
 
-    n = pop_link(stack);
-    if (n)
-        goto z;
-
     fin_link(stack);
+
+    tree_walk(t, tree_print);
+
+    n = t->root;
+    printf("%s\n", n->path);
+    while ((n = tree_lex_next(n))) {
+        printf("%s\n", n->path);
+    }
+
+    tree_free(t);
 
     return 0;
 }

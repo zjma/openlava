@@ -41,8 +41,6 @@ tree_init(const char *name)
     assert(t->root);
     t->root->path = strdup("/");
 
-    t->node_tab = hash_make(11);
-
     return t;
 }
 
@@ -96,7 +94,8 @@ tree_rm_node(struct tree_node_ *n)
         n->right->left = n->left;
     if (n->left)
         n->left->right = n->right;
-    if (n->parent->child == n)
+    if (n->parent
+        && n->parent->child == n)
         n->parent->child = n->right;
 
     return n;
@@ -111,7 +110,7 @@ int
 tree_print(struct tree_node_ *n, struct tree_ *t)
 {
     if (n == NULL) {
-        printf("%s: tree %s traversal done\n", __func__, t->name);
+        printf("%s: tree traversal done\n", __func__);
         return 0;
     }
 
@@ -199,3 +198,61 @@ tree_walk(struct tree_ *r,
     return 0;
 
 } /* tree_walk() */
+
+/* tree_lex_next()
+ *
+ * Run in while() loop
+ */
+struct tree_node_ *
+tree_lex_next(struct tree_node_ *n)
+{
+    struct tree_node_ *parent;
+
+    if (n == NULL)
+        return NULL;
+
+    if (n->child)
+        return n->child;
+    if (n->right)
+        return n->right;
+
+    parent = n->parent;
+    while (parent) {
+        if (parent->right)
+            return parent->right;
+        parent = parent->parent;
+    }
+    return NULL;
+}
+
+/* tree_rm_leaf()
+ *
+ * Remove the leftmost leaf.
+ */
+struct tree_node_ *
+tree_rm_leaf(struct tree_node_ *n)
+{
+    while (n) {
+        if (n->child)
+            n = n->child;
+        else
+            break;
+    }
+
+    tree_rm_node(n);
+
+    return n;
+}
+
+/* tree_free()
+ */
+void
+tree_free(struct tree_ *t)
+{
+    struct tree_node_ *n;
+
+    while ((n = tree_rm_leaf(t->root))) {
+        free(n->path);
+        free(n);
+    }
+}
