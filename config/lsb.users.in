@@ -1,12 +1,13 @@
 # User groups can be referenced by the lsb.hosts and lsb.queues files.
 
-# All the example definitions here are commented out
-
+# Define the fairshare hierarchy for group a and b. These groups are
+# defined in some queue in lsb.queues. Here the hierarchy is further
+# subdivided for the individual members.
+#
 Begin UserGroup
-GROUP_NAME       GROUP_MEMBER              
-#develop         (jwang long david ming)  
-#system          (all)                    
-#eng_users       (develop zhang ahmedk pangj) 
+GROUP_NAME       GROUP_MEMBER         USER_SHARES            
+group_a         (david john zebra)   ([david, 1] [john,1] [zebra, 1]) 
+group_b         (crock wlu kluk)     ([crock, 2] [wlu,1] [kluk,1])
 End UserGroup
 
 # MAX_JOBS is the maximum number of jobs that can be run concurrently for

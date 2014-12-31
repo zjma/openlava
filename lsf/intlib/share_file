@@ -1,0 +1,3 @@
+USER_SHARES [[group_a, 3] [group_b , 1]]
+GROUP_MEMBER (group_a) (david john zebra) ([david, 1] [john,1] [zebra, 1])
+GROUP_MEMBER (group_b) (crock wlu kluk) ([crock, 2] [wlu,1] [kluk,1])

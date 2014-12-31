@@ -45,7 +45,6 @@ main(int argc, char **argv)
     stack = make_link();
     t = tree_init("");
     N = t->root;
-    N->path = strdup("/");
     name = "root";
 
 z:
@@ -82,7 +81,7 @@ z:
 
     n = t->root;
     printf("%s\n", n->path);
-    while ((n = tree_lex_next(n))) {
+    while ((n = tree_next_node(n))) {
         printf("%s\n", n->path);
     }
 

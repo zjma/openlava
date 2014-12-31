@@ -199,12 +199,12 @@ tree_walk(struct tree_ *r,
 
 } /* tree_walk() */
 
-/* tree_lex_next()
+/* tree_next_node()
  *
  * Run in while() loop
  */
 struct tree_node_ *
-tree_lex_next(struct tree_node_ *n)
+tree_next_node(struct tree_node_ *n)
 {
     struct tree_node_ *parent;
 
@@ -232,6 +232,9 @@ tree_lex_next(struct tree_node_ *n)
 struct tree_node_ *
 tree_rm_leaf(struct tree_node_ *n)
 {
+    if (n == NULL)
+        return NULL;
+
     while (n) {
         if (n->child)
             n = n->child;
@@ -252,7 +255,14 @@ tree_free(struct tree_ *t)
     struct tree_node_ *n;
 
     while ((n = tree_rm_leaf(t->root))) {
-        free(n->path);
-        free(n);
+        if (n == t->root)
+            break;
+        _free_(n->path);
+        _free_(n);
     }
+
+    _free_(t->root->path);
+    _free_(t->root);
+    _free_(t->name);
+    _free_(t);
 }

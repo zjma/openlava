@@ -171,11 +171,17 @@
 # searches from the shortest running jobs until it finds a first match
 # and then requeue back to pend the preemptable jobs.
 #
-
-# SCHEDULER_TYPE = FAIR_SHARE[G1,1 G2,1]
-# Define the fairshare scheduler for a given queue. The members of the
-# root groups must be defined in lsb.users
-#
+# FAIRSHARE specifies that the fairshare policy is used to schedule jobs
+# in the queue.  By default, jobs are scheduled on a FIFO basis.
+# The fairshare scheduler allocates a certain portion of the queue
+# slot to each participant user.
+# The keyword, USER_SHARES, is used to specify the shares for each user.
+# The value of USER_SHARES consists of one or more [username, share] pairs;
+# e.g., FAIRSHARE = USER_SHARES[[group_a, 3] [group_b , 1]].
+# The individual shares are summed up and then normalized. In this case
+# 3 + 1 = 4 and group_a will have 3/4 of the queue slots and group_b
+# 1/4 of the queue slots. The shares should be further subdivided to users
+# in lsb.users.
 
 Begin Queue
 QUEUE_NAME   = normal
