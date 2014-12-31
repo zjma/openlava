@@ -19,8 +19,22 @@
  *
  */
 
+#include "sshare.h"
+
 int
 main(int argc, char **argv)
 {
+    struct tree_ *t;
+    uint32_t num;
+    struct group_acct *grps;
+    char *user_shares;
+
+    num = 0;
+    grps = NULL;
+    user_shares = NULL;
+
+    t = sshare_make_tree(user_shares,
+                         num,
+                         grps);
     return 0;
 }

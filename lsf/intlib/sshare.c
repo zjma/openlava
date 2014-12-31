@@ -1,50 +1,68 @@
+/*
+ * Copyright (C) 2014 David Bigagli
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
+ *
+ */
 
 #include "sshare.h"
 
-static link_t *parse_root(const char *);
-static link_t *parse_users(uint32_t, struct group_acct *);
+static link_t *parse_user_shares(const char *);
+static link_t *parse_group_member(const char *,
+                                  uint32_t,
+                                  struct group_acct *);
 
-struct tree_ *sshare_get_tree(const char *group_root,
-                              uint32_t num_users,
-                              struct group_acct *users)
+struct tree_ *sshare_make_tree(const char *user_shares,
+                               uint32_t num_grp,
+                               struct group_acct *grp)
 {
     struct tree_ *t;
     link_t *l;
     link_t *stack;
     linkiter_t iter;
-    char *p;
+    struct share_acct *sacct;
     struct tree_node_ *n;
-    struct tree_node_ *N;
+    struct tree_node_ *root;
 
     stack = make_link();
     t = tree_init("");
-    N = t->root;
+    root = NULL;
+
+    l = parse_user_shares(user_shares);
+
 z:
-    if (N->child == 0)
-        l = parse_root(group_root);
+    if (root)
+        l = parse_group_member(n->path, num_grp, grp);
     else
-        l = parse_users(num_users, users);
+        root = t->root;
 
     traverse_init(l, &iter);
-    while ((p = traverse_link(&iter))) {
+    while ((sacct = traverse_link(&iter))) {
 
         n = calloc(1, sizeof(struct tree_node_));
-        assert(n);
-        n->path = strdup(p);
+        n->path = sacct->name;
 
-        n = tree_insert_node(N, n);
+        n = tree_insert_node(root, n);
         enqueue_link(stack, n);
-
-        n->data = calloc(1, sizeof(struct share_acct));
-        assert(n->data);
-
-        free(p);
+        n->data = sacct;
     }
     fin_link(l);
 
     n = pop_link(stack);
     if (n) {
-        N = n;
+        root = n;
         goto z;
     }
 
@@ -57,36 +75,20 @@ z:
     }
 
     return t;
-
 }
 
-/* parse_root()
- *
- * Parse: [[group_a, 3] [group_b , 1]]
- *
- * and return a link of share accounts.
- *
- */
 static link_t *
-parse_root(const char *group)
+parse_user_shares(const char *user_shares)
 {
-    link_t *l;
-    l = NULL;
+    link_t *l = NULL;
     return l;
 }
 
-/* parse_users()
- *
- * Parse:
- * (group_a) (david john zebra) ([david, 1] [john,1] [zebra, 1])
- * given in the form of group_acct and return a list of
- * share account.
- *
- */
 static link_t *
-parse_users(uint32_t num, struct group_acct *acct)
+parse_group_member(const char * gname,
+                   uint32_t num,
+                   struct group_acct *grps)
 {
-    link_t *l;
-    l = NULL;
+    link_t *l = NULL;
     return l;
 }
