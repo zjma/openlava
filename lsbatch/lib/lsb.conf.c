@@ -3758,7 +3758,7 @@ do_Queues(struct lsConf *conf,
 #define QKEY_ENQUE_INTERACTIVE_AHEAD info->numIndx+45
 #define QKEY_ROUND_ROBIN_POLICY info->numIndx+46
 #define QKEY_PRE_POST_EXEC_USER info->numIndx+47
-#define QKEY_SCHEDULER_TYPE info->numIndx + 48
+#define QKEY_FAIRSHARE info->numIndx + 48
 #define KEYMAP_SIZE info->numIndx+50
 
     struct queueInfoEnt queue;
@@ -3824,7 +3824,7 @@ do_Queues(struct lsConf *conf,
     keylist[QKEY_ENQUE_INTERACTIVE_AHEAD].key = "ENQUE_INTERACTIVE_AHEAD";
     keylist[QKEY_ROUND_ROBIN_POLICY].key = "ROUND_ROBIN_POLICY";
     keylist[QKEY_PRE_POST_EXEC_USER].key="PRE_POST_EXEC_USER";
-    keylist[QKEY_SCHEDULER_TYPE].key = "SCHEDULER_TYPE";
+    keylist[QKEY_FAIRSHARE].key = "FAIRSHARE";
     keylist[KEYMAP_SIZE - 1].key = NULL;
 
     initQueueInfo(&queue);
@@ -4576,12 +4576,13 @@ do_Queues(struct lsConf *conf,
             }
         }
 
-        if (keylist[QKEY_SCHEDULER_TYPE].val != NULL) {
-            if (strncmp(keylist[QKEY_SCHEDULER_TYPE].val, "FAIR_SHARE", 10) == 0) {
-                queue.scheduler_type = strdup(keylist[QKEY_SCHEDULER_TYPE].val);
+        if (keylist[QKEY_FAIRSHARE].val != NULL) {
+            if (strcmp(keylist[QKEY_FAIRSHARE].val, "FAIRSHARE") == 0) {
+                queue.scheduler_type = strdup(keylist[QKEY_FAIRSHARE].val);
             } else  {
                 ls_syslog(LOG_ERR, "\
-%s: unsupported SCHEDULER_TYPE %s, ignored", __func__,keylist[QKEY_SCHEDULER_TYPE].val);
+%s: unsupported FAIRSHARE %s, ignored",
+                          __func__,keylist[QKEY_FAIRSHARE].val);
                 lsberrno = LSBE_CONF_WARNING;
                 freekeyval(keylist);
                 freeQueueInfo(&queue);

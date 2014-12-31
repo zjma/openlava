@@ -22,9 +22,9 @@ mbd.h daemonout.h daemons.h jgrp.h proxy.h mbd.profcnt.def
 #mbatchd_SOURCES += mbd.policy.c
 #endif
 
-mbatchd_LDADD = ../lib/liblsbatch.a \
-                ../../lsf/lib/liblsf.a \
-                ../../lsf/intlib/liblsfint.a -lm
+mbatchd_LDADD = ../lib/liblsbatch.la \
+                ../../lsf/lib/liblsf.la \
+                ../../lsf/intlib/liblsfint.la -lm -lnsl
 if !CYGWIN
 mbatchd_LDADD += -lnsl
 endif
@@ -34,9 +34,9 @@ sbatchd_SOURCES = sbd.comm.c sbd.file.c sbd.job.c sbd.main.c \
                   elock.c mail.c misc.c daemons.c daemons.xdr.c \
                   sbd.h daemonout.h daemons.h 
 
-sbatchd_LDADD = ../lib/liblsbatch.a \
-                ../../lsf/lib/liblsf.a \
-                ../../lsf/intlib/liblsfint.a -lm
+sbatchd_LDADD = ../lib/liblsbatch.la \
+                ../../lsf/lib/liblsf.la \
+                ../../lsf/intlib/liblsfint.la -lm -lnsl
 if !CYGWIN
 sbatchd_LDADD += -lnsl
 endif

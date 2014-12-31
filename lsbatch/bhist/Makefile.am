@@ -12,9 +12,9 @@ bhist_SOURCES  = bhist.c read.event.c bhist.h
 bhist_LDADD = ../cmd/cmd.job.o \
 	../cmd/cmd.misc.o ../cmd/cmd.jobid.o ../cmd/cmd.prt.o \
 	../cmd/cmd.err.o ../cmd/cmd.hist.o \
-	../lib/liblsbatch.a \
-	../../lsf/lib/liblsf.a \
-	../../lsf/intlib/liblsfint.a -lm
+	../lib/liblsbatch.la \
+	../../lsf/lib/liblsf.la \
+	../../lsf/intlib/liblsfint.la -lm -lnsl
 if !CYGWIN
 bhist_LDADD += -lnsl
 endif
