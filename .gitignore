@@ -1,7 +1,9 @@
 TAGS
 *.o
+*.lo
 *.a
 *~
+libtool
 *Makefile.in
 Makefile
 *.deps
