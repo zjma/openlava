@@ -759,7 +759,7 @@ struct queueInfoEnt {
     int    defLimits[LSF_RLIM_NLIMITS];
     int    minProcLimit;
     int    defProcLimit;
-    char   *scheduler_type;
+    char   *fairshare;
 };
 
 #define ACT_NO              0

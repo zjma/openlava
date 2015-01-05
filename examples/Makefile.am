@@ -29,7 +29,7 @@ pimme_SOURCES = pimme.c
 qstring_SOURCES = qstring.c
 
 readevent_SOURCES = readevent.c
-readevent_LDADD = ../lsbatch/lib/liblsbatch.a ../lsf/lib/liblsf.a -lnsl
+readevent_LDADD = ../lsbatch/lib/liblsbatch.la ../lsf/lib/liblsf.la -lnsl
 if SOLARIS
 readevent_LDADD += -lsocket -lnsl
 endif
@@ -42,7 +42,3 @@ sobufsiz_SOURCES = sobufsiz.c
 if SOLARIS
 sobufsiz_LDADD = -lsocket -lnsl
 endif
-
-etags :
-	etags *.[hc]
-

@@ -20,7 +20,7 @@
 #if !defined(_FAIRSHARE_HEADER_)
 #define _FAIRSHARE_HEADER_
 #include "mbd.h"
-#include "../../lsf/intlib/intlibout.h"
+#include "../../lsf/intlib/sshare.h"
 
 /* Fairshare scheduling plugin
  */
@@ -29,20 +29,6 @@ struct fair_sched {
     void *handle;
     struct tree_ *root;
     int (*init)(struct qData *, struct userConf *);
-};
-
-/* The share_acct record representing the user its path
- * in the fairshare tree and his shares. We could use
- * uData/userAcct but none of these structures has the
- * concept of shares.
- */
-struct share_acct {
-    char *path;
-    uint32_t numPEND;
-    uint32_t numRUN;
-    uint32_t runTime;
-    uint32_t shares;
-    double priority;
 };
 
 #endif

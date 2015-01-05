@@ -580,7 +580,7 @@ struct qData {
     char   *chkpntDir;
     int    minProcLimit;
     int    defProcLimit;
-    char   *schedulerType;
+    char   *fairshare;
     struct fair_sched *scheduler;
 };
 

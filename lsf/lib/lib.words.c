@@ -1,5 +1,6 @@
-/* $Id: lib.words.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
 #include "lib.h"
@@ -28,20 +30,20 @@ getNextLine_(FILE *fp, int confFormat)
 char *
 getNextWord_(char **line)
 {
-    static char word[4*MAXLINELEN];
+    static char word[BUFSIZ];
     char *wordp = word;
 
     while(isspace(**line))
         (*line)++;
 
-    while(**line && !isspace(**line))
+    while (**line && !isspace(**line))
         *wordp++ = *(*line)++;
 
     if (wordp == word)
         return(NULL);
 
     *wordp = '\0';
-    return(word);
+    return word;
 }
 
 char *

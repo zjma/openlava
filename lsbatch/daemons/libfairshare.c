@@ -18,42 +18,17 @@
  */
 #include "fairshare.h"
 
-static link_t *get_sacct_link(char *);
-
 /* init()
  */
 int
 init(struct qData *qPtr, struct userConf *uConf)
 {
-    struct tree_ *root;
-    link_t *link;
-    struct share_acct *sAcct;
-    linkiter_t iter;
-
     qPtr->scheduler = calloc(1, sizeof(struct fair_sched));
     assert(qPtr->scheduler);
 
-    root = calloc(1, sizeof(struct tree_));
-    assert(root);
-
-    qPtr->scheduler->root = root;
-
-    link = get_sacct_link(qPtr->schedulerType);
-
-    traverse_init(link, &iter);
-    while ((sAcct = traverse_link(&iter))) {
-    }
-
-    fin_link(link);
-
+    qPtr->scheduler->root
+        = sshare_make_tree(qPtr->fairshare,
+                           (uint32_t )uConf->numUgroups,
+                           (struct group_acct *)uConf->ugroups);
     return 0;
-}
-static link_t *
-get_sacct_link(char *s)
-{
-    link_t *l;
-
-    l = NULL;
-
-    return l;
 }

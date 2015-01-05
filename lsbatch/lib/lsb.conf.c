@@ -13,9 +13,12 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
+
+#define _GNU_SOURCE
 
 #include "lsb.h"
 
@@ -4577,11 +4580,11 @@ do_Queues(struct lsConf *conf,
         }
 
         if (keylist[QKEY_FAIRSHARE].val != NULL) {
-            if (strcmp(keylist[QKEY_FAIRSHARE].val, "FAIRSHARE") == 0) {
-                queue.scheduler_type = strdup(keylist[QKEY_FAIRSHARE].val);
+            if (strcasestr(keylist[QKEY_FAIRSHARE].val, "USER_SHARES")) {
+                queue.fairshare = strdup(keylist[QKEY_FAIRSHARE].val);
             } else  {
                 ls_syslog(LOG_ERR, "\
-%s: unsupported FAIRSHARE %s, ignored",
+%s: unsupported FAIRSHARE %s key, ignored",
                           __func__,keylist[QKEY_FAIRSHARE].val);
                 lsberrno = LSBE_CONF_WARNING;
                 freekeyval(keylist);
@@ -4683,7 +4686,7 @@ initQueueInfo(struct queueInfoEnt *qp)
 
     qp->chkpntPeriod = -1;
     qp->chkpntDir  = NULL;
-    qp->scheduler_type = NULL;
+    qp->fairshare = NULL;
 }
 
 static void
@@ -4715,7 +4718,7 @@ freeQueueInfo(struct queueInfoEnt *qp)
     FREEUP(qp->suspendActCmd);
     FREEUP(qp->resumeActCmd);
     FREEUP(qp->terminateActCmd);
-    FREEUP(qp->scheduler_type);
+    FREEUP(qp->fairshare);
 }
 
 char

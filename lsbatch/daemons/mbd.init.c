@@ -1523,7 +1523,7 @@ initQData (void)
     }
     qPtr->chkpntPeriod = -1;
     qPtr->chkpntDir    = NULL;
-    qPtr->schedulerType = NULL;
+    qPtr->fairshare = NULL;
 
     return qPtr;
 }
@@ -2246,8 +2246,8 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
                 }
             }
         }
-        if (queue->scheduler_type)
-            qPtr->schedulerType = strdup(queue->scheduler_type);
+        if (queue->fairshare)
+            qPtr->fairshare = strdup(queue->fairshare);
     }
 
     for (i = 0; i < queueConf->numQueues; i++) {
@@ -3390,14 +3390,14 @@ init_fairshare_scheduler(void)
          qPtr != (void *)qDataList;
          qPtr = qPtr->forw) {
 
-        if (qPtr->schedulerType == NULL)
+        if (qPtr->fairshare == NULL)
             continue;
 
         cc = load_fair_plugin(qPtr);
         if (cc < 0) {
             ls_syslog(LOG_ERR, "\
-%s: failed loading fairshare plugin", __func__);
-            FREEUP(qPtr->schedulerType);
+%s: failed loading fairshare plugin, fall back to fcfs", __func__);
+            FREEUP(qPtr->fairshare);
             continue;
         }
     }
