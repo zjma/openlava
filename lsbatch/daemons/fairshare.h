@@ -27,7 +27,7 @@
 struct fair_sched {
     char *name;
     void *handle;
-    struct tree_ *root;
+    struct tree_ *tree;
     int (*init)(struct qData *, struct userConf *);
 };
 

@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -330,7 +331,10 @@ static void groupCandHostsInit(struct groupCandHosts *gc);
 static void inEligibleGroupsInit(int **inEligibleGroups, int numGroups);
 static void groupCands2CandPtr(int numOfGroups, struct groupCandHosts *gc,
                                int *numCandPtr, struct candHost **candPtr);
-struct jData *currentHPJob;
+
+static void jiter_init(LIST_T *);
+static struct jData *jiter_next_job(LIST_T *);
+static void jiter_fin(LIST_T *);
 
 static bool_t      lsbPtilePack = FALSE;
 
@@ -4168,10 +4172,7 @@ scheduleAndDispatchJobs(void)
     sTab                   hashSearchPtr;
     hEnt                   *hashEntryPtr;
     struct jRef *jR;
-    struct jRef *jR0;
     struct jData *jPtr;
-    struct jData *jPtr0;
-    int min;
     int cc;
 
     now_disp = time(NULL);
@@ -4408,14 +4409,115 @@ scheduleAndDispatchJobs(void)
 
     loopCount = 0;
     ZERO_OUT_TIMERS();
+    jiter_init(jRefList);
 
-again:
+    while ((jPtr = jiter_next_job(jRefList))) {
+
+        TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
+        dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
+        if (dispRet == DISP_TIME_OUT) {
+            ls_syslog(LOG_DEBUG,"\
+%s STAY_TOO_LONG 3 loopCount <%d>", fname, loopCount);
+            DUMP_TIMERS(fname);
+            DUMP_CNT();
+            RESET_CNT();
+            return -1;
+        }
+        if (dispRet == DISP_FAIL && STAY_TOO_LONG) {
+            DUMP_TIMERS(fname);
+            DUMP_CNT();
+            RESET_CNT();
+            return -1;
+        }
+
+    }
+
+    if (logclass & LC_SCHED) {
+        ls_syslog(LOG_DEBUG,"\
+%s out of pickAJob/scheduleAJob loopCount <%d>", fname, loopCount);
+        DUMP_TIMERS(fname);
+        DUMP_CNT();
+        RESET_CNT();
+    }
+
+    copyReason();
+
+    TIMEIT(0, disp_clean(), "disp_clean()");
+
+    if (logclass & LC_SCHED) {
+        gettimeofday(&scheduleFinishTime, NULL);
+        scheduleTime =
+            (scheduleFinishTime.tv_sec - scheduleStartTime.tv_sec)*1000 +
+            (scheduleFinishTime.tv_usec - scheduleStartTime.tv_usec)/1000;
+        ls_syslog(LOG_DEBUG, "%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms", fname, schedSeqNo, scheduleTime);
+    }
+
+    jiter_fin(jRefList);
+
+    ++schedSeqNo;
+
+    if (schedSeqNo > INFINIT_INT - 1) {
+        schedSeqNo = 0;
+    }
+
+    tryPreempt();
+
+    DUMP_TIMERS(fname);
+    DUMP_CNT();
+    RESET_CNT();
+
+    return 0;
+}
+
+/* jiter_init()
+ */
+static void
+jiter_init(LIST_T *jRefList)
+{
+
+}
+
+/* jiter_fin()
+ */
+static void
+jiter_fin(LIST_T *jRefList)
+{
+    struct jRef *jR;
+    struct jRef *jR0;
+
+    /* Free the pending reference list.
+     */
+    for (jR = (struct jRef *)jRefList->back;
+         jR != (void *)jRefList; ) {
+
+        jR0 = jR->back;
+        listRemoveEntry(jRefList, (LIST_ENTRY_T *)jR);
+        free(jR);
+        jR = jR0;
+    }
+
+}
+
+/* jiter_next_job()
+ */
+static struct jData *
+jiter_next_job(LIST_T *jRefList)
+{
+    int min;
+    struct jRef *jR;
+    struct jRef *jR0;
+    struct jData *jPtr0;
+    struct jData *jPtr;
+
     min = INT32_MAX;
     jR0 = NULL;
+
     for (jR = (struct jRef *)jRefList->back;
          jR != (void *)jRefList;
          jR = (struct jRef *)jR->back) {
 
+        /* Get the highest priority job
+         */
         jPtr = jR->job;
         assert(jPtr->uPtr->numPEND > 0);
 
@@ -4426,7 +4528,7 @@ again:
             listRemoveEntry(jRefList,
                             (struct _listEntry *)jR);
             free(jR);
-            break;
+            return jPtr;
         }
 
         if (jPtr->uPtr->numRUN < min) {
@@ -4452,77 +4554,12 @@ again:
             listRemoveEntry(jRefList, (struct _listEntry *)jR0);
             jPtr = jR0->job;
             free(jR0);
-            break;
+            return jPtr;
         }
+
     } /* for (jRef = jRefList->back; ...;...) */
 
-    TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
-    dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
-    if (dispRet == DISP_TIME_OUT) {
-        ls_syslog(LOG_DEBUG,"\
-%s STAY_TOO_LONG 3 loopCount <%d>", fname, loopCount);
-        DUMP_TIMERS(fname);
-        DUMP_CNT();
-        RESET_CNT();
-        return -1;
-    }
-    if (dispRet == DISP_FAIL && STAY_TOO_LONG) {
-        DUMP_TIMERS(fname);
-        DUMP_CNT();
-        RESET_CNT();
-        return -1;
-    }
-
-    /* if there are more jobs waiting to
-     * be processed go ahead and schedule them
-     */
-    if (jRefList->numEnts > 0)
-        goto again;
-
-    if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG,"\
-%s out of pickAJob/scheduleAJob loopCount <%d>", fname, loopCount);
-        DUMP_TIMERS(fname);
-        DUMP_CNT();
-        RESET_CNT();
-    }
-
-    copyReason();
-
-    TIMEIT(0, disp_clean(), "disp_clean()");
-
-    if (logclass & LC_SCHED) {
-        gettimeofday(&scheduleFinishTime, NULL);
-        scheduleTime =
-            (scheduleFinishTime.tv_sec - scheduleStartTime.tv_sec)*1000 +
-            (scheduleFinishTime.tv_usec - scheduleStartTime.tv_usec)/1000;
-        ls_syslog(LOG_DEBUG, "%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms", fname, schedSeqNo, scheduleTime);
-    }
-
-    ++schedSeqNo;
-
-    if (schedSeqNo > INFINIT_INT - 1) {
-        schedSeqNo = 0;
-    }
-
-    /* Free the pending reference list.
-     */
-    for (jR = (struct jRef *)jRefList->back;
-         jR != (void *)jRefList; ) {
-
-        jR0 = jR->back;
-        listRemoveEntry(jRefList, (LIST_ENTRY_T *)jR);
-        free(jR);
-        jR = jR0;
-    }
-
-    tryPreempt();
-
-    DUMP_TIMERS(fname);
-    DUMP_CNT();
-    RESET_CNT();
-
-    return 0;
+    return NULL;
 }
 
 static int

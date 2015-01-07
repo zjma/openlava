@@ -3436,6 +3436,7 @@ load_fair_plugin(struct qData *qPtr)
         return -1;
     }
 
+    f->name = strdup(qPtr->queue);
     /* invoke the plugin initializer
      */
     (*f->init)(qPtr, userConf);

@@ -23,12 +23,24 @@
 int
 init(struct qData *qPtr, struct userConf *uConf)
 {
-    qPtr->scheduler = calloc(1, sizeof(struct fair_sched));
-    assert(qPtr->scheduler);
+    struct tree_node_ *n;
+    hEnt *e;
 
-    qPtr->scheduler->root
+    qPtr->scheduler->tree
         = sshare_make_tree(qPtr->fairshare,
                            (uint32_t )uConf->numUgroups,
                            (struct group_acct *)uConf->ugroups);
+
+    n = qPtr->scheduler->tree->root;
+    while ((n = tree_next_node(n))) {
+
+        e = h_getEnt_(&uDataList, n->path);
+        if (e == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: skipping uknown user %s", __func__, n->path);
+            continue;
+        }
+    }
+
     return 0;
 }

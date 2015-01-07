@@ -151,10 +151,12 @@ parse_user_shares(const char *user_shares)
         sacct->dshares = (double)sacct->shares/(double)sum_shares;
     }
 
+    _free_(u);
     return l;
 
 bail:
 
+    _free_(u);
     traverse_init(l, &iter);
     while ((sacct = traverse_link(&iter)))
         free_sacct(sacct);
@@ -174,6 +176,7 @@ parse_group_member(const char *gname,
     struct group_acct *g;
     int cc;
     char *w;
+    char *p;
 
     g = NULL;
     for (cc = 0; cc < num; cc++) {
@@ -194,8 +197,9 @@ parse_group_member(const char *gname,
     if (g == NULL)
         return NULL;
 
+    p = g->memberList;
     l = make_link();
-    while ((w = get_next_word(&g->memberList))) {
+    while ((w = get_next_word(&p))) {
         struct share_acct *sacct;
 
         sacct = get_sacct(w, g->user_shares);
@@ -205,6 +209,7 @@ parse_group_member(const char *gname,
     _free_(g->group);
     _free_(g->memberList);
     _free_(g->user_shares);
+    _free_(g);
 
     return l;
 }
@@ -215,22 +220,29 @@ get_sacct(const char *acct_name, const char *user_list)
     char name[128];
     uint32_t shares;
     int cc;
+    int n;
     struct share_acct *sacct;
+    char *p;
+    char *p0;
+
+    p0 = p = strdup(user_list);
 
     while (1) {
 
-        cc = sscanf(user_list, "%s%u", name, &shares);
+        cc = sscanf(p, "%s%u%n", name, &shares, &n);
         if (cc == EOF)
             break;
-        if (strcmp(name, acct_name) != 0)
+        if (strcmp(name, acct_name) != 0) {
+            p = p + n;
             continue;
-
+        }
         sacct = calloc(1, sizeof(struct share_acct));
         sacct->name = strdup(name);
         sacct->shares = shares;
         break;
     }
 
+    _free_(p0);
     return sacct;
 }
 

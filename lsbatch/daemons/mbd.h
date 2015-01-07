@@ -487,10 +487,6 @@ struct userAcct {
     int      numNonPrmptRsv;
     int      numAvailSUSP;
     int      reason;
-    int      numRunFromLastSession;
-    int      numVisitedInSession;
-    int      numPendJobsInSession;
-    bool_t   skipAccount;
 };
 
 struct qData {

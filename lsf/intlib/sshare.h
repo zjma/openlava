@@ -9,8 +9,6 @@
  */
 struct share_acct {
     char *name;
-    uint32_t numPEND;
-    uint32_t numRUN;
     uint32_t shares;
     double dshares;
     uint32_t sent;

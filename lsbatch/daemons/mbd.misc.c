@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2011-2014 David Bigagli
@@ -503,10 +504,6 @@ addUAcct: New userAcct for user %s", up->user);
     acct->numAvailSUSP = 0;
     acct->numNonPrmptRsv = 0;
     acct->reason = 0;
-    acct->numRunFromLastSession = 0;
-    acct->numVisitedInSession   = 0;
-    acct->numPendJobsInSession  = 0;
-    acct->skipAccount           = FALSE;
 
     return acct;
 }
