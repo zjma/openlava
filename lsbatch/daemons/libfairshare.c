@@ -18,10 +18,10 @@
  */
 #include "fairshare.h"
 
-/* init()
+/* fs_init()
  */
 int
-init(struct qData *qPtr, struct userConf *uConf)
+fs_init(struct qData *qPtr, struct userConf *uConf)
 {
     struct tree_node_ *n;
     hEnt *e;
@@ -40,6 +40,34 @@ init(struct qData *qPtr, struct userConf *uConf)
 %s: skipping uknown user %s", __func__, n->path);
             continue;
         }
+    }
+
+    return 0;
+}
+
+/* fs_update_sacct()
+ */
+int
+fs_update_sacct(struct qData *qPtr,
+                const char *name,
+                int numPEND,
+                int numRUN)
+{
+    struct tree_ *t;
+    struct tree_node_ *n;
+    struct share_acct *sacct;
+
+    t = qPtr->scheduler->tree;
+
+    n = hash_lookup(t->node_tab, name);
+    if (n == NULL)
+        return -1;
+
+    while (n->parent) {
+        sacct = n->data;
+        sacct->numPEND = sacct->numPEND + numPEND;
+        sacct->numRUN = sacct->numRUN + numRUN;
+        n = n->parent;
     }
 
     return 0;

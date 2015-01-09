@@ -12,6 +12,9 @@ struct share_acct {
     uint32_t shares;
     double dshares;
     uint32_t sent;
+    int numPEND;
+    int numRUN;
+    uint32_t totalRUN;
 };
 
 /* Support data structure equivalent of groupInfoEnt

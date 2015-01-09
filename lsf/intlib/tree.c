@@ -40,6 +40,7 @@ tree_init(const char *name)
     t->root = calloc(1, sizeof(struct tree_node_));
     assert(t->root);
     t->root->path = strdup("/");
+    t->root->parent = NULL;
 
     return t;
 }
@@ -264,5 +265,6 @@ tree_free(struct tree_ *t)
     _free_(t->root->path);
     _free_(t->root);
     _free_(t->name);
+    hash_free(t->node_tab, NULL);
     _free_(t);
 }

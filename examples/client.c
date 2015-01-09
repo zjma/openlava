@@ -118,6 +118,8 @@ do_tcp(void)
     int                  cc;
     int                  s;
     struct sockaddr_in   addr;
+    struct sockaddr_in   addr2;
+    socklen_t l;
 
     s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0) {
@@ -144,6 +146,14 @@ do_tcp(void)
         perror("connect");
         return -1;
     }
+
+    l = sizeof(struct sockaddr);
+    if (getpeername(s, (struct sockaddr *)&addr2, &l) < 0) {
+        perror("getpeename()");
+        close(s);
+        return -1;
+    }
+    printf("my peer port s %d\n", ntohs(addr2.sin_addr.s_addr));
 
     if (param.proxy
         && !param.socks5) {

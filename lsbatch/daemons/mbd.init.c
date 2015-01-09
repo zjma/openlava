@@ -3428,9 +3428,9 @@ load_fair_plugin(struct qData *qPtr)
 
     /* now check for scheduler symbols.
      */
-    f->init = dlsym(f->handle, "init");
-    if (f->init == NULL) {
-        ls_syslog(LOG_ERR, "%s: ohmygosh missing init() symbol in %s: %s",
+    f->fs_init = dlsym(f->handle, "fs_init");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "%s: ohmygosh missing fs_init() symbol in %s: %s",
                   __func__, buf, dlerror());
         dlclose(f->handle);
         return -1;
@@ -3439,7 +3439,7 @@ load_fair_plugin(struct qData *qPtr)
     f->name = strdup(qPtr->queue);
     /* invoke the plugin initializer
      */
-    (*f->init)(qPtr, userConf);
+    (*f->fs_init)(qPtr, userConf);
 
     return 0;
 }

@@ -80,10 +80,20 @@ z:
 
     fin_link(stack);
 
+    t->node_tab = hash_make(11);
     n = t->root;
-    printf("%s\n", n->path);
+
     while ((n = tree_next_node(n))) {
-        printf("%s\n", n->path);
+        char buf[BUFSIZ];
+        /* Create the hash table of nodes and their
+         * immediate parent.
+         */
+        if (n->child == NULL) {
+            sprintf(buf, "%s/%s", n->parent->path, n->path);
+            hash_install(t->node_tab, buf, n, NULL);
+        }
+        sprintf(buf, "%s", n->path);
+        hash_install(t->node_tab, buf, n, NULL);
     }
 
     return t;

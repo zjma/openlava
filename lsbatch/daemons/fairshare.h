@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -28,7 +28,11 @@ struct fair_sched {
     char *name;
     void *handle;
     struct tree_ *tree;
-    int (*init)(struct qData *, struct userConf *);
+    int (*fs_init)(struct qData *, struct userConf *);
+    int (*fs_update_sacct)(struct qData *,
+                           const char *,
+                           int numPEND,
+                           int numRUN);
 };
 
 #endif

@@ -1,7 +1,7 @@
 
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2011-2014 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -14,13 +14,13 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
 #include "mbd.h"
-
-#define NL_SETN         10
+#include "fairshare.h"
 
 #define CHECKQUSABLE(qp, oldReason, newReason)                  \
     {                                                           \
@@ -370,6 +370,13 @@ updQaccount (struct jData *jp, int numJobs, int numPEND,
 
     } END_FOR_EACH_USER_ANCESTOR_UGRP;
 
+    /* update fairshare counters
+     */
+    if (qp->scheduler) {
+         (*qp->scheduler->fs_update_sacct)(qp, jp->userName, numPEND, numRUN);
+        ls_syslog(LOG_DEBUG, "\
+%s: fs_update_sacct %s %d %d", __func__, jp->userName, numPEND, numRUN);
+    }
 
     if (!newJob) {
         updHAcct (jp, qp, NULL, &(qp->hAcct), numRUN, numSSUSP,

@@ -150,6 +150,7 @@ do_tcp(void)
         if (FD_ISSET(Sock, &rs)) {
             socklen_t            L;
             struct sockaddr_in   from;
+            struct sockaddr_in   addr2;
 
             L = sizeof(struct sockaddr_in);
             s = accept(Sock,
@@ -167,8 +168,16 @@ do_tcp(void)
                 }
             }
 
-            printf("\
-%d:%lu accept() from %s:%d on chan %d\n",
+            if (getsockname(s, (struct sockaddr *)&addr2, &L) < 0) {
+                perror("getpeename()");
+                close(s);
+                return -1;
+            }
+            printf("%d:%lu accept() socket %d port %d\n",
+                   getpid(), time(NULL),
+                   s, ntohs(addr2.sin_addr.s_addr));
+
+            printf("%d:%lu accept() from %s:%d on chan %d\n",
                    getpid(), time(NULL),
                    inet_ntoa(from.sin_addr),
                    ntohs(from.sin_port), cc);
