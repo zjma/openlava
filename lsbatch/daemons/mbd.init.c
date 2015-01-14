@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -2246,8 +2247,11 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
                 }
             }
         }
-        if (queue->fairshare)
+
+        if (queue->fairshare) {
             qPtr->fairshare = strdup(queue->fairshare);
+            qPtr->qAttrib |= Q_ATTRIB_FAIRSHARE;
+        }
     }
 
     for (i = 0; i < queueConf->numQueues; i++) {
@@ -3433,8 +3437,50 @@ load_fair_plugin(struct qData *qPtr)
         ls_syslog(LOG_ERR, "%s: ohmygosh missing fs_init() symbol in %s: %s",
                   __func__, buf, dlerror());
         dlclose(f->handle);
+        free(qPtr->scheduler);
         return -1;
     }
+
+    f->fs_update_sacct = dlsym(f->handle, "fs_update_sacct");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_update_sacct() symbol in %s: %s", __func__,
+                  buf, dlerror());
+        dlclose(f->handle);
+        free(qPtr->scheduler);
+        return -1;
+    }
+
+    f->fs_init_sched_session = dlsym(f->handle, "fs_init_sched_session");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_init_sched_session() symbol in %s: %s", __func__,
+                  buf, dlerror());
+        dlclose(f->handle);
+        free(qPtr->scheduler);
+        return -1;
+    }
+
+    f->fs_elect_job = dlsym(f->handle, "fs_elect_job");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_elect_job() symbol in %s: %s", __func__,
+                  buf, dlerror());
+        dlclose(f->handle);
+        free(qPtr->scheduler);
+        return -1;
+    }
+
+    f->fs_fin_sched_session = dlsym(f->handle, "fs_fin_sched_session");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_fin_sched_session() symbol in %s: %s", __func__,
+                  buf, dlerror());
+        dlclose(f->handle);
+        free(qPtr->scheduler);
+        return -1;
+    }
+
 
     f->name = strdup(qPtr->queue);
     /* invoke the plugin initializer

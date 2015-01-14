@@ -19,6 +19,7 @@
  */
 
 #include "mbd.h"
+#include "fairshare.h"
 
 #define NL_SETN         10
 #define SORT_HOST_NUM   30
@@ -1073,6 +1074,8 @@ getLsbUsable(void)
 
 }
 
+/* getQUsable()
+ */
 int
 getQUsable(struct qData *qp)
 {
@@ -4149,7 +4152,7 @@ cntHostSlots (struct hTab *hAcct, struct hData *hp)
 
 }
 
-#define STAY_TOO_LONG (time(0) - now_disp >= maxSchedStay)
+#define STAY_TOO_LONG (time(NULL) - now_disp >= maxSchedStay)
 
 int
 scheduleAndDispatchJobs(void)
@@ -4334,7 +4337,7 @@ scheduleAndDispatchJobs(void)
     if (numLsbUsable <= 0) {
         numLsbUsable = numQUsable = 0;
         resetSchedulerSession();
-        return(0);
+        return 0;
     }
 
     if (logclass & LC_SCHED) {
@@ -4354,36 +4357,22 @@ scheduleAndDispatchJobs(void)
     }
 
     if (!(mSchedStage & M_STAGE_QUE_CAND)) {
-        if (numLsbUsable > 0) {
-            if (nextSchedQ == qDataList->back) {
 
-                numQUsable = 0;
+        for (qp = nextSchedQ; qp != qDataList; qp = qp->back) {
+
+            if (qp->numPEND == 0 && qp->numRESERVE == 0)
+                continue;
+
+            INC_CNT(PROF_CNT_getQUsable);
+            TIMEVAL(3, getQUsable(qp), tmpVal);
+            timeGetQUsable += tmpVal;
+
+            /* Initialize the slot fairshare scheduler.
+             */
+            if (qp->scheduler) {
+                (*qp->scheduler->fs_init_sched_session)(qp);
             }
-            loopCount = 0;
-            for (qp = nextSchedQ; qp != qDataList; qp = qp->back) {
-                int num;
-                if (qp->numPEND == 0 && qp->numRESERVE == 0) {
-                    continue;
-                }
-                INC_CNT(PROF_CNT_getQUsable);
-                TIMEVAL(3, num = getQUsable(qp), tmpVal);
-                timeGetQUsable += tmpVal;
-                if (num <= 0) {
-                    continue;
-                }
-                numQUsable += num;
-                if (((++loopCount) % 10) == 0 && STAY_TOO_LONG) {
-                    nextSchedQ = qp->back;
-                    if (logclass & LC_SCHED) {
-                        ls_syslog(LOG_DEBUG, "\
-%s: Stayed too long in M_STAGE_QUE_CAND; numQUsable=%d timeGetQUsable %d ms",
-                                  fname, numQUsable, timeGetQUsable);
-                        DUMP_CNT();
-                        RESET_CNT();
-                    }
-                    return -1;
-                }
-            }
+
         }
         mSchedStage |= M_STAGE_QUE_CAND;
     }
@@ -4407,10 +4396,24 @@ scheduleAndDispatchJobs(void)
         return 0;
     }
 
+    if (STAY_TOO_LONG) {
+        if (logclass & LC_SCHED) {
+            ls_syslog(LOG_DEBUG, "\
+%s: Stayed too long in M_STAGE_RESUME_SUSP", fname);
+        }
+        DUMP_CNT();
+        RESET_CNT();
+        return -1;
+    }
+
     loopCount = 0;
     ZERO_OUT_TIMERS();
+    /* Initialize the job iterator
+     */
     jiter_init(jRefList);
 
+    /* Return the next priority job
+     */
     while ((jPtr = jiter_next_job(jRefList))) {
 
         TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
@@ -4429,7 +4432,6 @@ scheduleAndDispatchJobs(void)
             RESET_CNT();
             return -1;
         }
-
     }
 
     if (logclass & LC_SCHED) {
@@ -4499,6 +4501,10 @@ jiter_fin(LIST_T *jRefList)
 }
 
 /* jiter_next_job()
+ *
+ * The key property of the reference list is that
+ * each job is looked at the scheduler only once
+ * no matter if the job is dispatched or not.
  */
 static struct jData *
 jiter_next_job(LIST_T *jRefList)
@@ -4512,6 +4518,12 @@ jiter_next_job(LIST_T *jRefList)
     min = INT32_MAX;
     jR0 = NULL;
 
+    /* Everytime for this loop we return one
+     * job and then everytime we reenter we
+     * restart from the list head, at each call
+     * the list keeps shrinking regardless if
+     * job goes or not.
+     */
     for (jR = (struct jRef *)jRefList->back;
          jR != (void *)jRefList;
          jR = (struct jRef *)jR->back) {
@@ -4520,6 +4532,25 @@ jiter_next_job(LIST_T *jRefList)
          */
         jPtr = jR->job;
         assert(jPtr->uPtr->numPEND > 0);
+
+        /* Found a fairshare queue let's have the slot
+         * scheduler to pick the job based on its
+         * policy.
+         */
+        if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
+            struct qData *qPtr = jPtr->qPtr;
+            (*qPtr->scheduler->fs_elect_job)(qPtr,
+                                             jRefList,
+                                             &jPtr0);
+            if (jPtr0)
+                return jPtr0;
+            /* No more jobs from this fairshare queue
+             * so finalize the local plugin data for this
+             * session.
+             */
+            (*qPtr->scheduler->fs_fin_sched_session)(qPtr);
+            continue;
+        }
 
         if (! (jPtr->qPtr->qAttrib & Q_ATTRIB_ROUND_ROBIN)) {
             /* this is a fcfs queue so just dequeue the first
@@ -4539,7 +4570,8 @@ jiter_next_job(LIST_T *jRefList)
             jR0 = jR;
         }
 
-        /* Get the next job
+        /* Get the next job and test if the
+         * current queue eneded or not.
          */
         jPtr0 = jR->back->job;
         if (jR->back == (void *)jRefList

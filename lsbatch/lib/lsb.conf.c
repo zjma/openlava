@@ -4295,10 +4295,6 @@ do_Queues(struct lsConf *conf,
                             &keylist[QKEY_IGNORE_DEADLINE],
                             Q_ATTRIB_IGNORE_DEADLINE, "IGNORE_DEADLINE");
 
-        addBinaryAttributes(fname, lineNum, &queue,
-                            &keylist[QKEY_ENQUE_INTERACTIVE_AHEAD],
-                            Q_ATTRIB_ENQUE_INTERACTIVE_AHEAD,
-                            "ENQUE_INTERACTIVE_AHEAD");
 
         addBinaryAttributes(fname,
                             lineNum,

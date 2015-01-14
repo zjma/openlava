@@ -63,12 +63,46 @@ fs_update_sacct(struct qData *qPtr,
     if (n == NULL)
         return -1;
 
-    while (n->parent) {
+    while (n) {
         sacct = n->data;
         sacct->numPEND = sacct->numPEND + numPEND;
         sacct->numRUN = sacct->numRUN + numRUN;
         n = n->parent;
     }
 
+    return 0;
+}
+
+/* fs_init_sched_session()
+ */
+int
+fs_init_sched_session(struct qData *qPtr)
+{
+    struct tree_ *t;
+    link_t *l;
+
+    t = qPtr->scheduler->tree;
+    l = make_link();
+
+    sshare_distribute_tokens(t, qPtr->numUsable, l);
+
+    return 0;
+}
+
+/* fs_get_next_job()
+ */
+int
+fs_elect_job(struct qData *qPtr,
+                LIST_T *jRef,
+                struct jData **jPtr)
+{
+    return 0;
+}
+
+/* fs_fin_sched_session()
+ */
+int
+fs_fin_sched_session(struct qData *qPtr)
+{
     return 0;
 }

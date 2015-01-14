@@ -31,8 +31,12 @@ static link_t *parse_group_member(const char *,
                                   struct group_acct *);
 static struct share_acct *get_sacct(const char *,
                                     const char *);
+static uint32_t compute_tokens(struct tree_node_ *, uint32_t);
+static void sort_siblings(struct tree_node_ *);
 static void tokenize(char *);
 static char *get_next_word(char **);
+static int node_cmp(const void *, const void *);
+static void print_node(struct tree_node_ *);
 
 /* sshare_make_tree()
  */
@@ -50,6 +54,9 @@ struct tree_ *sshare_make_tree(const char *user_shares,
 
     stack = make_link();
     t = tree_init("");
+    /* root summarizes all the tree counters
+     */
+    t->root->data = calloc(1, sizeof(struct share_acct));
     root = NULL;
 
     l = parse_user_shares(user_shares);
@@ -70,6 +77,11 @@ z:
         enqueue_link(stack, n);
         n->data = sacct;
     }
+
+    /* Sort by shares
+     */
+    sort_siblings(root);
+
     fin_link(l);
 
     n = pop_link(stack);
@@ -94,9 +106,61 @@ z:
         }
         sprintf(buf, "%s", n->path);
         hash_install(t->node_tab, buf, n, NULL);
+        print_node(n);
     }
 
     return t;
+}
+
+/* sshare_distribute_tokens()
+ */
+int
+sshare_distribute_tokens(struct tree_ *t,
+                         uint32_t tokens,
+                         link_t *L)
+{
+    struct tree_node_ *n;
+    link_t *stack;
+    struct share_acct *sacct;
+    struct tree_node_ *root;
+
+    stack = make_link();
+    n = t->root->child;
+
+znovu:
+
+    root = n->parent;
+    while (n) {
+
+        if (n->child)
+            push_link(stack, n);
+
+        compute_tokens(n, tokens);
+
+        n = n->right;
+    }
+
+    n = pop_link(stack);
+    if (n) {
+        n = n->child;
+        sacct = n->data;
+        tokens = sacct->sent;
+        goto znovu;
+    }
+
+    fin_link(stack);
+
+    n = t->root;
+    while ((n = tree_next_node(n))) {
+
+        if (n->child)
+            continue;
+
+        sacct = n->data;
+        enqueue_link(L, sacct);
+    }
+
+    return 0;
 }
 
 /* free_sacct()
@@ -106,6 +170,68 @@ free_sacct(struct share_acct *sacct)
 {
     _free_(sacct->name);
     _free_(sacct);
+}
+
+/* compute_tokens()
+ */
+static uint32_t
+compute_tokens(struct tree_node_ *n, uint32_t tokens)
+{
+    struct share_acct *s;
+    double q;
+    double r;
+    uint32_t u;
+
+    s = n->data;
+
+    q = s->dshares * (double)tokens;
+    r = q - (double)s->numRUN;
+    u = lround(r);
+    s->sent = MIN(u, s->numPEND);
+
+    return s->sent;
+}
+
+/* sort_siblings()
+ */
+static void
+sort_siblings(struct tree_node_ *root)
+{
+    struct tree_node_ *n;
+    int num;
+    int i;
+    struct tree_node_ **v;
+
+    if (root->child == NULL)
+        return;
+
+    if (root->child->right == NULL)
+        return;
+
+    num = 0;
+    n = root->child;
+    while (n) {
+        ++num;
+        n = n->right;
+    }
+
+    v = calloc(num, sizeof(struct tree_node_ *));
+    n = root->child;
+    num = 0;
+    while (n) {
+        tree_rm_node(n);
+        v[num] = n;
+        ++num;
+        n = n->right;
+    }
+
+    qsort(v, num, sizeof(struct tree_node_ *), node_cmp);
+
+    for (i = 0; i < num; i++) {
+        tree_insert_node(root, v[i]);
+    }
+
+    free(v);
 }
 
 /* parse_user_shares()
@@ -183,10 +309,13 @@ parse_group_member(const char *gname,
                    struct group_acct *grps)
 {
     link_t *l;
+    linkiter_t iter;
     struct group_acct *g;
     int cc;
     char *w;
     char *p;
+    uint32_t sum;
+    struct share_acct *sacct;
 
     g = NULL;
     for (cc = 0; cc < num; cc++) {
@@ -209,11 +338,17 @@ parse_group_member(const char *gname,
 
     p = g->memberList;
     l = make_link();
+    sum = 0;
     while ((w = get_next_word(&p))) {
-        struct share_acct *sacct;
 
         sacct = get_sacct(w, g->user_shares);
+        sum = sum + sacct->shares;
         enqueue_link(l, sacct);
+    }
+
+    traverse_init(l, &iter);
+    while ((sacct = traverse_link(&iter))) {
+        sacct->dshares = (double)sacct->shares/(double)sum;
     }
 
     _free_(g->group);
@@ -289,4 +424,43 @@ get_next_word(char **line)
 
     *wordp = '\0';
     return word;
+}
+
+/* node_cmp()
+ *
+ * Function for qsort()
+ */
+static int
+node_cmp(const void *x, const void *y)
+{
+    struct tree_node_ *n1;
+    struct tree_node_ *n2;
+    struct share_acct *s1;
+    struct share_acct *s2;
+
+    n1 = *(struct tree_node_ **)x;
+    n2 = *(struct tree_node_ **)y;
+
+    s1 = n1->data;
+    s2 = n2->data;
+
+    if (s1->shares > s2->shares)
+        return 1;
+    if (s1->shares < s2->shares)
+        return -1;
+
+    return 0;
+}
+
+/* print_node()
+ */
+static void
+print_node(struct tree_node_ *n)
+{
+    struct share_acct *s;
+
+    s = n->data;
+
+    printf("%s: node %s shares %d dshares %4.2f\n",
+           __func__, n->path, s->shares, s->dshares);
 }

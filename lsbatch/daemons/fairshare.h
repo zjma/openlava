@@ -33,6 +33,9 @@ struct fair_sched {
                            const char *,
                            int numPEND,
                            int numRUN);
+    int (*fs_init_sched_session)(struct qData *);
+    int (*fs_elect_job)(struct qData *, LIST_T *, struct jData **);
+    int (*fs_fin_sched_session)(struct qData *);
 };
 
 #endif
