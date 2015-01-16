@@ -323,7 +323,7 @@ lsb_getelogrec (struct eventLogHandle *ePtr, int *lineNum)
         logRec  = lsb_geteventrec(newfp, lineNum);
         ePtr->fp = newfp;
     }
-    return (logRec);
+    return logRec;
 }
 
 void
@@ -438,7 +438,7 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
     readEventRecord (line, logRec);
 
     if (lsberrno == LSBE_NO_ERROR)
-        return (logRec);
+        return logRec;
 
     return NULL;
 
@@ -623,7 +623,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
                 &ccount);
 
     if (cc != 10)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobNewLog->submitTime = tmpSubmit;
     jobNewLog->beginTime = tmpBegin;
     jobNewLog->termTime = tmpTerm;
@@ -635,7 +635,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
         cc = sscanf(line, "%d%n", &(jobNewLog->rLimits[i]), &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
 
@@ -644,7 +644,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     cc = sscanf(line, "%f%d%n", &jobNewLog->hostFactor,
                 &jobNewLog->umask, &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, jobNewLog->queue);
@@ -660,7 +660,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
 
     cc = sscanf(line, "%d%n", &jobNewLog->numAskedHosts, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobNewLog->numAskedHosts > 0) {
@@ -676,7 +676,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
             if ((ccount = stripQStr(line, hName)) < 0) {
 
                 jobNewLog->numAskedHosts = i;
-                return (LSBE_EVENT_FORMAT);
+                return LSBE_EVENT_FORMAT;
             }
             jobNewLog->askedHosts[i] = putstr_(hName);
             if (jobNewLog->askedHosts[i] == NULL) {
@@ -695,7 +695,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
 
     cc = sscanf(line, "%d%n", &jobNewLog->nxf, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobNewLog->nxf > 0) {
@@ -712,7 +712,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->xf[i].execFn);
         cc = sscanf(line, "%d%n", &jobNewLog->xf[i].options, &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
 
@@ -722,13 +722,13 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     if (jobNewLog->options & SUB_INTERACTIVE) {
         cc = sscanf(line, "%d%n", &jobNewLog->niosPort, &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     } else
         jobNewLog->niosPort = 0;
     cc = sscanf(line, "%d%n", &jobNewLog->maxNumProcessors, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
     saveQStr(line, jobNewLog->schedHostType);
     saveQStr(line, jobNewLog->loginShell);
@@ -736,14 +736,14 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     cc = sscanf(line, "%d%d%n", &(jobNewLog->options2),
                 &(jobNewLog->idx),  &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     if ((jobNewLog->options2 & SUB2_BSUB_BLOCK)){
         line += ccount;
         if (*line != '\0') {
             cc = sscanf(line, "%d%n", &jobNewLog->niosPort, &ccount);
             if (cc != 1)
-                return (LSBE_EVENT_FORMAT);
+                return LSBE_EVENT_FORMAT;
         }
     }
 
@@ -757,7 +757,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
 
     cc = sscanf(line, "%d%n", &jobNewLog->userPriority, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     /* Version >= 3 deamon reading version < 3 events file.
      */
@@ -768,7 +768,6 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     }
 
     return LSBE_NO_ERROR;
-
 }
 
 static int
@@ -783,7 +782,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
                 &(jobModLog->delOptions), &(jobModLog->userId),
                 &ccount);
     if (cc != 4) {
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     }
     line += ccount + 1;
 
@@ -794,7 +793,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
                 &(jobModLog->termTime), &(jobModLog->sigValue),
                 &(jobModLog->restartPid), &ccount);
     if (cc != 7)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobModLog->options & SUB_JOB_NAME)
@@ -805,7 +804,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
     if (jobModLog->options & SUB_HOST) {
         cc = sscanf(line, "%d%n", &(jobModLog->numAskedHosts), &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
         if (jobModLog->numAskedHosts) {
             jobModLog->askedHosts = (char **)
@@ -827,7 +826,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
         cc = sscanf(line, "%d%n",
                     &(jobModLog->rLimits[i]), &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
     if (jobModLog->options & SUB_HOST_SPEC)
@@ -851,7 +850,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
         cc = sscanf(line, "%d%n",
                     &(jobModLog->chkpntPeriod), &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
     if (jobModLog->options & SUB_CHKPNT_DIR)
@@ -860,7 +859,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
         cc = sscanf(line, "%d%n",
                     &(jobModLog->nxf), &ccount);
         if (cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
         if (jobModLog->nxf > 0) {
             jobModLog->xf = (struct xFile *)
@@ -875,7 +874,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
             copyQStr(line, MAXFILENAMELEN, 0, jobModLog->xf[i].execFn);
             cc = sscanf(line, "%d%n", &jobModLog->xf[i].options, &ccount);
             if (cc != 1)
-                return (LSBE_EVENT_FORMAT);
+                return LSBE_EVENT_FORMAT;
             line += ccount + 1;
         }
     }
@@ -894,7 +893,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
                &(jobModLog->niosPort), &(jobModLog->maxNumProcessors),
                &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobModLog->options & SUB_LOGIN_SHELL)
@@ -904,7 +903,7 @@ readJobMod(char *line, struct jobModLog *jobModLog)
 
     cc = sscanf(line, "%d%n", &(jobModLog->delOptions2), &ccount);
     if ( cc != 1) {
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     }
     line += ccount + 1;
 
@@ -917,11 +916,11 @@ readJobMod(char *line, struct jobModLog *jobModLog)
     if (jobModLog->options2 & SUB2_JOB_PRIORITY ) {
         cc = sscanf(line, "%d%n", &(jobModLog->userPriority), &ccount);
         if ( cc != 1)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
 
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -940,7 +939,7 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
                 &(jobStartLog->numExHosts),
                 &ccount );
     if (cc != 6)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobStartLog->numExHosts == 0) {
@@ -948,7 +947,7 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
                                          "%s: The number of execution hosts is zero for job <%d>"), /* catgets 5502 */
                   __func__,
                   jobStartLog->jobId);
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     }
 
     jobStartLog->execHosts = (char **)
@@ -962,7 +961,7 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
         char hName[MAXLINELEN];
         if ((ccount = stripQStr(line, hName)) < 0) {
             jobStartLog->numExHosts = i;
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         }
         jobStartLog->execHosts[i] = putstr_(hName);
         if (jobStartLog->execHosts[i] == NULL) {
@@ -976,7 +975,7 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
 
     cc = sscanf(line, "%d%n", &(jobStartLog->jFlags), &ccount);
     if (cc != 1) {
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     }
     line += ccount + 1;
 
@@ -1004,14 +1003,14 @@ readJobStartAccept(char *line, struct jobStartAcceptLog *jobStartAcceptLog)
                 &(jobStartAcceptLog->jobPGid),
                 &ccount );
     if (cc != 3)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     cc = sscanf(line, "%d%n", &(jobStartAcceptLog->idx), &ccount );
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1026,7 +1025,7 @@ readJobExecute(char *line, struct jobExecuteLog *jobExecuteLog)
                 &(jobExecuteLog->jobPGid),
                 &ccount );
     if (cc != 3)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     saveQStr(line, jobExecuteLog->execCwd);
@@ -1035,13 +1034,13 @@ readJobExecute(char *line, struct jobExecuteLog *jobExecuteLog)
 
     cc = sscanf(line, "%d%n", &jobExecuteLog->jobPid, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     cc = sscanf(line, "%d%n", &(jobExecuteLog->idx),  &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
-    return (LSBE_NO_ERROR);
+        return LSBE_EVENT_FORMAT;
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1063,25 +1062,25 @@ readJobStatus(char *line, struct jobStatusLog *jobStatusLog)
                 &(jobStatusLog->ru),
                 &ccount);
     if (cc != 7)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobStatusLog->endTime = tmpEnd;
 
     line += ccount + 1;
 
     if (jobStatusLog->ru) {
         if ((cc =  str2lsfRu(line, &jobStatusLog->lsfRusage, &ccount)) != 19)
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         line += ccount + 1;
     }
 
     cc = sscanf(line, "%d%n", &(jobStatusLog->exitStatus), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
     cc = sscanf(line, "%d%n", &(jobStatusLog->idx),  &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
-    return (LSBE_NO_ERROR);
+        return LSBE_EVENT_FORMAT;
+    return LSBE_NO_ERROR;
 }
 
 
@@ -1106,12 +1105,12 @@ readSbdJobStatus(char *line, struct sbdJobStatusLog *jobStatusLog)
                 &(jobStatusLog->idx),
                 &ccount);
     if (cc != 12)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobStatusLog->actPeriod = tmpActPeriod;
 
     line += ccount + 1;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -1126,7 +1125,7 @@ readMig(char *line, struct migLog *migLog)
                 &(migLog->numAskedHosts),
                 &ccount );
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     if (migLog->numAskedHosts) {
@@ -1140,7 +1139,7 @@ readMig(char *line, struct migLog *migLog)
         for (i = 0; i < migLog->numAskedHosts; i++) {
             if ((ccount = stripQStr(line, hName)) < 0) {
                 migLog->numAskedHosts = i;
-                return (LSBE_EVENT_FORMAT);
+                return LSBE_EVENT_FORMAT;
             }
             if ((migLog->askedHosts[i] = putstr_(hName)) == NULL) {
                 migLog->numAskedHosts = i;
@@ -1151,15 +1150,15 @@ readMig(char *line, struct migLog *migLog)
     }
     cc = sscanf(line, "%d%n", &(migLog->userId), &ccount );
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     cc = sscanf(line, "%d%n", &(migLog->idx),  &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, migLog->userName);
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1180,12 +1179,12 @@ readJobSigAct(char *line, struct sigactLog *sigactLog)
                 &(sigactLog->actStatus),
                 &ccount);
     if (cc != 7)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     sigactLog->period = tmpPeriod;
 
     line += ccount + 1;
     if ((ccount = stripQStr(line, sigSymbol)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     sigactLog->signalSymbol = putstr_(sigSymbol);
@@ -1194,9 +1193,9 @@ readJobSigAct(char *line, struct sigactLog *sigactLog)
 
     cc = sscanf(line, "%d%n", &(sigactLog->idx),  &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1208,14 +1207,14 @@ readJobRequeue(char *line, struct jobRequeueLog *jobRequeueLog)
     cc = sscanf(line, "%d%n", &(jobRequeueLog->jobId),
                 &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     cc = sscanf(line, "%d%n", &(jobRequeueLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1226,10 +1225,10 @@ readJobClean(char *line, struct jobCleanLog *jobCleanLog)
     cc = sscanf(line, "%d%d%n", &(jobCleanLog->jobId),
                 &(jobCleanLog->idx), &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -1247,15 +1246,15 @@ readChkpnt(char *line, struct chkpntLog *chkpntLog)
                 &(chkpntLog->flags),
                 &ccount);
     if (cc != 5)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     chkpntLog->period = tmpPeriod;
 
     line += ccount + 1;
 
     cc = sscanf(line, "%d%n", &(chkpntLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
-    return (LSBE_NO_ERROR);
+        return LSBE_EVENT_FORMAT;
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1266,7 +1265,7 @@ readJobSwitch(char *line, struct jobSwitchLog *jobSwitchLog)
     cc = sscanf(line, "%d%d%n", &(jobSwitchLog->userId),
                 &(jobSwitchLog->jobId), &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     copyQStr(line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->queue);
@@ -1274,12 +1273,12 @@ readJobSwitch(char *line, struct jobSwitchLog *jobSwitchLog)
     cc = sscanf(line, "%d%n", &(jobSwitchLog->idx),
                 &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->userName);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1296,17 +1295,17 @@ readJobMove(char *line, struct jobMoveLog *jobMoveLog)
                 &(jobMoveLog->base),
                 &ccount);
     if (cc != 4)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     cc = sscanf(line, "%d%n", &(jobMoveLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, jobMoveLog->userName);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1316,18 +1315,18 @@ readQueueCtrl(char *line, struct queueCtrlLog *queueCtrlLog)
 
     cc = sscanf(line, "%d%n", &(queueCtrlLog->opCode), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     copyQStr(line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->queue);
 
     cc = sscanf(line, "%d%n", &(queueCtrlLog->userId), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->userName);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1337,7 +1336,7 @@ readHostCtrl(char *line, struct hostCtrlLog *hostCtrlLog)
 
     cc = sscanf(line, "%d%n", &(hostCtrlLog->opCode), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
 
@@ -1345,11 +1344,11 @@ readHostCtrl(char *line, struct hostCtrlLog *hostCtrlLog)
 
     cc = sscanf(line, "%d%n", &(hostCtrlLog->userId), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, hostCtrlLog->userName);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1362,9 +1361,9 @@ readMbdDie (char *line, struct mbdDieLog *mbdDieLog)
     cc = sscanf(line, "%d%d", &(mbdDieLog->numRemoveJobs),
                 &(mbdDieLog->exitCode));
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1382,17 +1381,17 @@ readUnfulfill (char *line, struct unfulfillLog *unfulfillLog)
                 &(unfulfillLog->notModified),
                 &ccount);
     if (cc != 7)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     unfulfillLog->chkPeriod = tmpChkPeriod;
 
     line += ccount+1;
 
     cc = sscanf(line, "%d%n", &(unfulfillLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount+1;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1401,7 +1400,7 @@ readLoadIndex(char *line, struct loadIndexLog *loadIndexLog)
     int cc, ccount, i;
 
     if ((cc = sscanf(line, "%d%n", &loadIndexLog->nIdx, &ccount)) != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     if ((loadIndexLog->name = (char **) calloc(loadIndexLog->nIdx,
                                                sizeof(char *))) == NULL) {
@@ -1413,7 +1412,7 @@ readLoadIndex(char *line, struct loadIndexLog *loadIndexLog)
     for (i = 0; i < loadIndexLog->nIdx; i++)
         saveQStr(line, loadIndexLog->name[i]);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1434,7 +1433,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
                 &(tmpStart),
                 &ccount);
     if (cc != 8)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobFinishLog->submitTime = tmpSubmit;
     jobFinishLog->beginTime  = tmpBegin;
     jobFinishLog->termTime   = tmpTerm;
@@ -1456,7 +1455,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
 
     cc = sscanf(line, "%d%n", &jobFinishLog->numAskedHosts, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobFinishLog->numAskedHosts > 0) {
@@ -1471,7 +1470,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
     for (i=0; i<jobFinishLog->numAskedHosts; i++) {
         if ((ccount = stripQStr(line, hName)) < 0) {
             jobFinishLog->numAskedHosts = i;
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         }
         jobFinishLog->askedHosts[i] = putstr_(hName);
         if (jobFinishLog->askedHosts[i] == NULL) {
@@ -1483,7 +1482,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
 
     cc = sscanf(line, "%d%n", &jobFinishLog->numExHosts, &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if (jobFinishLog->numExHosts > 0) {
@@ -1498,7 +1497,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
     for (i=0; i<jobFinishLog->numExHosts; i++) {
         if ((ccount = stripQStr(line, hName)) < 0) {
             jobFinishLog->numExHosts = i;
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         }
         jobFinishLog->execHosts[i] = putstr_(hName);
         if (jobFinishLog->execHosts[i] == NULL) {
@@ -1511,7 +1510,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
     cc = sscanf(line, "%d%f%n", &jobFinishLog->jStatus,
                 &jobFinishLog->hostFactor, &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     jobFinishLog->endTime = eventTime;
@@ -1520,7 +1519,7 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
     copyQStr(line, MAX_CMD_DESC_LEN, 0, jobFinishLog->command);
 
     if ((cc =  str2lsfRu(line, &jobFinishLog->lsfRusage, &ccount)) != 19)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     jobFinishLog->cpuTime = (float)(jobFinishLog->lsfRusage.ru_utime +
                                     jobFinishLog->lsfRusage.ru_stime);
@@ -1533,30 +1532,30 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
 
     if ((cc = sscanf(line, "%d%n", &jobFinishLog->exitStatus,
                      &ccount)) != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     if ((cc = sscanf(line, "%d%n", &jobFinishLog->maxNumProcessors,
                      &ccount)) != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
     saveQStr(line, jobFinishLog->loginShell);
 
     cc = sscanf(line, "%d%n", &(jobFinishLog->idx),
                 &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
     cc = sscanf(line, "%d%d%n", &(jobFinishLog->maxRMem),
                 &(jobFinishLog->maxRSwap), &ccount);
     if (cc != 2)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->inFileSpool);
     copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->commandSpool);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1803,120 +1802,120 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
                 jobNewLog->sigValue,
                 (int) jobNewLog->chkpntPeriod,
                 jobNewLog->restartPid) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     for(i = 0; i < LSF_RLIM_NLIMITS; i++)
         if (fprintf(log_fp, " %d", jobNewLog->rLimits[i]) <0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->hostSpec) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %6.2f", jobNewLog->hostFactor) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", jobNewLog->umask) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobNewLog->queue) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     subNewLine_(jobNewLog->resReq);
     if (addQStr (log_fp, jobNewLog->resReq) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->fromHost) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->cwd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->chkpntDir) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->inFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->outFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->errFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->subHomeDir) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobNewLog->jobFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->numAskedHosts) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (jobNewLog->numAskedHosts)
         for (i = 0; i < jobNewLog->numAskedHosts; i++) {
             if (addQStr (log_fp, jobNewLog->askedHosts[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
 
     subNewLine_(jobNewLog->dependCond);
     if (addQStr (log_fp, jobNewLog->dependCond) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     subNewLine_(jobNewLog->preExecCmd);
     if (addQStr(log_fp, jobNewLog->preExecCmd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobNewLog->jobName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     subNewLine_(jobNewLog->command);
     if (addQStr(log_fp,jobNewLog->command) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->nxf) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     for (i = 0; i < jobNewLog->nxf; i++) {
         if (fprintf(log_fp, " \"%s\" \"%s\" %d", jobNewLog->xf[i].subFn,
                     jobNewLog->xf[i].execFn, jobNewLog->xf[i].options) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     }
     subNewLine_(jobNewLog->mailUser);
     if (addQStr (log_fp, jobNewLog->mailUser) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->projectName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (jobNewLog->options & SUB_INTERACTIVE) {
         if (fprintf(log_fp, " %d", jobNewLog->niosPort) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     }
     if (fprintf(log_fp, " %d", jobNewLog->maxNumProcessors) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->schedHostType) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->loginShell) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
 
     if (fprintf(log_fp, " %d" ,
                 jobNewLog->options2) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->idx) < 0 )
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (jobNewLog->options2 & SUB2_BSUB_BLOCK) {
         if (fprintf(log_fp, " %d", jobNewLog->niosPort) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     }
 
     if (addQStr (log_fp, jobNewLog->inFileSpool) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->commandSpool) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->jobSpoolDir) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->userPriority) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->userGroup) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     return LSBE_NO_ERROR;
 
@@ -1927,134 +1926,134 @@ writeJobMod(FILE *log_fp, struct jobModLog *jobModLog)
     int i;
 
     if (addQStr (log_fp, jobModLog->jobIdStr) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d %d %d", jobModLog->options,
                 jobModLog->options2, jobModLog->delOptions) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((fprintf(log_fp, " %d", jobModLog->userId) < 0) ||
         (addQStr (log_fp, jobModLog->userName) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d %d %d %d %d %d %d",
                 jobModLog->submitTime, jobModLog->umask,
                 jobModLog->numProcessors, jobModLog->beginTime,
                 jobModLog->termTime, jobModLog->sigValue,
                 jobModLog->restartPid ) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((jobModLog->options & SUB_JOB_NAME) &&
         (addQStr (log_fp, jobModLog->jobName) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_QUEUE) &&
         (addQStr (log_fp, jobModLog->queue) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (jobModLog->options & SUB_HOST) {
         if (fprintf(log_fp, " %d", jobModLog->numAskedHosts) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
         if (jobModLog->numAskedHosts)
             for (i = 0; i < jobModLog->numAskedHosts; i++) {
                 if (addQStr (log_fp, jobModLog->askedHosts[i]) < 0)
-                    return (LSBE_SYS_CALL);
+                    return LSBE_SYS_CALL;
             }
     }
 
     if ((jobModLog->options & SUB_RES_REQ) &&
         (addQStr (log_fp, jobModLog->resReq) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     for(i = 0; i < LSF_RLIM_NLIMITS; i++)
         if (fprintf(log_fp, " %d", jobModLog->rLimits[i]) <0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_HOST_SPEC) &&
         (addQStr (log_fp, jobModLog->hostSpec) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     subNewLine_(jobModLog->dependCond);
     if ((jobModLog->options & SUB_DEPEND_COND ) &&
         (addQStr (log_fp, jobModLog->dependCond) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobModLog->subHomeDir) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (((jobModLog->options & SUB_IN_FILE)
          || (jobModLog->options2 & SUB2_IN_FILE_SPOOL)) &&
         (addQStr (log_fp, jobModLog->inFile) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_OUT_FILE) &&
         (addQStr (log_fp, jobModLog->outFile) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_ERR_FILE) &&
         (addQStr (log_fp, jobModLog->errFile) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options2 & SUB2_MODIFY_CMD) &&
         (addQStr (log_fp, jobModLog->command) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((jobModLog->options & SUB_CHKPNT_PERIOD) &&
         (fprintf (log_fp, " %d", jobModLog->chkpntPeriod) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_CHKPNT_DIR) &&
         (addQStr (log_fp, jobModLog->chkpntDir) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (jobModLog->options & SUB_OTHER_FILES) {
         if (fprintf(log_fp, " %d", jobModLog->nxf) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
         for (i = 0; i < jobModLog->nxf; i++) {
             if (fprintf(log_fp, " \"%s\" \"%s\" %d", jobModLog->xf[i].subFn,
                         jobModLog->xf[i].execFn, jobModLog->xf[i].options) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
     }
     if (addQStr (log_fp, jobModLog->jobFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobModLog->fromHost) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobModLog->cwd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     subNewLine_(jobModLog->preExecCmd);
     if ((jobModLog->options & SUB_PRE_EXEC) &&
         (addQStr (log_fp, jobModLog->preExecCmd) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_MAIL_USER) &&
         (addQStr (log_fp, jobModLog->mailUser) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if ((jobModLog->options & SUB_PROJECT_NAME) &&
         (addQStr (log_fp, jobModLog->projectName) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d %d",
                 jobModLog->niosPort, jobModLog->maxNumProcessors) < 0 )
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((jobModLog->options & SUB_LOGIN_SHELL) &&
         (addQStr (log_fp, jobModLog->loginShell) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobModLog->schedHostType) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
 
     if (fprintf(log_fp, " %d", jobModLog->delOptions2) < 0) {
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     }
 
     if ((jobModLog->options2 & SUB2_IN_FILE_SPOOL) &&
         (addQStr (log_fp, jobModLog->inFileSpool) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((jobModLog->options2 & SUB2_JOB_CMD_SPOOL) &&
         (addQStr (log_fp, jobModLog->commandSpool) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if ((jobModLog->options2 & SUB2_JOB_PRIORITY)
         && fprintf(log_fp, " %d", jobModLog->userPriority) < 0) {
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     }
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
-    return(LSBE_NO_ERROR);
+        return LSBE_SYS_CALL;
+    return LSBE_NO_ERROR;
 }
 
 
@@ -2071,33 +2070,33 @@ writeJobStart(FILE *log_fp, struct jobStartLog *jobStartLog)
                 jobStartLog->jobPGid,
                 jobStartLog->hostFactor,
                 jobStartLog->numExHosts) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (jobStartLog->numExHosts)
         for (i = 0; i < jobStartLog->numExHosts; i++) {
             if (addQStr (log_fp, jobStartLog->execHosts[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
     if (addQStr(log_fp, jobStartLog->queuePreCmd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobStartLog->queuePostCmd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStartLog->jFlags) < 0) {
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     }
 
     if (fprintf(log_fp, " %d", jobStartLog->idx) < 0 )
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobStartLog->userGroup) < 0)
 	return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2107,15 +2106,15 @@ writeJobStartAccept(FILE *log_fp, struct jobStartAcceptLog *jobStartAcceptLog)
 
     if (fprintf(log_fp, " %d %d %d", jobStartAcceptLog->jobId,
                 jobStartAcceptLog->jobPid, jobStartAcceptLog->jobPGid) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStartAcceptLog->idx) < 0 )
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2127,26 +2126,26 @@ writeJobExecute(FILE *log_fp, struct jobExecuteLog *jobExecuteLog)
                 jobExecuteLog->jobId,
                 jobExecuteLog->execUid,
                 jobExecuteLog->jobPGid) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobExecuteLog->execCwd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobExecuteLog->execHome) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobExecuteLog->execUsername) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobExecuteLog->jobPid) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobExecuteLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -2158,24 +2157,24 @@ writeJobStatus(FILE *log_fp, struct jobStatusLog *jobStatusLog)
                 jobStatusLog->jobId, jobStatusLog->jStatus,
                 jobStatusLog->reason, jobStatusLog->subreasons,
                 jobStatusLog->cpuTime, (int) jobStatusLog->endTime) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStatusLog->ru) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (jobStatusLog->ru)
         if (lsfRu2Str(log_fp, &jobStatusLog->lsfRusage) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", jobStatusLog->exitStatus) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStatusLog->idx) < 0 )
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -2189,12 +2188,12 @@ writeSbdJobStatus(FILE *log_fp, struct sbdJobStatusLog *jobStatusLog)
                 (int) jobStatusLog->actPeriod, jobStatusLog->actFlags,
                 jobStatusLog->actStatus, jobStatusLog->actReasons,
                 jobStatusLog->actSubReasons) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStatusLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2202,20 +2201,20 @@ writeJobSwitch(FILE *log_fp, struct jobSwitchLog *jobSwitchLog)
 {
     if (fprintf(log_fp, " %d %d", jobSwitchLog->userId,
                 jobSwitchLog->jobId) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, jobSwitchLog->queue) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobSwitchLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobSwitchLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2225,25 +2224,25 @@ writeMig(FILE *log_fp, struct migLog *migLog)
 
     if (fprintf(log_fp, " %d %d", migLog->jobId,
                 migLog->numAskedHosts) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (migLog->numAskedHosts)
         for (i = 0; i < migLog->numAskedHosts; i++) {
             if (addQStr (log_fp, migLog->askedHosts[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
     if (fprintf(log_fp, " %d", migLog->userId) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", migLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, migLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2254,35 +2253,35 @@ writeJobSigAct (FILE *log_fp, struct sigactLog *sigactLog)
                 (int) sigactLog->period, sigactLog->pid,
                 sigactLog->jStatus, sigactLog->reasons, sigactLog->flags,
                 sigactLog->actStatus) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, sigactLog->signalSymbol) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", sigactLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
 writeJobRqueue (FILE *log_fp, struct jobRequeueLog *jobRequeueLog)
 {
     if (fprintf(log_fp, " %d %d\n", jobRequeueLog->jobId, jobRequeueLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
 writeJobClean (FILE *log_fp, struct jobCleanLog *jobCleanLog)
 {
     if (fprintf(log_fp, " %d %d\n", jobCleanLog->jobId, jobCleanLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2292,9 +2291,9 @@ writeChkpnt(FILE *log_fp, struct chkpntLog *chkpntLog)
                 chkpntLog->jobId,
                 (int) chkpntLog->period, chkpntLog->pid,
                 chkpntLog->ok, chkpntLog->flags, chkpntLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2303,65 +2302,65 @@ writeJobMove(FILE *log_fp, struct jobMoveLog *jobMoveLog)
     if (fprintf(log_fp, " %d %d %d %d %d",
                 jobMoveLog->userId, jobMoveLog->jobId,
                 jobMoveLog->position, jobMoveLog->base, jobMoveLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobMoveLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
 writeQueueCtrl(FILE *log_fp, struct queueCtrlLog *queueCtrlLog)
 {
     if (fprintf(log_fp, " %d", queueCtrlLog->opCode) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, queueCtrlLog->queue) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", queueCtrlLog->userId) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, queueCtrlLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
 writeHostCtrl(FILE *log_fp, struct hostCtrlLog *hostCtrlLog)
 {
     if (fprintf(log_fp, " %d", hostCtrlLog->opCode) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr (log_fp, hostCtrlLog->host) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", hostCtrlLog->userId) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, hostCtrlLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
 writeMbdDie (FILE *log_fp, struct mbdDieLog *mbdDieLog)
 {
     if (addQStr (log_fp, mbdDieLog->master) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d %d\n", mbdDieLog->numRemoveJobs,
                 mbdDieLog->exitCode) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2374,9 +2373,9 @@ writeUnfulfill (FILE *log_fp, struct unfulfillLog *unfulfillLog)
                 (int) unfulfillLog->chkPeriod,
                 unfulfillLog->notModified,
                 unfulfillLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2385,18 +2384,18 @@ writeLoadIndex (FILE *log_fp, struct loadIndexLog *loadIndexLog)
     int i;
 
     if (fprintf(log_fp, " %d", loadIndexLog->nIdx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (loadIndexLog->nIdx)
         for (i = 0; i < loadIndexLog->nIdx; i++) {
             if (addQStr (log_fp, loadIndexLog->name[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2413,92 +2412,92 @@ writeJobFinish(FILE *log_fp, struct jobFinishLog *jobFinishLog)
                 (int) jobFinishLog->beginTime,
                 (int) jobFinishLog->termTime,
                 (int) jobFinishLog->startTime) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobFinishLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->queue) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->resReq) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->dependCond) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->preExecCmd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->fromHost) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->cwd) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->inFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->outFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->errFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->jobFile) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobFinishLog->numAskedHosts) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (jobFinishLog->numAskedHosts)
         for (i = 0; i < jobFinishLog->numAskedHosts; i++) {
             if (addQStr(log_fp, jobFinishLog->askedHosts[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
 
     if (fprintf(log_fp, " %d", jobFinishLog->numExHosts) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (jobFinishLog->numExHosts)
         for (i = 0; i < jobFinishLog->numExHosts; i++) {
             if (addQStr(log_fp, jobFinishLog->execHosts[i]) < 0)
-                return (LSBE_SYS_CALL);
+                return LSBE_SYS_CALL;
         }
 
     if (fprintf(log_fp, " %d %3.1f",
                 jobFinishLog->jStatus,
                 jobFinishLog->hostFactor) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobFinishLog->jobName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobFinishLog->command) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (lsfRu2Str (log_fp, &jobFinishLog->lsfRusage) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobFinishLog->mailUser) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobFinishLog->projectName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", jobFinishLog->exitStatus) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d", jobFinishLog->maxNumProcessors) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobFinishLog->loginShell) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobFinishLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobFinishLog->maxRMem) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobFinishLog->maxRSwap) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobFinishLog->inFileSpool) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobFinishLog->commandSpool) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2507,12 +2506,12 @@ writeMbdStart(FILE *log_fp, struct mbdStartLog *mbdStartLog)
 {
     if ((addQStr(log_fp, mbdStartLog->master) < 0)
         || (addQStr(log_fp, mbdStartLog->cluster) < 0))
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %d %d\n", mbdStartLog->numHosts,
                 mbdStartLog->numQueues) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2525,9 +2524,9 @@ readMbdStart(char *line, struct mbdStartLog *mbdStartLog)
     cc = sscanf(line, "%d%d", &(mbdStartLog->numHosts),
                 &(mbdStartLog->numQueues));
     if (cc != 2)
-        return(LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2538,9 +2537,9 @@ readLogSwitch(char *line, struct logSwitchLog *logSwitchLog)
     cc = sscanf(line, "%d %n",&logSwitchLog->lastJobId,
                 &ccount);
     if (cc != 1)
-        return(LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2550,20 +2549,20 @@ writeJobSignal(FILE *log_fp, struct signalLog *signalLog)
     if (fprintf(log_fp, " %d %d %d", signalLog->jobId,
                 signalLog->userId,
                 signalLog->runCount) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, signalLog->signalSymbol) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", signalLog->idx) < 0 )
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, signalLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2574,22 +2573,22 @@ writeJobMsg(FILE *log_fp, struct jobMsgLog *jobMsgLog)
                 jobMsgLog->jobId,
                 jobMsgLog->msgId,
                 jobMsgLog->type) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobMsgLog->src) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobMsgLog->dest) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobMsgLog->msg) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobMsgLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2600,22 +2599,22 @@ writeJobMsgAck(FILE *log_fp, struct jobMsgLog *jobMsgLog)
                 jobMsgLog->jobId,
                 jobMsgLog->msgId,
                 jobMsgLog->type) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobMsgLog->src) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobMsgLog->dest) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobMsgLog->msg) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobMsgLog->idx) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -2631,10 +2630,10 @@ readJobSignal (char *line, struct signalLog *signalLog)
                 &(signalLog->runCount),
                 &ccount );
     if (cc != 3)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
     if ((ccount = stripQStr(line, sigSymbol)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     signalLog->signalSymbol = putstr_(sigSymbol);
@@ -2643,12 +2642,12 @@ readJobSignal (char *line, struct signalLog *signalLog)
 
     cc = sscanf(line, "%d%n",  &(signalLog->idx), &ccount );
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, signalLog->userName);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2666,11 +2665,11 @@ readJobMsg (char *line, struct jobMsgLog *jobMsgLog)
                 &ccount);
 
     if (cc != 4)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     jobMsgLog->src = putstr_(strBuf);
     if (!jobMsgLog->src)
@@ -2679,7 +2678,7 @@ readJobMsg (char *line, struct jobMsgLog *jobMsgLog)
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobMsgLog->dest = putstr_(strBuf);
     if (!jobMsgLog->dest)
         return(LSBE_NO_MEM);
@@ -2687,7 +2686,7 @@ readJobMsg (char *line, struct jobMsgLog *jobMsgLog)
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobMsgLog->msg = putstr_(strBuf);
     if (!jobMsgLog->msg)
         return(LSBE_NO_MEM);
@@ -2695,9 +2694,9 @@ readJobMsg (char *line, struct jobMsgLog *jobMsgLog)
     line += ccount + 1;
     cc = sscanf(line, "%d%n", &(jobMsgLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2715,11 +2714,11 @@ readJobMsgAck (char *line, struct jobMsgAckLog *jobMsgAckLog)
                 &ccount);
 
     if (cc != 4)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
 
     jobMsgAckLog->src = putstr_(strBuf);
     if (!jobMsgAckLog->src)
@@ -2728,7 +2727,7 @@ readJobMsgAck (char *line, struct jobMsgAckLog *jobMsgAckLog)
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobMsgAckLog->dest = putstr_(strBuf);
     if (!jobMsgAckLog->dest)
         return(LSBE_NO_MEM);
@@ -2736,7 +2735,7 @@ readJobMsgAck (char *line, struct jobMsgAckLog *jobMsgAckLog)
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, strBuf)) < 0)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     jobMsgAckLog->msg = putstr_(strBuf);
     if (!jobMsgAckLog->msg)
         return(LSBE_NO_MEM);
@@ -2745,9 +2744,9 @@ readJobMsgAck (char *line, struct jobMsgAckLog *jobMsgAckLog)
 
     cc = sscanf(line, "%d%n", &(jobMsgAckLog->idx), &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2763,20 +2762,20 @@ writeJobForce(FILE* log_fp, struct jobForceRequestLog* jobForceRequestLog)
                 jobForceRequestLog->idx,
                 jobForceRequestLog->options,
                 jobForceRequestLog->numExecHosts) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     for (i = 0; i < jobForceRequestLog->numExecHosts; i++) {
         if (addQStr (log_fp, jobForceRequestLog->execHosts[i]) < 0)
-            return (LSBE_SYS_CALL);
+            return LSBE_SYS_CALL;
     }
 
     if (addQStr (log_fp, jobForceRequestLog->userName) < 0)
-        return (LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fputc('\n', log_fp) == EOF)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2785,10 +2784,10 @@ static int
 writeLogSwitch(FILE* log_fp, struct logSwitchLog* logSwitchLog)
 {
     if (fprintf(log_fp, " %d ", logSwitchLog->lastJobId) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
     if (fputc('\n', log_fp) == EOF)
-        return(LSBE_SYS_CALL);
-    return(LSBE_NO_ERROR);
+        return LSBE_SYS_CALL;
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2807,7 +2806,7 @@ readJobForce(char* line, struct jobForceRequestLog* jobForceRequestLog)
                 &(ccount));
 
     if (cc != 5)
-        return(LSBE_EVENT_FORMAT);
+        return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
 
@@ -2825,7 +2824,7 @@ readJobForce(char* line, struct jobForceRequestLog* jobForceRequestLog)
 
         if ((cc = stripQStr(line, hName)) < 0) {
             jobForceRequestLog->numExecHosts = i;
-            return (LSBE_EVENT_FORMAT);
+            return LSBE_EVENT_FORMAT;
         }
 
 
@@ -2840,7 +2839,7 @@ readJobForce(char* line, struct jobForceRequestLog* jobForceRequestLog)
 
     copyQStr(line, MAX_LSB_NAME_LEN, 1, jobForceRequestLog->userName);
 
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -2851,12 +2850,12 @@ writeJobAttrSet(FILE* log_fp, struct jobAttrSetLog *jobAttrSetLog)
                 jobAttrSetLog->idx,
                 jobAttrSetLog->uid,
                 jobAttrSetLog->port) < 0)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
     if (fputc('\n', log_fp) == EOF)
-        return(LSBE_SYS_CALL);
+        return LSBE_SYS_CALL;
 
-    return(LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -2871,8 +2870,8 @@ readJobAttrSet(char* line, struct jobAttrSetLog *jobAttrSetLog)
                &(jobAttrSetLog->uid),
                &(jobAttrSetLog->port),
                &ccount) != 4)
-        return(LSBE_EVENT_FORMAT);
-    return(LSBE_NO_ERROR);
+        return LSBE_EVENT_FORMAT;
+    return LSBE_NO_ERROR;
 }
 
 void countLineNum(FILE *fp, long pos,  int *lineNum)
@@ -3068,9 +3067,9 @@ lsbGetNextJobRecFromFile(FILE *logFp, int *lineNum,
     }
 
     if (lsberrno == LSBE_NO_ERROR)
-        return (logRec);
+        return logRec;
 
-    return(NULL);
+    return NULL;
 
 }
 
