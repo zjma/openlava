@@ -115,10 +115,10 @@ main(int argc, char **argv)
 static int
 do_tcp(void)
 {
-    int                  cc;
-    int                  s;
-    struct sockaddr_in   addr;
-    struct sockaddr_in   addr2;
+    int cc;
+    int s;
+    struct sockaddr_in addr;
+    struct sockaddr_in addr2;
     socklen_t l;
 
     s = socket(AF_INET, SOCK_STREAM, 0);
@@ -147,13 +147,15 @@ do_tcp(void)
         return -1;
     }
 
-    l = sizeof(struct sockaddr);
-    if (getpeername(s, (struct sockaddr *)&addr2, &l) < 0) {
+    if (getsockname(s, (struct sockaddr *)&addr2, &l) < 0) {
         perror("getpeename()");
         close(s);
         return -1;
     }
-    printf("my peer port s %d\n", ntohs(addr2.sin_addr.s_addr));
+
+    printf("%d:%lu my socket %d my port %d\n",
+           getpid(), time(NULL),
+           s, ntohs(addr2.sin_port));
 
     if (param.proxy
         && !param.socks5) {
