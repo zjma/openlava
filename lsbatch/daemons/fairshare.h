@@ -30,7 +30,7 @@ struct fair_sched {
     struct tree_ *tree;
     int (*fs_init)(struct qData *, struct userConf *);
     int (*fs_update_sacct)(struct qData *,
-                           const char *,
+                           struct jData *,
                            int numPEND,
                            int numRUN);
     int (*fs_init_sched_session)(struct qData *);

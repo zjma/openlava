@@ -75,6 +75,13 @@ extern char **environ;
 #define _LS_VERSION_ (_OPENLAVA_PROJECT_", " __DATE__"\n")
 #endif
 
+/* OPENLAVA_VERSION is defined in config.h generated
+ * by the autotools.
+ * The OPENLAVA_XDR_VERSION is the version of the wire
+ * protocol to support backward compatibility.
+ */
+#define OPENLAVA_XDR_VERSION 3
+
 #define LSF_DEFAULT_SOCKS       15
 #define MAXLINELEN              512
 #define MAXLSFNAMELEN           128
@@ -297,6 +304,9 @@ enum orderType {INCR, DECR, NA};
 #define RESF_EXTERNAL    0x10
 #define RESF_RELEASE     0x20
 #define RESF_DEFINED_IN_RESOURCEMAP  0x40
+
+#define true TRUE
+#define false FALSE
 
 struct resItem {
     char name[MAXLSFNAMELEN];

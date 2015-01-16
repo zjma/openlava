@@ -56,7 +56,7 @@ struct tree_ *sshare_make_tree(const char *user_shares,
     t = tree_init("");
     /* root summarizes all the tree counters
      */
-    t->root->data = calloc(1, sizeof(struct share_acct));
+    t->root->data = make_sacct("/", 1);
     root = NULL;
 
     l = parse_user_shares(user_shares);
@@ -92,9 +92,8 @@ z:
 
     fin_link(stack);
 
-    t->node_tab = hash_make(11);
-    n = t->root;
 
+    n = t->root;
     while ((n = tree_next_node(n))) {
         char buf[BUFSIZ];
         /* Create the hash table of nodes and their
@@ -103,11 +102,22 @@ z:
         if (n->child == NULL) {
             sprintf(buf, "%s/%s", n->parent->path, n->path);
             hash_install(t->node_tab, buf, n, NULL);
+            push_link(t->leafs, n);
         }
         sprintf(buf, "%s", n->path);
         hash_install(t->node_tab, buf, n, NULL);
         print_node(n);
     }
+
+    traverse_init(t->leafs, &iter);
+    while ((n = traverse_link(&iter)))
+        print_node(n);
+
+    /* Fairshare tree is built and sorted
+     * by decreasing shares, the scheduler
+     * algorithm will fill it up with
+     * slots from now on.
+     */
 
     return t;
 }
@@ -116,8 +126,7 @@ z:
  */
 int
 sshare_distribute_tokens(struct tree_ *t,
-                         uint32_t tokens,
-                         link_t *L)
+                         uint32_t tokens)
 {
     struct tree_node_ *n;
     link_t *stack;
@@ -150,17 +159,22 @@ znovu:
 
     fin_link(stack);
 
-    n = t->root;
-    while ((n = tree_next_node(n))) {
-
-        if (n->child)
-            continue;
-
-        sacct = n->data;
-        enqueue_link(L, sacct);
-    }
-
     return 0;
+}
+
+/* make_saccount()
+ */
+struct share_acct *
+make_sacct(const char *name, uint32_t shares)
+{
+    struct share_acct *s;
+
+    s = calloc(1, sizeof(struct share_acct));
+    s->name = strdup(name);
+    s->shares = shares;
+    s->jobs = make_link();
+
+    return s;
 }
 
 /* free_sacct()
@@ -169,6 +183,7 @@ void
 free_sacct(struct share_acct *sacct)
 {
     _free_(sacct->name);
+    fin_link(sacct->jobs);
     _free_(sacct);
 }
 
@@ -272,11 +287,9 @@ parse_user_shares(const char *user_shares)
             goto bail;
         p = p + n;
 
-        sacct = calloc(1, sizeof(struct share_acct));
+        sacct = make_sacct(name, shares);
         assert(sacct);
 
-        sacct->name = strdup(name);
-        sacct->shares = shares;
         sum_shares = sum_shares + sacct->shares;
 
         enqueue_link(l, sacct);
@@ -381,9 +394,7 @@ get_sacct(const char *acct_name, const char *user_list)
             p = p + n;
             continue;
         }
-        sacct = calloc(1, sizeof(struct share_acct));
-        sacct->name = strdup(name);
-        sacct->shares = shares;
+        sacct = make_sacct(name, shares);
         break;
     }
 

@@ -25,8 +25,6 @@
 #ifndef __LINK__
 #define __LINK__
 
-#include "intlibout.h"
-
 /* Each linked list is made of a head whose ptr is always
  * NULL, a list of following links starting from next and
  * a number num indicating how many elements are in the

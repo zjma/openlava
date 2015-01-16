@@ -20,12 +20,14 @@
 #if !defined( _TREE_HEADER_)
 #define _TREE_HEADER_
 
-#include "intlibout.h"
+#include "hash.h"
+#include "link.h"
 
 struct tree_ {
     char *name;
     struct tree_node_ *root;
     struct hash_tab *node_tab;
+    link_t *leafs;
 };
 
 /* Generic tree structure

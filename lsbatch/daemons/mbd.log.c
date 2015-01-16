@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
 
@@ -1455,6 +1457,7 @@ log_jobdata(struct jData * job, char *fname1, int type)
     jobNewLog->niosPort = jobBill->niosPort;
 
     jobNewLog->userPriority = jobBill->userPriority;
+    jobNewLog->userGroup = jobBill->userGroup;
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -1465,7 +1468,7 @@ log_jobdata(struct jData * job, char *fname1, int type)
             rmLogJobInfo_(job, FALSE);
         mbdDie(MASTER_FATAL);
     }
-    return (0);
+    return 0;
 }
 
 
@@ -2050,26 +2053,28 @@ openEventFile(char *fname)
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+
     if ((log_fp = fopen(elogFname, "a+")) == NULL) {
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
         chuser(batchId);
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
+        ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
         return -1;
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 
     fseek(log_fp, 0L, SEEK_END);
 
-
     if ((pos = ftell(log_fp)) == 0) {
-        fprintf(log_fp, "#80                                                                            \n");
+        fprintf(log_fp,"#80\n");
     }
 
     chmod(elogFname, 0644);
     chuser(batchId);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
-    sprintf(logPtr->version, "%d", OPENLAVA_VERSION);
+    /* Use the same version as the main protocol.
+     */
+    sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);
 
     return 0;
 }
@@ -2129,7 +2134,7 @@ putEventRec1(char *fname)
         ret = -1;
     }
 
-    return(ret);
+    return ret;
 
 }
 
@@ -3757,8 +3762,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
 
         useLocal = useLocal ? USE_LOCAL : 0;
         if ((job->shared->resValPtr =
-             checkResReq (jobBill->resReq, useLocal | PARSE_XOR | CHK_TCL_SYNTAX)) == NULL)
-
+             checkResReq (jobBill->resReq,
+                          useLocal | PARSE_XOR | CHK_TCL_SYNTAX)) == NULL)
             ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Bad resource requirement %s job %s",
                       __func__, filename, lineNum, jobBill->resReq,
@@ -3777,6 +3782,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
 
     jobBill->userPriority = jobNewLog->userPriority;
     job->jobPriority = jobBill->userPriority;
+
+    jobBill->userGroup = strdup(jobNewLog->userGroup);
 
     return job;
 }

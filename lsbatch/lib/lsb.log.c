@@ -21,6 +21,11 @@
 
 bool_t  logMapFileEnable = FALSE;
 
+/* Protocol version of this release.
+ * OPENLAVA_XDR_VERSION
+ */
+static uint32_t version;
+
 static int readJobNew(char *, struct jobNewLog *);
 static int readJobMod(char *, struct jobModLog *);
 static int readJobStart(char *, struct jobStartLog *);
@@ -129,8 +134,6 @@ static int lsb_readeventrecord(char *, struct eventRec *);
         }                                                       \
         FREEUP (tmpLine);                                       \
     }
-
-static float version;
 
 static void
 phony(void)
@@ -406,18 +409,17 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
         return NULL;
     }
 
+    /* The log record keeps the version as char[]
+     * while the global is uint32_t
+     */
     strcpy(logRec->version, namebuf);
-    if ((version = atof (logRec->version)) <=0.0) {
+    if ((version = atoi(logRec->version)) <= 0) {
         lsberrno = LSBE_EVENT_FORMAT;
-        free(namebuf);
         return NULL;
     }
-
     line += ccount + 1;
 
-
     free(namebuf);
-
 
     cc = sscanf(line, "%d%n", &tempTimeStamp, &ccount);
     logRec->eventTime = tempTimeStamp;
@@ -472,6 +474,8 @@ freeLogRec(struct eventRec *logRec)
                 free(logRec->eventLog.jobNewLog.schedHostType);
             if (logRec->eventLog.jobNewLog.loginShell)
                 free(logRec->eventLog.jobNewLog.loginShell);
+            if (logRec->eventLog.jobNewLog.userGroup)
+                free(logRec->eventLog.jobNewLog.userGroup);
             return;
         case EVENT_JOB_MODIFY2:
             FREEUP(logRec->eventLog.jobModLog.userName);
@@ -743,7 +747,6 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         }
     }
 
-
     if (!(jobNewLog->options & SUB_RLIMIT_UNIT_IS_KB)) {
         convertRLimit(jobNewLog->rLimits, 1);
     }
@@ -756,7 +759,15 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     if (cc != 1)
         return (LSBE_EVENT_FORMAT);
 
-    return (LSBE_NO_ERROR);
+    /* Version >= 3 deamon reading version < 3 events file.
+     */
+    if (version >= 3) {
+        saveQStr(line, jobNewLog->userGroup);
+    } else {
+        jobNewLog->userGroup = strdup("");
+    }
+
+    return LSBE_NO_ERROR;
 
 }
 
@@ -971,9 +982,15 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
 
     cc = sscanf(line, "%d%n", &(jobStartLog->idx),  &ccount);
     if (cc != 1)
-        return (LSBE_EVENT_FORMAT);
-    return (LSBE_NO_ERROR);
+        return LSBE_EVENT_FORMAT;
 
+    if (version >= 3) {
+        saveQStr(line, jobStartLog->userGroup);
+    } else {
+        jobStartLog->userGroup = strdup("");
+    }
+
+    return LSBE_NO_ERROR;
 }
 
 static int
@@ -1657,83 +1674,106 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
             break;
         case EVENT_PRE_EXEC_START:
         case EVENT_JOB_START:
-            lsberrno = writeJobStart(log_fp, &(logPtr->eventLog.jobStartLog));
+            lsberrno = writeJobStart(log_fp,
+                                     &(logPtr->eventLog.jobStartLog));
             break;
         case EVENT_JOB_START_ACCEPT:
             lsberrno = writeJobStartAccept(log_fp,
                                            &(logPtr->eventLog.jobStartAcceptLog));
             break;
         case EVENT_JOB_STATUS:
-            lsberrno = writeJobStatus(log_fp, &(logPtr->eventLog.jobStatusLog));
+            lsberrno = writeJobStatus(log_fp,
+                                      &(logPtr->eventLog.jobStatusLog));
             break;
         case EVENT_SBD_JOB_STATUS:
-            lsberrno = writeSbdJobStatus(log_fp, &(logPtr->eventLog.sbdJobStatusLog));
+            lsberrno = writeSbdJobStatus(log_fp,
+                                         &(logPtr->eventLog.sbdJobStatusLog));
             break;
         case EVENT_JOB_SWITCH:
-            lsberrno = writeJobSwitch(log_fp, &(logPtr->eventLog.jobSwitchLog));
+            lsberrno = writeJobSwitch(log_fp,
+                                      &(logPtr->eventLog.jobSwitchLog));
             break;
         case EVENT_JOB_MOVE:
-            lsberrno = writeJobMove(log_fp, &(logPtr->eventLog.jobMoveLog));
+            lsberrno = writeJobMove(log_fp,
+                                    &(logPtr->eventLog.jobMoveLog));
             break;
         case EVENT_QUEUE_CTRL:
-            lsberrno = writeQueueCtrl(log_fp, &(logPtr->eventLog.queueCtrlLog));
+            lsberrno = writeQueueCtrl(log_fp,
+                                      &(logPtr->eventLog.queueCtrlLog));
             break;
         case EVENT_HOST_CTRL:
-            lsberrno = writeHostCtrl(log_fp, &(logPtr->eventLog.hostCtrlLog));
+            lsberrno = writeHostCtrl(log_fp,
+                                     &(logPtr->eventLog.hostCtrlLog));
             break;
         case EVENT_MBD_START:
-            lsberrno = writeMbdStart(log_fp, &(logPtr->eventLog.mbdStartLog));
+            lsberrno = writeMbdStart(log_fp,
+                                     &(logPtr->eventLog.mbdStartLog));
             break;
         case EVENT_MBD_DIE:
-            lsberrno = writeMbdDie (log_fp, &(logPtr->eventLog.mbdDieLog));
+            lsberrno = writeMbdDie(log_fp,
+                                   &(logPtr->eventLog.mbdDieLog));
             break;
         case EVENT_MBD_UNFULFILL:
-            lsberrno = writeUnfulfill (log_fp, &(logPtr->eventLog.unfulfillLog));
+            lsberrno = writeUnfulfill (log_fp,
+                                       &(logPtr->eventLog.unfulfillLog));
             break;
         case EVENT_LOAD_INDEX:
-            lsberrno = writeLoadIndex (log_fp, &(logPtr->eventLog.loadIndexLog));
+            lsberrno = writeLoadIndex (log_fp,
+                                       &(logPtr->eventLog.loadIndexLog));
             break;
         case EVENT_JOB_FINISH:
-            lsberrno = writeJobFinish(log_fp, &(logPtr->eventLog.jobFinishLog));
+            lsberrno = writeJobFinish(log_fp,
+                                      &(logPtr->eventLog.jobFinishLog));
             break;
         case EVENT_CHKPNT:
-            lsberrno = writeChkpnt(log_fp, &(logPtr->eventLog.chkpntLog));
+            lsberrno = writeChkpnt(log_fp,
+                                   &(logPtr->eventLog.chkpntLog));
             break;
         case EVENT_MIG:
-            lsberrno = writeMig(log_fp, &(logPtr->eventLog.migLog));
+            lsberrno = writeMig(log_fp,
+                                &(logPtr->eventLog.migLog));
             break;
         case EVENT_JOB_ATTR_SET:
-            lsberrno = writeJobAttrSet(log_fp, &(logPtr->eventLog.jobAttrSetLog));
+            lsberrno = writeJobAttrSet(log_fp,
+                                       &(logPtr->eventLog.jobAttrSetLog));
             break;
         case EVENT_JOB_SIGNAL:
-            lsberrno = writeJobSignal(log_fp, &(logPtr->eventLog.signalLog));
+            lsberrno = writeJobSignal(log_fp,
+                                      &(logPtr->eventLog.signalLog));
             break;
         case EVENT_JOB_EXECUTE:
-            lsberrno = writeJobExecute(log_fp, &(logPtr->eventLog.jobExecuteLog));
+            lsberrno = writeJobExecute(log_fp,
+                                       &(logPtr->eventLog.jobExecuteLog));
             break;
         case EVENT_JOB_MSG:
-            lsberrno = writeJobMsg(log_fp, &(logPtr->eventLog.jobMsgLog));
+            lsberrno = writeJobMsg(log_fp,
+                                   &(logPtr->eventLog.jobMsgLog));
             break;
         case EVENT_JOB_MSG_ACK:
-            lsberrno = writeJobMsgAck(log_fp, &(logPtr->eventLog.jobMsgLog));
+            lsberrno = writeJobMsgAck(log_fp,
+                                      &(logPtr->eventLog.jobMsgLog));
             break;
         case EVENT_JOB_SIGACT:
-            lsberrno = writeJobSigAct(log_fp, &(logPtr->eventLog.sigactLog));
+            lsberrno = writeJobSigAct(log_fp,
+                                      &(logPtr->eventLog.sigactLog));
             break;
         case EVENT_JOB_REQUEUE:
-            lsberrno = writeJobRqueue(log_fp, &(logPtr->eventLog.jobRequeueLog));
+            lsberrno = writeJobRqueue(log_fp,
+                                      &(logPtr->eventLog.jobRequeueLog));
             break;
         case EVENT_JOB_CLEAN:
-            lsberrno = writeJobClean(log_fp, &(logPtr->eventLog.jobCleanLog));
+            lsberrno = writeJobClean(log_fp,
+                                     &(logPtr->eventLog.jobCleanLog));
             break;
         case EVENT_JOB_FORCE:
-            lsberrno = writeJobForce(log_fp, &(logPtr->eventLog.jobForceRequestLog));
+            lsberrno = writeJobForce(log_fp,
+                                     &(logPtr->eventLog.jobForceRequestLog));
             break;
         case EVENT_LOG_SWITCH:
-            lsberrno = writeLogSwitch(log_fp, &(logPtr->eventLog.logSwitchLog));
+            lsberrno = writeLogSwitch(log_fp,
+                                      &(logPtr->eventLog.logSwitchLog));
             break;
     }
-
 
     if (lsberrno == LSBE_NO_ERROR) {
         return 0;
@@ -1747,7 +1787,6 @@ static int
 writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
 {
     int i;
-
 
     if (!(jobNewLog->options & SUB_RLIMIT_UNIT_IS_KB)) {
         convertRLimit(jobNewLog->rLimits, 0);
@@ -1768,6 +1807,7 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
 
     if (addQStr (log_fp, jobNewLog->userName) < 0)
         return (LSBE_SYS_CALL);
+
     for(i = 0; i < LSF_RLIM_NLIMITS; i++)
         if (fprintf(log_fp, " %d", jobNewLog->rLimits[i]) <0)
             return (LSBE_SYS_CALL);
@@ -1821,6 +1861,7 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
 
     if (fprintf(log_fp, " %d", jobNewLog->nxf) < 0)
         return (LSBE_SYS_CALL);
+
     for (i = 0; i < jobNewLog->nxf; i++) {
         if (fprintf(log_fp, " \"%s\" \"%s\" %d", jobNewLog->xf[i].subFn,
                     jobNewLog->xf[i].execFn, jobNewLog->xf[i].options) < 0)
@@ -1871,10 +1912,13 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
     if (fprintf(log_fp, " %d", jobNewLog->userPriority) < 0)
         return (LSBE_SYS_CALL);
 
+    if (addQStr (log_fp, jobNewLog->userGroup) < 0)
+        return LSBE_SYS_CALL;
+
     if (fprintf(log_fp, "\n") < 0)
         return (LSBE_SYS_CALL);
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 static int
@@ -2044,9 +2088,11 @@ writeJobStart(FILE *log_fp, struct jobStartLog *jobStartLog)
         return (LSBE_SYS_CALL);
     }
 
-
     if (fprintf(log_fp, " %d", jobStartLog->idx) < 0 )
         return (LSBE_SYS_CALL);
+
+    if (addQStr(log_fp, jobStartLog->userGroup) < 0)
+	return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
         return (LSBE_SYS_CALL);
@@ -2993,7 +3039,7 @@ lsbGetNextJobRecFromFile(FILE *logFp, int *lineNum,
         }
 
         strcpy(logRec->version, nameBuf);
-        if ((version = atof (logRec->version)) <=0.0) {
+        if ((version = atoi(logRec->version)) <= 0) {
             lsberrno = LSBE_EVENT_FORMAT;
             break;
         }
@@ -3246,7 +3292,7 @@ lsb_readeventrecord(char *line, struct eventRec *logRec)
     }
     line += ccount + 1;
 
-    if ((version = atof (logRec->version)) <=0.0) {
+    if ((version = atoi(logRec->version)) <= 0) {
         ls_syslog(LOG_DEBUG2, "%s: get event version error", __func__);
         return -1;
     }

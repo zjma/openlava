@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -102,7 +102,6 @@ static const LSB_SPOOL_INFO_T * chUserCopySpoolFile(const char *,
 LS_LONG_INT
 lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
 {
-    static char fname[] = "lsb_submit";
     struct submitReq submitReq;
     LS_LONG_INT jobId = -1;
     struct lsfAuth auth;
@@ -112,10 +111,10 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
     char * queue = NULL;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
+    memset(&submitReq, 0, sizeof(struct submitReq));
     lsberrno = LSBE_BAD_ARG;
-
 
     subNewLine_(jobSubReq->resReq);
     subNewLine_(jobSubReq->dependCond);
@@ -132,11 +131,8 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
         subNewLine_(jobSubReq->askedHosts[loop]);
     }
 
-
-    if (getCommonParams (jobSubReq, &submitReq, submitRep) < 0)
+    if (getCommonParams(jobSubReq, &submitReq, submitRep) < 0)
         return -1;
-
-
 
     if (!(jobSubReq->options & SUB_QUEUE)) {
 
@@ -149,25 +145,13 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
 
     submitReq.cwd = cwd;
 
-
-    if ((grpEntry = getgrgid(getgid())) == NULL) {
-        if (logclass & ( LC_TRACE | LC_EXEC))
-            ls_syslog(LOG_DEBUG, "%s: group id %d, does not have an name in the unix group file", fname, (int)getgid());
-    } else {
-
-
-        if (putEnv("LSB_UNIXGROUP", grpEntry->gr_name) < 0) {
-            if (logclass & ( LC_TRACE | LC_EXEC ))
-                ls_syslog(LOG_DEBUG, "%s: group <%s>, cannot be set in the environment.", fname, grpEntry->gr_name);
-        }
-    }
+    if ((grpEntry = getgrgid(getgid())))
+        putEnv("LSB_UNIXGROUP", grpEntry->gr_name);
 
     makeCleanToRunEsub();
 
-
     if (getUserInfo(&submitReq, jobSubReq) < 0)
         return -1;
-
 
     if (!(jobSubReq->options & SUB_QUEUE)) {
         if (queue != NULL && queue[0] != '\0') {
@@ -177,21 +161,14 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
     }
 
     modifyJobInformation(jobSubReq);
-    if (getCommonParams (jobSubReq, &submitReq, submitRep) < 0)
+
+    if (getCommonParams(jobSubReq, &submitReq, submitRep) < 0)
         return -1;
 
-#ifdef INTER_DAEMON_AUTH
-
-    putEnv("LSF_EAUTH_AUX_PASS", "yes");
-#endif
-
-
-    if ( (lsbParams[LSB_INTERACTIVE_STDERR].paramValue != NULL)
-         && (strcasecmp(lsbParams[LSB_INTERACTIVE_STDERR].paramValue,
-                        "y") == 0) ) {
-        if (putEnv("LSF_INTERACTIVE_STDERR", "y") < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_S, fname, "putenv");
-        }
+    if ((lsbParams[LSB_INTERACTIVE_STDERR].paramValue != NULL)
+        && (strcasecmp(lsbParams[LSB_INTERACTIVE_STDERR].paramValue,
+                       "y") == 0) ) {
+        putEnv("LSF_INTERACTIVE_STDERR", "y");
     }
 
     if (authTicketTokens_(&auth, NULL) == -1) {
@@ -203,20 +180,17 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
     else
         jobId = subJob(jobSubReq, &submitReq, submitRep, &auth);
 
-    return(jobId);
-
+    return jobId;
 }
 
-
 int
-getCommonParams (struct submit  *jobSubReq, struct submitReq *submitReq,
-                 struct submitReply *submitRep)
+getCommonParams(struct submit  *jobSubReq, struct submitReq *submitReq,
+                struct submitReply *submitRep)
 {
     int i, useKb = 0;
-    static char fname[] = "getCommonParams";
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
     if (jobSubReq == NULL || submitRep == NULL)
         return -1;
@@ -366,8 +340,23 @@ getCommonParams (struct submit  *jobSubReq, struct submitReq *submitReq,
         return -1;
     }
 
+    submitReq->userGroup = "";
+    if (jobSubReq->options & SUB_USER_GROUP) {
 
-    submitReq->submitTime = time(0);
+	if (!jobSubReq->userGroup) {
+	    lsberrno = LSBE_BAD_ARG;
+	    return -1;
+        }
+
+	if (strlen(jobSubReq->userGroup) >= MAX_LSB_NAME_LEN - 1) {
+	    lsberrno = LSBE_BAD_ARG;
+	    errno = ENAMETOOLONG;
+	    return -1;
+        }
+	submitReq->userGroup = jobSubReq->userGroup;
+    }
+
+    submitReq->submitTime = time(NULL);
 
     if (jobSubReq->options2 & SUB2_JOB_PRIORITY) {
         submitReq->userPriority = jobSubReq->userPriority;
@@ -376,7 +365,7 @@ getCommonParams (struct submit  *jobSubReq, struct submitReq *submitReq,
     }
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Okay", fname);
+        ls_syslog(LOG_DEBUG, "%s: Okay", __func__);
 
     return 0;
 
@@ -385,7 +374,6 @@ getCommonParams (struct submit  *jobSubReq, struct submitReq *submitReq,
 static int
 createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
 {
-    static char fname[] = "createJobInfoFile";
     char **ep;
     char *sp, num[MAX_LSB_NAME_LEN], *p, *oldp;
     int size = MSGSIZE, length = 0, len, len1, numEnv = 0, noEqual;
@@ -395,7 +383,7 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
     tsoptlen = 0;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
     length = sizeof(CMDSTART) + sizeof(TRAPSIGCMD) + sizeof(WAITCLEANCMD) +
         sizeof(EXITCMD) + strlen(jobSubReq->command) + tsoptlen +
@@ -431,7 +419,7 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
     for (ep = environ; *ep; ep++) {
         noEqual = FALSE;
         if (logclass & (LC_TRACE | LC_EXEC)) {
-            ls_syslog(LOG_DEBUG, "%s: environment variable <%s>", fname, *ep);
+            ls_syslog(LOG_DEBUG, "%s: environment variable <%s>", __func__, *ep);
         }
 
         if (!strncmp(*ep, "LSB_JOBID=", 10) ||
@@ -483,7 +471,7 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
 
             noEqual = TRUE;
             if (logclass & (LC_TRACE | LC_EXEC)) {
-                ls_syslog (LOG_DEBUG, "%s: environment variable <%s> doesn't have '='", fname, sp);
+                ls_syslog (LOG_DEBUG, "%s: environment variable <%s> doesn't have '='", __func__, sp);
             }
         } else {
             *p = '\0';
@@ -523,7 +511,7 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
         }
         if (logclass & (LC_TRACE | LC_EXEC)) {
             ls_syslog (LOG_DEBUG, "%s:length=%d, size=%d, jf->len=%d, numEnv=%d",
-                       fname, length, size, strlen(jf->data), ++numEnv);
+                       __func__, length, size, strlen(jf->data), ++numEnv);
         }
         FREEUP(oldp);
     }
@@ -544,7 +532,7 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
     }
     if (logclass & (LC_TRACE | LC_EXEC)) {
         ls_syslog (LOG_DEBUG, "%s:length=%d, size=%d, jf->len=%d, numEnv=%d",
-                   fname, length, size, strlen(jf->data), numEnv);
+                   __func__, length, size, strlen(jf->data), numEnv);
     }
 
     strcat(jf->data, TRAPSIGCMD);
@@ -578,7 +566,6 @@ static LS_LONG_INT
 send_batch (struct submitReq *submitReqPtr, struct lenData *jf,
             struct submitReply *submitReply, struct lsfAuth *auth)
 {
-    static char fname[] = "send_batch";
     mbdReqType mbdReqtype;
     XDR xdrs;
     char *request_buf;
@@ -590,14 +577,14 @@ send_batch (struct submitReq *submitReqPtr, struct lenData *jf,
     LS_LONG_INT jobId;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
     reqBufSize = xdrSubReqSize(submitReqPtr);
     reqBufSize += xdr_lsfAuthSize(auth);
     if ((request_buf = (char *) malloc(reqBufSize)) == NULL) {
         if (logclass & LC_EXEC)
             ls_syslog(LOG_DEBUG, "%s: request_buf malloc (%d) failed: %m",
-                      fname, reqBufSize);
+                      __func__, reqBufSize);
         lsberrno = LSBE_NO_MEM;
         return -1;
     }
@@ -620,7 +607,7 @@ send_batch (struct submitReq *submitReqPtr, struct lenData *jf,
                        &hdr, NULL, sndJobFile_, (int *) jf)) < 0) {
         xdr_destroy(&xdrs);
         if (logclass & (LC_TRACE | LC_EXEC))
-            ls_syslog(LOG_DEBUG, "%s: callmbd() failed; cc=%d", fname, cc);
+            ls_syslog(LOG_DEBUG, "%s: callmbd() failed; cc=%d", __func__, cc);
         free(request_buf);
         return -1;
     }
@@ -672,7 +659,7 @@ send_batch (struct submitReq *submitReqPtr, struct lenData *jf,
         free(reply);
         if (logclass & (LC_TRACE | LC_EXEC))
             ls_syslog(LOG_DEBUG1, "%s: mbd says job <%s> has been restarted",
-                      fname, lsb_jobid2str(jobId));
+                      __func__, lsb_jobid2str(jobId));
         return (jobId);
     }
 
@@ -690,7 +677,6 @@ static LS_LONG_INT
 subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
            struct submitReply *submitRep, struct lsfAuth *auth)
 {
-    static char fname[] = "subRestart";
     struct lenData jf;
     struct jobNewLog *jobLog = NULL;
     struct xFile *xFiles = NULL;
@@ -716,7 +702,7 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
     err.error = err.eno = err.lserrno = err.lsberrno = 0;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, childIoFd) < 0) {
@@ -764,7 +750,7 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
 
         if (logclass & (LC_TRACE | LC_EXEC))
             ls_syslog(LOG_DEBUG1, "%s: Child tries to open chklog file <%s>",
-                      fname, chklog);
+                      __func__, chklog);
         if ((fp = fopen(chklog, "r")) == NULL) {
             lsberrno = LSBE_BAD_CHKLOG;
             goto sendErr;
@@ -779,7 +765,7 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
 
         if (logclass & (LC_TRACE | LC_EXEC))
             ls_syslog(LOG_DEBUG1, "%s: Child got job log from chklog file",
-                      fname);
+                      __func__);
 
         err.error = FALSE;
         if (write(childIoFd[1], (char *) &err, sizeof(err)) != sizeof(err)) {
@@ -887,9 +873,9 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
     childExit:
         if (logclass & (LC_TRACE | LC_EXEC)) {
             if (exitVal == 0)
-                ls_syslog(LOG_DEBUG1, "%s: Child succeeded in sending messages to parent", fname);
+                ls_syslog(LOG_DEBUG1, "%s: Child succeeded in sending messages to parent", __func__);
             else
-                ls_syslog(LOG_DEBUG, "%s: Child failed in sending messages to parent", fname);
+                ls_syslog(LOG_DEBUG, "%s: Child failed in sending messages to parent", __func__);
         }
         fclose(fp);
         close(childIoFd[1]);
@@ -1028,7 +1014,7 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
 
     if (logclass & (LC_TRACE | LC_EXEC))
         ls_syslog(LOG_DEBUG1, "%s: Parent got the job log from child",
-                  fname);
+                  __func__);
 
 
 
@@ -1214,7 +1200,7 @@ leave:
 
 parentErr:
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Parent failed in receiving messages from child", fname);
+        ls_syslog(LOG_DEBUG, "%s: Parent failed in receiving messages from child", __func__);
     if (!err.error) {
         lsberrno = LSBE_SYS_CALL;
         err.eno = errno;
@@ -2368,7 +2354,8 @@ xdrSubReqSize(struct submitReq *req)
         ALIGNWORD_(strlen(req->subHomeDir) + 1) + 4 +
         ALIGNWORD_(strlen(req->cwd) + 1) + 4 +
         ALIGNWORD_(strlen(req->mailUser) + 1) + 4 +
-        ALIGNWORD_(strlen(req->projectName) + 1) + 4;
+        ALIGNWORD_(strlen(req->projectName) + 1) + 4
+        + ALIGNWORD_(strlen(req->userGroup) + 1) + 4;
 
     for (i = 0; i < req->numAskedHosts; i++)
         sz += ALIGNWORD_(strlen(req->askedHosts[i]) + 1 + 4);
@@ -2499,11 +2486,10 @@ postSubMsg(struct submit *req, LS_LONG_INT jobId, struct submitReply *reply)
 void
 prtBETime_(struct submit *req)
 {
-    static char fname[] = "prtBETime_";
     char *sp;
 
     if (logclass & (LC_TRACE | LC_EXEC | LC_SCHED))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
 
     if (req->beginTime > 0) {
         sp = _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T_Y, &req->beginTime);
@@ -2605,8 +2591,8 @@ gettimefor (char *toptarg, time_t *tTime)
 }
 
 int
-setOption_ (int argc, char **argv, char *template, struct submit *req,
-            int mask, int mask2, char **errMsg)
+setOption_(int argc, char **argv, char *template, struct submit *req,
+           int mask, int mask2, char **errMsg)
 {
     int eflag = 0, oflag = 0;
     int badIdx, v1, v2;
@@ -2701,45 +2687,35 @@ setOption_ (int argc, char **argv, char *template, struct submit *req,
                 req->options2 |= SUB2_MODIFY_PEND_JOB;
                 checkSubDelOption ((SUB_CHKPNT_PERIOD | SUB_CHKPNT_DIR), "kn");
                 if (!(mask & SUB_CHKPNT_DIR))
-
                     break;
 
                 cp = optarg;
                 while (*(cp++) == ' ');
 
                 if ((sp = strchr(cp, ' ')) != NULL) {
-
-
                     int  bPeriodExist = 0;
                     int  bMethodExist = 0;
                     char *pCurWord = NULL;
 
-
                     *sp  = '\0';
-
-
                     while (*(++sp) == ' ');
-
 
                     while ((sp != NULL)&&(*sp != '\0')){
                         pCurWord = sp;
 
                         if (isdigit((int)(*pCurWord))) {
 
-                            if ( bPeriodExist ){
+                            if (bPeriodExist) {
                                 PRINT_ERRMSG1(errMsg,
                                               _i18n_msg_get(ls_catd,NL_SETN,408,
                                                             "%s: Bad checkpoint period value"),/* catgets 408 */
                                               pCurWord);
                                 return -1;
                             }
-
-
                             sp = strchr(pCurWord,' ');
                             if ( sp != NULL){
                                 *sp = '\0';
                             }
-
                             if (!isint_(pCurWord)
                                 || (req->chkpntPeriod = atoi(pCurWord) * 60) <= 0){
                                 PRINT_ERRMSG1(errMsg,
@@ -2751,9 +2727,7 @@ setOption_ (int argc, char **argv, char *template, struct submit *req,
                             bPeriodExist = 1;
                             req->options |= SUB_CHKPNT_PERIOD;
 
-                        }else if (strstr(pCurWord,"method=") == pCurWord) {
-
-
+                        } else if (strstr(pCurWord,"method=") == pCurWord) {
                             if ( bMethodExist ){
                                 PRINT_ERRMSG1(errMsg,
                                               _i18n_msg_get(ls_catd,NL_SETN,445,
@@ -2766,7 +2740,6 @@ setOption_ (int argc, char **argv, char *template, struct submit *req,
                             if (sp != NULL){
                                 *sp = '\0';
                             }
-
                             pCurWord = strchr(pCurWord,'=');
                             if (*(++pCurWord) != '\0' ){
                                 putEnv("LSB_ECHKPNT_METHOD",pCurWord);
@@ -3152,10 +3125,7 @@ setOption_ (int argc, char **argv, char *template, struct submit *req,
                 req->options2 |= SUB2_MODIFY_RUN_JOB;
                 checkRLDelOption (LSF_RLIMIT_CPU, "cn");
                 if (req->rLimits[LSF_RLIMIT_CPU] != DEFAULT_RLIMIT)
-
                     break;
-
-
 
                 strcpy (savearg, optarg);
 
@@ -3469,7 +3439,14 @@ setOption_ (int argc, char **argv, char *template, struct submit *req,
                 }
                 break;
             case 'a':
-                additionEsubInfo=putstr_(optarg);
+                additionEsubInfo = putstr_(optarg);
+                break;
+            case 'G':
+                checkSubDelOption (SUB_USER_GROUP, "Gn");
+                if ((mask & SUB_USER_GROUP)) {
+                    req->userGroup = optarg;
+                    req->options |= SUB_USER_GROUP;
+                }
                 break;
             case 'V':
                 fputs(_LS_VERSION_, stderr);
@@ -3506,7 +3483,6 @@ parseLine_ (char *line, int *embedArgc, char ***embedArgv, char **errMsg )
 #define INCREASE 40
     int i;
     static char **argBuf = NULL, *key;
-    static char fname[] = "parseLine_";
     static int argNum = 0;
     static int first = TRUE,  bufSize = INCREASE;
     char *sp, *sQuote, *dQuote, quoteMark;
@@ -3515,7 +3491,7 @@ parseLine_ (char *line, int *embedArgc, char ***embedArgv, char **errMsg )
     if (first == TRUE) {
         if ((argBuf = (char **) malloc(INCREASE * sizeof(char *)))
             == NULL) {
-            PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, fname, "malloc");
+            PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, __func__, "malloc");
             return -1;
         }
         first = FALSE;
@@ -3558,7 +3534,7 @@ parseLine_ (char *line, int *embedArgc, char ***embedArgv, char **errMsg )
             if ((*embedArgc) + 2 > bufSize ) {
                 if ((tmp = (char **) realloc(argBuf,
                                              (bufSize + INCREASE) * sizeof(char *))) == NULL) {
-                    PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, fname,
+                    PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, __func__,
                                   "realloc");
                     argNum = *embedArgc - 1;
                     *embedArgv = argBuf;
@@ -3586,7 +3562,6 @@ FINISH:
 struct submit *
 parseOptFile_ (char *filename, struct submit *req, char **errMsg)
 {
-    static char fname[] = "parseOptFile_";
     char *lineBuf;
     int length = 0;
     int lineLen;
@@ -3599,15 +3574,15 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
     LS_WAIT_T status;
 
     if (logclass & (LC_TRACE | LC_SCHED | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
     if (access(filename, F_OK) != 0) {
         PRINT_ERRMSG3(errMsg, I18N_FUNC_S_FAIL,
-                      fname, "access", filename);
+                      __func__, "access", filename);
         return (NULL);
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, childIoFd) < 0) {
-        PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL, fname, "socketpair");
+        PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL, __func__, "socketpair");
         lsberrno = LSBE_SYS_CALL;
         return (NULL);
     }
@@ -3616,7 +3591,7 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
     pid = fork();
     if (pid < 0) {
         lsberrno = LSBE_SYS_CALL;
-        PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, fname, "fork");
+        PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, __func__, "fork");
         return(NULL);
     } else if (pid == 0) {
 
@@ -3627,12 +3602,12 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
         uid = getuid();
         if (setuid (uid) < 0) {
             lsberrno = LSBE_BAD_USER;
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "setuid");
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "setuid");
             goto childExit;
         }
         if (logclass & (LC_TRACE | LC_EXEC))
             ls_syslog(LOG_DEBUG1, "%s: Child tries to open a option file <%s>",
-                      fname, filename);
+                      __func__, filename);
         lineLen = 0;
         childLine[0] = '\0';
 
@@ -3653,10 +3628,10 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
         if (logclass & (LC_TRACE | LC_EXEC)) {
             if (exitVal == 0)
                 ls_syslog(LOG_DEBUG,
-                          "%s: Child succeeded in sending messages to parent", fname);
+                          "%s: Child succeeded in sending messages to parent", __func__);
             else
                 ls_syslog(LOG_DEBUG,
-                          "%s: Child failed in sending messages to parent", fname);
+                          "%s: Child failed in sending messages to parent", __func__);
         }
         close(childIoFd[1]);
         exit(exitVal);
@@ -3670,7 +3645,7 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
 
     close (childIoFd[1]);
     if (WEXITSTATUS (status)) {
-        ls_syslog(LOG_DEBUG, "%s: child failed!", fname);
+        ls_syslog(LOG_DEBUG, "%s: child failed!", __func__);
         goto parentErr;
     }
 
@@ -3680,7 +3655,7 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
 
     if ((lineBuf = (char *) malloc (length + 1)) == NULL ) {
         if (logclass & (LC_TRACE | LC_EXEC))
-            ls_syslog(LOG_DEBUG, "%s: parent malloc faild!", fname);
+            ls_syslog(LOG_DEBUG, "%s: parent malloc faild!", __func__);
         goto parentErr;
     }
     if (read(childIoFd[0], (char *) lineBuf, length) != length) {
@@ -3707,7 +3682,7 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
 
 parentErr:
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG, "%s: parent malloc faild!", fname);
+        ls_syslog(LOG_DEBUG, "%s: parent malloc faild!", __func__);
     FREEUP (lineBuf);
     close(childIoFd[0]);
     return (NULL);
@@ -3805,7 +3780,6 @@ parseXF(struct submit *req, char *arg, char **errMsg)
 {
     static int maxNxf = 0;
     static struct xFile *xp = NULL;
-    static char fname[] = "parseXF";
     struct xFile *tmp = NULL;
     int options = 0;
     char op[MAXLINELEN], lf[MAXFILENAMELEN], rf[MAXFILENAMELEN];
@@ -3818,7 +3792,7 @@ parseXF(struct submit *req, char *arg, char **errMsg)
         if ((xp = (struct xFile *) malloc(NUMXF * sizeof(struct xFile)))
             == NULL) {
             if (errMsg != NULL) {
-                sprintf(*errMsg, I18N_FUNC_FAIL_S, fname, "malloc",
+                sprintf(*errMsg, I18N_FUNC_FAIL_S, __func__, "malloc",
                         lsb_sysmsg());
             }
             else
@@ -3919,7 +3893,7 @@ parseXF(struct submit *req, char *arg, char **errMsg)
                                              (maxNxf + NUMXF) * sizeof(struct xFile)))
             == NULL) {
             if (errMsg != NULL) {
-                sprintf(*errMsg, I18N_FUNC_FAIL_S, fname, "myrealloc",
+                sprintf(*errMsg, I18N_FUNC_FAIL_S, __func__, "myrealloc",
                         lsb_sysmsg());
             }
             else
@@ -3952,8 +3926,6 @@ checkLimit(int limit, int factor)
 int
 runBatchEsub(struct lenData *ed, struct submit *jobSubReq)
 {
-    static char fname[] = "runBatchEsub";
-
     char *subRLimitName[LSF_RLIM_NLIMITS] = {"LSB_SUB_RLIMIT_CPU",
                                              "LSB_SUB_RLIMIT_FSIZE",
                                              "LSB_SUB_RLIMIT_DATA",
@@ -4128,9 +4100,9 @@ runBatchEsub(struct lenData *ed, struct submit *jobSubReq)
     SET_PARM_STR_2(SUB2_IN_FILE_SPOOL, "LSB_SUB2_IN_FILE_SPOOL", jobSubReq,
                    inFile);
     SET_PARM_BOOL_2(SUB2_JOB_CMD_SPOOL, "LSB_SUB2_JOB_CMD_SPOOL", jobSubReq);
+    SET_PARM_STR(SUB_USER_GROUP, "LSB_SUB_USER_GROUP", jobSubReq, userGroup);
 
     ls_readconfenv(myParams, NULL);
-
 
     if (myParams[LSB_SUB_COMMANDNAME].paramValue) {
         int cmdSize, cmdNameSize, tmpCnt;
@@ -4287,7 +4259,7 @@ runBatchEsub(struct lenData *ed, struct submit *jobSubReq)
 
     if ((cc = runEsub_(ed, NULL)) < 0) {
         if (logclass & LC_TRACE)
-            ls_syslog(LOG_DEBUG, "%s: runEsub_() failed %d: %M", fname, cc);
+            ls_syslog(LOG_DEBUG, "%s: runEsub_() failed %d: %M", __func__, cc);
         if (cc == -2) {
             char *deltaFileName=NULL;
             struct stat stbuf;
@@ -4456,7 +4428,6 @@ void makeCleanToRunEsub()
 
 void modifyJobInformation(struct submit *jobSubReq)
 {
-    static char fname[]="modifyJobInforation";
     char parmDeltaFile[MAXPATHLEN];
     char envDeltaFile[MAXPATHLEN];
     int validKey,v;
@@ -4599,7 +4570,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                         case STRPARM:
                             if(checkEmptyString(line)) {
                                 ls_syslog(LOG_WARNING,MSG_WARN_NULLVAL2s,
-                                          fname,key);
+                                          __func__,key);
                                 break;
                             }
 
@@ -4618,7 +4589,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                                 sValue=extractStringValue(line);
                                 if(sValue==NULL) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4652,7 +4623,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
                                 if (!stringIsDigitNumber(line)) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_INTVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4677,13 +4648,13 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
 
                                 ls_syslog(LOG_WARNING,MSG_BAD_BOOLVAL3s,
-                                          fname,line,key);
+                                          __func__,line,key);
                             }
                             break;
                         case STR2PARM:
                             if(checkEmptyString(line)) {
                                 ls_syslog(LOG_WARNING,MSG_WARN_NULLVAL2s,
-                                          fname,key);
+                                          __func__,key);
                                 break;
                             }
 
@@ -4696,7 +4667,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                                 sValue=extractStringValue(line);
                                 if(sValue==NULL) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4717,7 +4688,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
                                 if (!stringIsDigitNumber(line)) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_INTVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4742,7 +4713,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
 
                                 ls_syslog(LOG_WARNING,MSG_BAD_BOOLVAL3s,
-                                          fname,line,key);
+                                          __func__,line,key);
                             }
                             break;
                         case NUMPARM:
@@ -4755,7 +4726,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
                                 if (!stringIsDigitNumber(line)) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_INTVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4779,7 +4750,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             else {
                                 if (!stringIsDigitNumber(line)) {
                                     ls_syslog(LOG_WARNING,MSG_BAD_INTVAL3s,
-                                              fname,line,key);
+                                              __func__,line,key);
                                     break;
                                 }
 
@@ -4790,14 +4761,14 @@ void modifyJobInformation(struct submit *jobSubReq)
                         case STRSPARM:
                             if(checkEmptyString(line)) {
                                 ls_syslog(LOG_WARNING,MSG_WARN_NULLVAL2s,
-                                          fname,key);
+                                          __func__,key);
                                 break;
                             }
 
                             sValue=extractStringValue(line);
                             if(sValue==NULL) {
                                 ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,
-                                          fname,line,key);
+                                          __func__,line,key);
                                 break;
                             }
 
@@ -4818,7 +4789,7 @@ void modifyJobInformation(struct submit *jobSubReq)
                             break;
                         default:
                             ls_syslog(LOG_WARNING,MSG_BAD_ENVAR2s,
-                                      fname,key);
+                                      __func__,key);
                             break;
                     }
                     break;
@@ -4827,7 +4798,7 @@ void modifyJobInformation(struct submit *jobSubReq)
 
             if (!validKey) {
                 ls_syslog(LOG_WARNING,MSG_BAD_ENVAR2s,
-                          fname,key);
+                          __func__,key);
             }
         }
         fclose(fp);
@@ -5026,7 +4997,6 @@ char *extractStringValue(char *line)
 
 int processXFReq(char *key,char *line,struct submit *jobSubReq)
 {
-    static char fname[]="processXFRequest";
     int v;
     char *sValue;
 
@@ -5044,7 +5014,7 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
 
             if (!stringIsDigitNumber(line)) {
                 ls_syslog(LOG_WARNING,MSG_BAD_INTVAL3s,
-                          fname,line,key);
+                          __func__,line,key);
                 return -1;
             }
 
@@ -5052,7 +5022,7 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
             p = malloc(v * sizeof(struct xFile));
             if (p == NULL) {
                 ls_syslog(LOG_ERR,MSG_ALLOC_MEMF_IN_XFs,
-                          fname);
+                          __func__);
                 return -1;
             }
             free(jobSubReq->xf);
@@ -5074,7 +5044,7 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
         if(!stringIsDigitNumber(xfSeq)) {
 
             ls_syslog(LOG_WARNING,MSG_BAD_ENVAR2s,
-                      fname,key);
+                      __func__,key);
             return -1;
         }
 
@@ -5087,7 +5057,7 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
 
             sValue=extractStringValue(line);
             if(sValue==NULL) {
-                ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,fname,
+                ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,__func__,
                           line,sValue);
                 return -1;
             }
@@ -5098,7 +5068,7 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
             srcf=getNextWordSet(&txt," \t<>");
 
             if(srcf==NULL) {
-                ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,fname,
+                ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,__func__,
                           line,sValue);
                 return -1;
             }
@@ -5137,12 +5107,12 @@ int processXFReq(char *key,char *line,struct submit *jobSubReq)
             else {
 
                 ls_syslog(LOG_WARNING,MSG_BAD_XF_OP2s,
-                          fname,op);
+                          __func__,op);
             }
         }
         else {
 
-            ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,fname,
+            ls_syslog(LOG_WARNING,MSG_BAD_ENVAL3s,__func__,
                       line,key);
         }
     }

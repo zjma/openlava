@@ -214,7 +214,7 @@ stripQStr (char *q, char *str)
 }
 
 int
-addQStr (FILE *log_fp, char *str)
+addQStr(FILE *log_fp, char *str)
 {
     int j = 1;
 

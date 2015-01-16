@@ -355,10 +355,10 @@ putEnv(char *env, char *val)
 }
 
 void
-initLSFHeader_ (struct LSFHeader *hdr)
+initLSFHeader_(struct LSFHeader *hdr)
 {
     memset(hdr, 0, sizeof(struct LSFHeader));
-    hdr->version = OPENLAVA_VERSION;
+    hdr->version = OPENLAVA_XDR_VERSION;
 }
 
 void *

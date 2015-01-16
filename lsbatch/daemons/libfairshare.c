@@ -49,15 +49,18 @@ fs_init(struct qData *qPtr, struct userConf *uConf)
  */
 int
 fs_update_sacct(struct qData *qPtr,
-                const char *name,
+                struct jData *jPtr,
                 int numPEND,
                 int numRUN)
 {
     struct tree_ *t;
     struct tree_node_ *n;
     struct share_acct *sacct;
+    char *name;
 
     t = qPtr->scheduler->tree;
+
+    name = jPtr->userName;
 
     n = hash_lookup(t->node_tab, name);
     if (n == NULL)
@@ -79,12 +82,13 @@ int
 fs_init_sched_session(struct qData *qPtr)
 {
     struct tree_ *t;
-    link_t *l;
 
     t = qPtr->scheduler->tree;
-    l = make_link();
 
-    sshare_distribute_tokens(t, qPtr->numUsable, l);
+    /* Distribute the tokens all the way
+     * down the leafs
+     */
+    sshare_distribute_tokens(t, qPtr->numUsable);
 
     return 0;
 }
@@ -96,6 +100,16 @@ fs_elect_job(struct qData *qPtr,
                 LIST_T *jRef,
                 struct jData **jPtr)
 {
+    struct tree_node_ *n;
+    struct share_acct *s;
+
+    /* Simply pop nodes from the
+     * leaf link they are already
+     * sorted by priority.
+     */
+    n = pop_link(qPtr->scheduler->tree->leafs);
+    s = n->data;
+
     return 0;
 }
 

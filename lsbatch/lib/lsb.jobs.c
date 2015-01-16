@@ -193,8 +193,10 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
 struct jobInfoEnt *
 lsb_readjobinfo(int *more)
 {
-    XDR  xdrs;
-    int num, i, aa;
+    XDR xdrs;
+    int num;
+    int i;
+    int cc;
     struct LSFHeader hdr;
     char *buffer = NULL;
     static struct jobInfoReply jobInfoReply;
@@ -206,9 +208,11 @@ lsb_readjobinfo(int *more)
     static int npgids = 0;
     static int *pgid = NULL;
 
-
-    TIMEIT(0, (num = readNextPacket(&buffer, _lsb_recvtimeout, &hdr,
-                                    mbdSock)), "readNextPacket");
+    TIMEIT(0, (num = readNextPacket(&buffer,
+                                    _lsb_recvtimeout,
+                                    &hdr,
+                                    mbdSock)),
+           "readNextPacket");
     if (num < 0) {
         closeSession(mbdSock);
         lsberrno = LSBE_EOF;
@@ -269,15 +273,16 @@ lsb_readjobinfo(int *more)
     }
 
 
-    FREEUP( jobInfoReply.execHome );
-    FREEUP( jobInfoReply.execCwd );
-    FREEUP( jobInfoReply.execUsername );
-    FREEUP( jobInfoReply.parentGroup );
-    FREEUP( jobInfoReply.jName );
+    FREEUP(jobInfoReply.execHome);
+    FREEUP(jobInfoReply.execCwd);
+    FREEUP(jobInfoReply.execUsername);
+    FREEUP(jobInfoReply.parentGroup);
+    FREEUP(jobInfoReply.jName);
 
-    TIMEIT(1, xdrmem_create(&xdrs, buffer, XDR_DECODE_SIZE_(hdr.length), XDR_DECODE), "xdrmem_create");
-    TIMEIT(1, (aa = xdr_jobInfoReply(&xdrs, &jobInfoReply, &hdr)), "xdr_jobInfoReply");
-    if (aa == FALSE) {
+    xdrmem_create(&xdrs, buffer, XDR_DECODE_SIZE_(hdr.length), XDR_DECODE);
+
+    TIMEIT(1, (cc = xdr_jobInfoReply(&xdrs, &jobInfoReply, &hdr)), "xdr_jobInfoReply");
+    if (cc == FALSE) {
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
         free(buffer);
@@ -320,7 +325,7 @@ lsb_readjobinfo(int *more)
     jobInfo.jType    = jobInfoReply.jType;
     jobInfo.parentGroup = jobInfoReply.parentGroup;
     jobInfo.jName        = jobInfoReply.jName;
-    for (i=0; i<NUM_JGRP_COUNTERS; i++)
+    for (i = 0; i < NUM_JGRP_COUNTERS; i++)
         jobInfo.counter[i] = jobInfoReply.counter[i];
 
     jobInfo.submitTime = jobInfoReply.jobBill->submitTime;

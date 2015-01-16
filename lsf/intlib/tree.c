@@ -41,6 +41,8 @@ tree_init(const char *name)
     assert(t->root);
     t->root->path = strdup("/");
     t->root->parent = NULL;
+    t->node_tab = hash_make(11);
+    t->leafs = make_link();
 
     return t;
 }

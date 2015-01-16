@@ -373,7 +373,7 @@ updQaccount (struct jData *jp, int numJobs, int numPEND,
     /* update fairshare counters
      */
     if (qp->scheduler) {
-         (*qp->scheduler->fs_update_sacct)(qp, jp->userName, numPEND, numRUN);
+        (*qp->scheduler->fs_update_sacct)(qp, jp, numPEND, numRUN);
         ls_syslog(LOG_DEBUG, "\
 %s: fs_update_sacct %s %d %d", __func__, jp->userName, numPEND, numRUN);
     }

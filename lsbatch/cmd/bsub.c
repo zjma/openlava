@@ -1,5 +1,6 @@
-/* $Id: bsub.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -18,18 +19,12 @@
 
 #include "cmd.h"
 
-#define NL_SETN 8 	
+extern int do_sub(int, char **, int);
 
-extern int do_sub (int, char **, int);
-
-int 
-main (int argc, char **argv)
+int
+main(int argc, char **argv)
 {
-
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );	
-
     exit(do_sub(argc, argv, CMD_BSUB));
-    _i18n_end ( ls_catd );			
-} 
+
+    return 0;
+}

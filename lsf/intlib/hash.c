@@ -2,6 +2,7 @@
 /* Chain hash tables depends on links.
  */
 #include "hash.h"
+#include "list2.h"
 
 static unsigned long hash_string(const char *, int);
 static void re_hash(struct hash_tab *, int);

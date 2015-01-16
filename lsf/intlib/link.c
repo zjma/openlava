@@ -21,6 +21,8 @@
  *
  * Elementary single linked list in C.
  */
+#include <stdlib.h>
+#include <string.h>
 #include "link.h"
 
 /* Make a new link

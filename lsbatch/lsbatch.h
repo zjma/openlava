@@ -554,6 +554,7 @@ struct submit {
     int    maxNumProcessors;
     char   *loginShell;
     int    userPriority;
+    char *userGroup;
 };
 
 struct submitReply {
@@ -942,6 +943,7 @@ struct jobNewLog {
     char   *loginShell;
     int    idx;
     int    userPriority;
+    char *userGroup;
 };
 
 struct jobModLog {
@@ -1015,6 +1017,7 @@ struct jobStartLog {
     char   *queuePostCmd;
     int    jFlags;
     int    idx;
+    char *userGroup;
 };
 
 struct jobStartAcceptLog {
