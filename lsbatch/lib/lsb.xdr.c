@@ -202,12 +202,13 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
 
     /* Daemon decode from library
      */
-    if (xdrs->x_op == XDR_DECODE
-        && hdr->version >= 3) {
-        if (!xdr_var_string(xdrs, &submitReq->userGroup))
-            goto Error1;
-    } else {
-        submitReq->userGroup = strdup("");
+    if (xdrs->x_op == XDR_DECODE) {
+        if (hdr->version >= 3) {
+            if (!xdr_var_string(xdrs, &submitReq->userGroup))
+                goto Error1;
+        } else {
+            submitReq->userGroup = strdup("");
+        }
     }
 
     return true;
@@ -646,7 +647,8 @@ xdr_jgrpInfoReply(XDR *xdrs, struct jobInfoReply *jobInfoReply,
 
 }
 bool_t
-xdr_jobInfoReply(XDR *xdrs, struct jobInfoReply *jobInfoReply,
+xdr_jobInfoReply(XDR *xdrs,
+                 struct jobInfoReply *jobInfoReply,
                  struct LSFHeader *hdr)
 {
     char *sp;
@@ -813,7 +815,7 @@ xdr_jobInfoReply(XDR *xdrs, struct jobInfoReply *jobInfoReply,
     }
 
     if (xdrs->x_op == XDR_DECODE) {
-        jobId32To64(&jobInfoReply->jobId,jobArrId,jobArrElemId);
+        jobId32To64(&jobInfoReply->jobId,jobArrId, jobArrElemId);
     }
 
     return true;

@@ -686,6 +686,7 @@ struct jobInfoEnt {
     int     counter[NUM_JGRP_COUNTERS];
     u_short port;
     int     jobPriority;
+    char *userGroup;
 };
 
 struct userInfoEnt {

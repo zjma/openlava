@@ -2165,7 +2165,7 @@ logFinishedjob(struct jData *job)
     jobFinishLog = &logPtr->eventLog.jobFinishLog;
 
     logPtr->type = EVENT_JOB_FINISH;
-    sprintf(logPtr->version, "%d", OPENLAVA_VERSION);
+    sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);
     jobFinishLog->jobId = LSB_ARRAY_JOBID(job->jobId);
     jobFinishLog->idx = LSB_ARRAY_IDX(job->jobId);
     jobFinishLog->userId = job->userId;

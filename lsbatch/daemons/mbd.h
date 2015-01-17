@@ -312,7 +312,7 @@ struct jData {
     struct  jRusage runRusage;
     int     numUserGroup;
     char    **userGroup;
-    char * execHosts;
+    char   *execHosts;
     int    sigValue;
     struct jShared  *shared;
     int     numRef;

@@ -110,7 +110,7 @@ xdr_encodeMsg(XDR *xdrs,
 
     XDR_SETPOS(xdrs, LSF_HEADER_LEN);
 
-    hdr->version = OPENLAVA_VERSION;
+    hdr->version = OPENLAVA_XDR_VERSION;
 
     if (auth) {
         if (!xdr_lsfAuth(xdrs, auth, hdr))

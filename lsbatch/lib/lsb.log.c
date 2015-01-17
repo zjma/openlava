@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -3672,25 +3672,22 @@ updateJobIdIndexFile (char *indexFile, char *eventFile, int totalEventFile)
             return -1;
         }
 
-
         if (fchmod(fileno(indexFp),  0644) != 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
                       __func__, "fchmod", indexFile);
         }
 
         addedEventFile = totalEventFile;
-        sprintf(indexVersion, "%d", OPENLAVA_VERSION);
+        sprintf(indexVersion, "%d", OPENLAVA_XDR_VERSION);
         rows = 0;
-
 
         fprintf(indexFp, "%80s", "\n");
     }
 
 
-    for (i=addedEventFile; i>0; i--) {
+    for (i = addedEventFile; i > 0; i--) {
 
         sprintf(nameBuf, "%s.%d", eventFile, i);
-
 
         if ((listHeader = initSortIntList(0)) == NULL) {
             lsberrno = LSBE_NO_MEM;
@@ -3708,9 +3705,7 @@ updateJobIdIndexFile (char *indexFile, char *eventFile, int totalEventFile)
         rows++;
     }
 
-
-    lastUpdate = (int) time(NULL);
-
+    lastUpdate = (int)time(NULL);
 
     errno = 0;
     rewind(indexFp);
@@ -3719,7 +3714,6 @@ updateJobIdIndexFile (char *indexFile, char *eventFile, int totalEventFile)
         fclose(indexFp);
         return -1;
     }
-
 
     if (fprintf(indexFp, "%s %s %d %d",
                 LSF_JOBIDINDEX_FILETAG, indexVersion, rows, lastUpdate) < 0) {

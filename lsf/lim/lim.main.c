@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -523,7 +524,7 @@ processUDPMsg(void)
             rcvConfInfo(&xdrs, &from, &reqHdr);
             break;
         default:
-            if (reqHdr.version <= OPENLAVA_VERSION) {
+            if (reqHdr.version <= OPENLAVA_XDR_VERSION) {
                 static int lastcode;
 
                 errorBack(&from, &reqHdr, LIME_BAD_REQ_CODE, -1);

@@ -1,5 +1,6 @@
-/* $Id: cmd.err.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -23,13 +24,14 @@
 #include <netdb.h>
 #include <ctype.h>
 
-#define NL_SETN 8 	
 
-
-
-void 
-jobInfoErr (LS_LONG_INT jobId, char *jobName, char *user, char *queue, 
-            char *host, int options)
+void
+jobInfoErr(LS_LONG_INT jobId,
+           char *jobName,
+           char *user,
+           char *queue,
+           char *host,
+           int options)
 {
     char errMsg[MAXLINELEN/2];
     char hostOrQueue[MAXLINELEN/2];
@@ -54,12 +56,12 @@ jobInfoErr (LS_LONG_INT jobId, char *jobName, char *user, char *queue,
             strcat (hostOrQueue, queue);
         }
         if (host) {
-            if (ls_isclustername(host) <= 0) { 
+            if (ls_isclustername(host) <= 0) {
                 if (hostOrQueue[0] == '\0')
 	    	    strcpy(hostOrQueue, (_i18n_msg_get(ls_catd,NL_SETN,802, " on host/group <"))); /* catgets  802  */
                 else
 		    strcat(hostOrQueue, (_i18n_msg_get(ls_catd,NL_SETN,803, "> and on host/group <"))); /* catgets  803  */
-            } else {                               
+            } else {
                if (hostOrQueue[0] == '\0')
                     strcpy(hostOrQueue, (_i18n_msg_get(ls_catd,NL_SETN,804, " in cluster <"))); /* catgets  804  */
                 else
@@ -75,9 +77,9 @@ jobInfoErr (LS_LONG_INT jobId, char *jobName, char *user, char *queue,
                if (LSB_ARRAY_IDX(jobId))
                    sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,806, "Job <%s> is not a job array")),  /* catgets  806  */
                         lsb_jobid2str(jobId));
-               else 
+               else
                    sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,807, "Job array <%s> is not found%s")), /* catgets  807  */
-                           lsb_jobid2str(jobId), hostOrQueue); 
+                           lsb_jobid2str(jobId), hostOrQueue);
             }
             else
                 sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,808, "Job <%s> is not found%s")),  /* catgets  808  */
@@ -91,11 +93,11 @@ jobInfoErr (LS_LONG_INT jobId, char *jobName, char *user, char *queue,
                    sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,806, "Job <%s> is not a job array")),
                                    jobName);
                 else
-                   sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,807, "Job array <%s> is not found%s")), 
+                   sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,807, "Job array <%s> is not found%s")),
                            jobName, hostOrQueue);
             }
             else
-                sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,808, "Job <%s> is not found%s")), jobName, hostOrQueue); 
+                sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,808, "Job <%s> is not found%s")), jobName, hostOrQueue);
         }
         else if (options & ALL_JOB)
             sprintf(errMsg, (_i18n_msg_get(ls_catd,NL_SETN,814, "No job found%s")), hostOrQueue); /* catgets  814  */
@@ -115,8 +117,6 @@ jobInfoErr (LS_LONG_INT jobId, char *jobName, char *user, char *queue,
         return;
     }
 
-    lsb_perror (NULL);
-    return;
-
-} 
+    lsb_perror(NULL);
+}
 

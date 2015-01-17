@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -84,7 +84,7 @@ callLim_(enum limReqCode reqCode,
     reqHdr.opCode = reqCode;
 
     reqHdr.refCode  = getRefNum_();
-    reqHdr.version = OPENLAVA_VERSION;
+    reqHdr.version = OPENLAVA_XDR_VERSION;
 
     xdrmem_create(&xdrs, sbuf, 8*MSGSIZE, XDR_ENCODE);
     if (!xdr_encodeMsg(&xdrs, dsend, &reqHdr, xdr_sfunc, 0, NULL)) {

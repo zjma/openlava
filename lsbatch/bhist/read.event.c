@@ -1,5 +1,6 @@
-/* $Id: read.event.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -34,7 +35,6 @@ static struct jobRecord * createJobRec(int);
 
 #define GET_JOBID(jobId, idx) ((Req.options & OPT_ARRAY_INFO)) ? (jobId): LSB_JOBID((jobId), (idx))
 
-#define NL_SETN  6
 
 extern struct jobRecord *jobRecordList;
 extern struct eventLogHandle *eLogPtr;
@@ -99,20 +99,6 @@ addEvent(struct eventRecord *event, struct jobRecord *jobRecord)
     if (event->jStatus & (JOB_STAT_DONE | JOB_STAT_EXIT)) {
         jobRecord->job->endTime = event->timeStamp;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     if ((readFromHeadFlag == 0) &&
         (jobRecord->nonNewFromHeadFlag == 1) &&
@@ -244,6 +230,7 @@ read_newjob(struct eventRec *log)
     strcpy(submitPtr->preExecCmd, jobNewLog->preExecCmd);
     strcpy(submitPtr->mailUser, jobNewLog->mailUser);
     strcpy(submitPtr->projectName, jobNewLog->projectName);
+    strcpy(submitPtr->userGroup, jobNewLog->userGroup);
 
     STRNCPY(submitPtr->dependCond, jobNewLog->dependCond, 6*MAXLINELEN);
 
@@ -412,6 +399,7 @@ copyJobInfoEnt(struct jobInfoEnt *jobInfo)
     strcpy(submitPtr->preExecCmd, jobInfo->submit.preExecCmd);
     strcpy(submitPtr->mailUser, jobInfo->submit.mailUser);
     strcpy(submitPtr->projectName, jobInfo->submit.projectName);
+    strcpy(submitPtr->userGroup, jobInfo->submit.userGroup);
 
     STRNCPY(submitPtr->dependCond, jobInfo->submit.dependCond, 6*MAXLINELEN);
 
@@ -452,6 +440,7 @@ freeJobInfoEnt(struct jobInfoEnt *jobInfoEnt)
     FREEUP(jobInfoEnt->submit.mailUser);
     FREEUP(jobInfoEnt->submit.projectName);
     FREEUP(jobInfoEnt->submit.loginShell);
+    FREEUP(jobInfoEnt->submit.userGroup);
 
     if (jobInfoEnt->submit.numAskedHosts > 0) {
         for (i=0;i<jobInfoEnt->submit.numAskedHosts;i++)
@@ -642,13 +631,18 @@ read_startjob(struct eventRec *log)
         jobRecord->hostPtr = jobRecord->job->exHosts[0];
     }
 
+    if (log->eventLog.jobStartLog.userGroup
+        && log->eventLog.jobStartLog.userGroup[0] != '\0') {
+	strcpy(jobRecord->job->submit.userGroup,
+	       log->eventLog.jobStartLog.userGroup);
+    }
 
     jobRecord->job->cpuFactor = log->eventLog.jobStartLog.hostFactor;
 
     if ((logclass & LC_TRACE))
         ls_syslog(LOG_DEBUG2, "%s: jobId=%s", fname, lsb_jobid2str(jobRecord->job->jobId));
 
-    return(jobRecord);
+    return jobRecord;
 }
 
 char
@@ -1233,6 +1227,7 @@ initJobInfo (void)
     job->execCwd           = malloc(MAXFILENAMELEN);
     job->execHome          = malloc(MAXFILENAMELEN);
     job->execUsername      = malloc(MAX_LSB_NAME_LEN);
+    submitPtr->userGroup   = calloc(MAX_LSB_NAME_LEN, sizeof(char));
 
     submitPtr->queue[0]       = '\0';
     submitPtr->jobName[0]     = '\0';

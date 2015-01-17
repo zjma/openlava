@@ -6306,12 +6306,15 @@ error:
 
 }
 void
-copyJobBill (struct submitReq *subReq, struct submitReq *jobBill, LS_LONG_INT jobId)
+copyJobBill (struct submitReq *subReq,
+             struct submitReq *jobBill,
+             LS_LONG_INT jobId)
 {
     int i;
 
     memcpy((char *) jobBill, (char *)subReq , sizeof (struct submitReq));
     now = time(NULL);
+
     if (jobId != FALSE) {
         char fn[MAXFILENAMELEN];
 
@@ -6397,8 +6400,8 @@ copyJobBill (struct submitReq *subReq, struct submitReq *jobBill, LS_LONG_INT jo
     }
 
     if (subReq->nxf > 0) {
-        jobBill->xf = (struct xFile *) my_calloc(subReq->nxf,
-                                                 sizeof(struct xFile), "copyJobBill");
+        jobBill->xf = my_calloc(subReq->nxf,
+                                sizeof(struct xFile), "copyJobBill");
         memcpy((char *) jobBill->xf, (char *) subReq->xf,
                subReq->nxf * sizeof(struct xFile));
     } else {
@@ -6407,8 +6410,8 @@ copyJobBill (struct submitReq *subReq, struct submitReq *jobBill, LS_LONG_INT jo
     }
 
     if (subReq->numAskedHosts > 0) {
-        jobBill->askedHosts = (char **) my_calloc (subReq->numAskedHosts,
-                                                   sizeof(char *), "copyJobBill");
+        jobBill->askedHosts = my_calloc(subReq->numAskedHosts,
+                                         sizeof(char *), "copyJobBill");
         for (i = 0; i < subReq->numAskedHosts; i++)
             jobBill->askedHosts[i] = safeSave(subReq->askedHosts[i]);
         jobBill->numAskedHosts = subReq->numAskedHosts;
@@ -6417,10 +6420,15 @@ copyJobBill (struct submitReq *subReq, struct submitReq *jobBill, LS_LONG_INT jo
         jobBill->numAskedHosts = 0;
     }
 
+    if (subReq->options & SUB_USER_GROUP) {
+        jobBill->userGroup = strdup(subReq->userGroup);
+    } else {
+        jobBill->userGroup = strdup("");
+    }
 }
 
 void
-freeJData (struct jData *jpbw)
+freeJData(struct jData *jpbw)
 {
     static char fname[]="freeJData";
     PROXY_LIST_ENTRY_T      *pxy;
@@ -6509,30 +6517,31 @@ freeJData (struct jData *jpbw)
 }
 
 void
-freeSubmitReq (struct submitReq *jobBill)
+freeSubmitReq(struct submitReq *jobBill)
 {
     int i;
 
-    FREEUP (jobBill->jobName);
-    FREEUP (jobBill->queue);
-    FREEUP (jobBill->resReq);
-    FREEUP (jobBill->hostSpec);
-    FREEUP (jobBill->dependCond);
-    FREEUP (jobBill->inFile);
-    FREEUP (jobBill->outFile);
-    FREEUP (jobBill->errFile);
-    FREEUP (jobBill->command);
-    FREEUP (jobBill->inFileSpool);
-    FREEUP (jobBill->commandSpool);
-    FREEUP (jobBill->chkpntDir);
-    FREEUP (jobBill->preExecCmd);
-    FREEUP (jobBill->mailUser);
-    FREEUP (jobBill->projectName);
-    FREEUP (jobBill->cwd);
-    FREEUP (jobBill->subHomeDir);
-    FREEUP (jobBill->fromHost);
-    FREEUP (jobBill->loginShell);
-    FREEUP (jobBill->schedHostType);
+    FREEUP(jobBill->jobName);
+    FREEUP(jobBill->queue);
+    FREEUP(jobBill->resReq);
+    FREEUP(jobBill->hostSpec);
+    FREEUP(jobBill->dependCond);
+    FREEUP(jobBill->inFile);
+    FREEUP(jobBill->outFile);
+    FREEUP(jobBill->errFile);
+    FREEUP(jobBill->command);
+    FREEUP(jobBill->inFileSpool);
+    FREEUP(jobBill->commandSpool);
+    FREEUP(jobBill->chkpntDir);
+    FREEUP(jobBill->preExecCmd);
+    FREEUP(jobBill->mailUser);
+    FREEUP(jobBill->projectName);
+    FREEUP(jobBill->cwd);
+    FREEUP(jobBill->subHomeDir);
+    FREEUP(jobBill->fromHost);
+    FREEUP(jobBill->loginShell);
+    FREEUP(jobBill->schedHostType);
+    FREEUP(jobBill->userGroup);
 
     if (jobBill->numAskedHosts > 0) {
         for (i = 0; i < jobBill->numAskedHosts; i++)
@@ -6541,11 +6550,10 @@ freeSubmitReq (struct submitReq *jobBill)
     }
     jobBill->numAskedHosts = 0;
     if (jobBill->nxf)
-        FREEUP (jobBill->xf);
+        FREEUP(jobBill->xf);
     jobBill->nxf = 0;
 
-    FREEUP (jobBill->jobFile);
-
+    FREEUP(jobBill->jobFile);
 }
 
 static int

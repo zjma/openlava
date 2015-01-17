@@ -365,9 +365,7 @@ lsb_readjobinfo(int *more)
     jobInfo.submit.loginShell = jobInfoReply.jobBill->loginShell;
     jobInfo.submit.nxf = jobInfoReply.jobBill->nxf;
     jobInfo.submit.xf = jobInfoReply.jobBill->xf;
-
-
-
+    jobInfo.submit.userGroup = jobInfoReply.jobBill->userGroup;
     jobInfo.jRusageUpdateTime = jobInfoReply.jRusageUpdateTime;
     jobInfo.runRusage.npids = npids;
     jobInfo.runRusage.pidInfo = pidInfo;
@@ -376,7 +374,6 @@ lsb_readjobinfo(int *more)
     jobInfo.runRusage.pgid = pgid;
 
     copyJUsage(&(jobInfo.runRusage), &jobInfoReply.runRusage);
-
 
     npids = jobInfo.runRusage.npids;
     pidInfo = jobInfo.runRusage.pidInfo;

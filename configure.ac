@@ -1,7 +1,7 @@
 #
 # openlava project
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2015 David Bigagli
 #
 AC_INIT(openlava, 3.0)
 AC_CONFIG_HEADERS(config.h)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -367,7 +367,7 @@ logLIMStart(void)
 
     ev.event = EV_LIM_START;
     ev.etime = time(NULL);
-    ev.version = OPENLAVA_VERSION;
+    ev.version = OPENLAVA_XDR_VERSION;
     ev.record = NULL;
 
     ls_writeeventrec(logFp, &ev);
@@ -382,7 +382,7 @@ logLIMDown(void)
 
     ev.event = EV_LIM_SHUTDOWN;
     ev.etime = time(NULL);
-    ev.version = OPENLAVA_VERSION;
+    ev.version = OPENLAVA_XDR_VERSION;
     ev.record = NULL;
 
     ls_writeeventrec(logFp, &ev);
@@ -403,7 +403,7 @@ logAddHost(struct hostEntry *hPtr)
 
     ev.event = EV_ADD_HOST;
     ev.etime = time(NULL);
-    ev.version = OPENLAVA_VERSION;
+    ev.version = OPENLAVA_XDR_VERSION;
     ev.record = &hLog;
 
     ls_writeeventrec(logFp, &ev);
@@ -424,7 +424,7 @@ logRmHost(struct hostEntry *hPtr)
 
     ev.event = EV_REMOVE_HOST;
     ev.etime = time(NULL);
-    ev.version = OPENLAVA_VERSION;
+    ev.version = OPENLAVA_XDR_VERSION;
     ev.record = &hLog;
 
     ls_writeeventrec(logFp, &ev);

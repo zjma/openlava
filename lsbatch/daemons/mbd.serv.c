@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -142,7 +142,7 @@ int
 do_jobInfoReq(XDR *xdrs,
               int chfd,
               struct sockaddr_in *from,
-               struct LSFHeader *reqHdr,
+              struct LSFHeader *reqHdr,
               int schedule)
 {
     static char             fname[] = "do_jobInfoReq";
@@ -296,7 +296,11 @@ do_jobInfoReq(XDR *xdrs,
 }
 
 static int
-packJgrpInfo(struct jgTreeNode * jgNode, int remain, char **replyBuf, int schedule, int version)
+packJgrpInfo(struct jgTreeNode * jgNode,
+             int remain,
+             char **replyBuf,
+             int schedule,
+             int version)
 {
     struct jobInfoReply jobInfoReply;
     struct submitReq jobBill;
@@ -380,8 +384,6 @@ jobInfoReplyXdrBufLen(struct jobInfoReply *jobInfoReplyPtr)
     len += sizeof(jobInfoReply.runRusage);
     len += jobInfoReply.runRusage.npgids * sizeof(int);
 
-
-
     len += jobInfoReply.runRusage.npids * (NET_INTSIZE_ + sizeof(struct pidInfo));
 
     len += sizeof(struct submitReq);
@@ -407,18 +409,18 @@ jobInfoReplyXdrBufLen(struct jobInfoReply *jobInfoReplyPtr)
     len += ALIGNWORD_(strlen(jobInfoReply.jobBill->projectName) + 1);
     len += ALIGNWORD_(strlen(jobInfoReply.jobBill->loginShell) + 1);
     len += ALIGNWORD_(strlen(jobInfoReply.jobBill->schedHostType) + 1);
+    len += ALIGNWORD_(strlen(jobInfoReply.jobBill->userGroup) + 1);
 
-    return(len);
+    return len;
 }
 
 static int
-packJobInfo(struct jData * jobData,
+packJobInfo(struct jData *jobData,
             int remain,
             char **replyBuf,
             int schedule,
             int options, int version)
 {
-    static char fname[] = "packJobInfo";
     struct jobInfoReply jobInfoReply;
     struct submitReq jobBill;
     struct LSFHeader hdr;
@@ -448,8 +450,8 @@ packJobInfo(struct jData * jobData,
     job_reasonTb = jobData->reasonTb;
 
     if (reasonTb == NULL) {
-        reasonTb = my_calloc(numofhosts(), sizeof(int), fname);
-        jReasonTb = my_calloc(numofhosts(), sizeof(int), fname);
+        reasonTb = my_calloc(numofhosts(), sizeof(int), __func__);
+        jReasonTb = my_calloc(numofhosts(), sizeof(int), __func__);
     }
 
     jobInfoReply.jobId = jobData->jobId;
@@ -475,12 +477,14 @@ packJobInfo(struct jData * jobData,
 
     if (logclass & LC_PEND)
         ls_syslog(LOG_DEBUG, "\
-%s: job=%s, rs=%d, nrs=%d srs=%d, qNrs=%d, jNrs=%d nLsb=%d nQU=%d mStage=%d", __func__,
-				  lsb_jobid2str(jobData->jobId), jobData->oldReason, jobData->newReason,
-				  jobData->subreasons, jobData->qPtr->numReasons, job_numReasons, numLsbUsable,
-				  jobData->qPtr->numUsable, mSchedStage);
+%s: job %s rs %d  nrs %d srs %d qNrs %d, jNrs %d nLsb %d nQU %d mStage %d",
+                  __func__, lsb_jobid2str(jobData->jobId),
+                  jobData->oldReason, jobData->newReason,
+                  jobData->subreasons, jobData->qPtr->numReasons,
+                  job_numReasons, numLsbUsable,
+                  jobData->qPtr->numUsable, mSchedStage);
 
-	jobInfoReply.numReasons = 0;
+    jobInfoReply.numReasons = 0;
     if (IS_PEND (jobData->jStatus) && !(options & NO_PEND_REASONS)) {
         int useNewRs = TRUE;
 
@@ -512,53 +516,53 @@ packJobInfo(struct jData * jobData,
                 }
             }
 
-			k = 0;
-			/* traverse the list of hosts
-			 */
-			for (hPtr = (struct hData *)hostList->back;
-				 hPtr != (void *)hostList;
-				 hPtr = (struct hData *)hPtr->back) {
+            k = 0;
+            /* traverse the list of hosts
+             */
+            for (hPtr = (struct hData *)hostList->back;
+                 hPtr != (void *)hostList;
+                 hPtr = (struct hData *)hPtr->back) {
 
-				/* Use the same index to read the host
-				 * table we used to populate it.
-				 */
-				i = hPtr->hostId;
-				if (jReasonTb[i] == PEND_HOST_USR_SPEC)
-					continue;
+                /* Use the same index to read the host
+                 * table we used to populate it.
+                 */
+                i = hPtr->hostId;
+                if (jReasonTb[i] == PEND_HOST_USR_SPEC)
+                    continue;
 
-				if (pkQReasonTb[i] == PEND_HOST_QUE_MEMB)
-					continue;
+                if (pkQReasonTb[i] == PEND_HOST_QUE_MEMB)
+                    continue;
 
-				if (!isHostQMember(hPtr, jobData->qPtr))
-					continue;
+                if (!isHostQMember(hPtr, jobData->qPtr))
+                    continue;
 
-				if (pkHReasonTb[i]) {
-					jobInfoReply.reasonTb[k] = pkHReasonTb[i];
-					PUT_HIGH(jobInfoReply.reasonTb[k], i);
-					k++;
-					continue;
-				}
+                if (pkHReasonTb[i]) {
+                    jobInfoReply.reasonTb[k] = pkHReasonTb[i];
+                    PUT_HIGH(jobInfoReply.reasonTb[k], i);
+                    k++;
+                    continue;
+                }
 
-				if (pkQReasonTb[i]) {
-					jobInfoReply.reasonTb[k] = pkQReasonTb[i];
-					PUT_HIGH(jobInfoReply.reasonTb[k], i);
-					k++;
-					continue;
-				}
+                if (pkQReasonTb[i]) {
+                    jobInfoReply.reasonTb[k] = pkQReasonTb[i];
+                    PUT_HIGH(jobInfoReply.reasonTb[k], i);
+                    k++;
+                    continue;
+                }
 
-				if (pkUReasonTb[i]) {
-					jobInfoReply.reasonTb[k] = pkUReasonTb[i];
-					PUT_HIGH(jobInfoReply.reasonTb[k], i);
-					k++;
-					continue;
-				}
+                if (pkUReasonTb[i]) {
+                    jobInfoReply.reasonTb[k] = pkUReasonTb[i];
+                    PUT_HIGH(jobInfoReply.reasonTb[k], i);
+                    k++;
+                    continue;
+                }
 
-				if (jReasonTb[i]) {
-					jobInfoReply.reasonTb[k++] = jReasonTb[i];
-					continue;
-				}
+                if (jReasonTb[i]) {
+                    jobInfoReply.reasonTb[k++] = jReasonTb[i];
+                    continue;
+                }
 
-			} /* for (hPtr = hostList->back; ...; ...) */
+            } /* for (hPtr = hostList->back; ...; ...) */
 
             jobInfoReply.numReasons = k;
         }
@@ -566,7 +570,7 @@ packJobInfo(struct jData * jobData,
 
     if (jobData->numHostPtr > 0) {
         jobInfoReply.toHosts = my_calloc(jobData->numHostPtr,
-                                         sizeof(char *), fname);
+                                         sizeof(char *), __func__);
         for (i = 0; i < jobData->numHostPtr; i++) {
             jobInfoReply.toHosts[i] = safeSave(jobData->hPtr[i]->host);
         }
@@ -579,7 +583,7 @@ packJobInfo(struct jData * jobData,
         loadStop = calloc(allLsInfo->numIndx, sizeof(float *));
 
         if ((!loadSched) || (!loadStop)) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "malloc");
             mbdDie(MASTER_FATAL);
         }
     }
@@ -620,7 +624,9 @@ packJobInfo(struct jData * jobData,
     jobInfoReply.jobPriority = jobData->jobPriority;
 
     jobInfoReply.jobBill = &jobBill;
-    copyJobBill (&jobData->shared->jobBill, jobInfoReply.jobBill, FALSE);
+    /* fixme remove the copy
+     */
+    copyJobBill(&jobData->shared->jobBill, jobInfoReply.jobBill, FALSE);
     if (jobInfoReply.jobBill->options2 & SUB2_USE_DEF_PROCLIMIT) {
 
         jobInfoReply.jobBill->numProcessors = 1;
@@ -654,7 +660,7 @@ packJobInfo(struct jData * jobData,
                 if (cpuFactor == NULL) {
                     ls_syslog(LOG_ERR, "\
 %s: Cannot find cpu factor for hostSpec %s; cpuFactor is set to 1.0",
-                              fname, jobInfoReply.jobBill->fromHost);
+                              __func__, jobInfoReply.jobBill->fromHost);
                     cpuFactor = &one;
                 }
             } else {
@@ -665,6 +671,7 @@ packJobInfo(struct jData * jobData,
             cpuFactor = &cpuF;
         }
     }
+
     if (cpuFactor != NULL && *cpuFactor > 0) {
 
         if (jobInfoReply.jobBill->rLimits[LSF_RLIMIT_CPU] > 0)
@@ -674,11 +681,11 @@ packJobInfo(struct jData * jobData,
     }
 
     jgNode = jobData->jgrpNode;
-    jobInfoReply.jType    = jobData->nodeType;
+    jobInfoReply.jType = jobData->nodeType;
     jobInfoReply.parentGroup = jgrpNodeParentPath(jgNode);
-    jobInfoReply.jName        = jgNode->name;
+    jobInfoReply.jName = jgNode->name;
 
-    if ( jgNode->nodeType == JGRP_NODE_ARRAY ) {
+    if (jgNode->nodeType == JGRP_NODE_ARRAY) {
         for (i = 0; i < NUM_JGRP_COUNTERS; i++)
             jobInfoReply.counter[i] = ARRAY_DATA(jgNode)->counts[i];
     }
@@ -697,29 +704,33 @@ packJobInfo(struct jData * jobData,
     hdr.reserved = remain;
     hdr.version = version;
 
-    if (!xdr_encodeMsg(&xdrs, (char *) &jobInfoReply,
-                       &hdr, xdr_jobInfoReply, 0, NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
-                  "xdr_encodeMsg", "jobInfoReply");
+    if (!xdr_encodeMsg(&xdrs,
+                       (char *)&jobInfoReply,
+                       &hdr,
+                       xdr_jobInfoReply,
+                       0,
+                       NULL)) {
+        ls_syslog(LOG_ERR, "%s: xdr_encodeMsg() failed", __func__);
         xdr_destroy(&xdrs);
-        freeJobInfoReply (&jobInfoReply);
+        freeJobInfoReply(&jobInfoReply);
         FREEUP(reasonTb);
         FREEUP(jReasonTb);
         FREEUP(loadSched);
         FREEUP(loadStop);
-        FREEUP (request_buf);
+        FREEUP(request_buf);
         return -1;
     }
+
     FREEUP(reasonTb);
     FREEUP(jReasonTb);
     FREEUP(loadSched);
     FREEUP(loadStop);
-    freeJobInfoReply (&jobInfoReply);
+    freeJobInfoReply(&jobInfoReply);
     i = XDR_GETPOS(&xdrs);
     *replyBuf = request_buf;
     xdr_destroy(&xdrs);
-    return (i);
 
+    return i;
 }
 
 int
@@ -2646,15 +2657,14 @@ freeJobHead (struct jobInfoHead *jobInfoHead)
 }
 
 static void
-freeJobInfoReply (struct jobInfoReply *job)
+freeJobInfoReply(struct jobInfoReply *job)
 {
     int i;
 
     if (job == NULL)
         return;
 
-
-    freeSubmitReq (job->jobBill);
+    freeSubmitReq(job->jobBill);
     if (job->numToHosts > 0) {
         for (i = 0; i < job->numToHosts; i++)
             FREEUP(job->toHosts[i]);

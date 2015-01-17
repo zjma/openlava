@@ -1,5 +1,6 @@
-/* $Id: bhist.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -25,8 +26,6 @@
 
 #define NegtoZero(x)  ( (x<0)? 0 :x )
 #define topOrBot(x)   ( ((x)==1) ? "top" : "bottom" )
-
-#define NL_SETN  6
 
 void usage(char *);
 void fileNumbers(char* , struct bhistReq *);
@@ -771,7 +770,7 @@ displayhist(struct bhistReq *bhistReq)
 
     jobRecord = jobRecordList->forw;
 
-    while(jobRecord != jobRecordList) {
+    while (jobRecord != jobRecordList) {
 
 
         if (skip_jobRecord(jobRecord, bhistReq)) {
@@ -782,7 +781,8 @@ displayhist(struct bhistReq *bhistReq)
 
         job = jobRecord->job;
         if ( !(bhistReq->options & OPT_CHRONICLE)) {
-            if ( !(bhistReq->options & OPT_DFTFORMAT)) {
+
+            if (!(bhistReq->options & OPT_DFTFORMAT)) {
                 if (!first)
                     prtLine("------------------------------------------------------------------------------\n");
                 prtHeader(job, FALSE, FALSE);
@@ -1855,6 +1855,10 @@ prtParameters(struct jobInfoEnt *params, struct bhistReq *bhistReq, char *timest
         prtLine(prline);
     }
 
+    if (params->submit.userGroup && params->submit.userGroup[0] != '\0') {
+      sprintf(prline, " User Group <%s>, ", params->submit.userGroup);
+      prtLine(prline);
+    }
 
     if (params->submit.options & SUB_MAIL_USER) {
         sprintf(prline, " %s <%s>, ",
