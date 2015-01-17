@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014 - 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -78,7 +78,9 @@ z:
         n->data = sacct;
     }
 
-    /* Sort by shares
+    /* Sort by shares so the tree
+     * is always sorted by share
+     * priority
      */
     sort_siblings(root);
 
@@ -92,7 +94,6 @@ z:
 
     fin_link(stack);
 
-
     n = t->root;
     while ((n = tree_next_node(n))) {
         char buf[BUFSIZ];
@@ -102,7 +103,6 @@ z:
         if (n->child == NULL) {
             sprintf(buf, "%s/%s", n->parent->path, n->path);
             hash_install(t->node_tab, buf, n, NULL);
-            push_link(t->leafs, n);
         }
         sprintf(buf, "%s", n->path);
         hash_install(t->node_tab, buf, n, NULL);
@@ -131,29 +131,48 @@ sshare_distribute_tokens(struct tree_ *t,
     struct tree_node_ *n;
     link_t *stack;
     struct share_acct *sacct;
-    struct tree_node_ *root;
 
     stack = make_link();
     n = t->root->child;
+    /* This must be emptied after every scheduling
+     * cycle
+     */
+    assert(LINK_NUM_ENTRIES(t->leafs) == 0);
 
 znovu:
 
-    root = n->parent;
-    while (n) {
+    /* Iterate at each tree level but
+     * don't traverse branches without
+     * tokens.
+     */
+    while (n && tokens) {
 
+        /* enqueue as we want to traverse
+         * the tree by priority
+         */
         if (n->child)
-            push_link(stack, n);
+            enqueue_link(stack, n);
 
         compute_tokens(n, tokens);
+
+        /* As we traverse in priority order
+         * the leafs are also sorted
+         */
+        sacct = n->data;
+        if (n->child == NULL
+            && sacct->sent > 0)
+            enqueue_link(t->leafs, n);
 
         n = n->right;
     }
 
     n = pop_link(stack);
     if (n) {
-        n = n->child;
+        /* tokens come from the parent
+         */
         sacct = n->data;
         tokens = sacct->sent;
+        n = n->child;
         goto znovu;
     }
 

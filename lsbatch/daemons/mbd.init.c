@@ -344,13 +344,16 @@ minit(int mbdInitFlags)
         }
     }
 
+    /* Initialize the plugin before loading
+     * the lsb.events.
+     */
+    init_fairshare_scheduler();
+
     if (!lsb_CheckMode) {
         TIMEIT(0, init_log(), "init_log()");
     }
 
     getMaxCpufactor();
-
-    init_fairshare_scheduler();
 
     return 0;
 }

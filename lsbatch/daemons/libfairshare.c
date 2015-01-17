@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -17,6 +17,8 @@
  *
  */
 #include "fairshare.h"
+
+static char *get_user_key(struct jData *);
 
 /* fs_init()
  */
@@ -56,15 +58,24 @@ fs_update_sacct(struct qData *qPtr,
     struct tree_ *t;
     struct tree_node_ *n;
     struct share_acct *sacct;
-    char *name;
+    char *key;
 
     t = qPtr->scheduler->tree;
 
-    name = jPtr->userName;
+    key = get_user_key(jPtr);
 
-    n = hash_lookup(t->node_tab, name);
+    n = hash_lookup(t->node_tab, key);
     if (n == NULL)
         return -1;
+
+    /* Add the job to the reference
+     * link. The job will be removed
+     * during scheduling.
+     */
+    if (numPEND > 0) {
+        sacct = n->data;
+        enqueue_link(sacct->jobs, jPtr);
+    }
 
     while (n) {
         sacct = n->data;
@@ -102,13 +113,32 @@ fs_elect_job(struct qData *qPtr,
 {
     struct tree_node_ *n;
     struct share_acct *s;
+    link_t *l;
 
-    /* Simply pop nodes from the
-     * leaf link they are already
-     * sorted by priority.
-     */
-    n = pop_link(qPtr->scheduler->tree->leafs);
+    l = qPtr->scheduler->tree->leafs;
+    if (LINK_NUM_ENTRIES(l) == 0) {
+        *jPtr = NULL;
+        return -1;
+    }
+
+    n = pop_link(l);
     s = n->data;
+    assert(s->sent > 0);
+
+    if (s->sent > 0) {
+
+        assert(LINK_NUM_ENTRIES(s->jobs) >= s->sent);
+        s->sent--;
+        /* Remember to deal with user priorities
+         */
+        *jPtr = pop_link(s->jobs);
+    }
+
+    /* More to dispatch from this node
+     * so back to the leaf link
+     */
+    if (s->sent > 0)
+        push_link(l, n);
 
     return 0;
 }
@@ -119,4 +149,21 @@ int
 fs_fin_sched_session(struct qData *qPtr)
 {
     return 0;
+}
+
+/* get_user_key()
+ */
+static char *
+get_user_key(struct jData *jPtr)
+{
+    static char buf[MAXLSFNAMELEN];
+
+    if (jPtr->shared->jobBill.userGroup[0] != 0) {
+        sprintf(buf, "\
+%s/%s", jPtr->shared->jobBill.userGroup, jPtr->userName);
+    } else {
+        sprintf(buf, "%s", jPtr->userName);
+    }
+
+    return buf;
 }

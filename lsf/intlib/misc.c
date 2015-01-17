@@ -380,25 +380,14 @@ END:
 }
 
 int
-FCLOSEUP(FILE** fp)
+FCLOSEUP(FILE **fp)
 {
     int n ;
 
-    n = 0;
-    if (*fp)
-    {
-        n=fclose(*fp);
-        *fp=NULL;
-        if ( n < 0 )
-        {
-           lserrno=LSE_FILE_SYS;
-        }
-    } else
-    {
-        lserrno=LSE_FILE_CLOSE;
-    }
+    if (*fp == NULL)
+        return EOF;
 
-    return n;
+    return fclose(*fp);
 }
 
 #undef getopt

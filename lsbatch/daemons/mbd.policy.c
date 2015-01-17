@@ -4157,23 +4157,20 @@ cntHostSlots (struct hTab *hAcct, struct hData *hp)
 int
 scheduleAndDispatchJobs(void)
 {
-    static  char            fname[] = "scheduleAndDispatchJobs";
-    static  struct qData    *nextSchedQ;
-    struct  qData           *qp;
-    static  time_t          lastUpdTime = 0;
-    static  time_t          lastSharedResourceUpdateTime;
-    static  struct timeval  scheduleStartTime;
-    static  struct timeval  scheduleFinishTime;
-    static  int             newLoadInfo;
-    static int             numQUsable = 0;
-    int                    i;
-    int                    loopCount;
-    int                    tmpVal;
+    struct  qData *qp;
+    static  time_t lastUpdTime;
+    static  time_t lastSharedResourceUpdateTime;
+    static  struct timeval scheduleStartTime;
+    static  struct timeval scheduleFinishTime;
+    static int numQUsable;
+    int i;
+    int loopCount;
+    int tmpVal;
     enum dispatchAJobReturnCode dispRet;
-    int                    continueSched;
-    int                    scheduleTime;
-    sTab                   hashSearchPtr;
-    hEnt                   *hashEntryPtr;
+    int continueSched;
+    int scheduleTime;
+    sTab hashSearchPtr;
+    hEnt *hashEntryPtr;
     struct jRef *jR;
     struct jData *jPtr;
     int cc;
@@ -4186,8 +4183,6 @@ scheduleAndDispatchJobs(void)
 
     if (mSchedStage == 0) {
 
-        nextSchedQ = qDataList->back;
-        newLoadInfo = FALSE;
         freedSomeReserveSlot = FALSE;
         updateAccountsInQueue = TRUE;
 
@@ -4215,7 +4210,7 @@ scheduleAndDispatchJobs(void)
                     jPtr->processed |= JOB_STAGE_DONE;
                     if (logclass & LC_SCHED) {
                         ls_syslog(LOG_DEBUG2, "\
-%s: free reserved slots from job <%s>", fname, lsb_jobid2str(jPtr->jobId));
+%s: free reserved slots from job <%s>", __func__, lsb_jobid2str(jPtr->jobId));
                     }
                     continue;
                 }
@@ -4234,7 +4229,7 @@ scheduleAndDispatchJobs(void)
         if (logclass & LC_SCHED) {
             gettimeofday(&scheduleStartTime, NULL);
             ls_syslog(LOG_DEBUG, "\
-%s: begin a new schedule and dispatch session", fname);
+%s: begin a new schedule and dispatch session", __func__);
         }
 
         mSchedStage |= M_STAGE_INIT;
@@ -4265,7 +4260,6 @@ scheduleAndDispatchJobs(void)
                 return -1;
             }
             lastUpdTime = now_disp;
-            newLoadInfo = TRUE;
         }
 
         mSchedStage |= M_STAGE_GOT_LOAD;
@@ -4274,7 +4268,7 @@ scheduleAndDispatchJobs(void)
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG, "\
-%s: Stayed too long in M_STAGE_GOT_LOAD", fname);
+%s: Stayed too long in M_STAGE_GOT_LOAD", __func__);
         }
         DUMP_CNT();
         RESET_CNT();
@@ -4289,7 +4283,7 @@ scheduleAndDispatchJobs(void)
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG,"\
 %s: now_disp=%d lastSharedResourceUpdateTime=%d diff=%d, mSchedStage=%x",
-                      fname, now_disp,
+                      __func__, now_disp,
                       lastSharedResourceUpdateTime,
                       now_disp - (lastSharedResourceUpdateTime
                                   + msleeptime/sharedResourceUpdFactor),
@@ -4316,13 +4310,13 @@ scheduleAndDispatchJobs(void)
     if (logclass & LC_SCHED) {
         ls_syslog(LOG_DEBUG, "\
 %s: M_STAGE_RESUME_SUSP tryResumed",
-                  fname);
+                  __func__);
     }
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG, "\
-%s: Stayed too long in M_STAGE_RESUME_SUSP", fname);
+%s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
         }
         DUMP_CNT();
         RESET_CNT();
@@ -4343,13 +4337,13 @@ scheduleAndDispatchJobs(void)
     if (logclass & LC_SCHED) {
         ls_syslog(LOG_DEBUG, "\
 %s: M_STAGE_LSB_CAND got numLsbUsable=%d",
-                  fname, numLsbUsable);
+                  __func__, numLsbUsable);
     }
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG, "\
-%s: Stayed too long in M_STAGE_LSB_CAND", fname);
+%s: Stayed too long in M_STAGE_LSB_CAND", __func__);
         }
         DUMP_CNT();
         RESET_CNT();
@@ -4358,13 +4352,13 @@ scheduleAndDispatchJobs(void)
 
     if (!(mSchedStage & M_STAGE_QUE_CAND)) {
 
-        for (qp = nextSchedQ; qp != qDataList; qp = qp->back) {
+        for (qp = qDataList->back; qp != qDataList; qp = qp->back) {
 
             if (qp->numPEND == 0 && qp->numRESERVE == 0)
                 continue;
 
             INC_CNT(PROF_CNT_getQUsable);
-            TIMEVAL(3, getQUsable(qp), tmpVal);
+            TIMEVAL(3, numQUsable = getQUsable(qp), tmpVal);
             timeGetQUsable += tmpVal;
 
             /* Initialize the slot fairshare scheduler.
@@ -4386,7 +4380,7 @@ scheduleAndDispatchJobs(void)
     if (logclass & LC_SCHED) {
         ls_syslog(LOG_DEBUG,"\
 %s M_STAGE_QUE_CAND numQUsable=%d timeGetQUsable %d ms",
-                  fname, numQUsable, timeGetQUsable);
+                  __func__, numQUsable, timeGetQUsable);
     }
 
     if (LIST_NUM_ENTRIES(jRefList) == 0) {
@@ -4399,7 +4393,7 @@ scheduleAndDispatchJobs(void)
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG, "\
-%s: Stayed too long in M_STAGE_RESUME_SUSP", fname);
+%s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
         }
         DUMP_CNT();
         RESET_CNT();
@@ -4420,14 +4414,14 @@ scheduleAndDispatchJobs(void)
         dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
         if (dispRet == DISP_TIME_OUT) {
             ls_syslog(LOG_DEBUG,"\
-%s STAY_TOO_LONG 3 loopCount <%d>", fname, loopCount);
-            DUMP_TIMERS(fname);
+%s STAY_TOO_LONG 3 loopCount <%d>", __func__, loopCount);
+            DUMP_TIMERS(__func__);
             DUMP_CNT();
             RESET_CNT();
             return -1;
         }
         if (dispRet == DISP_FAIL && STAY_TOO_LONG) {
-            DUMP_TIMERS(fname);
+            DUMP_TIMERS(__func__);
             DUMP_CNT();
             RESET_CNT();
             return -1;
@@ -4436,8 +4430,8 @@ scheduleAndDispatchJobs(void)
 
     if (logclass & LC_SCHED) {
         ls_syslog(LOG_DEBUG,"\
-%s out of pickAJob/scheduleAJob loopCount <%d>", fname, loopCount);
-        DUMP_TIMERS(fname);
+%s out of pickAJob/scheduleAJob loopCount <%d>", __func__, loopCount);
+        DUMP_TIMERS(__func__);
         DUMP_CNT();
         RESET_CNT();
     }
@@ -4451,7 +4445,7 @@ scheduleAndDispatchJobs(void)
         scheduleTime =
             (scheduleFinishTime.tv_sec - scheduleStartTime.tv_sec)*1000 +
             (scheduleFinishTime.tv_usec - scheduleStartTime.tv_usec)/1000;
-        ls_syslog(LOG_DEBUG, "%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms", fname, schedSeqNo, scheduleTime);
+        ls_syslog(LOG_DEBUG, "%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms", __func__, schedSeqNo, scheduleTime);
     }
 
     jiter_fin(jRefList);
@@ -4464,7 +4458,7 @@ scheduleAndDispatchJobs(void)
 
     tryPreempt();
 
-    DUMP_TIMERS(fname);
+    DUMP_TIMERS(__func__);
     DUMP_CNT();
     RESET_CNT();
 
@@ -4597,10 +4591,8 @@ jiter_next_job(LIST_T *jRefList)
 static int
 checkIfJobIsReady(struct jData *jp)
 {
-    static char fname[] = "checkIfJobIsReady";
     int tmpVal;
     int cc;
-
 
     TIMEVAL(2, cc = readyToDisp(jp, &jp->numAvailSlots), tmpVal);
     timeReadyToDisp += tmpVal;
@@ -4625,7 +4617,10 @@ checkIfJobIsReady(struct jData *jp)
     }
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG3, "%s: job=%s processed=%x newReason=%d numSlots=%d numAvailSlots=%d", fname, lsb_jobid2str(jp->jobId), jp->processed, jp->newReason, jp->numSlots, jp->numAvailSlots);
+        ls_syslog(LOG_DEBUG3, "\
+%s: job=%s processed=%x newReason=%d numSlots=%d numAvailSlots=%d",
+                  __func__, lsb_jobid2str(jp->jobId), jp->processed,
+                  jp->newReason, jp->numSlots, jp->numAvailSlots);
     }
 
     return jp->numSlots;
@@ -4635,10 +4630,8 @@ checkIfJobIsReady(struct jData *jp)
 static int
 scheduleAJob(struct jData *jp, bool_t checkReady, bool_t checkOtherGroup)
 {
-    static char fname[] = "scheduleAJob";
     int ret;
     int tmpVal = 0;
-
 
     if (jp->pendEvent.sig != SIG_NULL) {
         sigPFjob(jp, jp->pendEvent.sig, 0, LOG_IT);
@@ -4648,7 +4641,8 @@ scheduleAJob(struct jData *jp, bool_t checkReady, bool_t checkOtherGroup)
         }
 
         if (logclass & (LC_TRACE | LC_SIGNAL)) {
-            ls_syslog (LOG_DEBUG2, "%s: Sent pending signal <%d> to job %s", fname, jp->pendEvent.sig, lsb_jobid2str(jp->jobId));
+            ls_syslog (LOG_DEBUG2, "%s: Sent pending signal <%d> to job %s",
+                       __func__, jp->pendEvent.sig, lsb_jobid2str(jp->jobId));
         }
     }
 
@@ -4669,9 +4663,12 @@ scheduleAJob(struct jData *jp, bool_t checkReady, bool_t checkOtherGroup)
         timeGetCandHosts += tmpVal;
         if (logclass & (LC_SCHED | LC_PEND)) {
 
-            ls_syslog(LOG_DEBUG2, "%s: Got %d candidate groups for job <%s>", fname, jp->numOfGroups, lsb_jobid2str(jp->jobId));
+            ls_syslog(LOG_DEBUG2, "\
+%s: Got %d candidate groups for job <%s>",
+                      __func__, jp->numOfGroups, lsb_jobid2str(jp->jobId));
 
-            ls_syslog(LOG_DEBUG2, "%s: Got %d candidate hosts for job <%s>", fname, jp->numCandPtr, lsb_jobid2str(jp->jobId));
+            ls_syslog(LOG_DEBUG2, "%s: Got %d candidate hosts for job <%s>",
+                      __func__, jp->numCandPtr, lsb_jobid2str(jp->jobId));
         }
         jp->processed |= JOB_STAGE_CAND;
     }
@@ -4679,7 +4676,9 @@ scheduleAJob(struct jData *jp, bool_t checkReady, bool_t checkOtherGroup)
     switch (ret) {
         case CAND_NO_HOST:
             if (logclass & (LC_SCHED | LC_PEND)) {
-                ls_syslog(LOG_DEBUG1, "%s: Can't get enough candidate hosts for job <%s>", fname, lsb_jobid2str(jp->jobId));
+                ls_syslog(LOG_DEBUG1, "\
+%s: Can't get enough candidate hosts for job <%s>",
+                          __func__, lsb_jobid2str(jp->jobId));
             }
             jp->processed |= JOB_STAGE_DONE;
             return 0;
@@ -4692,8 +4691,9 @@ scheduleAJob(struct jData *jp, bool_t checkReady, bool_t checkOtherGroup)
         case CAND_HOST_FOUND:
             return 1;
         default:
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7232,
-                                             "%s: Unknown return code <%d> from getCandHosts() for job <%s>"), fname, ret, lsb_jobid2str(jp->jobId)); /* catgets 7232 */
+            ls_syslog(LOG_ERR, "\
+%s: Unknown return code <%d> from getCandHosts() for job <%s>",
+                      __func__, ret, lsb_jobid2str(jp->jobId));
             return 0;
     }
 }

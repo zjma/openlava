@@ -78,10 +78,10 @@ static int              checkJobStarter(char *, char *);
 
 static FILE            *log_fp     = NULL;
 static FILE            *joblog_fp  = NULL;
-static int              openEventFile(char *);
-static int              putEventRec(char *);
-static int              putEventRecTime(char *, time_t);
-static int              putEventRec1(char *);
+static int              openEventFile(const char *);
+static int              putEventRec(const char *);
+static int              putEventRecTime(const char *, time_t);
+static int              putEventRec1(const char *);
 static int              log_jobdata(struct jData *, char *, int);
 static int              createEvent0File(void);
 static int              renameElogFiles(void);
@@ -141,18 +141,19 @@ static int     replay_arrayrequeue(struct jData *,
                                    const struct signalLog *);
 static int renameAcctLogFiles(int);
 
+/* init_log()
+ */
 int
 init_log(void)
 {
-    static char    fname[] = "init_log";
-    char           first = TRUE;
-    int            ConfigError = 0;
-    int            lineNum = 0;
-    int            list;
-    struct jData   *jp;
-    char           dirbuf[MAXPATHLEN];
-    char           infoDir[MAXPATHLEN];
-    struct stat    sbuf;
+    char first = TRUE;
+    int ConfigError = 0;
+    int lineNum;
+    int list;
+    struct jData *jp;
+    char dirbuf[MAXPATHLEN];
+    char infoDir[MAXPATHLEN];
+    struct stat sbuf;
     struct stat ebuf;
 
     mSchedStage = M_STAGE_REPLAY;
@@ -166,12 +167,11 @@ init_log(void)
     sprintf(dirbuf, "%s/logdir", daemonParams[LSB_SHAREDIR].paramValue);
 
     if (stat(dirbuf, &sbuf) < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "stat",
-                  dirbuf);
+
+        ls_syslog(LOG_ERR, "%s: stat() on %s failed: %m", __func__, dirbuf);
         if (!lsb_CheckMode) {
             mbdDie(MASTER_FATAL);
         }
-
         ConfigError = -1;
     }
 
@@ -179,7 +179,7 @@ init_log(void)
     if (sbuf.st_uid != managerId) {
         ls_syslog(LOG_ERR, "\
 %s: Log directory %s not owned by LSF administrator: %s/%d (directory owner ID is %d)",
-                  fname,
+                  __func__,
                   dirbuf,
                   lsbManager,
                   managerId,
@@ -195,7 +195,7 @@ init_log(void)
 
         ls_syslog(LOG_ERR, "\
 %s: Mode <%03o> not allowed for job log directory <%s>; the permission bits for others should be 05",
-                  fname,
+                  __func__,
                   (int)sbuf.st_mode,
                   dirbuf);
         if (debug == 0) {
@@ -214,8 +214,7 @@ init_log(void)
 
     if (mkdir(infoDir, 0700) == -1 && errno != EEXIST) {
         chuser(batchId);
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "mkdir",
-                  infoDir);
+        ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, infoDir);
         mbdDie(MASTER_FATAL);
     }
 
@@ -236,7 +235,7 @@ init_log(void)
                 if (lsberrno != LSBE_EOF) {
                     ls_syslog(LOG_ERR, "\
 %s: Reading event file <%s> at line <%d>: %s",
-                              fname,
+                              __func__,
                               elogFname,
                               lineNum,
                               lsb_sysmsg());
@@ -257,7 +256,7 @@ init_log(void)
             if (!replay_event(elogFname, lineNum) && first) {
                 ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: First replay_event() failed; line ignored",
-                          fname,
+                          __func__,
                           elogFname,
                           lineNum);
                 first = FALSE;
@@ -269,13 +268,9 @@ init_log(void)
 
         for (list = SJL; list <= PJL; list++) {
 
-            if (list != SJL && list != MJL && list != PJL)
-                continue;
-
             for (jp = jDataList[list]->back;
                  jp != jDataList[list];
                  jp = jp->back) {
-
                 int svJStatus = jp->jStatus;
                 int i;
                 int num;
@@ -284,14 +279,14 @@ init_log(void)
 
                 jp->jStatus = JOB_STAT_PEND;
 
-                updQaccount (jp, num, num, 0, 0, 0, 0);
-                updUserData (jp, num, num, 0, 0, 0, 0);
+                updQaccount(jp, num, num, 0, 0, 0, 0);
+                updUserData(jp, num, num, 0, 0, 0, 0);
 
                 jp->jStatus = svJStatus;
                 if (jp->jStatus & JOB_STAT_PEND)
                     continue;
 
-                updCounters (jp, JOB_STAT_PEND, !LOG_IT);
+                updCounters(jp, JOB_STAT_PEND, !LOG_IT);
 
                 if ((jp->shared->jobBill.options & SUB_EXCLUSIVE)
                     && IS_START (jp->jStatus)) {
@@ -315,6 +310,7 @@ init_log(void)
                 nextJobId = 1;
         }
     }
+
     if (!first) {
 
         if (switch_log() == -1)
@@ -1499,17 +1495,14 @@ log_switchjob(struct jobSwitchReq * switchReq, int uid, char *userName)
 }
 
 void
-log_movejob(struct jobMoveReq * moveReq, int uid, char *userName)
+log_movejob(struct jobMoveReq *moveReq, int uid, char *userName)
 {
-    static char             fname[] = "log_movejob";
-
-    if (openEventFile(fname) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(moveReq->jobId),
-                  "openEventFile");
-            mbdDie(MASTER_FATAL);
+    if (openEventFile(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: openEventFile() failed for job %s", __func__, lsb_jobid2str(moveReq->jobId));
+        mbdDie(MASTER_FATAL);
     }
+
     logPtr->type = EVENT_JOB_MOVE;
     logPtr->eventLog.jobMoveLog.userId = uid;
     strcpy(logPtr->eventLog.jobMoveLog.userName, userName);
@@ -1517,27 +1510,26 @@ log_movejob(struct jobMoveReq * moveReq, int uid, char *userName)
     logPtr->eventLog.jobMoveLog.idx = LSB_ARRAY_IDX(moveReq->jobId);
     logPtr->eventLog.jobMoveLog.position = moveReq->position;
     logPtr->eventLog.jobMoveLog.base = moveReq->opCode;
-    if (putEventRec("log_movejob") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(moveReq->jobId),
-                  "putEventRec");
+
+    if (putEventRec(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: putEventRec() failed for job %s", __func__, lsb_jobid2str(moveReq->jobId));
+        mbdDie(MASTER_FATAL);
     }
 }
 
+/* log_startjob()
+ */
 void
 log_startjob(struct jData * job, int preExecStart)
 {
-    static char             fname[] = "log_startjob";
-    int                     i;
-    struct jobStartLog     *jobStartLog;
-    char                  **execHosts = NULL;
+    int i;
+    struct jobStartLog *jobStartLog;
+    char **execHosts;
 
     if (openEventFile("log_startjob") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "openEventFile");
+        ls_syslog(LOG_ERR, "\
+%s: openEventFile() failed for job %s", __func__, lsb_jobid2str(job->jobId));
         mbdDie(MASTER_FATAL);
     }
     if (preExecStart) {
@@ -1553,15 +1545,18 @@ log_startjob(struct jData * job, int preExecStart)
     jobStartLog->numExHosts = job->numHostPtr;
     jobStartLog->jobPid = job->jobPid;
     jobStartLog->jobPGid = job->jobPGid;
+
     if (job->numHostPtr > 0) {
-        execHosts = (char **) my_calloc(job->numHostPtr, sizeof(char *),
-                                        "log_startjob");
+
+        execHosts = my_calloc(job->numHostPtr, sizeof(char *), __func__);
         jobStartLog->execHosts = execHosts;
+
         for (i = 0; i < job->numHostPtr; i++)
             jobStartLog->execHosts[i] = job->hPtr[i]->host;
         jobStartLog->hostFactor = job->hPtr[0]->cpuFactor;
     }
-    job->startTime = time(0);
+
+    job->startTime = time(NULL);
 
     if (!job->queuePreCmd)
         jobStartLog->queuePreCmd = "";
@@ -1573,13 +1568,11 @@ log_startjob(struct jData * job, int preExecStart)
     else
         jobStartLog->queuePostCmd = job->queuePostCmd;
 
+    jobStartLog->userGroup = job->shared->jobBill.userGroup;
 
-
-    if (putEventRec(fname) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "putEventRec");
+    if (putEventRec(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: putEventRec() failed for job %s", __func__, lsb_jobid2str(job->jobId));
         mbdDie(MASTER_FATAL);
     }
     if (execHosts)
@@ -2043,7 +2036,7 @@ log_jobForce(struct jData* job, int uid, char *userName)
 }
 
 static int
-openEventFile(char *fname)
+openEventFile(const char *fname)
 {
     long pos;
     sigset_t newmask, oldmask;
@@ -2080,32 +2073,32 @@ openEventFile(char *fname)
 }
 
 static int
-putEventRec(char *fname)
+putEventRec(const char *fname)
 {
-    int    ret = 0;
+    int cc;
 
     now = time(0);
     logPtr->eventTime = now;
 
-    ret = putEventRec1(fname);
+    cc = putEventRec1(fname);
 
-    return (ret);
+    return cc;
 }
 static int
-putEventRecTime(char *fname, time_t eventTime)
+putEventRecTime(const char *fname, time_t eventTime)
 {
-    int    ret;
+    int cc;
 
     logPtr->eventTime = eventTime;
 
-    ret = putEventRec1(fname);
+    cc = putEventRec1(fname);
 
-    return(ret);
+    return cc;
 
 }
 
 static int
-putEventRec1(char *fname)
+putEventRec1(const char *fname)
 {
     int    ret;
     int    cc;
@@ -2135,7 +2128,6 @@ putEventRec1(char *fname)
     }
 
     return ret;
-
 }
 
 static void
