@@ -293,11 +293,6 @@ init_log(void)
                     for (i = 0; i < jp->numHostPtr; i ++)
                         jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
                 }
-
-                if (IS_START(jp->jStatus)) {
-                    proxyUSJLAddEntry(jp);
-                    proxyHSJLAddEntry(jp);
-                }
             }
         }
 

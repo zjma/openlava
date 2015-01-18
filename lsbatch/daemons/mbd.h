@@ -233,6 +233,16 @@ struct groupCandHosts {
     struct candHost  *members;
 };
 
+/* The jRef list is used during scheduling, its purpose
+ * is to address all pending jobs so that the scheduler
+ * looks at them once and once only during each
+ * scheduling cycle.
+ */
+struct jRef {
+    struct jRef *forw;
+    struct jRef *back;
+    struct jData *job;
+};
 
 struct jData {
     struct  jData *forw;
@@ -334,7 +344,7 @@ struct jData {
     int*   inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
-
+    struct jRef *jrefEnt; /* my reference entry in the sched list */
 };
 
 

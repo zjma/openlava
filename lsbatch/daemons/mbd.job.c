@@ -6430,36 +6430,19 @@ copyJobBill (struct submitReq *subReq,
 void
 freeJData(struct jData *jpbw)
 {
-    static char fname[]="freeJData";
-    PROXY_LIST_ENTRY_T      *pxy;
 
     if (!jpbw)
         return;
-
-    if (pxyRsvJL != NULL) {
-        pxy = (PROXY_LIST_ENTRY_T *)listSearchEntry(pxyRsvJL,
-                                                    (LIST_ENTRY_T *)jpbw,
-                                                    (LIST_ENTRY_EQUALITY_OP_T)
-                                                    proxyListEntryEqual,
-                                                    0);
-        if (pxy != NULL) {
-
-            if (logclass & (LC_TRACE)) {
-                ls_syslog (LOG_DEBUG,
-                           "%s: job <%s> will be removed, but still in pxyRsvJL",
-                           fname, lsb_jobid2str(jpbw->jobId));
-            }
-            proxyRsvJLRemoveEntry(jpbw);
-        }
-    }
 
     if (IS_PEND(jpbw->jStatus) && jpbw->candPtr) {
         FREEUP (jpbw->candPtr);
         if (jpbw->numHostPtr > 0 && (jpbw->jStatus & JOB_STAT_RESERVE)) {
 
             if (logclass & (LC_TRACE))
-                ls_syslog(LOG_DEBUG3, "%s: job <%s> updRes - <%d> slots <%s:%d>",
-                          fname, lsb_jobid2str(jpbw->jobId), jpbw->numHostPtr,
+                ls_syslog(LOG_DEBUG3, "\
+%s: job <%s> updRes - <%d> slots <%s:%d>",
+                          __func__, lsb_jobid2str(jpbw->jobId),
+                          jpbw->numHostPtr,
                           __FILE__,  __LINE__);
 
             freeReserveSlots(jpbw);
@@ -6469,50 +6452,51 @@ freeJData(struct jData *jpbw)
     if (JOB_PREEMPT_WAIT(jpbw))
         freeReservePreemptResources(jpbw);
 
-    FREEUP (jpbw->userName);
-    FREEUP (jpbw->lsfRusage);
-    FREEUP (jpbw->reasonTb);
-    FREEUP (jpbw->hPtr);
+    FREEUP(jpbw->userName);
+    FREEUP(jpbw->lsfRusage);
+    FREEUP(jpbw->reasonTb);
+    FREEUP(jpbw->hPtr);
 
-    FREEUP (jpbw->execHome);
-    FREEUP (jpbw->execCwd);
-    FREEUP (jpbw->execUsername);
-    FREEUP (jpbw->queuePreCmd);
-    FREEUP (jpbw->queuePostCmd);
-    FREEUP (jpbw->reqHistory);
-    FREEUP (jpbw->schedHost);
+    FREEUP(jpbw->execHome);
+    FREEUP(jpbw->execCwd);
+    FREEUP(jpbw->execUsername);
+    FREEUP(jpbw->queuePreCmd);
+    FREEUP(jpbw->queuePostCmd);
+    FREEUP(jpbw->reqHistory);
+    FREEUP(jpbw->schedHost);
+
     if (jpbw->runRusage.npids > 0)
-        FREEUP (jpbw->runRusage.pidInfo);
+        FREEUP(jpbw->runRusage.pidInfo);
     if (jpbw->runRusage.npgids > 0)
-        FREEUP (jpbw->runRusage.pgid);
+        FREEUP(jpbw->runRusage.pgid);
 
     if (jpbw->newSub) {
         freeSubmitReq (jpbw->newSub);
-        FREEUP (jpbw->newSub);
+        FREEUP(jpbw->newSub);
     }
     if (jpbw->shared->numRef <= 1)
-        freeSubmitReq (&(jpbw->shared->jobBill));
+        freeSubmitReq(&(jpbw->shared->jobBill));
+
     destroySharedRef(jpbw->shared);
-    FREEUP (jpbw->askedPtr);
+    FREEUP(jpbw->askedPtr);
 
     FREEUP(jpbw->reqHistory);
 
     FREEUP(jpbw->execHosts);
-    FREEUP (jpbw->candPtr);
-    FREEUP (jpbw->jobSpoolDir);
+    FREEUP(jpbw->candPtr);
+    FREEUP(jpbw->jobSpoolDir);
 
     FREE_ALL_GRPS_CAND(jpbw);
 
     if (jpbw->numRef <= 0 ) {
         FREEUP(jpbw);
-    }
-    else {
+    } else {
+
         jpbw->jStatus |= JOB_STAT_VOID;
         voidJobList = listSetInsert((long)jpbw, voidJobList);
-        ls_syslog(LOG_DEBUG1, _i18n_msg_get(ls_catd , NL_SETN, 6527,
-                                            "%s: job <%s> can not be freed with numRef = <%d>"),
-                  fname, lsb_jobid2str(jpbw->jobId), jpbw->numRef);
-        /* catgets 6527 */
+        ls_syslog(LOG_DEBUG1, "\
+%s: job <%s> can not be freed with numRef = <%d>",
+                  __func__, lsb_jobid2str(jpbw->jobId), jpbw->numRef);
     }
 }
 

@@ -14,7 +14,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA
- *
  */
 
 /* sshare = support share
@@ -24,6 +23,7 @@
  */
 
 #include "sshare.h"
+#include <assert.h>
 
 static link_t *parse_user_shares(const char *);
 static link_t *parse_group_member(const char *,
@@ -31,12 +31,14 @@ static link_t *parse_group_member(const char *,
                                   struct group_acct *);
 static struct share_acct *get_sacct(const char *,
                                     const char *);
-static uint32_t compute_tokens(struct tree_node_ *, uint32_t);
+static uint32_t compute_slots(struct tree_node_ *, uint32_t, uint32_t);
 static void sort_siblings(struct tree_node_ *);
 static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
 static void print_node(struct tree_node_ *);
+static uint32_t set_leaf_slots(struct tree_ *, struct tree_node_ *);
+static void distribute_more(struct tree_ *, uint32_t);
 
 /* sshare_make_tree()
  */
@@ -122,15 +124,17 @@ z:
     return t;
 }
 
-/* sshare_distribute_tokens()
+/* sshare_distribute_slots()
  */
 int
-sshare_distribute_tokens(struct tree_ *t,
-                         uint32_t tokens)
+sshare_distribute_slots(struct tree_ *t,
+                        uint32_t slots)
 {
     struct tree_node_ *n;
     link_t *stack;
     struct share_acct *sacct;
+    uint32_t unused;
+    uint32_t avail;
 
     stack = make_link();
     n = t->root->child;
@@ -138,6 +142,8 @@ sshare_distribute_tokens(struct tree_ *t,
      * cycle
      */
     assert(LINK_NUM_ENTRIES(t->leafs) == 0);
+    avail = slots;
+    unused = 0;
 
 znovu:
 
@@ -145,7 +151,7 @@ znovu:
      * don't traverse branches without
      * tokens.
      */
-    while (n && tokens) {
+    while (n) {
 
         /* enqueue as we want to traverse
          * the tree by priority
@@ -153,15 +159,15 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-        compute_tokens(n, tokens);
+        avail = avail - compute_slots(n, slots, avail);
+        assert(avail >= 0);
 
         /* As we traverse in priority order
          * the leafs are also sorted
          */
         sacct = n->data;
-        if (n->child == NULL
-            && sacct->sent > 0)
-            enqueue_link(t->leafs, n);
+        if (n->child == NULL)
+            unused = unused + set_leaf_slots(t, n);
 
         n = n->right;
     }
@@ -171,12 +177,15 @@ znovu:
         /* tokens come from the parent
          */
         sacct = n->data;
-        tokens = sacct->sent;
+        avail = slots = sacct->sent;
         n = n->child;
         goto znovu;
     }
 
     fin_link(stack);
+
+    if (unused > 0)
+        distribute_more(t, unused);
 
     return 0;
 }
@@ -206,24 +215,102 @@ free_sacct(struct share_acct *sacct)
     _free_(sacct);
 }
 
-/* compute_tokens()
+/* compute_slots()
  */
 static uint32_t
-compute_tokens(struct tree_node_ *n, uint32_t tokens)
+compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
 {
     struct share_acct *s;
     double q;
-    double r;
     uint32_t u;
 
     s = n->data;
 
-    q = s->dshares * (double)tokens;
-    r = q - (double)s->numRUN;
-    u = lround(r);
-    s->sent = MIN(u, s->numPEND);
+    q = s->dshares * (double)total;
+    u = (uint32_t)ceil(q);
+    s->sent = MIN(u, avail);
 
     return s->sent;
+}
+
+/* set_leaf_slots()
+ */
+static uint32_t
+set_leaf_slots(struct tree_ *t, struct tree_node_ *n)
+{
+    struct share_acct *s;
+    uint32_t u;
+    uint32_t z;
+
+    /* Mistake?
+     */
+    if (n->child)
+        return -1;
+
+    s = n->data;
+    /* what is assigned to this share
+     * account based on the configuration
+     */
+    z = s->sent;
+
+    u = s->sent - s->numRUN;
+    /* This account is using more slots then
+     * its shares, it is cannibalizing some
+     * account, don't assign him shares at
+     * this stage.
+     */
+    if (u < 0)
+        return 0;
+
+    /* What is assigned to this account based
+     * on what is running and pending
+     */
+    s->sent = MIN(u, s->numPEND);
+
+    if (s->sent > 0)
+        enqueue_link(t->leafs, n);
+
+    /* this is how many free slots are not
+     * used by this share account.
+     */
+    assert(z - s->sent >= 0);
+    return z - s->sent;
+}
+
+/* distribute_more()
+ */
+static void
+distribute_more(struct tree_ *t, uint32_t z)
+{
+    int more;
+    struct tree_node_ *n;
+    struct share_acct *s;
+    linkiter_t iter;
+
+    if (z == 0)
+        return;
+
+    more = 1;
+    while (more) {
+
+        more = 0;
+        traverse_init(t->leafs, &iter);
+        while ((n = traverse_link(&iter))) {
+
+            s = n->data;
+            if (s->sent == s->numPEND)
+                continue;
+
+            s->sent++;
+            --z;
+            if (z == 0) {
+                more = 0;
+                break;
+            }
+            if (s->numPEND > s->sent)
+                ++more;
+        }
+    }
 }
 
 /* sort_siblings()

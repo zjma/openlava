@@ -45,7 +45,7 @@ extern struct tree_ *sshare_make_tree(const char *,
                                       struct group_acct *);
 extern struct share_acct *make_sacct(const char *, uint32_t);
 extern void free_sacct(struct share_acct *);
-extern int sshare_distribute_tokens(struct tree_ *,
-                                    uint32_t);
+extern int sshare_distribute_slots(struct tree_ *,
+                                   uint32_t);
 
 #endif /* _SSHARE_HEADER_ */

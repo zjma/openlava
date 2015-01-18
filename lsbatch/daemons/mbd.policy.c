@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2011-2014 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -195,7 +195,7 @@ static int reservePreemptResources(struct jData *jp, int numHosts,
 
 #define ENDFORALL_PRMPT_HOST_RSRCS } ENDFORALL_PRMPT_RSRCS;             \
     }                                                                   \
-                                                                    }
+                                                                            }
 
 #define CANNOT_BE_PREEMPTED_FOR_RSRC(s) ( (s->jFlags & JFLAG_URGENT) || \
                                           (s->jFlags & JFLAG_URGENT_NOSTOP) || \
@@ -356,7 +356,6 @@ struct profileCounters counters[] = {
     { -1, (char *)NULL }
 };
 
-
 static int timeGetJUsable;
 static int timeGetQUsable;
 static int timeGetCandHosts;
@@ -416,27 +415,23 @@ static bool_t  updateAccountsInQueue;
 static void resetSchedulerSession(void);
 static void tryPreempt(void);
 
-/* openlava round robin
+/* Global as it is shared among few routines.
  */
-struct jRef {
-    struct jRef *forw;
-    struct jRef *back;
-    struct jData *job;
-};
 static struct _list *jRefList;
 
 static int
 readyToDisp (struct jData *jpbw, int *numAvailSlots)
 {
-    static char fname[] = "readyToDisp";
     int jReason = 0;
     time_t deadline;
 
     if (logclass & (LC_PEND))
-        ls_syslog(LOG_DEBUG3, "%s: jobId=%s processed=%x oldReason=%d newReason=%d", fname, lsb_jobid2str(jpbw->jobId), jpbw->processed, jpbw->oldReason, jpbw->newReason);
+        ls_syslog(LOG_DEBUG3, "\
+%s: jobId=%s processed=%x oldReason=%d newReason=%d", __func__,
+                  lsb_jobid2str(jpbw->jobId), jpbw->processed,
+                  jpbw->oldReason, jpbw->newReason);
 
     INC_CNT(PROF_CNT_readyToDisp);
-
 
     if (!IS_PEND(jpbw->jStatus)) {
         return FALSE;
@@ -448,7 +443,9 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         jpbw->numSlots = 0;
         *numAvailSlots = 0;
         if (logclass & (LC_PEND))
-            ls_syslog(LOG_DEBUG2, "%s: Job %s isn't ready for scheduling; newReason=%d", fname, lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+            ls_syslog(LOG_DEBUG2, "\
+%s: Job %s isn't ready for scheduling; newReason=%d", __func__,
+                      lsb_jobid2str(jpbw->jobId), jpbw->newReason);
         return FALSE;
     }
 
@@ -457,60 +454,48 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
             job_abort (jpbw, TOO_LATE);
             return FALSE;
         }
-        if (jobCantFinshBeforeDeadline(jpbw, jpbw->shared->jobBill.termTime)) {
+        if (jobCantFinshBeforeDeadline(jpbw,
+                                       jpbw->shared->jobBill.termTime)) {
             job_abort(jpbw, MISS_DEADLINE);
             return FALSE;
         }
     }
 
-
     if (jpbw->jStatus & JOB_STAT_PSUSP) {
         jReason = PEND_USER_STOP;
-
 
         if (jpbw->newReason == PEND_JOB_NO_PASSWD ){
             jReason = jpbw->newReason;
         }
-    }
-    else if (OUT_SCHED_RS(jpbw->qPtr->reasonTb[1][0])) {
+    } else if (OUT_SCHED_RS(jpbw->qPtr->reasonTb[1][0])) {
         jReason = jpbw->qPtr->reasonTb[1][0];
-    }
-    else if (OUT_SCHED_RS(jpbw->uPtr->reasonTb[1][0])) {
+    } else if (OUT_SCHED_RS(jpbw->uPtr->reasonTb[1][0])) {
         jReason = jpbw->uPtr->reasonTb[1][0];
-    }
-    else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_ACTIVE)) {
+    } else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_ACTIVE)) {
         jReason = PEND_QUE_INACT;
-    }
-    else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_RUN)) {
+    } else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_RUN)) {
         jReason = PEND_QUE_WINDOW;
-    }
-    else if ((jpbw->qPtr->maxJobs != INFINIT_INT)
-             && (jpbw->numSlots = jpbw->qPtr->maxJobs - jpbw->qPtr->numJobs
-                 + jpbw->qPtr->numPEND) <= 0) {
+    } else if ((jpbw->qPtr->maxJobs != INFINIT_INT)
+               && (jpbw->numSlots = jpbw->qPtr->maxJobs - jpbw->qPtr->numJobs
+                   + jpbw->qPtr->numPEND) <= 0) {
         jReason = PEND_QUE_JOB_LIMIT;
-    }
-    else if ((deadline = jpbw->qPtr->runWinCloseTime) > 0 &&
-             jobCantFinshBeforeDeadline(jpbw, deadline)) {
+    } else if ((deadline = jpbw->qPtr->runWinCloseTime) > 0 &&
+               jobCantFinshBeforeDeadline(jpbw, deadline)) {
         if (logclass & (LC_SCHED | LC_PEND)) {
             char *timebuf = ctime(&deadline);
             timebuf[strlen(timebuf) - 1] = '\0';
-            ls_syslog(LOG_DEBUG2, "%s: job <%s> can't finish before deadline: %s", fname, lsb_jobid2str(jpbw->jobId), timebuf);
+            ls_syslog(LOG_DEBUG2, "\
+%s: job <%s> can't finish before deadline: %s", __func__,
+                      lsb_jobid2str(jpbw->jobId), timebuf);
         }
         jReason = PEND_QUE_WINDOW_WILL_CLOSE;
-    }
-
-
-    else if (now_disp < jpbw->shared->jobBill.beginTime) {
+    } else if (now_disp < jpbw->shared->jobBill.beginTime) {
         jReason = PEND_JOB_START_TIME;
-    }
-
-    else if (jpbw->jFlags & JFLAG_DEPCOND_INVALID) {
+    } else if (jpbw->jFlags & JFLAG_DEPCOND_INVALID) {
         jReason = PEND_JOB_DEP_INVALID;
-    }
-    else if (now_disp < jpbw->dispTime) {
+    } else if (now_disp < jpbw->dispTime) {
         jReason = PEND_JOB_DELAY_SCHED;
-    }
-    else {
+    } else {
         int i;
         for (i = 0; i < jpbw->uPtr->numGrpPtr; i++) {
             struct uData *ugp = jpbw->uPtr->gPtr[i];
@@ -520,6 +505,7 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
             }
         }
     }
+
     if (!jReason && jpbw->qPtr->uJobLimit < INFINIT_INT
         && jpbw->shared->jobBill.maxNumProcessors == 1) {
         struct userAcct *uAcct;
@@ -528,13 +514,11 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
             jReason = uAcct->reason;
     }
 
-
     if (jpbw->shared->jobBill.options2 & SUB2_USE_DEF_PROCLIMIT) {
         jpbw->shared->jobBill.numProcessors =
             jpbw->shared->jobBill.maxNumProcessors =
             (jpbw->qPtr->defProcLimit > 0 ? jpbw->qPtr->defProcLimit : 1);
     }
-
 
     jpbw->numSlots = INFINIT_INT;
     *numAvailSlots = INFINIT_INT;
@@ -545,19 +529,16 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         }
     }
 
-
     if (jpbw->qPtr->procLimit > 0) {
         jpbw->numSlots = MIN(jpbw->numSlots, jpbw->qPtr->procLimit);
         *numAvailSlots = MIN(*numAvailSlots, jpbw->qPtr->procLimit);
     }
-
 
     if (jpbw->qPtr->procLimit > 0 &&
         (jpbw->shared->jobBill.maxNumProcessors < jpbw->qPtr->minProcLimit ||
          jpbw->shared->jobBill.numProcessors > jpbw->qPtr->procLimit)) {
         jReason = PEND_QUE_PROCLIMIT;
     }
-
 
     if (LSB_ARRAY_IDX(jpbw->jobId) &&
         (ARRAY_DATA(jpbw->jgrpNode)->counts[JGRP_COUNT_NRUN] +
@@ -567,8 +548,6 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         jReason = PEND_JOB_ARRAY_JLIMIT;
     }
 
-
-
     if (jReason) {
         jpbw->newReason = jReason;
         jpbw->numReasons = 0;
@@ -576,14 +555,16 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         jpbw->numSlots = 0;
         *numAvailSlots = 0;
         if (logclass & (LC_PEND))
-            ls_syslog(LOG_DEBUG2, "%s: Job %s isn't ready for dispatch; newReason=%d", fname, lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+            ls_syslog(LOG_DEBUG2, "\
+%s: Job %s isn't ready for dispatch; newReason=%d", __func__,
+                      lsb_jobid2str(jpbw->jobId), jpbw->newReason);
         return FALSE;
     }
 
     jpbw->newReason = 0;
 
     if (logclass & (LC_PEND))
-        ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", fname, lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
+        ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__, lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
 
     INC_CNT(PROF_CNT_numReadyJobsPerSession);
 
@@ -1257,11 +1238,11 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
         /* floating host this needs to get resized.
          */
         jUsable = my_calloc(nhosts,
-                             sizeof(struct hData *), fname);
+                            sizeof(struct hData *), fname);
         candHosts = my_calloc(nhosts,
                               sizeof(struct candHost), fname);
         jUnusable = my_calloc(nhosts,
-                               sizeof (struct hData *), fname);
+                              sizeof (struct hData *), fname);
         jReasonTb = my_calloc(nhosts + 1, sizeof(int), fname);
     }
 
@@ -1406,7 +1387,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
 
             numHosts = getHostsByResReq(jp->qPtr->resValPtr,
                                         &numHosts,
-                                         jUsable,
+                                        jUsable,
                                         &thrown,
                                         hData,
                                         &noUse);
@@ -3274,7 +3255,7 @@ disp_clean(void)
 }
 
 static void
-hostPreference (struct jData *jp, int nHosts)
+hostPreference(struct jData *jp, int nHosts)
 {
     static char fname[] = "hostPreference";
     int pref = FALSE, i;
@@ -4114,7 +4095,7 @@ jobStartTime (struct jData *jp)
     FREEUP (jobTable);
     return;
 
-    }
+}
 
 static int
 isAskedHost (struct hData *hPtr, struct jData *jp)
@@ -4210,7 +4191,8 @@ scheduleAndDispatchJobs(void)
                     jPtr->processed |= JOB_STAGE_DONE;
                     if (logclass & LC_SCHED) {
                         ls_syslog(LOG_DEBUG2, "\
-%s: free reserved slots from job <%s>", __func__, lsb_jobid2str(jPtr->jobId));
+%s: free reserved slots from job <%s>", __func__,
+                                  lsb_jobid2str(jPtr->jobId));
                     }
                     continue;
                 }
@@ -4220,6 +4202,9 @@ scheduleAndDispatchJobs(void)
                  */
                 jR = calloc(1, sizeof(struct jRef));
                 jR->job = jPtr;
+                /* back point the job to its reference
+                 */
+                jPtr->jrefEnt = jR;
 
                 listInsertEntryAtFront(jRefList,
                                        (struct _listEntry *)jR);
@@ -4529,15 +4514,19 @@ jiter_next_job(LIST_T *jRefList)
 
         /* Found a fairshare queue let's have the slot
          * scheduler to pick the job based on its
-         * policy.
+         * policy. Remove the reference from jRefList
+         * for the elected job.
          */
         if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
             struct qData *qPtr = jPtr->qPtr;
             (*qPtr->scheduler->fs_elect_job)(qPtr,
                                              jRefList,
                                              &jPtr0);
-            if (jPtr0)
+            if (jPtr0) {
+                listRemoveEntry(jRefList,
+                                (LIST_ENTRY_T *)jPtr0->jrefEnt);
                 return jPtr0;
+            }
             /* No more jobs from this fairshare queue
              * so finalize the local plugin data for this
              * session.
@@ -4553,6 +4542,7 @@ jiter_next_job(LIST_T *jRefList)
             listRemoveEntry(jRefList,
                             (struct _listEntry *)jR);
             free(jR);
+            jPtr->jrefEnt = NULL;
             return jPtr;
         }
 
@@ -4580,6 +4570,7 @@ jiter_next_job(LIST_T *jRefList)
             listRemoveEntry(jRefList, (struct _listEntry *)jR0);
             jPtr = jR0->job;
             free(jR0);
+            jPtr->jrefEnt = NULL;
             return jPtr;
         }
 

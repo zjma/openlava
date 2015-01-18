@@ -1399,29 +1399,38 @@ getDefaultProject(void)
 void
 updResCounters(struct jData *jData, int newStatus)
 {
-    static char fname[] = "updResCounters";
-    int num, numReq;
+    int num;
+    int numReq;
 
     if (!IS_PEND (jData->jStatus) && !IS_START (jData->jStatus))
         return;
 
     if (logclass & (LC_TRACE | LC_JLIMIT))
-        ls_syslog(LOG_DEBUG3, "%s:jobId <%s>,jStatus<%x>, num <%d>, numReq <%d>, newStatus <%x>", fname, lsb_jobid2str(jData->jobId), jData->jStatus, jData->numHostPtr, jData->shared->jobBill.maxNumProcessors, newStatus);
+        ls_syslog(LOG_DEBUG3, "\
+%s:jobId %s jStatus %x num %d numReq %d newStatus %x",
+                  __func__, lsb_jobid2str(jData->jobId),
+                  jData->jStatus,
+                  jData->numHostPtr,
+                  jData->shared->jobBill.maxNumProcessors,
+                  newStatus);
+
     num = jData->numHostPtr;
+
     numReq = jData->shared->jobBill.maxNumProcessors;
 
     switch (MASK_STATUS (jData->jStatus & ~JOB_STAT_UNKWN)) {
         case JOB_STAT_SSUSP:
             if (!(jData->jStatus & JOB_STAT_RESERVE)
-                && (newStatus & JOB_STAT_RESERVE) && IS_START (newStatus)) {
+                && (newStatus & JOB_STAT_RESERVE)
+                && IS_START (newStatus)) {
 
                 updQaccount (jData, 0, 0, 0, -num, 0, num);
                 updUserData(jData, 0, 0, 0, -num, 0, num);
                 updHostData(TRUE, jData, 0, 0, -1, 0, 1);
-            }  else if ((jData->jStatus & JOB_STAT_RESERVE) &&
-                        !(newStatus & JOB_STAT_RESERVE) &&
-                        (IS_START (newStatus) || (newStatus & JOB_STAT_PEND))) {
-
+            }  else if ((jData->jStatus & JOB_STAT_RESERVE)
+                        && !(newStatus & JOB_STAT_RESERVE)
+                        && (IS_START (newStatus)
+                            || (newStatus & JOB_STAT_PEND))) {
                 updQaccount (jData, 0, 0, 0, num, 0, -num);
                 updUserData(jData, 0, 0, 0, num, 0, -num);
                 updHostData(TRUE, jData, 0, 0, 1, 0, -1);
@@ -1431,20 +1440,22 @@ updResCounters(struct jData *jData, int newStatus)
                 updUserData(jData, -num, 0, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
             } else {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7016,
-                                                 "%s: Job <%s> transited from %x to %x"), /* catgets 7016 */
-                          fname, lsb_jobid2str(jData->jobId), jData->jStatus, newStatus);
+            ls_syslog(LOG_ERR, "%s: Job <%s> transited from %x to %x",
+                      __func__,
+                      lsb_jobid2str(jData->jobId),
+                      jData->jStatus, newStatus);
             }
             break;
         case JOB_STAT_USUSP:
             if (!(jData->jStatus & JOB_STAT_RESERVE)
-                && (newStatus & JOB_STAT_RESERVE) && IS_START (newStatus)) {
-
+                && (newStatus & JOB_STAT_RESERVE)
+                && IS_START (newStatus)) {
                 updQaccount (jData, 0, 0, 0, 0, -num, num);
                 updUserData(jData, 0, 0, 0, 0, -num,  num);
                 updHostData(TRUE, jData, 0, 0, 0, -1, 1);
             }  else if ((jData->jStatus & JOB_STAT_RESERVE)
-                        && !(newStatus & JOB_STAT_RESERVE) && IS_START (newStatus)) {
+                        && !(newStatus & JOB_STAT_RESERVE)
+                        && IS_START (newStatus)) {
 
                 updQaccount (jData, 0, 0, 0, 0, num, -num);
                 updUserData(jData, 0, 0, 0, 0, num, -num);
@@ -1455,39 +1466,39 @@ updResCounters(struct jData *jData, int newStatus)
                 updUserData(jData, -num, 0, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
             } else {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7016,
-                                                 "%s: Job <%s> transited from %x to %x"),
-                          fname, lsb_jobid2str(jData->jobId), jData->jStatus, newStatus);
+                ls_syslog(LOG_ERR, "\
+%s: Job <%s> transited from %x to %x",__func__,
+                          lsb_jobid2str(jData->jobId),
+                          jData->jStatus, newStatus);
             }
             break;
         case JOB_STAT_PEND:
         case JOB_STAT_PSUSP:
             if ((jData->jStatus & JOB_STAT_RESERVE)
-                && !(newStatus & JOB_STAT_RESERVE) && IS_PEND (newStatus)) {
+                && !(newStatus & JOB_STAT_RESERVE)
+                && IS_PEND (newStatus)) {
 
                 updQaccount (jData, 0, num, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
                 updUserData(jData, 0, num, 0, 0, 0, -num);
-                proxyHRsvJLRemoveEntry(jData);
-                proxyRsvJLRemoveEntry(jData);
+
             }  else if (!(jData->jStatus & JOB_STAT_RESERVE)
-                        && (newStatus & JOB_STAT_RESERVE) && IS_PEND (newStatus)) {
+                        && (newStatus & JOB_STAT_RESERVE)
+                        && IS_PEND (newStatus)) {
                 updQaccount (jData, 0, -num, 0, 0, 0, num);
                 updHostData(TRUE, jData, 1, 0, 0, 0, 1);
                 updUserData(jData, 0, -num, 0, 0, 0, num);
-                proxyHRsvJLAddEntry(jData);
-                proxyRsvJLAddEntry(jData);
             } else if (IS_PEND (jData->jStatus)
-                       && (jData->jStatus & JOB_STAT_RESERVE) && IS_FINISH(newStatus)) {
+                       && (jData->jStatus & JOB_STAT_RESERVE)
+                       && IS_FINISH(newStatus)) {
                 updQaccount (jData, -numReq, -numReq+num, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
                 updUserData(jData, -numReq, -numReq+num, 0, 0, 0, -num);
-                proxyHRsvJLRemoveEntry(jData);
-                proxyRsvJLRemoveEntry(jData);
             } else {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7016,
-                                                 "%s: Job <%s> transited from %x to %x"),
-                          fname, lsb_jobid2str(jData->jobId), jData->jStatus, newStatus);
+                ls_syslog(LOG_ERR, "\
+%s: Job <%s> transited from %x to %x", __func__,
+                    lsb_jobid2str(jData->jobId), jData->jStatus,
+                    newStatus);
             }
             break;
     }

@@ -99,7 +99,7 @@ fs_init_sched_session(struct qData *qPtr)
     /* Distribute the tokens all the way
      * down the leafs
      */
-    sshare_distribute_tokens(t, qPtr->numUsable);
+    sshare_distribute_slots(t, qPtr->numUsable);
 
     return 0;
 }

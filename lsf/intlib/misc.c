@@ -382,8 +382,6 @@ END:
 int
 FCLOSEUP(FILE **fp)
 {
-    int n ;
-
     if (*fp == NULL)
         return EOF;
 
