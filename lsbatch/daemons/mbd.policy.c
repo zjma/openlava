@@ -34,8 +34,7 @@ enum dispatchAJobReturnCode {
     DISP_OK,
     DISP_FAIL,
     DISP_RESERVE,
-    DISP_NO_JOB,
-    DISP_TIME_OUT
+    DISP_NO_JOB
 };
 
 struct backfillee {
@@ -3317,11 +3316,10 @@ hostPreference1 (struct jData *jp, int nHosts, struct askedHost *askedPtr,
         return;
     }
 
-    tmpCandPtr = (struct candHost *) my_calloc (jp->numCandPtr,
-                                                sizeof (struct candHost), fname);
-    flags = (int *)my_calloc(jp->numCandPtr, sizeof(int), fname);
+    tmpCandPtr = my_calloc (jp->numCandPtr,
+                            sizeof (struct candHost), fname);
+    flags = my_calloc(jp->numCandPtr, sizeof(int), fname);
     k = 0;
-
 
     for (i = 0; i < numAskedPtr; i++) {
         if (askedPtr[i].priority < 1)  {
@@ -3559,24 +3557,25 @@ getRawLsbLoad(int ncandidates, struct candHost *hosts)
         ls_syslog(LOG_DEBUG, "%s: Enter this rountine ...", fname);
 
 
-    hostNames = (char **) my_malloc(ncandidates * sizeof (char *), fname);
+    hostNames = my_malloc(ncandidates * sizeof (char *), fname);
     for (i = 0; i < ncandidates; i++) {
         hostNames[i] = hosts[i].hData->host;
     }
 
-    newHostLoad = ls_loadofhosts ("-:server", &num, 0, NULL, hostNames, ncandidates);
+    newHostLoad = ls_loadofhosts ("-:server",
+                                  &num,
+                                  0,
+                                  NULL,
+                                  hostNames,
+                                  ncandidates);
     FREEUP(hostNames);
     if (newHostLoad != NULL) {
         for (i = 0; i < num; i++) {
             if ((hDataPtr = getHostData (newHostLoad[i].hostName)) != NULL) {
                 hDataPtr->lsbLoad[R15S] = newHostLoad[i].li[R15S];
-
-                if (logclass & LC_TRACE)
-                    ls_syslog(LOG_DEBUG, "%s: host %s R15S raw load is %f", fname, hDataPtr->host, hDataPtr->lsbLoad[R15S]);
             }
         }
     }
-
 }
 
 
@@ -3631,12 +3630,12 @@ getNumericLoadValue(const struct hData *hp, int lidx)
         }
     }
 
-    ls_syslog(LOG_ERR, I18N(7244,"%s, instance name not found."), fname);/* catgets 7244 */
     return (-INFINIT_LOAD);
 }
 
 static int
-sortHosts (int lidx, int numHosts, int ncandidates, struct candHost *hosts,
+sortHosts (int lidx, int numHosts, int ncandidates,
+           struct candHost *hosts,
            int lastSort, float threshold, bool_t orderForPreempt)
 {
     char swap;
@@ -4397,16 +4396,31 @@ scheduleAndDispatchJobs(void)
 
         TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
         dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
-        if (dispRet == DISP_TIME_OUT) {
-            ls_syslog(LOG_DEBUG,"\
-%s STAY_TOO_LONG 3 loopCount <%d>", __func__, loopCount);
+        if (dispRet == DISP_FAIL
+            || dispRet == DISP_NO_JOB) {
+            struct qData *qPtr;
+            qPtr = jPtr->qPtr;
+            if (qPtr->scheduler) {
+                /* Put the job back
+                 */
+                (*qPtr->scheduler->fs_update_sacct)(qPtr,
+                                                    jPtr,
+                                                    1,
+                                                    0,
+                                                    0,
+                                                    PUSH_JOB_BACK);
+            }
             DUMP_TIMERS(__func__);
             DUMP_CNT();
             RESET_CNT();
             return -1;
         }
-        if (dispRet == DISP_FAIL && STAY_TOO_LONG) {
-            DUMP_TIMERS(__func__);
+
+        if (STAY_TOO_LONG) {
+            if (logclass & LC_SCHED) {
+                ls_syslog(LOG_DEBUG, "\
+%s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
+            }
             DUMP_CNT();
             RESET_CNT();
             return -1;
@@ -4748,7 +4762,9 @@ dispatchAJob(struct jData *jp, int dontTryNextCandHost)
 
 
             if (jp->qPtr->slotHoldTime <= 0 &&
-                jp->numEligProc < MAX(jp->shared->jobBill.numProcessors, jp->qPtr->minProcLimit)) {
+                jp->numEligProc <
+                MAX(jp->shared->jobBill.numProcessors,
+                    jp->qPtr->minProcLimit)) {
                 if (logclass & (LC_PEND | LC_SCHED)) {
                     ls_syslog(LOG_DEBUG1, "%s: job <%s> can't get enough slots to reserve and preempt",
                               fname, lsb_jobid2str(jp->jobId));
@@ -4759,14 +4775,13 @@ dispatchAJob(struct jData *jp, int dontTryNextCandHost)
 
             notEnoughSlot = TRUE;
 
-
             if (jp->shared->resValPtr
                 && jp->shared->resValPtr->pTile != INFINIT_INT) {
                 addReason (jp, 0, PEND_JOB_SPREAD_TASK);
-            } else if ( ((jp->shared->resValPtr == NULL)
-                         || (jp->shared->resValPtr->maxNumHosts != 1))
-                        && jp->qPtr->resValPtr
-                        && (jp->qPtr->resValPtr->pTile != INFINIT_INT) ) {
+            } else if (((jp->shared->resValPtr == NULL)
+                        || (jp->shared->resValPtr->maxNumHosts != 1))
+                       && jp->qPtr->resValPtr
+                       && (jp->qPtr->resValPtr->pTile != INFINIT_INT)) {
                 addReason (jp, 0, PEND_QUE_SPREAD_TASK);
             }
         }
@@ -4790,22 +4805,19 @@ dispatchAJob(struct jData *jp, int dontTryNextCandHost)
             } else {
                 if (dontTryNextCandHost) {
                     if (logclass & (LC_SCHED | LC_PEND)) {
-                        ls_syslog(LOG_DEBUG1, "%s: dispatching job <%s> to candHost failed and other candHost are not allowed to be tried at this stage", fname, lsb_jobid2str(jp->jobId));
+                        ls_syslog(LOG_DEBUG1, "\
+%s: dispatching job <%s> to candHost failed and \
+other candHost are not allowed to be tried at this stage",
+                                  fname, lsb_jobid2str(jp->jobId));
                     }
                     return DISP_FAIL;
                 }
-                if (jp->numCandPtr == 0 || (jp->newReason & PEND_JOB_NO_FILE)) {
+                if (jp->numCandPtr == 0
+                    || (jp->newReason & PEND_JOB_NO_FILE)) {
 
                     jp->processed |= JOB_STAGE_DONE;
                     return DISP_FAIL;
                 }
-                if (STAY_TOO_LONG) {
-                    if (logclass & (LC_SCHED | LC_PEND)) {
-                        ls_syslog(LOG_DEBUG1, "%s: dispatching job <%s> to candHost failed and other candHost will not be tried due to staying here too long", fname, lsb_jobid2str(jp->jobId));
-                    }
-                    return DISP_TIME_OUT;
-                }
-
                 continue;
             }
         } else {
@@ -4927,11 +4939,11 @@ getNumSlots(struct jData *jp)
             MIN(jp->candPtr[i].numAvailSlots, jp->numAvailSlots);
 
 
-        if (jp->candPtr[i].numAvailSlots < jp->shared->jobBill.numProcessors) {
+        if (jp->candPtr[i].numAvailSlots <
+            jp->shared->jobBill.numProcessors) {
             addReason(jp, jp->candPtr[i].hData->hostId,
                       PEND_HOST_LESS_SLOTS);
         }
-
 
         if (allInOne(jp) && (!needHandleFirstHost(jp))) {
             if (numSlots == 0) {
@@ -7092,9 +7104,6 @@ XORDispatch(struct jData *jp, int arg2, enum dispatchAJobReturnCode (*func)(stru
 
             FREE_CAND_PTR(jp);
             jp->numCandPtr = 0;
-
-            if (ret == DISP_TIME_OUT)
-                return(ret);
 
         }
 

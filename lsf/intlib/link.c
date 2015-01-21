@@ -192,10 +192,10 @@ enqueue_sort_link(link_t *head,
 		  int (*cmp)(const void *,
 			     const void *))
 {
-    link_t   *t;
-    link_t   *t2;
-    link_t   *p;
-    int      cc;
+    link_t *t;
+    link_t *t2;
+    link_t *p;
+    int cc;
 
     if (! head)
         return -1;
@@ -225,7 +225,6 @@ enqueue_sort_link(link_t *head,
     head->num++;
 
     return 0;
-
 }
 
 /* Return the address of the first element saved in the
@@ -251,9 +250,9 @@ visit_link(link_t *head)
 void *
 rm_link(link_t *head, void *val)
 {
-    link_t   *p;
-    link_t   *t;
-    void     *v;
+    link_t *p;
+    link_t *t;
+    void *v;
 
     if (!head)
         return NULL;

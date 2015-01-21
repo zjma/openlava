@@ -52,11 +52,14 @@ fs_init(struct qData *qPtr, struct userConf *uConf)
 int
 fs_update_sacct(struct qData *qPtr,
                 struct jData *jPtr,
+                int numJobs,
                 int numPEND,
-                int numRUN)
+                int numRUN,
+                uint32_t options)
 {
     struct tree_ *t;
     struct tree_node_ *n;
+    struct tree_node_ *r;
     struct share_acct *sacct;
     char *key;
 
@@ -64,17 +67,33 @@ fs_update_sacct(struct qData *qPtr,
 
     key = get_user_key(jPtr);
 
-    n = hash_lookup(t->node_tab, key);
+    r = n = hash_lookup(t->node_tab, key);
     if (n == NULL)
         return -1;
+
+    sacct = n->data;
 
     /* Add the job to the reference
      * link. The job will be removed
      * during scheduling.
      */
-    if (numPEND > 0) {
-        sacct = n->data;
+    if (numPEND > 0)
         enqueue_link(sacct->jobs, jPtr);
+
+    /* Dispatch failed numPEND did not decrease
+     * but we have to push the job back on the list
+     */
+    if (options & PUSH_JOB_BACK)
+        push_link(sacct->jobs, jPtr);
+
+    /* The replay does some magic so we end
+     * up with a job in state JOB_STAT_RUN
+     * in our pending reference list, remove it.
+     */
+    if (mSchedStage == M_STAGE_REPLAY
+        && numPEND < 0
+        && numRUN > 0) {
+        jPtr = rm_link(sacct->jobs, jPtr);
     }
 
     while (n) {
@@ -83,6 +102,9 @@ fs_update_sacct(struct qData *qPtr,
         sacct->numRUN = sacct->numRUN + numRUN;
         n = n->parent;
     }
+
+    sacct = r->data;
+    assert(LINK_NUM_ENTRIES(sacct->jobs) == sacct->numPEND);
 
     return 0;
 }

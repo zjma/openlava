@@ -22,6 +22,8 @@
 #include "mbd.h"
 #include "../../lsf/intlib/sshare.h"
 
+#define PUSH_JOB_BACK 0x00000001
+
 /* Fairshare scheduling plugin
  */
 struct fair_sched {
@@ -31,8 +33,7 @@ struct fair_sched {
     int (*fs_init)(struct qData *, struct userConf *);
     int (*fs_update_sacct)(struct qData *,
                            struct jData *,
-                           int numPEND,
-                           int numRUN);
+                           int, int, int, uint32_t);
     int (*fs_init_sched_session)(struct qData *);
     int (*fs_elect_job)(struct qData *, LIST_T *, struct jData **);
     int (*fs_fin_sched_session)(struct qData *);
