@@ -55,6 +55,7 @@ fs_update_sacct(struct qData *qPtr,
                 int numJobs,
                 int numPEND,
                 int numRUN,
+                int numDONE,
                 uint32_t options)
 {
     struct tree_ *t;
@@ -91,8 +92,7 @@ fs_update_sacct(struct qData *qPtr,
      * in our pending reference list, remove it.
      */
     if (mSchedStage == M_STAGE_REPLAY
-        && numPEND < 0
-        && numRUN > 0) {
+        && !(jPtr->jStatus & JOB_STAT_PEND)) {
         jPtr = rm_link(sacct->jobs, jPtr);
     }
 
@@ -100,6 +100,7 @@ fs_update_sacct(struct qData *qPtr,
         sacct = n->data;
         sacct->numPEND = sacct->numPEND + numPEND;
         sacct->numRUN = sacct->numRUN + numRUN;
+        sacct->numDONE = sacct->numDONE + numDONE;
         n = n->parent;
     }
 
@@ -170,6 +171,48 @@ fs_elect_job(struct qData *qPtr,
 int
 fs_fin_sched_session(struct qData *qPtr)
 {
+    return 0;
+}
+
+/* fs_get_saccts()
+ *
+ * Return an array of share accounts for a queue tree.
+ * In other words flatten the tree.
+ */
+int
+fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
+{
+    struct tree_ *t;
+    struct tree_node_ *n;
+    struct share_acct **s;
+    int nents;
+    int i;
+
+    t = qPtr->scheduler->tree;
+
+    /* First let's count the number of nodes
+     */
+    n = t->root;
+    nents = 0;
+    while ((n = tree_next_node(n)))
+        ++nents;
+
+    s = calloc(nents, sizeof(struct share_acct *));
+    assert(s);
+    /* Nwo simply address the array elemens
+     * to the nodes. Don't dup memory
+     */
+
+    i = 0;
+    n = t->root;
+    while ((n = tree_next_node(n))) {
+        s[i] = n->data;
+        ++i;
+    }
+
+    *as = s;
+    *num = nents;
+
     return 0;
 }
 

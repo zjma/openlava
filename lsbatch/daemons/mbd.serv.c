@@ -18,6 +18,7 @@
  */
 
 #include "mbd.h"
+#include "fairshare.h"
 
 static unsigned int     msgcnt = 0;
 extern int numLsbUsable;
@@ -1394,9 +1395,18 @@ xdrsize_QueueInfoReply(struct queueInfoReply * qInfoReply)
             + getXdrStrlen(qInfoReply->queues[i].resumeActCmd)
             + getXdrStrlen(qInfoReply->queues[i].terminateActCmd)
             + getXdrStrlen(qInfoReply->queues[i].chkpntDir);
+        if (qInfoReply->queues[i].numSaccts > 0) {
+            len = len
+                + qInfoReply->queues[i].numSaccts
+                * (sizeof(struct share_acct) + MAXLSFNAMELEN);
+        }
     }
     len += ALIGNWORD_(sizeof(struct queueInfoReply)
-                      + qInfoReply->numQueues * (sizeof(struct queueInfoEnt)+ MAX_LSB_NAME_LEN + qInfoReply->nIdx*2*sizeof(float))
+                      + qInfoReply->numQueues
+                      * (sizeof(struct queueInfoEnt)
+                         + MAX_LSB_NAME_LEN
+                         +
+                        qInfoReply->nIdx*2*sizeof(float))
                       + qInfoReply->numQueues * NET_INTSIZE_);
 
     return len;
@@ -1428,7 +1438,7 @@ do_queueInfoReq(XDR *xdrs,
                                   sizeof(struct queueInfoEnt),
                                   __func__);
 
-    if (! xdr_infoReq (xdrs, &qInfoReq, reqHdr)) {
+    if (! xdr_infoReq(xdrs, &qInfoReq, reqHdr)) {
         ls_syslog(LOG_ERR, "\
 %s: failed decode data from %s", __func__, sockAdd2Str_(from));
         reply = LSBE_XDR;

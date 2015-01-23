@@ -3484,6 +3484,15 @@ load_fair_plugin(struct qData *qPtr)
         return -1;
     }
 
+    f->fs_get_saccts = dlsym(f->handle, "fs_get_saccts");
+    if (f->fs_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_get_saccts() symbol in %s: %s", __func__,
+                  buf, dlerror());
+        dlclose(f->handle);
+        free(qPtr->scheduler);
+        return -1;
+    }
 
     f->name = strdup(qPtr->queue);
     /* invoke the plugin initializer

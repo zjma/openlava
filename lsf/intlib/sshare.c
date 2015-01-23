@@ -36,7 +36,7 @@ static void sort_siblings(struct tree_node_ *);
 static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
-static void print_node(struct tree_node_ *);
+static int print_node(struct tree_node_ *, struct tree_ *);
 static uint32_t set_leaf_slots(struct tree_ *, struct tree_node_ *);
 static void distribute_more(struct tree_ *, uint32_t);
 
@@ -108,18 +108,19 @@ z:
         }
         sprintf(buf, "%s", n->path);
         hash_install(t->node_tab, buf, n, NULL);
-        print_node(n);
+        print_node(n, t);
     }
 
     traverse_init(t->leafs, &iter);
     while ((n = traverse_link(&iter)))
-        print_node(n);
+        print_node(n, t);
 
     /* Fairshare tree is built and sorted
      * by decreasing shares, the scheduler
      * algorithm will fill it up with
      * slots from now on.
      */
+    tree_walk2(t, print_node);
 
     return t;
 }
@@ -571,13 +572,19 @@ node_cmp(const void *x, const void *y)
 
 /* print_node()
  */
-static void
-print_node(struct tree_node_ *n)
+static int
+print_node(struct tree_node_ *n, struct tree_ *t)
 {
     struct share_acct *s;
+
+    if (t == NULL
+        || n == NULL)
+        return -1;
 
     s = n->data;
 
     printf("%s: node %s shares %d dshares %4.2f\n",
            __func__, n->path, s->shares, s->dshares);
+
+    return -1;
 }

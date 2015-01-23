@@ -129,7 +129,7 @@ tree_print(struct tree_node_ *n, struct tree_ *t)
  * the function f(). Tree operator...
  * In other words, traverse the link of
  * siblings then dive down to the next
- * level.
+ * level. Level order.
  */
 int
 tree_walk(struct tree_ *r,
@@ -144,18 +144,15 @@ tree_walk(struct tree_ *r,
     if (!r->root)
         return -1;
 
+    n = r->root;
+
     /* All right only one node...
      */
-    n = r->root;
     if (! n->child) {
-        cc = (*f)(n, r);
-        if (cc < 0)
-            return cc;
         /* protocol, (*f)() may want
          * to know when we are done.
          */
-        (*f)(NULL, NULL);
-        return 0;
+        return (*f)(NULL, NULL);
     }
 
     /* Init my stack...
@@ -171,7 +168,7 @@ tree_walk(struct tree_ *r,
         if (n->child)
             enqueue_link(link, n);
 
-            cc = (*f)(n, r);
+        cc = (*f)(n, r);
             /* protocol, the caller is asking
              * me to stop the traversal, sure...
              */
@@ -196,11 +193,9 @@ tree_walk(struct tree_ *r,
      * him we are done with the
      * traversal.
      */
-    (*f)(NULL, NULL);
 
-    return 0;
-
-} /* tree_walk() */
+    return (*f)(NULL, NULL);
+}
 
 /* tree_next_node()
  *
@@ -226,6 +221,51 @@ tree_next_node(struct tree_node_ *n)
         parent = parent->parent;
     }
     return NULL;
+}
+
+/* tree_walk2()
+ *
+ * Visit the root first than each subtree.
+ * Gives the same output as tree_next_node()
+ */
+int
+tree_walk2(struct tree_ *t,
+           int (*f)(struct tree_node_ *, struct tree_ *))
+{
+    link_t  *link;
+    struct tree_node_ *n;
+
+    if (t->root == NULL)
+        return -1;
+
+    link = make_link();
+    n = t->root;
+
+znovu:
+    while (n) {
+
+        (*f)(n, t);
+
+        if (n->child
+            && n->right) {
+            push_link(link, n);
+        }
+
+        if (n->child) {
+            n = n->child;
+            continue;
+        }
+
+        n = n->right;
+    }
+
+    n = pop_link(link);
+    if (n) {
+        n = n->right;
+        goto znovu;
+    }
+
+    return (*f)(NULL, NULL);
 }
 
 /* tree_rm_leaf()

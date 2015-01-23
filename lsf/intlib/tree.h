@@ -48,7 +48,11 @@ extern struct tree_node_ *tree_insert_node(struct tree_node_ *,
 extern struct tree_node_ *tree_rm_node(struct tree_node_ *);
 extern int tree_print(struct tree_node_ *, struct tree_ *);
 extern int tree_walk(struct tree_ *,
-                     int (*f)(struct tree_node_ *, struct tree_ *));
+                     int (*f)(struct tree_node_ *,
+                              struct tree_ *));
+extern int tree_walk2(struct tree_ *,
+                      int (*f)(struct tree_node_ *,
+                               struct tree_ *));
 extern struct tree_node_ *tree_next_node(struct tree_node_ *);
 extern struct tree_node_ *tree_rm_leaf(struct tree_node_ *);
 

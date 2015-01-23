@@ -822,14 +822,16 @@ xdr_jobInfoReply(XDR *xdrs,
 }
 
 bool_t
-xdr_queueInfoReply(XDR *xdrs, struct queueInfoReply *qInfoReply,
+xdr_queueInfoReply(XDR *xdrs,
+                   struct queueInfoReply *qInfoReply,
                    struct LSFHeader *hdr)
 {
     int i;
-    static int memSize = 0;
-    static struct queueInfoEnt *qInfo = NULL;
-    static int nIdx = 0;
-    static float *loadStop = NULL, *loadSched = NULL;
+    static int memSize;
+    static struct queueInfoEnt *qInfo;
+    static int nIdx;
+    static float *loadStop;
+    static float *loadSched;
 
     if (!(xdr_int(xdrs, &(qInfoReply->numQueues))
           && xdr_int(xdrs, &(qInfoReply->badQueue))
@@ -839,55 +841,51 @@ xdr_queueInfoReply(XDR *xdrs, struct queueInfoReply *qInfoReply,
     if (xdrs->x_op == XDR_DECODE) {
 
         if (qInfoReply->numQueues > memSize) {
+
             for (i = 0; i < memSize; i++) {
-                FREEUP (qInfo[i].queue);
-                FREEUP (qInfo[i].hostSpec);
+                FREEUP(qInfo[i].queue);
+                FREEUP(qInfo[i].hostSpec);
             }
-            FREEUP (qInfo);
-
-
+            FREEUP(qInfo);
             memSize = 0;
-            if (!(qInfo = (struct queueInfoEnt *)
-                  calloc(qInfoReply->numQueues, sizeof (struct queueInfoEnt))))
+            if (!(qInfo = calloc(qInfoReply->numQueues,
+                                 sizeof (struct queueInfoEnt))))
                 return false;
 
             for (i = 0; i < qInfoReply->numQueues; i++) {
                 qInfo[i].queue = NULL;
                 qInfo[i].hostSpec = NULL;
                 memSize = i + 1;
-                if (!(qInfo[i].queue = malloc (MAX_LSB_NAME_LEN))
-                    || !(qInfo[i].hostSpec = malloc (MAX_LSB_NAME_LEN)))
+                if (!(qInfo[i].queue = malloc(MAX_LSB_NAME_LEN))
+                    || !(qInfo[i].hostSpec = malloc(MAX_LSB_NAME_LEN)))
                     return false;
             }
         }
 
 
         for (i = 0; i < qInfoReply->numQueues; i++) {
-            FREEUP (qInfo[i].description);
-            FREEUP (qInfo[i].userList);
-            FREEUP (qInfo[i].hostList);
-            FREEUP (qInfo[i].windows);
-            FREEUP (qInfo[i].windowsD);
-            FREEUP (qInfo[i].defaultHostSpec);
-            FREEUP (qInfo[i].admins);
-            FREEUP (qInfo[i].preCmd);
-            FREEUP (qInfo[i].postCmd);
-            FREEUP (qInfo[i].prepostUsername);
-            FREEUP (qInfo[i].requeueEValues);
-            FREEUP (qInfo[i].resReq);
-            FREEUP (qInfo[i].resumeCond);
-            FREEUP (qInfo[i].stopCond);
-            FREEUP (qInfo[i].jobStarter);
-            FREEUP (qInfo[i].chkpntDir);
-
-
-            FREEUP (qInfo[i].suspendActCmd);
-            FREEUP (qInfo[i].resumeActCmd);
-            FREEUP (qInfo[i].terminateActCmd);
+            FREEUP(qInfo[i].description);
+            FREEUP(qInfo[i].userList);
+            FREEUP(qInfo[i].hostList);
+            FREEUP(qInfo[i].windows);
+            FREEUP(qInfo[i].windowsD);
+            FREEUP(qInfo[i].defaultHostSpec);
+            FREEUP(qInfo[i].admins);
+            FREEUP(qInfo[i].preCmd);
+            FREEUP(qInfo[i].postCmd);
+            FREEUP(qInfo[i].prepostUsername);
+            FREEUP(qInfo[i].requeueEValues);
+            FREEUP(qInfo[i].resReq);
+            FREEUP(qInfo[i].resumeCond);
+            FREEUP(qInfo[i].stopCond);
+            FREEUP(qInfo[i].jobStarter);
+            FREEUP(qInfo[i].chkpntDir);
+            FREEUP(qInfo[i].suspendActCmd);
+            FREEUP(qInfo[i].resumeActCmd);
+            FREEUP(qInfo[i].terminateActCmd);
         }
 
         qInfoReply->queues = qInfo;
-
 
         if (qInfoReply->numQueues * qInfoReply->nIdx > nIdx
             && qInfoReply->numQueues > 0) {
@@ -895,22 +893,36 @@ xdr_queueInfoReply(XDR *xdrs, struct queueInfoReply *qInfoReply,
                              qInfoReply->numQueues * qInfoReply->nIdx) == -1)
                 return false;
         }
+
+        /* Decode the fairshare data
+         */
+        if (hdr->version > 3) {
+        }
+
     }
 
     for (i = 0; i < qInfoReply->numQueues; i++) {
         if (xdrs->x_op == XDR_DECODE) {
-            qInfoReply->queues[i].loadSched = loadSched +
-                (i * qInfoReply->nIdx);
+            qInfoReply->queues[i].loadSched
+                = loadSched + (i * qInfoReply->nIdx);
             qInfoReply->queues[i].loadStop = loadStop + (i * qInfoReply->nIdx);
         }
 
-        if (!xdr_arrayElement(xdrs, (char *) &(qInfoReply->queues[i]),
-                              hdr, xdr_queueInfoEnt, &qInfoReply->nIdx))
+        if (!xdr_arrayElement(xdrs,
+                              (char *) &(qInfoReply->queues[i]),
+                              hdr,
+                              xdr_queueInfoEnt,
+                              &qInfoReply->nIdx))
             return false;
     }
 
-    return true;
+    /* Encode fairshare data
+     */
+    if (xdr->x_op == XDR_ENCODE
+        && hdr->version > 3) {
+    }
 
+    return true;
 }
 
 bool_t
