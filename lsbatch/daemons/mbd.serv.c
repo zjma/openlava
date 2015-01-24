@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -27,17 +28,16 @@ extern int lsb_CheckMode;
 extern int lsb_CheckError;
 extern  sbdReplyType callSbdDebug(struct debugReq *pdebug);
 extern int getXdrStrlen(char *);
-extern  bool_t xdr_resourceInfoReply (XDR *, struct resourceInfoReply *,
-                                      struct LSFHeader *);
+extern  bool_t xdr_resourceInfoReply(XDR *, struct resourceInfoReply *,
+                                     struct LSFHeader *);
 extern bool_t xdr_resourceInfoReq(XDR *, struct resourceInfoReq *,
                                   struct LSFHeader *);
-
 extern char *jgrpNodeParentPath(struct jgTreeNode *);
 static int packJgrpInfo(struct jgTreeNode *, int, char **, int, int);
 static int packJobInfo(struct jData *, int, char **, int, int, int);
 static void initSubmit(int *, struct submitReq *, struct submitMbdReply *);
 static int sendBack(int, struct submitReq *, struct submitMbdReply *, int);
-static void addPendSigEvent(struct sbdNode *sbdPtr);
+static void addPendSigEvent(struct sbdNode *);
 static void freeJobHead (struct jobInfoHead *);
 static void freeJobInfoReply (struct jobInfoReply *);
 static void freeShareResourceInfoReply (struct  lsbShareResourceInfoReply *);
@@ -56,22 +56,22 @@ do_submitReq(XDR *xdrs,
              int dispatch,
              struct jData **jobData)
 {
-    static char             fname[] = "do_submitReq";
     static struct submitMbdReply submitReply;
-    static int              first = TRUE;
+    static int first = true;
     static struct submitReq subReq;
-    int                     reply;
+    int reply;
 
     if (logclass & (LC_TRACE | LC_EXEC | LC_COMM))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...; host=%s, socket=%d", fname, hostName, chanSock_(chfd));
-
+        ls_syslog(LOG_DEBUG, "\
+%s: Entering this routine...; host %s, socket %d",
+                  __func__, hostName, chanSock_(chfd));
 
     initSubmit(&first, &subReq, &submitReply);
 
 
     if (!xdr_submitReq(xdrs, &subReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_submitReq");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_submitReq");
         goto sendback;
     }
 
@@ -117,10 +117,10 @@ sendback:
     }
 
     if (sendBack (reply, &subReq, &submitReply, chfd) < 0) {
-        return (-1);
+        return -1;
     }
-    return (0);
 
+    return 0;
 }
 
 int
@@ -146,46 +146,47 @@ do_jobInfoReq(XDR *xdrs,
               struct LSFHeader *reqHdr,
               int schedule)
 {
-    static char             fname[] = "do_jobInfoReq";
-    char                    *reply_buf = NULL;
-    char                   *buf = NULL;
-    XDR                     xdrs2;
-    struct jobInfoReq       jobInfoReq;
-    struct jobInfoHead      jobInfoHead;
-    int                     reply = 0;
-    int                     i, len, listSize = 0;
-    struct LSFHeader        replyHdr;
-    struct nodeList        *jgrplist = NULL;
-    struct jData          **joblist = NULL;
-    int                     selectJgrpsFlag = FALSE;
+    char *reply_buf;
+    char *buf;
+    XDR xdrs2;
+    struct jobInfoReq jobInfoReq;
+    struct jobInfoHead jobInfoHead;
+    int reply = 0;
+    int i;
+    int len;
+    int listSize = 0;
+    struct LSFHeader replyHdr;
+    struct nodeList *jgrplist;
+    struct jData **joblist;
+    int selectJgrpsFlag;
     struct hData *hPtr;
 
     if (logclass & (LC_TRACE | LC_COMM))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...; channel=%d", fname,chfd);
+        ls_syslog(LOG_DEBUG, "\
+%s: Entering this routine...; channel=%d", __func__,chfd);
 
     jobInfoHead.hostNames = NULL;
     jobInfoHead.jobIds  = NULL;
 
     if (!xdr_jobInfoReq(xdrs, &jobInfoReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobInfoReq");
+        ls_syslog(LOG_ERR, "%s: xdr_jobInfoReq() failed", __func__);
     }
     if (jobInfoReq.host[0] != '\0'
         && getHGrpData(jobInfoReq.host) == NULL
         && !Gethostbyname_(jobInfoReq.host)
-        && (strcmp(jobInfoReq.host, LOST_AND_FOUND) != 0))
+        && (strcmp(jobInfoReq.host, LOST_AND_FOUND) != 0)) {
         reply = LSBE_BAD_HOST;
-    else {
-        if ((selectJgrpsFlag = checkUseSelectJgrps(reqHdr, &jobInfoReq))
-            == TRUE) {
+    } else {
+
+        if ((selectJgrpsFlag = checkUseSelectJgrps(reqHdr,
+                                                   &jobInfoReq)) == true) {
             reply = selectJgrps(&jobInfoReq, (void **)&jgrplist, &listSize);
-        }
-        else {
+
+        } else {
+            joblist = NULL;
             reply = selectJobs(&jobInfoReq, &joblist, &listSize);
-
-
-            jgrplist = (struct nodeList *) calloc(listSize,
-                                                  sizeof(struct nodeList));
+            jgrplist = calloc(listSize, sizeof(struct nodeList));
             for (i = 0; i < listSize; i++){
                 jgrplist[i].info = (void *) joblist[i];
                 jgrplist[i].isJData = TRUE;
@@ -200,7 +201,7 @@ do_jobInfoReq(XDR *xdrs,
 
     if (jobInfoHead.numJobs > 0)
         jobInfoHead.jobIds = my_calloc(listSize,
-                                       sizeof(LS_LONG_INT), fname);
+                                       sizeof(LS_LONG_INT), __func__);
     for (i = 0; i < listSize; i++){
         if (!jgrplist[i].isJData)
             jobInfoHead.jobIds[i] = 0;
@@ -211,7 +212,7 @@ do_jobInfoReq(XDR *xdrs,
     i = jobInfoHead.numHosts = 0;
     if (jobInfoReq.options & HOST_NAME) {
         jobInfoHead.hostNames = my_calloc(numofhosts(),
-                                          sizeof(char *), fname);
+                                          sizeof(char *), __func__);
         for (hPtr = (struct hData *)hostList->back;
              hPtr != (void *)hostList;
              hPtr = (struct hData *)hPtr->back) {
@@ -227,7 +228,7 @@ do_jobInfoReq(XDR *xdrs,
         + jobInfoHead.numHosts * (sizeof(char *) + MAXHOSTNAMELEN)
         + 100;
 
-    reply_buf = (char *)my_malloc (len, fname);
+    reply_buf = my_malloc (len, __func__);
     xdrmem_create(&xdrs2, reply_buf, len, XDR_ENCODE);
     replyHdr.opCode = reply;
 
@@ -235,65 +236,65 @@ do_jobInfoReq(XDR *xdrs,
                        xdr_jobInfoHead, 0, NULL)) {
         FREEUP (reply_buf);
         freeJobHead (&jobInfoHead);
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, __func__,
                   "xdr_encodeMsg", "jobInfoHead");
         xdr_destroy(&xdrs2);
         FREEUP (jgrplist);
-        return(-1);
+        return -1;
     }
     len = XDR_GETPOS(&xdrs2);
 
-    {
-        if (chanWrite_(chfd, reply_buf, len) != len) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanWrite_");
-            FREEUP (reply_buf);
-            freeJobHead (&jobInfoHead);
-            FREEUP (jgrplist);
-            xdr_destroy(&xdrs2);
-            return(-1);
-        }
+    if (chanWrite_(chfd, reply_buf, len) != len) {
+        ls_syslog(LOG_ERR, "%s: chanWrite_() failed: %m", __func__);
+        FREEUP(reply_buf);
+        freeJobHead (&jobInfoHead);
+        FREEUP(jgrplist);
+        xdr_destroy(&xdrs2);
+        return -1;
     }
-    FREEUP (reply_buf);
+
+    FREEUP(reply_buf);
 
     xdr_destroy(&xdrs2);
     freeJobHead (&jobInfoHead);
     if (reply != LSBE_NO_ERROR ||
         (jobInfoReq.options & (JOBID_ONLY|JOBID_ONLY_ALL))) {
         FREEUP (jgrplist);
-        return(0);
+        return 0;
     }
 
     for (i = 0; i < listSize; i++) {
         if (jgrplist[i].isJData &&
-            ((len = packJobInfo ((struct jData *)jgrplist[i].info,
-                                 listSize - 1 - i,  &buf, schedule,
-                                 jobInfoReq.options, reqHdr->version)) < 0)) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "packJobInfo");
-            FREEUP (jgrplist);
-            return(-1);
+            ((len = packJobInfo((struct jData *)jgrplist[i].info,
+                                listSize - 1 - i,  &buf, schedule,
+                                jobInfoReq.options, reqHdr->version)) < 0)) {
+            ls_syslog(LOG_ERR, "%s: packJobInfo() failed: %m", __func__);
+            FREEUP(jgrplist);
+            return -1;
         }
-        if ( !jgrplist[i].isJData &&
-             ((len = packJgrpInfo ((struct jgTreeNode *)jgrplist[i].info,
-                                   listSize - 1 - i, &buf, schedule, reqHdr->version)) < 0)) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "packJgrpInfo");
-            FREEUP (jgrplist);
-            return(-1);
+        if (!jgrplist[i].isJData &&
+             ((len = packJgrpInfo((struct jgTreeNode *)jgrplist[i].info,
+                                  listSize - 1 - i,
+                                  &buf, schedule, reqHdr->version)) < 0)) {
+            ls_syslog(LOG_ERR, "%s: packJgrpInfo() failed: %m", __func__);
+            FREEUP(jgrplist);
+            return -1;
         }
 
-        {
-            if (chanWrite_(chfd, buf, len) != len) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanWrite_");
-                FREEUP(buf);
-                FREEUP (jgrplist);
-                return(-1);
-            }
+        if (chanWrite_(chfd, buf, len) != len) {
+            ls_syslog(LOG_ERR, "%s: 2 chanWrite_() failed: %m", __func__);
+            FREEUP(buf);
+            FREEUP(jgrplist);
+            return -1;
         }
+
         FREEUP(buf);
     }
-    FREEUP (jgrplist);
+
+    FREEUP(jgrplist);
 
     chanClose_(chfd);
-    return(0);
+    return 0;
 }
 
 static int
@@ -307,7 +308,6 @@ packJgrpInfo(struct jgTreeNode * jgNode,
     struct submitReq jobBill;
     struct LSFHeader hdr;
     char  *request_buf = NULL;
-    static char fname[] = "packJgrpInfo";
     XDR xdrs;
     int i, len;
 
@@ -351,7 +351,7 @@ packJgrpInfo(struct jgTreeNode * jgNode,
 
     if (!xdr_encodeMsg(&xdrs, (char *) &jobInfoReply,
                        &hdr, xdr_jobInfoReply, 0, NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, __func__,
                   "xdr_encodeMsg", "jobInfoReply");
         xdr_destroy(&xdrs);
         FREEUP (request_buf);
@@ -735,24 +735,22 @@ packJobInfo(struct jData *jobData,
 }
 
 int
-do_jobPeekReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
-               struct LSFHeader *reqHdr, struct lsfAuth *auth)
+do_jobPeekReq(XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
+              struct LSFHeader *reqHdr, struct lsfAuth *auth)
 {
-
-    static char             fname[] = "do_jobPeekReq";
-    char                    reply_buf[MSGSIZE];
-    XDR                     xdrs2;
-    struct jobPeekReq       jobPeekReq;
-    struct jobPeekReply     jobPeekReply;
-    int                     reply;
-    int                     cc;
-    struct LSFHeader        replyHdr;
-    char                   *replyStruct;
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
+    struct jobPeekReq jobPeekReq;
+    struct jobPeekReply jobPeekReply;
+    int reply;
+    int cc;
+    struct LSFHeader replyHdr;
+    char *replyStruct;
 
     jobPeekReply.outFile = NULL;
     if (!xdr_jobPeekReq(xdrs, &jobPeekReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobPeekReq");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_jobPeekReq");
     } else {
         reply = peekJob(&jobPeekReq, &jobPeekReply, auth);
     }
@@ -765,14 +763,14 @@ do_jobPeekReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
         replyStruct = (char *) 0;
     if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_jobPeekReply, 0,
                        NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
         FREEUP(jobPeekReply.outFile);
         return -1;
     }
     cc = XDR_GETPOS (&xdrs2);
     if ((chanWrite_(chfd, reply_buf, cc)) != cc) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanWrite_");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "chanWrite_");
         xdr_destroy(&xdrs2);
         FREEUP(jobPeekReply.outFile);
         return -1;
@@ -784,20 +782,19 @@ do_jobPeekReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
 }
 
 int
-do_signalReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
-              struct LSFHeader *reqHdr, struct lsfAuth *auth)
+do_signalReq(XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
+             struct LSFHeader *reqHdr, struct lsfAuth *auth)
 {
-    static char             fname[] = "do_signalReq";
-    char                    reply_buf[MSGSIZE];
-    XDR                     xdrs2;
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
     static struct signalReq signalReq;
-    int                     reply;
-    struct LSFHeader        replyHdr;
+    int reply;
+    struct LSFHeader replyHdr;
     struct jData *jpbw;
 
     if (!xdr_signalReq(xdrs, &signalReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_signalReq");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_signalReq");
         goto Reply;
     }
     signalReq.sigValue = sig_decode(signalReq.sigValue);
@@ -816,12 +813,12 @@ Reply:
     replyHdr.opCode = reply;
 
     if (!xdr_encodeMsg(&xdrs2, (char *) NULL, &replyHdr, xdr_int, 0, NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
         return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "b_write_fix");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "b_write_fix");
         xdr_destroy(&xdrs2);
         return -1;
     }
@@ -834,30 +831,29 @@ int
 do_jobMsg(struct bucket *bucket,
           XDR *xdrs,
           int chfd,
-          struct sockaddr_in * from,
+          struct sockaddr_in *from,
           char *hostName,
-          struct LSFHeader * reqHdr,
-          struct lsfAuth * auth)
+          struct LSFHeader *reqHdr,
+          struct lsfAuth *auth)
 {
-    static char             fname[] = "do_jobMsg";
-    char                    reply_buf[MSGSIZE];
-    XDR                     xdrs2;
-    int                     reply;
-    struct LSFHeader        sndhdr;
-    struct LSFHeader        replyHdr;
-    struct jData           *jpbw;
-    struct bucket          *msgq;
-    struct Buffer          *buf = bucket->storage;
-    LSBMSG_DECL(header, jmsg);
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
+    int reply;
+    struct LSFHeader sndhdr;
+    struct LSFHeader replyHdr;
+    struct jData *jpbw;
+    struct bucket *msgq;
+    struct Buffer *buf = bucket->storage;
 
+    LSBMSG_DECL(header, jmsg);
     LSBMSG_INIT(header, jmsg);
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", fname);
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
 
     if (!xdr_lsbMsg(xdrs, &jmsg, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_lsbMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_lsbMsg");
         goto Reply;
     }
 
@@ -875,7 +871,7 @@ do_jobMsg(struct bucket *bucket,
                         &sndhdr, xdr_lsbMsg, 0, NULL)) {
 
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
         goto Reply;
     }
     xdr_destroy(&bucket->xdrs);
@@ -900,7 +896,7 @@ do_jobMsg(struct bucket *bucket,
 
     if (logclass & (LC_SIGNAL))
         ls_syslog(LOG_DEBUG2, "%s: A message for job %s; eP=%d",
-                  fname, lsb_jobid2str(jpbw->jobId), eventPending);
+                  __func__, lsb_jobid2str(jpbw->jobId), eventPending);
 
     QUEUE_APPEND(bucket, msgq);
     bucket->storage->stashed = TRUE;
@@ -911,12 +907,12 @@ Reply:
     replyHdr.opCode = reply;
 
     if (!xdr_encodeMsg(&xdrs2, (char *) NULL, &replyHdr, xdr_int, 0, NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
         return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "b_write_fix");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "b_write_fix");
         xdr_destroy(&xdrs2);
         return -1;
     }
@@ -927,18 +923,17 @@ Reply:
 
 
 int
-do_migReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
+do_migReq(XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
            struct LSFHeader *reqHdr, struct lsfAuth *auth)
 {
-    static char             fname[] = "do_migReq";
-    char                    reply_buf[MSGSIZE];
-    XDR                     xdrs2;
-    struct migReq           migReq;
-    struct submitMbdReply   migReply;
-    int                     reply;
-    struct LSFHeader        replyHdr;
-    char                   *replyStruct;
-    int                     i;
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
+    struct migReq migReq;
+    struct submitMbdReply migReply;
+    int reply;
+    struct LSFHeader replyHdr;
+    char *replyStruct;
+    int i;
 
     migReply.jobId = 0;
     migReply.badReqIndx = 0;
@@ -947,7 +942,7 @@ do_migReq (XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
 
     if (!xdr_migReq(xdrs, &migReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_migReq");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_migReq");
         migReq.numAskedHosts = 0;
         goto Reply;
     }
@@ -968,12 +963,12 @@ Reply:
     }
     if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_submitMbdReply, 0,
                        NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
         return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "b_write_fix");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "b_write_fix");
         xdr_destroy(&xdrs2);
         return -1;
     }
@@ -986,14 +981,13 @@ int
 do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
              struct LSFHeader * reqHdr)
 {
-    static char             fname[] = "do_statusReq()";
-    char                    reply_buf[MSGSIZE];
-    XDR                     xdrs2;
-    struct statusReq        statusReq;
-    int                     reply;
-    struct hData           *hData;
-    struct hostent         *hp;
-    struct LSFHeader        replyHdr;
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
+    struct statusReq statusReq;
+    int reply;
+    struct hData *hData;
+    struct hostent *hp;
+    struct LSFHeader replyHdr;
 
     hp = Gethostbyaddr_(&from->sin_addr.s_addr,
                         sizeof(in_addr_t),
@@ -1009,7 +1003,7 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
 
     if (!xdr_statusReq(xdrs, &statusReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_statusReq");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_statusReq");
     } else {
         switch(reqHdr->opCode) {
             case BATCH_STATUS_MSG_ACK:
@@ -1024,7 +1018,7 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
             default:
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7827,
                                                  "%s: Unknown request %d"),  /* catgets 7827 */
-                          fname,
+                          __func__,
                           reqHdr->opCode);
                 reply = LSBE_PROTOCOL;
         }
@@ -1042,13 +1036,13 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
     replyHdr.opCode = reply;
     replyHdr.length = 0;
     if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL, fname, "xdr_LSFHeader",
+        ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL, __func__, "xdr_LSFHeader",
                   reply);
         xdr_destroy(&xdrs2);
         return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "b_write_fix");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "b_write_fix");
         xdr_destroy(&xdrs2);
         return -1;
     }
@@ -1395,9 +1389,9 @@ xdrsize_QueueInfoReply(struct queueInfoReply * qInfoReply)
             + getXdrStrlen(qInfoReply->queues[i].resumeActCmd)
             + getXdrStrlen(qInfoReply->queues[i].terminateActCmd)
             + getXdrStrlen(qInfoReply->queues[i].chkpntDir);
-        if (qInfoReply->queues[i].numSaccts > 0) {
+        if (qInfoReply->queues[i].numAccts > 0) {
             len = len
-                + qInfoReply->queues[i].numSaccts
+                + qInfoReply->queues[i].numAccts
                 * (sizeof(struct share_acct) + MAXLSFNAMELEN);
         }
     }

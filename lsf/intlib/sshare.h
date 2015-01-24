@@ -16,7 +16,6 @@ struct share_acct {
     int numPEND;
     int numRUN;
     int numDONE;
-    uint32_t totalRUN;
     link_t *jobs;
 };
 

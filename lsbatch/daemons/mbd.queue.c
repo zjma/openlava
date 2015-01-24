@@ -1,5 +1,6 @@
-/* $Id: mbd.queue.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -426,12 +427,12 @@ checkQueues(struct infoReq *queueInfoReqPtr,
             /* Get the list of share accounts
              * and send it over to the library.
              */
-            qRep->numSaccts = 0;
+            qRep->numAccts = 0;
             qRep->saccts = NULL;
             if (qp->scheduler) {
 
                 (*qp->scheduler->fs_get_saccts)(qp,
-                                                &qRep->numSaccts,
+                                                &qRep->numAccts,
                                                 &qRep->saccts);
             }
             queueInfoReplyPtr->numQueues++;

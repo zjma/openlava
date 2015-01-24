@@ -1117,7 +1117,7 @@ isJobOwner(struct lsfAuth *auth, struct jData *job)
 
 
 int
-selectJgrps (struct jobInfoReq *jobInfoReq, void **jgList, int *listSize)
+selectJgrps(struct jobInfoReq *jobInfoReq, void **jgList, int *listSize)
 {
     struct jgTreeNode  *parent;
     int retError = 0;

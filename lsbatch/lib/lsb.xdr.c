@@ -17,22 +17,27 @@
  *
  */
 
+/*
+ * Compatibility note:
+ *
+ * Note we do not support vN library talking
+ * to vN-1 daemon. We support backward
+ * comparibility where vN daemon talks
+ * to vN-1 library.
+ */
+
 #include "lsb.h"
+#include "../../lsf/intlib/sshare.h"
 
-bool_t xdr_var_string(XDR *, char **);
-
-static int    allocLoadIdx(float **sched, float **stop, int *outSize, int size);
-
-static bool_t xdr_lsbSharedResourceInfo(XDR *, struct lsbSharedResourceInfo *,
+static int allocLoadIdx(float **, float **, int *, int);
+static bool_t xdr_lsbSharedResourceInfo(XDR *,
+                                        struct lsbSharedResourceInfo *,
                                         struct LSFHeader *);
-
-static bool_t xdr_lsbShareResourceInstance(XDR *xdrs,
+static bool_t xdr_lsbShareResourceInstance(XDR *,
                                            struct lsbSharedResourceInstance *,
                                            struct LSFHeader *);
-
 int  lsbSharedResConfigured_ = false;
 
-extern bool_t xdr_array_string(XDR *, char **, int, int);
 bool_t
 xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
 {
@@ -894,11 +899,6 @@ xdr_queueInfoReply(XDR *xdrs,
                 return false;
         }
 
-        /* Decode the fairshare data
-         */
-        if (hdr->version > 3) {
-        }
-
     }
 
     for (i = 0; i < qInfoReply->numQueues; i++) {
@@ -909,29 +909,27 @@ xdr_queueInfoReply(XDR *xdrs,
         }
 
         if (!xdr_arrayElement(xdrs,
-                              (char *) &(qInfoReply->queues[i]),
+                              (char *)&(qInfoReply->queues[i]),
                               hdr,
                               xdr_queueInfoEnt,
                               &qInfoReply->nIdx))
             return false;
     }
 
-    /* Encode fairshare data
-     */
-    if (xdr->x_op == XDR_ENCODE
-        && hdr->version > 3) {
-    }
-
     return true;
 }
 
+/* xdr_queueInfoEnt()
+ */
 bool_t
-xdr_queueInfoEnt(XDR *xdrs, struct queueInfoEnt *qInfo,
-                 struct LSFHeader *hdr, int *nIdx)
+xdr_queueInfoEnt(XDR *xdrs,
+                 struct queueInfoEnt *qInfo,
+                 struct LSFHeader *hdr,
+                 int *nIdx)
 {
-    char* sp;
-    int   i;
-    int   j;
+    char *sp;
+    int i;
+    int j;
 
     if (xdrs->x_op == XDR_FREE) {
         if (qInfo->chkpntDir != 0) {
@@ -963,18 +961,19 @@ xdr_queueInfoEnt(XDR *xdrs, struct queueInfoEnt *qInfo,
     sp = qInfo->hostSpec;
     if (xdrs->x_op == XDR_DECODE)
         sp[0] = '\0';
+
     if (!(xdr_string(xdrs, &sp, MAX_LSB_NAME_LEN)))
         return false;
 
-    for(i=0; i<LSF_RLIM_NLIMITS; i++) {
+    for(i = 0; i < LSF_RLIM_NLIMITS; i++) {
         if( !(xdr_int(xdrs, &qInfo->rLimits[i])))
             return false;
     }
 
     qInfo->nIdx = *nIdx;
-    for (i=0; i<*nIdx; i++) {
+    for (i = 0; i < *nIdx; i++) {
         if (! (xdr_float(xdrs, &(qInfo->loadSched[i])))
-            || ! (xdr_float(xdrs, &(qInfo->loadStop[i]))))
+            || !(xdr_float(xdrs, &(qInfo->loadStop[i]))))
             return false;
     }
 
@@ -1020,22 +1019,94 @@ xdr_queueInfoEnt(XDR *xdrs, struct queueInfoEnt *qInfo,
           xdr_var_string(xdrs, &qInfo->terminateActCmd)))
         return false;
 
-    for (j=0; j < LSB_SIG_NUM ; j++) {
+    for (j = 0; j < LSB_SIG_NUM ; j++) {
         if (!xdr_int(xdrs, &qInfo->sigMap[j]))
             return false;
     }
 
-    if ( !( xdr_var_string(xdrs, &qInfo->chkpntDir) &&
-            xdr_int (xdrs, &qInfo->chkpntPeriod) ))
+    if (!(xdr_var_string(xdrs, &qInfo->chkpntDir) &&
+            xdr_int (xdrs, &qInfo->chkpntPeriod)))
         return false;
 
-    for(i=0; i<LSF_RLIM_NLIMITS; i++) {
-        if( !(xdr_int(xdrs, &qInfo->defLimits[i])))
+    for(i = 0; i < LSF_RLIM_NLIMITS; i++) {
+        if (!(xdr_int(xdrs, &qInfo->defLimits[i])))
             return false;
     }
 
-    if ( !( xdr_int (xdrs, &qInfo->minProcLimit)
-            && xdr_int (xdrs, &qInfo->defProcLimit ) ) ) {
+    if (!(xdr_int (xdrs, &qInfo->minProcLimit)
+          && xdr_int(xdrs, &qInfo->defProcLimit))) {
+        return false;
+    }
+
+    /* Handle fairshare data
+     */
+    if (! xdr_numShareAccts(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
+        return false;
+
+    return true;
+}
+
+/* xdr_numShareAccts()
+ */
+bool_t
+xdr_numShareAccts(XDR *xdrs,
+                  int *num,
+                  struct share_acct ***s,
+                  struct LSFHeader *hdr)
+{
+    int i;
+    struct share_acct **s2;
+
+    /* There must always be num in the stream.
+     */
+    if (!xdr_int(xdrs, num))
+        return false;
+
+    /* Encode fairshare data. If we are
+     * encoding to < 3 don't care as
+     * the library is not expecting
+     * any fairshare data.
+     */
+    if (xdrs->x_op == XDR_ENCODE
+        && hdr->version >= 3) {
+
+        s2 = *s;
+        for (i = 0; i < *num; i++) {
+            if (! xdr_shareAcct(xdrs, s2[i], hdr))
+                return false;
+        }
+
+        return true;
+    }
+
+    if (xdrs->x_op == XDR_DECODE
+        && hdr->version >= 3) {
+
+        s2 = calloc(*num, sizeof(struct share_acct *));
+
+        for (i = 0; i < *num; i++) {
+            s2[i] = calloc(1, sizeof(struct share_acct));
+            if (! xdr_shareAcct(xdrs, s2[i], hdr))
+                return false;
+        }
+    }
+
+    *s = s2;
+    return true;
+}
+
+/* xdr_shareAcct()
+ */
+bool_t
+xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
+{
+    if (! xdr_var_string(xdrs, &s->name)
+        || ! xdr_uint32_t(xdrs, &s->shares)
+        || ! xdr_double(xdrs, &s->dshares)
+        || ! xdr_uint32_t(xdrs, &s->sent)
+        || ! xdr_int(xdrs, &s->numPEND)
+        || ! xdr_int(xdrs, &s->numRUN)
+        || ! xdr_int(xdrs, &s->numDONE)) {
         return false;
     }
 

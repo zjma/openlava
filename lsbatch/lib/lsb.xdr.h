@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -116,13 +117,9 @@ extern bool_t xdr_jobSwitchReq(XDR *,
 extern bool_t xdr_groupInfoReply(XDR *,
 				 struct groupInfoReply *,
 				 struct LSFHeader *);
-
 extern bool_t xdr_groupInfoEnt(XDR *,
 			       struct groupInfoEnt *,
 			       struct LSFHeader *);
-
-
-
 extern bool_t xdr_migReq(XDR *,
 			 struct migReq *,
 			 struct LSFHeader *);
@@ -143,7 +140,7 @@ extern bool_t xdr_var_string(XDR *,
 
 extern bool_t xdr_lsbShareResourceInfoReply(XDR *,
 					    struct  lsbShareResourceInfoReply *,
-					    struct LSFHeader *hdr);
+					    struct LSFHeader *);
 
 extern bool_t xdr_runJobReq(XDR *,
 			    struct runJobRequest *,
@@ -152,3 +149,10 @@ extern bool_t xdr_runJobReq(XDR *,
 extern bool_t xdr_jobAttrReq(XDR *,
 			    struct jobAttrInfoEnt *,
 			    struct LSFHeader *);
+extern bool_t xdr_numShareAccts(XDR *,
+                                int *,
+                                struct share_acct ***,
+                                struct LSFHeader *);
+extern bool_t xdr_shareAcct(XDR *,
+                            struct share_acct *,
+                            struct LSFHeader *);

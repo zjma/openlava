@@ -762,7 +762,7 @@ struct queueInfoEnt {
     int    minProcLimit;
     int    defProcLimit;
     char   *fairshare;
-    int    numSaccts;
+    int    numAccts;
     struct share_acct **saccts;
 };
 

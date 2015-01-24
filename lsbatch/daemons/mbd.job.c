@@ -909,7 +909,6 @@ selectJobs (struct jobInfoReq *jobInfoReq, struct jData ***jobDataList,
     int arraysize = 0;
     struct  uData *uPtr;
 
-
     if (jobInfoReq->queue[0] == '\0')
         allqueues = TRUE;
     if (strcmp(jobInfoReq->userName, ALL_USERS) == 0)
@@ -1069,14 +1068,14 @@ selectJobs (struct jobInfoReq *jobInfoReq, struct jData ***jobDataList,
             joblist[0] = recentJob;
         }
         *jobDataList = joblist;
-        return(LSBE_NO_ERROR);
+        return LSBE_NO_ERROR;
     } else if (!allqueues && getQueueData (jobInfoReq->queue) == NULL) {
         FREEUP(joblist);
-        return(LSBE_BAD_QUEUE);
+        return LSBE_BAD_QUEUE;
     }
     FREEUP(joblist);
-    return(LSBE_NO_JOB);
 
+    return LSBE_NO_JOB;
 }
 
 static int

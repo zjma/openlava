@@ -79,6 +79,10 @@ extern char **environ;
  * by the autotools.
  * The OPENLAVA_XDR_VERSION is the version of the wire
  * protocol to support backward compatibility.
+ * Note we do not support vN library talking
+ * to vN-1 daemon. We support backward
+ * comparibility where vN daemon talks
+ * to vN-1 library
  */
 #define OPENLAVA_XDR_VERSION 3
 
