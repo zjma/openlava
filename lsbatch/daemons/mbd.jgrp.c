@@ -491,35 +491,34 @@ char *
 parentGroup(char * group_spec)
 {
     static char parentStr[MAXPATHLEN];
-    int    i;
+    int i;
 
     parentStr[0] = '\0';
     if (!group_spec){
         lsberrno = LSBE_JGRP_BAD;
-        return(parentStr);
+        return parentStr;
     }
 
     if (strlen(group_spec) >= MAXPATHLEN) {
         lsberrno = LSBE_NO_MEM;
-        return(parentStr);
+        return parentStr;
     }
 
     strcpy(parentStr, group_spec);
-
 
     for (i = strlen(parentStr)-1; (i >= 0) && (parentStr[i] == '/'); i--);
 
     if (i < 0)  {
         lsberrno = LSBE_JGRP_NULL;
         parentStr[0] = '\0';
-        return(parentStr);
+        return parentStr;
     }
 
 
     for (; (i >= 0) && (parentStr[i] != '/'); i--);
 
     parentStr[i+1] = '\0';
-    return(parentStr);
+    return parentStr;
 }
 
 char *
@@ -589,11 +588,11 @@ jgrpNodeParentPath(struct jgTreeNode * jgrpNode)
     static char fullPath[MAXPATHLEN];
     static char oldPath[MAXPATHLEN];
     struct jgTreeNode * jgrpPtr;
-    int    first = TRUE;
+    int first = TRUE;
 
     if (jgrpNode == NULL) {
         lsberrno = LSBE_JGRP_NULL;
-        return(NULL);
+        return NULL;
     }
 
     jgrpPtr = jgrpNode->parent;
@@ -617,7 +616,7 @@ jgrpNodeParentPath(struct jgTreeNode * jgrpNode)
         jgrpPtr = jgrpPtr->parent;
     }
 
-    return(fullPath);
+    return fullPath;
 }
 
 int
@@ -625,7 +624,7 @@ jgrpNodeParentPath_r(struct jgTreeNode * jgrpNode, char *fullPath)
 {
     char oldPath[MAXPATHLEN];
     struct jgTreeNode * jgrpPtr;
-    int    first = TRUE;
+    int first = TRUE;
 
     if (jgrpNode == NULL || fullPath == NULL) {
         lsberrno = LSBE_JGRP_NULL;
@@ -652,7 +651,7 @@ jgrpNodeParentPath_r(struct jgTreeNode * jgrpNode, char *fullPath)
         }
         jgrpPtr = jgrpPtr->parent;
     }
-    return(0);
+    return 0;
 }
 
 
@@ -932,8 +931,6 @@ Exit: if (nPtr)
         treeObserverDep->entry = (void *)groupRoot;
 }
 
-
-
 void
 updJgrpCountByJStatus(struct jData *job, int oldStatus, int newStatus)
 {
@@ -970,36 +967,31 @@ updJgrpCountByJStatus(struct jData *job, int oldStatus, int newStatus)
 int
 getIndexOfJStatus(int status)
 {
-    static char fname[] = "getIndexOfJStatus()";
-
     switch (MASK_STATUS(status & ~JOB_STAT_UNKWN
                         & ~JOB_STAT_PDONE & ~JOB_STAT_PERR)) {
         case JOB_STAT_PEND:
         case JOB_STAT_RUN|JOB_STAT_WAIT:
-            return(JGRP_COUNT_PEND);
+            return JGRP_COUNT_PEND;
         case JOB_STAT_PSUSP:
-            return(JGRP_COUNT_NPSUSP);
+            return JGRP_COUNT_NPSUSP;
         case JOB_STAT_RUN :
-            return(JGRP_COUNT_NRUN);
+            return JGRP_COUNT_NRUN;
         case JOB_STAT_SSUSP:
-            return(JGRP_COUNT_NSSUSP);
+            return JGRP_COUNT_NSSUSP;
         case JOB_STAT_USUSP:
-            return(JGRP_COUNT_NUSUSP);
+            return JGRP_COUNT_NUSUSP;
         case JOB_STAT_EXIT:
         case JOB_STAT_EXIT|JOB_STAT_WAIT:
-            return(JGRP_COUNT_NEXIT);
+            return JGRP_COUNT_NEXIT;
         case JOB_STAT_DONE:
         case JOB_STAT_DONE|JOB_STAT_WAIT:
-            return(JGRP_COUNT_NDONE);
+            return JGRP_COUNT_NDONE;
         default:
-
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6403,
-                                             "%s: job status <%d> out of bound"), /* catgets 6403 */
-                      fname, MASK_STATUS(status));
-            return(8);
+            ls_syslog(LOG_ERR, "%s: job status <%d> out of bound", __func__,
+                      MASK_STATUS(status));
+            return 8;
     }
 }
-
 
 void
 updJgrpCountByOp(struct jgTreeNode *jgrp, int factor)
@@ -1008,14 +1000,13 @@ updJgrpCountByOp(struct jgTreeNode *jgrp, int factor)
     int i;
 
     for (parent = jgrp->parent; parent; parent = parent->parent) {
-        for (i=0; i < NUM_JGRP_COUNTERS; i++)
+        for (i = 0; i < NUM_JGRP_COUNTERS; i++)
             if (jgrp->nodeType == JGRP_NODE_GROUP) {
                 JGRP_DATA(parent)->counts[i] += factor*JGRP_DATA(jgrp)->counts[i];
-            }
-            else if (jgrp->nodeType == JGRP_NODE_ARRAY)
+            } else if (jgrp->nodeType == JGRP_NODE_ARRAY) {
                 JGRP_DATA(parent)->counts[i] += factor*ARRAY_DATA(jgrp)->counts[i];
+            }
     }
-    return;
 }
 
 

@@ -1,5 +1,6 @@
-/* $Id: mbd.jarray.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -24,19 +25,16 @@
 #include "mbd.h"
 #include <dirent.h>
 
-#define NL_SETN		10
+#define NL_SETN         10
 
 struct jShared * copyJShared(struct jData *);
 
-
 extern char *yybuff;
-
 
 static struct idxList      *arrayIdxList = NULL;
 void                       setIdxListContext(const char *);
 struct idxList             *getIdxListContext(void);
 void                       freeIdxListContext(void);
-
 
 void
 freeIdxList(struct idxList *idxList)
@@ -44,9 +42,9 @@ freeIdxList(struct idxList *idxList)
     struct idxList *ptr;
 
     while(idxList) {
-         ptr = idxList->next;
-         FREEUP(idxList);
-         idxList = ptr;
+        ptr = idxList->next;
+        FREEUP(idxList);
+        idxList = ptr;
     }
     return;
 }
@@ -83,20 +81,20 @@ parseJobArrayIndex(char *job_name, int *error, int *maxJLimit)
         if (idx->start < 1 || idx->step < 1) {
             *error = LSBE_BAD_IDX;
         }
-	if (idx->end == INFINIT_INT) {
-	    idx->end  = idx->start + (maxJobArraySize - 1)*idx->step;
-	}
+        if (idx->end == INFINIT_INT) {
+            idx->end  = idx->start + (maxJobArraySize - 1)*idx->step;
+        }
 
-	if (idx->start > idx->end) {
-	    *error = LSBE_BAD_IDX;
-	}
+        if (idx->start > idx->end) {
+            *error = LSBE_BAD_IDX;
+        }
 
         if ((mSchedStage != M_STAGE_REPLAY)
             && (idx->end >= LSB_MAX_ARRAY_IDX)) {
             *error = LSBE_BIG_IDX;
         }
 
-	arraySize += (idx->end - idx->start)/idx->step + 1;
+        arraySize += (idx->end - idx->start)/idx->step + 1;
     }
 
     if ((mSchedStage != M_STAGE_REPLAY) && (arraySize > maxJobArraySize)) {
@@ -127,19 +125,19 @@ copyJShared(struct jData *jp)
     if (strcmp (js->jobBill.dependCond, "") != 0) {
 
 
-	setIdxListContext((*js).jobBill.jobName);
+        setIdxListContext((*js).jobBill.jobName);
 
         newJs->dptRoot = parseDepCond(js->jobBill.dependCond,
-				      &auth, &errcode,
-				      NULL, &jFlags, 0);
-	freeIdxListContext();
+                                      &auth, &errcode,
+                                      NULL, &jFlags, 0);
+        freeIdxListContext();
     }
 
     copyJobBill (&js->jobBill, &newJs->jobBill, FALSE);
     if (jp->numAskedPtr > 0 || jp->askedOthPrio >= 0)
-       useLocal = FALSE;
+        useLocal = FALSE;
     else
-       useLocal = TRUE;
+        useLocal = TRUE;
 
     useLocal = useLocal ? USE_LOCAL : 0;
     newJs->resValPtr = checkResReq (js->jobBill.resReq, useLocal | CHK_TCL_SYNTAX | PARSE_XOR);
@@ -191,7 +189,7 @@ copyJData(struct jData *jp)
     jData = initJData(jp->shared);
 
     if (jData->jobSpoolDir) {
-	FREEUP(jData->jobSpoolDir);
+        FREEUP(jData->jobSpoolDir);
     }
     reqHistory = jData->reqHistory;
     memcpy((char *)jData, (char *)jp, sizeof(struct jData));
@@ -205,14 +203,14 @@ copyJData(struct jData *jp)
 
     if (jp->askedPtr) {
         jData->askedPtr = (struct askedHost *) my_calloc (jp->numAskedPtr,
-                           sizeof(struct askedHost), "copyJData");
+                                                          sizeof(struct askedHost), "copyJData");
         for (i = 0; i < jp->numAskedPtr; i++) {
             jData->askedPtr[i].hData = jp->askedPtr[i].hData;
             jData->askedPtr[i].priority = jp->askedPtr[i].priority;
         }
     }
     if (jp->jobSpoolDir) {
-	jData->jobSpoolDir = safeSave(jp->jobSpoolDir);
+        jData->jobSpoolDir = safeSave(jp->jobSpoolDir);
     }
     return(jData);
 }
@@ -225,11 +223,11 @@ updLocalJData(struct jData *jp, struct jData *jpbw)
 
 
     if (jp->numAskedPtr)
-         FREEUP (jp->askedPtr);
+        FREEUP (jp->askedPtr);
     jp->numAskedPtr = 0;
     if (jpbw->askedPtr) {
         jp->askedPtr = (struct askedHost *) my_calloc (jpbw->numAskedPtr,
-                         sizeof(struct askedHost), "updLocalJData");
+                                                       sizeof(struct askedHost), "updLocalJData");
         for (i = 0; i < jpbw->numAskedPtr; i++) {
             jp->askedPtr[i].hData = jpbw->askedPtr[i].hData;
             jp->askedPtr[i].priority = jpbw->askedPtr[i].priority;
@@ -243,15 +241,18 @@ updLocalJData(struct jData *jp, struct jData *jpbw)
 
 }
 
-
+/* handleNewJobArray()
+ */
 void
-handleNewJobArray(struct jData *jarray, struct idxList *idxList, int maxJLimit)
+handleNewJobArray(struct jData *jarray,
+                  struct idxList *idxList,
+                  int maxJLimit)
 {
     struct idxList *idxPtr;
-    struct jData          *jPtr;
-    int  numJobs = 0, i;
+    struct jData *jPtr;
+    int numJobs = 0;
+    int i;
     int userPending = 0;
-
 
     addJobIdHT(jarray);
     jarray->nodeType = JGRP_NODE_ARRAY;
@@ -265,72 +266,77 @@ handleNewJobArray(struct jData *jarray, struct idxList *idxList, int maxJLimit)
 
     jarray->uPtr = getUserData(jarray->userName);
 
-
     if (jarray->shared->jobBill.options2 & SUB2_HOLD) {
-	    userPending = 1;
+        userPending = 1;
     }
 
     jPtr = jarray;
     for (idxPtr = idxList; idxPtr; idxPtr = idxPtr->next) {
-        for (i = idxPtr->start; i <= idxPtr->end; i += idxPtr->step) {
-             if (getJobData(LSB_JOBID((LS_LONG_INT)jarray->jobId, i)))
-                 continue;
-             jPtr->nextJob = copyJData(jarray);
-             numJobs++;
-             jPtr = jPtr->nextJob;
 
-             jPtr->nodeType = JGRP_NODE_JOB;
-             jPtr->nextJob = NULL;
-             jPtr->jobId = LSB_JOBID((LS_LONG_INT)jarray->jobId, i);
-             addJobIdHT(jPtr);
-             inPendJobList(jPtr, PJL, 0);
-	     if ( userPending ) {
-		 jPtr->newReason = PEND_USER_STOP;
-		 jPtr->jStatus = JOB_STAT_PSUSP;
-	     }
+        for (i = idxPtr->start; i <= idxPtr->end; i += idxPtr->step) {
+            if (getJobData(LSB_JOBID((LS_LONG_INT)jarray->jobId, i)))
+                continue;
+            jPtr->nextJob = copyJData(jarray);
+            numJobs++;
+            jPtr = jPtr->nextJob;
+
+            jPtr->nodeType = JGRP_NODE_JOB;
+            jPtr->nextJob = NULL;
+            jPtr->jobId = LSB_JOBID((LS_LONG_INT)jarray->jobId, i);
+            addJobIdHT(jPtr);
+            inPendJobList(jPtr, PJL, 0);
+            if (userPending) {
+                jPtr->newReason = PEND_USER_STOP;
+                jPtr->jStatus = JOB_STAT_PSUSP;
+            }
         }
     }
 
-
-
     ARRAY_DATA(jarray->jgrpNode)->maxJLimit = maxJLimit;
-
 
     if (mSchedStage != M_STAGE_REPLAY)
         log_newjob(jarray);
 
-
     if (mSchedStage != M_STAGE_REPLAY) {
-        updQaccount(jarray, jarray->shared->jobBill.maxNumProcessors*numJobs,
-                    jarray->shared->jobBill.maxNumProcessors*numJobs, 0, 0,
-                    0, 0);
-        updUserData (jarray, jarray->shared->jobBill.maxNumProcessors*numJobs,
-                     jarray->shared->jobBill.maxNumProcessors*numJobs,
-                     0, 0, 0, 0);
+        updQaccount(jarray,
+                    jarray->shared->jobBill.maxNumProcessors * numJobs,
+                    jarray->shared->jobBill.maxNumProcessors * numJobs,
+                    0,
+                    0,
+                    0,
+                    0);
+        updUserData(jarray,
+                    jarray->shared->jobBill.maxNumProcessors * numJobs,
+                    jarray->shared->jobBill.maxNumProcessors * numJobs,
+                    0,
+                    0,
+                    0,
+                    0);
     }
 
+    if (mSchedStage == M_STAGE_REPLAY) {
 
-   if ( mSchedStage == M_STAGE_REPLAY) {
-       if ( maxUserPriority > 0 ) {
-	   if ( jarray->shared->jobBill.userPriority < 0 ) {
+        if (maxUserPriority > 0) {
+            if (jarray->shared->jobBill.userPriority < 0) {
 
-	       modifyJobPriority(jarray, maxUserPriority/2);
-	       for (jPtr = jarray->nextJob; jPtr; jPtr = jPtr->nextJob) {
-		   modifyJobPriority(jPtr, maxUserPriority/2);
-	       }
-	   } else {
-	       modifyJobPriority(jarray, jarray->shared->jobBill.userPriority);
-	       for (jPtr = jarray->nextJob; jPtr; jPtr = jPtr->nextJob) {
-	           modifyJobPriority(jPtr, jPtr->shared->jobBill.userPriority);
-	       }
-	   }
-       }
-   }
+                modifyJobPriority(jarray, maxUserPriority/2);
+                for (jPtr = jarray->nextJob; jPtr; jPtr = jPtr->nextJob) {
+                    modifyJobPriority(jPtr, maxUserPriority/2);
+                }
+            } else {
+                modifyJobPriority(jarray,
+                                  jarray->shared->jobBill.userPriority);
+                for (jPtr = jarray->nextJob; jPtr; jPtr = jPtr->nextJob) {
+                    modifyJobPriority(jPtr,
+                                      jPtr->shared->jobBill.userPriority);
+                }
+            }
+        }
+    }
 
     ARRAY_DATA(jarray->jgrpNode)->counts[getIndexOfJStatus(jarray->nextJob->jStatus)] = numJobs;
     ARRAY_DATA(jarray->jgrpNode)->counts[JGRP_COUNT_NJOBS] = numJobs;
     updJgrpCountByOp(jarray->jgrpNode, 1);
-    return;
 }
 
 
@@ -397,7 +403,7 @@ getJobIdIndexList (char *jobIdStr, int *outJobId, struct idxList **idxListP)
     *startP = '\0';
 
     if (!isint_(jobIdStr) || ((jobId = atoi(jobIdStr)) <= 0) ||
-         (jobId > LSB_MAX_ARRAY_JOBID)) {
+        (jobId > LSB_MAX_ARRAY_JOBID)) {
         return(LSBE_BAD_JOBID);
     }
     *outJobId = jobId;
@@ -447,7 +453,7 @@ getJobIdList (char *jobIdStr, int *numJobIds, LS_LONG_INT **jobIdList)
             if (*numJobIds >= sizeOfJobIdArray) {
                 sizeOfJobIdArray += MAX_JOB_IDS;
                 if ((temp = (LS_LONG_INT *) realloc(jobIds,
-                    sizeOfJobIdArray * sizeof(LS_LONG_INT))) == NULL) {
+                                                    sizeOfJobIdArray * sizeof(LS_LONG_INT))) == NULL) {
                     mbdDie(MASTER_MEM);
                 }
                 jobIds = temp;
@@ -468,20 +474,18 @@ getJobIdList (char *jobIdStr, int *numJobIds, LS_LONG_INT **jobIdList)
 void
 setIdxListContext(const char *jobName)
 {
-    int      err;
-    int      limit;
-
+    int err;
+    int limit;
 
     arrayIdxList = parseJobArrayIndex( (char *) jobName,
-				      &err,
-				      &limit);
+                                       &err,
+                                       &limit);
 }
 
 struct idxList
 *getIdxListContext(void)
 {
-    return(arrayIdxList);
-
+    return arrayIdxList;
 }
 
 void
@@ -489,5 +493,4 @@ freeIdxListContext(void)
 {
     freeIdxList(arrayIdxList);
     arrayIdxList = NULL;
-
 }
