@@ -10,13 +10,12 @@
  */
 struct share_acct {
     char *name;
+    int uid;
     uint32_t shares;
     double dshares;
     uint32_t sent;
     int numPEND;
     int numRUN;
-    int numDONE;
-    link_t *jobs;
 };
 
 /* Support data structure equivalent of groupInfoEnt

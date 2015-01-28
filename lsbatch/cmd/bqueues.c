@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA
  *
  */
 
@@ -225,8 +226,6 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
         else
             sprintf (hostJobLimit, "  - ");
 
-
-
         if (i > 0)
             printf("-------------------------------------------------------------------------------\n\n");
         printf("QUEUE: %s\n", qp->queue);
@@ -327,17 +326,17 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
          */
         if (qp->qAttrib & Q_ATTRIB_FAIRSHARE) {
 		printf("\nSLOTS_SHARE_INFO:\n");
-		printf("%9s   %6s   %8s  .%6s. .%6s. .%6s\n",
-                       "USER/GROUP", "SHARES", "PRIORITY", "PEND", "RUN", "DONE");
+		printf("%9s   %6s   %8s   %6s   %6s   %6s\n",
+                       "USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
                 for (i = 0; i < qp->numAccts; i++) {
                     printf("%-9s   %6d    %8.3f",
                            qp->saccts[i]->name,
                            qp->saccts[i]->shares,
                            qp->saccts[i]->dshares);
-                    printf("  .%6d. .%6d. .%6d\n",
+                    printf("   %6d   %6d   %6d\n",
+                           qp->saccts[i]->sent,
                            qp->saccts[i]->numPEND,
-                           qp->saccts[i]->numRUN,
-                           qp->saccts[i]->numDONE);
+                           qp->saccts[i]->numRUN);
                 }
         }
 

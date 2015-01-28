@@ -1092,12 +1092,12 @@ getQUsable(struct qData *qp)
         if (hPtr->hStatus & HOST_STAT_REMOTE)
             continue;
 
-        if (!isHostQMember (hPtr, qp)) {
+        if (!isHostQMember(hPtr, qp)) {
             hReason = PEND_HOST_QUE_MEMB;
             goto next;
         }
 
-        if (overThreshold (hPtr->lsbLoad, qp->loadSched, &j)) {
+        if (overThreshold(hPtr->lsbLoad, qp->loadSched, &j)) {
             hReason = j;
             goto next;
         }
@@ -4395,21 +4395,10 @@ scheduleAndDispatchJobs(void)
     while ((jPtr = jiter_next_job(jRefList))) {
 
         TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
+
         dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
         if (dispRet == DISP_FAIL
             || dispRet == DISP_NO_JOB) {
-            struct qData *qPtr;
-            qPtr = jPtr->qPtr;
-            if (qPtr->scheduler) {
-                /* Put the job back
-                 */
-                (*qPtr->scheduler->fs_update_sacct)(qPtr,
-                                                    jPtr,
-                                                    1,
-                                                    0,
-                                                    0,
-                                                    PUSH_JOB_BACK);
-            }
             DUMP_TIMERS(__func__);
             DUMP_CNT();
             RESET_CNT();
@@ -4535,10 +4524,12 @@ jiter_next_job(LIST_T *jRefList)
             struct qData *qPtr = jPtr->qPtr;
             (*qPtr->scheduler->fs_elect_job)(qPtr,
                                              jRefList,
-                                             &jPtr0);
-            if (jPtr0) {
+                                             &jR0);
+            if (jR0) {
                 listRemoveEntry(jRefList,
-                                (LIST_ENTRY_T *)jPtr0->jrefEnt);
+                                (LIST_ENTRY_T *)jR0);
+                jPtr0 = jR0->job;
+                free(jR0);
                 return jPtr0;
             }
             /* No more jobs from this fairshare queue

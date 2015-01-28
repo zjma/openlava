@@ -1105,10 +1105,8 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
         || ! xdr_double(xdrs, &s->dshares)
         || ! xdr_uint32_t(xdrs, &s->sent)
         || ! xdr_int(xdrs, &s->numPEND)
-        || ! xdr_int(xdrs, &s->numRUN)
-        || ! xdr_int(xdrs, &s->numDONE)) {
+        || ! xdr_int(xdrs, &s->numRUN))
         return false;
-    }
 
     return true;
 }

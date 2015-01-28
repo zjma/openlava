@@ -55,12 +55,10 @@ fs_update_sacct(struct qData *qPtr,
                 int numJobs,
                 int numPEND,
                 int numRUN,
-                int numDONE,
-                uint32_t options)
+                int numDONE)
 {
     struct tree_ *t;
     struct tree_node_ *n;
-    struct tree_node_ *r;
     struct share_acct *sacct;
     char *key;
 
@@ -68,44 +66,19 @@ fs_update_sacct(struct qData *qPtr,
 
     key = get_user_key(jPtr);
 
-    r = n = hash_lookup(t->node_tab, key);
+    n = hash_lookup(t->node_tab, key);
     if (n == NULL)
         return -1;
 
     sacct = n->data;
-
-    /* Add the job to the reference
-     * link. The job will be removed
-     * during scheduling.
-     */
-    if (numPEND > 0)
-        enqueue_link(sacct->jobs, jPtr);
-
-    /* Dispatch failed numPEND did not decrease
-     * but we have to push the job back on the list
-     */
-    if (options & PUSH_JOB_BACK)
-        push_link(sacct->jobs, jPtr);
-
-    /* The replay does some magic so we end
-     * up with a job in state JOB_STAT_RUN
-     * in our pending reference list, remove it.
-     */
-    if (mSchedStage == M_STAGE_REPLAY
-        && !(jPtr->jStatus & JOB_STAT_PEND)) {
-        jPtr = rm_link(sacct->jobs, jPtr);
-    }
+    sacct->uid = jPtr->userId;
 
     while (n) {
         sacct = n->data;
         sacct->numPEND = sacct->numPEND + numPEND;
         sacct->numRUN = sacct->numRUN + numRUN;
-        sacct->numDONE = sacct->numDONE + numDONE;
         n = n->parent;
     }
-
-    sacct = r->data;
-    assert(LINK_NUM_ENTRIES(sacct->jobs) == sacct->numPEND);
 
     return 0;
 }
@@ -131,16 +104,18 @@ fs_init_sched_session(struct qData *qPtr)
  */
 int
 fs_elect_job(struct qData *qPtr,
-                LIST_T *jRef,
-                struct jData **jPtr)
+             LIST_T *jRefList,
+             struct jRef **jRef)
 {
     struct tree_node_ *n;
     struct share_acct *s;
     link_t *l;
+    struct jRef *jref;
+    struct jData *jPtr;
 
     l = qPtr->scheduler->tree->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
-        *jPtr = NULL;
+        *jRef = NULL;
         return -1;
     }
 
@@ -148,13 +123,19 @@ fs_elect_job(struct qData *qPtr,
     s = n->data;
     assert(s->sent > 0);
 
-    if (s->sent > 0) {
+    for (jref = (struct jRef *)jRefList->back;
+         jref != (void *)jRefList;
+         jref = jref->back) {
 
-        assert(LINK_NUM_ENTRIES(s->jobs) >= s->sent);
-        s->sent--;
-        /* Remember to deal with user priorities
-         */
-        *jPtr = pop_link(s->jobs);
+        jPtr = jref->job;
+
+        if (jref->back == (void *)jRefList
+            || jPtr->qPtr->queueId != jPtr->back->qPtr->queueId) {
+            *jRef = NULL;
+        }
+
+        if (jPtr->userId == s->uid)
+            break;
     }
 
     /* More to dispatch from this node
@@ -162,6 +143,8 @@ fs_elect_job(struct qData *qPtr,
      */
     if (s->sent > 0)
         push_link(l, n);
+
+    *jRef = jref;
 
     return 0;
 }

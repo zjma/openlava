@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2011-2015 David Bigagli
@@ -358,7 +357,7 @@ updQaccount(struct jData *jp, int numJobs, int numPEND,
     /* update fairshare counters
      */
     if (qp->scheduler) {
-        (*qp->scheduler->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN, 0);
+        (*qp->scheduler->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN);
         ls_syslog(LOG_DEBUG, "\
 %s: fs_update_sacct %s %d %d", __func__, jp->userName, numPEND, numRUN);
     }

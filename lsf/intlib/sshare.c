@@ -140,9 +140,11 @@ sshare_distribute_slots(struct tree_ *t,
     stack = make_link();
     n = t->root->child;
     /* This must be emptied after every scheduling
-     * cycle
+     * cycle. There could be still some leafs
+     * if not all jobs got dispatched.
      */
-    assert(LINK_NUM_ENTRIES(t->leafs) == 0);
+    while (pop_link(t->leafs))
+        ;
     avail = slots;
     unused = 0;
 
@@ -167,7 +169,7 @@ znovu:
          * the leafs are also sorted
          */
         sacct = n->data;
-        if (n->child == NULL)
+        if (0 && n->child == NULL)
             unused = unused + set_leaf_slots(t, n);
 
         n = n->right;
@@ -201,7 +203,6 @@ make_sacct(const char *name, uint32_t shares)
     s = calloc(1, sizeof(struct share_acct));
     s->name = strdup(name);
     s->shares = shares;
-    s->jobs = make_link();
 
     return s;
 }
@@ -212,7 +213,6 @@ void
 free_sacct(struct share_acct *sacct)
 {
     _free_(sacct->name);
-    fin_link(sacct->jobs);
     _free_(sacct);
 }
 
