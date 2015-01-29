@@ -326,7 +326,7 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
          */
         if (qp->qAttrib & Q_ATTRIB_FAIRSHARE) {
 		printf("\
-\nTOTAL_QUEUE_SLOTS_SHARE_INFO: %u\n", qp->numFairSlots);
+\nTOTAL_QUEUE_SLOTS: %u\n", qp->numFairSlots);
 		printf("\
 %9s   %6s   %8s   %6s   %6s   %6s\n",
 "USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
