@@ -37,7 +37,7 @@ static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
-static uint32_t set_leaf_slots(struct tree_ *, struct tree_node_ *);
+static uint32_t set_leaf_slots(struct tree_ *);
 static void distribute_more(struct tree_ *, uint32_t);
 
 /* sshare_make_tree()
@@ -134,8 +134,8 @@ sshare_distribute_slots(struct tree_ *t,
     struct tree_node_ *n;
     link_t *stack;
     struct share_acct *sacct;
-    uint32_t unused;
     uint32_t avail;
+    uint32_t free;
 
     stack = make_link();
     n = t->root->child;
@@ -146,7 +146,6 @@ sshare_distribute_slots(struct tree_ *t,
     while (pop_link(t->leafs))
         ;
     avail = slots;
-    unused = 0;
 
 znovu:
 
@@ -169,8 +168,9 @@ znovu:
          * the leafs are also sorted
          */
         sacct = n->data;
-        if (0 && n->child == NULL)
-            unused = unused + set_leaf_slots(t, n);
+        sacct->sent = 0;
+        if (n->child == NULL)
+            enqueue_link(t->leafs, n);
 
         n = n->right;
     }
@@ -180,15 +180,17 @@ znovu:
         /* tokens come from the parent
          */
         sacct = n->data;
-        avail = slots = sacct->sent;
+        avail = slots = sacct->dsrv;
         n = n->child;
         goto znovu;
     }
 
     fin_link(stack);
 
-    if (unused > 0)
-        distribute_more(t, unused);
+    free = set_leaf_slots(t);
+
+    if (0 && free > 0)
+        distribute_more(t, free);
 
     return 0;
 }
@@ -229,53 +231,48 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
 
     q = s->dshares * (double)total;
     u = (uint32_t)ceil(q);
-    s->sent = MIN(u, avail);
+    s->dsrv = MIN(u, avail);
 
-    return s->sent;
+    return s->dsrv;
 }
 
 /* set_leaf_slots()
  */
 static uint32_t
-set_leaf_slots(struct tree_ *t, struct tree_node_ *n)
+set_leaf_slots(struct tree_ *t)
 {
     struct share_acct *s;
-    uint32_t u;
-    uint32_t z;
+    uint32_t free;
+    int32_t z;
+    int32_t d;
+    linkiter_t iter;
+    struct tree_node_ *n;
 
-    /* Mistake?
-     */
-    if (n->child)
-        return -1;
+    free = 0;
+    traverse_init(t->leafs, &iter);
+    while ((n = traverse_link(&iter))) {
 
-    s = n->data;
-    /* what is assigned to this share
-     * account based on the configuration
-     */
-    z = s->sent;
+        s = n->data;
+        /* if allocated or over
+         * skip
+         */
+        d = s->dsrv - s->numRUN;
+        if (d <= 0)
+            continue;
 
-    u = s->sent - s->numRUN;
-    /* This account is using more slots then
-     * its shares, it is cannibalizing some
-     * account, don't assign him shares at
-     * this stage.
-     */
-    if (u < 0)
-        return 0;
+        /* if pend more or equal
+         * than d skip
+         */
+        z = d - s->numPEND;
+        if (z <= 0) {
+            s->sent = d;
+            continue;
+        }
+        s->sent = s->numPEND;
+        free = free + z;
+    }
 
-    /* What is assigned to this account based
-     * on what is running and pending
-     */
-    s->sent = MIN(u, s->numPEND);
-
-    if (s->sent > 0)
-        enqueue_link(t->leafs, n);
-
-    /* this is how many free slots are not
-     * used by this share account.
-     */
-    assert(z - s->sent >= 0);
-    return z - s->sent;
+    return free;
 }
 
 /* distribute_more()
@@ -299,7 +296,7 @@ distribute_more(struct tree_ *t, uint32_t z)
         while ((n = traverse_link(&iter))) {
 
             s = n->data;
-            if (s->sent == s->numPEND)
+            if (s->sent >= s->numPEND)
                 continue;
 
             s->sent++;

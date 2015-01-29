@@ -4201,9 +4201,6 @@ scheduleAndDispatchJobs(void)
                  */
                 jR = calloc(1, sizeof(struct jRef));
                 jR->job = jPtr;
-                /* back point the job to its reference
-                 */
-                jPtr->jrefEnt = jR;
 
                 listInsertEntryAtFront(jRefList,
                                        (struct _listEntry *)jR);
@@ -4397,14 +4394,6 @@ scheduleAndDispatchJobs(void)
         TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
 
         dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
-        if (dispRet == DISP_FAIL
-            || dispRet == DISP_NO_JOB) {
-            DUMP_TIMERS(__func__);
-            DUMP_CNT();
-            RESET_CNT();
-            return -1;
-        }
-
         if (STAY_TOO_LONG) {
             if (logclass & LC_SCHED) {
                 ls_syslog(LOG_DEBUG, "\
@@ -4547,7 +4536,6 @@ jiter_next_job(LIST_T *jRefList)
             listRemoveEntry(jRefList,
                             (struct _listEntry *)jR);
             free(jR);
-            jPtr->jrefEnt = NULL;
             return jPtr;
         }
 
@@ -4575,7 +4563,6 @@ jiter_next_job(LIST_T *jRefList)
             listRemoveEntry(jRefList, (struct _listEntry *)jR0);
             jPtr = jR0->job;
             free(jR0);
-            jPtr->jrefEnt = NULL;
             return jPtr;
         }
 
@@ -7033,7 +7020,9 @@ copyCandHostPtr(struct candHost **sourceCandPtr, struct candHost **destCandPtr, 
 }
 
 static enum dispatchAJobReturnCode
-XORDispatch(struct jData *jp, int arg2, enum dispatchAJobReturnCode (*func)(struct jData *, int))
+XORDispatch(struct jData *jp,
+            int arg2,
+            enum dispatchAJobReturnCode (*func)(struct jData *, int))
 {
     int i, reserveIdx, isSet;
     enum dispatchAJobReturnCode ret;

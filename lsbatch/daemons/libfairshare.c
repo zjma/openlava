@@ -54,8 +54,7 @@ fs_update_sacct(struct qData *qPtr,
                 struct jData *jPtr,
                 int numJobs,
                 int numPEND,
-                int numRUN,
-                int numDONE)
+                int numRUN)
 {
     struct tree_ *t;
     struct tree_node_ *n;
@@ -95,7 +94,7 @@ fs_init_sched_session(struct qData *qPtr)
     /* Distribute the tokens all the way
      * down the leafs
      */
-    sshare_distribute_slots(t, qPtr->numUsable);
+    sshare_distribute_slots(t, qPtr->numFairSlots);
 
     return 0;
 }
@@ -112,6 +111,7 @@ fs_elect_job(struct qData *qPtr,
     link_t *l;
     struct jRef *jref;
     struct jData *jPtr;
+    uint32_t sent;
 
     l = qPtr->scheduler->tree->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
@@ -119,9 +119,26 @@ fs_elect_job(struct qData *qPtr,
         return -1;
     }
 
-    n = pop_link(l);
-    s = n->data;
-    assert(s->sent > 0);
+    /* pop() so if the num sent drops
+     * to zero we remove it and never traverse
+     * it again.
+     */
+    sent = 0;
+    while ((n = pop_link(l))) {
+        s = n->data;
+        if (s->sent > 0) {
+            s->sent--;
+            ++sent;
+            break;
+        }
+    }
+
+    /* No more jobs to sent
+     */
+    if (sent == 0) {
+        *jRef = NULL;
+        return -1;
+    }
 
     for (jref = (struct jRef *)jRefList->back;
          jref != (void *)jRefList;

@@ -1043,6 +1043,11 @@ xdr_queueInfoEnt(XDR *xdrs,
     if (! xdr_numShareAccts(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
         return false;
 
+    if (hdr->version >= 3) {
+        if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
+            return false;
+    }
+
     return true;
 }
 
@@ -1103,7 +1108,7 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
     if (! xdr_var_string(xdrs, &s->name)
         || ! xdr_uint32_t(xdrs, &s->shares)
         || ! xdr_double(xdrs, &s->dshares)
-        || ! xdr_uint32_t(xdrs, &s->sent)
+        || ! xdr_uint32_t(xdrs, &s->dsrv)
         || ! xdr_int(xdrs, &s->numPEND)
         || ! xdr_int(xdrs, &s->numRUN))
         return false;

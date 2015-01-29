@@ -763,6 +763,7 @@ struct queueInfoEnt {
     int    defProcLimit;
     char   *fairshare;
     int    numAccts;
+    uint32_t numFairSlots;
     struct share_acct **saccts;
 };
 

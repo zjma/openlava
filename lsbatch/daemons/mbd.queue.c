@@ -435,6 +435,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
                                                 &qRep->numAccts,
                                                 &qRep->saccts);
             }
+            qRep->numFairSlots = qp->numFairSlots;
             queueInfoReplyPtr->numQueues++;
         }
 

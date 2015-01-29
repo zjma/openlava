@@ -13,6 +13,7 @@ struct share_acct {
     int uid;
     uint32_t shares;
     double dshares;
+    uint32_t dsrv;
     uint32_t sent;
     int numPEND;
     int numRUN;

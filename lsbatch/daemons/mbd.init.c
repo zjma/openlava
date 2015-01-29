@@ -25,21 +25,19 @@
 
 extern void resetStaticSchedVariables(void);
 extern void cleanSbdNode(struct jData *);
-extern void uDataPtrTbInitialize();
+extern void uDataPtrTbInitialize(void);
 
 extern struct mbd_func_type mbd_func;
-
-extern int FY_MONTH;
 
 extern void freeUConf(struct userConf *, int);
 extern void freeHConf(struct hostConf *, int);
 extern void freeQConf(struct queueConf *, int);
-extern void freeWorkUser (int);
-extern void freeWorkHost (int);
-extern void freeWorkQueue (int);
-
-extern void uDataTableFree(UDATA_TABLE_T *uTab);
+extern void freeWorkUser(int);
+extern void freeWorkHost(int);
+extern void freeWorkQueue(int);
+extern void uDataTableFree(UDATA_TABLE_T *);
 extern void cleanCandHosts (struct jData *);
+static uint32_t getQueueSlots(struct qData *);
 
 #define setString(string, specString) {         \
         FREEUP(string);                         \
@@ -70,8 +68,6 @@ static int nTempUGroups;
 static int nTempHGroups;
 
 static char batchName[MAX_LSB_NAME_LEN] = "root";
-
-
 #define PARAM_FILE    0x01
 #define USER_FILE     0x02
 #define HOST_FILE     0x04
@@ -83,56 +79,56 @@ static char batchName[MAX_LSB_NAME_LEN] = "root";
 extern int rusageUpdateRate;
 extern int rusageUpdatePercent;
 
-extern void initTab (struct hTab *tabPtr);
+extern void initTab(struct hTab *);
 static void readParamConf(int);
 static int  readHostConf(int);
 static void readUserConf(int);
 static void readQueueConf(int);
 
-static int isHostAlias (char *grpName);
-static int searchAll (char *);
-static void initThresholds (float *, float *);
+static int isHostAlias (char *);
+static int searchAll(char *);
+static void initThresholds(float *, float *);
 static void parseGroups(int, struct gData **, char *, char *);
 static void addMember(struct gData *, char *, int, char *,
-                      struct gData *group[], int *);
+                      struct gData *[], int *);
 static struct gData *addGroup (struct gData **, char *, int *);
 static struct  qData *initQData (void);
-static int isInGrp (char *word, struct gData *);
-static struct gData *addUnixGrp (struct group *, char *, char *,
-                                 struct gData *group[], int*);
-static void parseAUids (struct qData *, char *);
+static int isInGrp(char *, struct gData *);
+static struct gData *addUnixGrp(struct group *, char *, char *,
+                                struct gData *[], int*);
+static void parseAUids(struct qData *, char *);
 
 static void getClusterData(void);
-static void setManagers (struct clusterInfo);
-static void setAllusers (struct qData *, struct admins *);
+static void setManagers(struct clusterInfo);
+static void setAllusers(struct qData *, struct admins *);
 
-static void createTmpGData (struct groupInfoEnt *, int, int,
-                            struct gData *tempHGData[], int *);
+static void createTmpGData(struct groupInfoEnt *, int, int,
+                           struct gData *[], int *);
 static void addHostData(int, struct hostInfoEnt *);
 static void setParams(struct paramConf *);
-static void addUData (struct userConf *);
+static void addUData(struct userConf *);
 static void setDefaultParams(void);
-static void addQData (struct queueConf *, int);
-static int updCondData (struct lsConf *, int);
-static struct condData * initConfData (void);
-static void createCondNodes (int, char **, char *, int);
-static struct lsConf * getFileConf (char *, int);
+static void addQData(struct queueConf *, int);
+static int updCondData(struct lsConf *, int);
+static struct condData *initConfData(void);
+static void createCondNodes(int, char **, char *, int);
+static struct lsConf * getFileConf(char *, int);
 static void copyQData(struct qData *, struct qData *);
 static void copyGroups(int);
 static void addDefaultHost (void);
-static void removeFlags (struct hTab *, int, int);
-static int needPollQHost (struct qData *, struct qData *);
-static void updQueueList (void);
-static void updUserList (int);
+static void removeFlags(struct hTab *, int, int);
+static int needPollQHost(struct qData *, struct qData *);
+static void updQueueList(void);
+static void updUserList(int);
 
-static void addUGDataValues (struct uData *, struct gData *);
-static void addUGDataValues1 (struct uData *, struct uData *);
+static void addUGDataValues(struct uData *, struct gData *);
+static void addUGDataValues1(struct uData *, struct uData *);
 static int parseQHosts(struct qData *, char *);
-static void fillClusterConf (struct clusterConf *);
-static void fillSharedConf (struct sharedConf *);
-static void createDefQueue (void);
-static void freeGrp (struct gData *);
-static int validHostSpec (char *);
+static void fillClusterConf(struct clusterConf *);
+static void fillSharedConf(struct sharedConf *);
+static void createDefQueue(void);
+static void freeGrp(struct gData *);
+static int validHostSpec(char *);
 static void getMaxCpufactor(void);
 static int parseFirstHostErr(int , char *, char *, struct qData *, struct askedHost *, int );
 static struct hData *mkLostAndFoundHost(void);
@@ -3296,8 +3292,7 @@ fillSharedConf(struct sharedConf *sConf)
     sConf->lsinfo = allLsInfo;
     sConf->servers = NULL;
 
-    sConf->clusterName = (char *) my_malloc (sizeof (char *), fname);
-
+    sConf->clusterName = my_malloc (sizeof (char *), fname);
 }
 
 static void
@@ -3305,10 +3300,12 @@ freeGrp (struct gData *grpPtr)
 {
     if (grpPtr == NULL)
         return;
+
     h_delTab_(&grpPtr->memberTab);
     if (grpPtr->group && grpPtr->group[0] != '\0')
-        FREEUP (grpPtr->group);
-    FREEUP (grpPtr);
+        FREEUP(grpPtr->group);
+
+    FREEUP(grpPtr);
 
 }
 
@@ -3317,14 +3314,13 @@ validHostSpec (char *hostSpec)
 {
 
     if (hostSpec == NULL)
-        return (FALSE);
+        return FALSE;
 
     if (getModelFactor (hostSpec) == NULL) {
         if (getHostFactor (hostSpec) == NULL)
-            return (FALSE);
+            return FALSE;
     }
-    return (TRUE);
-
+    return TRUE;
 }
 
 static void
@@ -3342,14 +3338,19 @@ getMaxCpufactor(void)
 }
 
 static int
-parseFirstHostErr(int returnErr, char *fname, char *hosts, struct qData *qp, struct askedHost *returnHosts, int numReturnHosts)
+parseFirstHostErr(int returnErr,
+                  char *fname,
+                  char *hosts,
+                  struct qData *qp,
+                  struct askedHost *returnHosts,
+                  int numReturnHosts)
 {
     int i;
 
-    if (   ( returnErr == LSBE_MULTI_FIRST_HOST )
-           || ( returnErr == LSBE_HG_FIRST_HOST )
-           || ( returnErr == LSBE_HP_FIRST_HOST )
-           || ( returnErr == LSBE_OTHERS_FIRST_HOST )) {
+    if (returnErr == LSBE_MULTI_FIRST_HOST
+        ||returnErr == LSBE_HG_FIRST_HOST
+        ||returnErr == LSBE_HP_FIRST_HOST
+        ||returnErr == LSBE_OTHERS_FIRST_HOST) {
 
         if (returnErr == LSBE_MULTI_FIRST_HOST )
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 6242, "%s: Multiple first execution hosts specified <%s> in HOSTS section for queue <%s>. Ignored."),/*catgets 6242 */
@@ -3367,8 +3368,8 @@ parseFirstHostErr(int returnErr, char *fname, char *hosts, struct qData *qp, str
         if (returnHosts) FREEUP (returnHosts);
         qp->numAskedPtr = numReturnHosts;
         if (numReturnHosts > 0 ) {
-            qp->askedPtr = (struct askedHost *) my_calloc (numReturnHosts,
-                                                           sizeof(struct askedHost), fname);
+            qp->askedPtr = my_calloc (numReturnHosts,
+                                      sizeof(struct askedHost), fname);
             for (i = 0; i < numReturnHosts; i++) {
                 qp->askedPtr[i].hData = returnHosts[i].hData;
                 qp->askedPtr[i].priority = returnHosts[i].priority;
@@ -3381,8 +3382,8 @@ parseFirstHostErr(int returnErr, char *fname, char *hosts, struct qData *qp, str
             (*hosts) = '\0';
         }
         return 0;
-    } else
-        return 1;
+    }
+    return 1;
 }
 
 /* init_fairshare_scheduler()
@@ -3407,6 +3408,8 @@ init_fairshare_scheduler(void)
             FREEUP(qPtr->fairshare);
             continue;
         }
+        qPtr->numFairSlots = getQueueSlots(qPtr);
+        (*qPtr->scheduler->fs_init_sched_session)(qPtr);
     }
 
     return 0;
@@ -3500,4 +3503,30 @@ load_fair_plugin(struct qData *qPtr)
     (*f->fs_init)(qPtr, userConf);
 
     return 0;
+}
+
+/* getQueueSlots()
+ *
+ * Get the global number of slots to be used
+ * in computing the fairshare values.
+ *
+ */
+static uint32_t
+getQueueSlots(struct qData *qPtr)
+{
+    struct hData *hPtr;
+    uint32_t numSlots;
+
+    numSlots = 0;
+    for (hPtr = (struct hData *)hostList->back;
+         hPtr != (void *)hostList;
+         hPtr = hPtr->back) {
+
+        if (!isHostQMember(hPtr, qPtr))
+            continue;
+
+        numSlots = numSlots + hPtr->numCPUs;
+    }
+
+    return numSlots;
 }

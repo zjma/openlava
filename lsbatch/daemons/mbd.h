@@ -344,7 +344,6 @@ struct jData {
     int*   inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
-    struct jRef *jrefEnt; /* my reference entry in the sched list */
 };
 
 
@@ -587,6 +586,7 @@ struct qData {
     int    minProcLimit;
     int    defProcLimit;
     char   *fairshare;
+    uint32_t numFairSlots;
     struct fair_sched *scheduler;
 };
 

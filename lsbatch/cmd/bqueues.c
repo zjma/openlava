@@ -325,16 +325,18 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
          * shareAcctInforEnt data structure.
          */
         if (qp->qAttrib & Q_ATTRIB_FAIRSHARE) {
-		printf("\nSLOTS_SHARE_INFO:\n");
-		printf("%9s   %6s   %8s   %6s   %6s   %6s\n",
-                       "USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
+		printf("\
+\nTOTAL_QUEUE_SLOTS_SHARE_INFO: %u\n", qp->numFairSlots);
+		printf("\
+%9s   %6s   %8s   %6s   %6s   %6s\n",
+"USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
                 for (i = 0; i < qp->numAccts; i++) {
                     printf("%-9s   %6d    %8.3f",
                            qp->saccts[i]->name,
                            qp->saccts[i]->shares,
                            qp->saccts[i]->dshares);
                     printf("   %6d   %6d   %6d\n",
-                           qp->saccts[i]->sent,
+                           qp->saccts[i]->dsrv,
                            qp->saccts[i]->numPEND,
                            qp->saccts[i]->numRUN);
                 }

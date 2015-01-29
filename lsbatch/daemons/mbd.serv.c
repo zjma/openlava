@@ -1400,7 +1400,7 @@ xdrsize_QueueInfoReply(struct queueInfoReply * qInfoReply)
                       * (sizeof(struct queueInfoEnt)
                          + MAX_LSB_NAME_LEN
                          +
-                        qInfoReply->nIdx*2*sizeof(float))
+                        qInfoReply->nIdx * 2 * sizeof(float))
                       + qInfoReply->numQueues * NET_INTSIZE_);
 
     return len;
