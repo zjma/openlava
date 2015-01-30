@@ -60,6 +60,7 @@ fs_update_sacct(struct qData *qPtr,
     struct tree_node_ *n;
     struct share_acct *sacct;
     char *key;
+    int numRAN;
 
     t = qPtr->scheduler->tree;
 
@@ -72,10 +73,17 @@ fs_update_sacct(struct qData *qPtr,
     sacct = n->data;
     sacct->uid = jPtr->userId;
 
+    /* Hoard the running jobs
+     */
+    numRAN = 0;
+    if (numRUN > 0)
+        numRAN = numRAN;
+
     while (n) {
         sacct = n->data;
         sacct->numPEND = sacct->numPEND + numPEND;
         sacct->numRUN = sacct->numRUN + numRUN;
+        sacct->numRAN = sacct->numRAN + numRAN;
         n = n->parent;
     }
 

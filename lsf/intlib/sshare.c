@@ -32,13 +32,15 @@ static link_t *parse_group_member(const char *,
 static struct share_acct *get_sacct(const char *,
                                     const char *);
 static uint32_t compute_slots(struct tree_node_ *, uint32_t, uint32_t);
-static void sort_siblings(struct tree_node_ *);
+static void sort_siblings(struct tree_node_ *,
+                          int (*cmp)(void *, void *));
 static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
 static uint32_t set_leaf_slots(struct tree_ *);
 static void distribute_more(struct tree_ *, uint32_t);
+static uint32_t compute_distance(struct tree_node_ *, uint32_t, uint32_t);
 
 /* sshare_make_tree()
  */
@@ -84,7 +86,7 @@ z:
      * is always sorted by share
      * priority
      */
-    sort_siblings(root);
+    sort_siblings(root, node_cmp);
 
     fin_link(l);
 
@@ -161,14 +163,15 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-        avail = avail - compute_slots(n, slots, avail);
-        assert(avail >= 0);
+        sacct = n->data;
+        sacct->sent = 0;
+        sacct->dsrv = compute_slots(n, slots, avail);
+        avail = avail - sacct->dsrv;
 
+        assert(avail >= 0);
         /* As we traverse in priority order
          * the leafs are also sorted
          */
-        sacct = n->data;
-        sacct->sent = 0;
         if (n->child == NULL)
             enqueue_link(t->leafs, n);
 
@@ -226,14 +229,15 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
     struct share_acct *s;
     double q;
     uint32_t u;
+    uint32_t dsrv;
 
     s = n->data;
 
     q = s->dshares * (double)total;
     u = (uint32_t)ceil(q);
-    s->dsrv = MIN(u, avail);
+    dsrv = MIN(u, avail);
 
-    return s->dsrv;
+    return dsrv;
 }
 
 /* set_leaf_slots()
@@ -276,45 +280,74 @@ set_leaf_slots(struct tree_ *t)
 }
 
 /* distribute_more()
+ *
+ * First sort the tree by total ran job
+ * the redistribute the eventual free
+ *
  */
 static void
-distribute_more(struct tree_ *t, uint32_t z)
+distribute_more(struct tree_ *t, uint32_t free)
 {
-    int more;
     struct tree_node_ *n;
+    struct tree_node_ *n2;
+    link_t *stack;
     struct share_acct *s;
-    linkiter_t iter;
+    uint64_t sum;
+    uint64_t avail;
 
-    if (z == 0)
-        return;
+    stack = make_link();
+    n = t->root->child;
 
-    more = 1;
-    while (more) {
+    n2 = n;
+    sum = 0;
+    while (n) {
 
-        more = 0;
-        traverse_init(t->leafs, &iter);
-        while ((n = traverse_link(&iter))) {
+        if (n->child)
+            push_link(stack, n);
 
-            s = n->data;
-            if (s->sent >= s->numPEND)
-                continue;
-
-            s->sent++;
-            --z;
-            if (z == 0) {
-                more = 0;
-                break;
-            }
-            if (s->numPEND > s->sent)
-                ++more;
-        }
+        s = n->data;
+        sum = sum + s->ran;
+        n = n->right;
     }
+
+    avail = sum;
+    n = n2;
+    while (n) {
+
+        avail = avail - compute_distance(n, sum, avail);
+        n = n->right;
+    }
+
+}
+
+/* compute_distance()
+ */
+static uint32_t
+compute_distance(struct tree_node_ *n,
+                 uint32_t sum,
+                 uint32_t avail)
+{
+    double q;
+    struct share_acct *s;
+    uint32_t u;
+    uint32_t use;
+    int64_t x;
+
+    s = n->data;
+
+    q = s->dshares * (double)sum;
+    u = (int32_t)ceil(q);
+    use = MIN(u, avail);
+    s->dsrv2 = s->numRAN - use;
+
+    return use;
 }
 
 /* sort_siblings()
  */
 static void
-sort_siblings(struct tree_node_ *root)
+sort_siblings(struct tree_node_ *root,
+              int *(cmp)(const void *, const void *)))
 {
     struct tree_node_ *n;
     int num;
@@ -344,7 +377,7 @@ sort_siblings(struct tree_node_ *root)
         n = n->right;
     }
 
-    qsort(v, num, sizeof(struct tree_node_ *), node_cmp);
+    qsort(v, num, sizeof(struct tree_node_ *), cmp);
 
     for (i = 0; i < num; i++) {
         tree_insert_node(root, v[i]);
