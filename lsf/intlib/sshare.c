@@ -33,14 +33,16 @@ static struct share_acct *get_sacct(const char *,
                                     const char *);
 static uint32_t compute_slots(struct tree_node_ *, uint32_t, uint32_t);
 static void sort_siblings(struct tree_node_ *,
-                          int (*cmp)(void *, void *));
+                          int (*cmp)(const void *, const void *));
 static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
+static int node_cmp2(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
-static uint32_t set_leaf_slots(struct tree_ *);
+static uint32_t harvest_leafs(struct tree_ *);
 static void distribute_more(struct tree_ *, uint32_t);
 static uint32_t compute_distance(struct tree_node_ *, uint32_t, uint32_t);
+static void sort_tree_by_ran(struct tree_ *);
 
 /* sshare_make_tree()
  */
@@ -190,7 +192,7 @@ znovu:
 
     fin_link(stack);
 
-    free = set_leaf_slots(t);
+    free = harvest_leafs(t);
 
     if (0 && free > 0)
         distribute_more(t, free);
@@ -240,10 +242,10 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
     return dsrv;
 }
 
-/* set_leaf_slots()
+/* harvest_leafs()
  */
 static uint32_t
-set_leaf_slots(struct tree_ *t)
+harvest_leafs(struct tree_ *t)
 {
     struct share_acct *s;
     uint32_t free;
@@ -283,10 +285,17 @@ set_leaf_slots(struct tree_ *t)
  *
  * First sort the tree by total ran job
  * the redistribute the eventual free
- *
  */
 static void
 distribute_more(struct tree_ *t, uint32_t free)
+{
+    sort_tree_by_ran(t);
+}
+
+/* sort_tree_by_ran()
+ */
+static void
+sort_tree_by_ran(struct tree_ *t)
 {
     struct tree_node_ *n;
     struct tree_node_ *n2;
@@ -298,6 +307,7 @@ distribute_more(struct tree_ *t, uint32_t free)
     stack = make_link();
     n = t->root->child;
 
+znovu:
     n2 = n;
     sum = 0;
     while (n) {
@@ -306,7 +316,7 @@ distribute_more(struct tree_ *t, uint32_t free)
             push_link(stack, n);
 
         s = n->data;
-        sum = sum + s->ran;
+        sum = sum + s->numRAN;
         n = n->right;
     }
 
@@ -318,6 +328,13 @@ distribute_more(struct tree_ *t, uint32_t free)
         n = n->right;
     }
 
+    sort_siblings(n2, node_cmp2);
+
+    n = pop_link(stack);
+    if (n)
+        goto znovu;
+
+    fin_link(stack);
 }
 
 /* compute_distance()
@@ -331,7 +348,6 @@ compute_distance(struct tree_node_ *n,
     struct share_acct *s;
     uint32_t u;
     uint32_t use;
-    int64_t x;
 
     s = n->data;
 
@@ -347,7 +363,8 @@ compute_distance(struct tree_node_ *n,
  */
 static void
 sort_siblings(struct tree_node_ *root,
-              int *(cmp)(const void *, const void *)))
+              int (*cmp)(const void *, const void *))
+
 {
     struct tree_node_ *n;
     int num;
@@ -377,6 +394,10 @@ sort_siblings(struct tree_node_ *root,
         n = n->right;
     }
 
+    /* We want to sort in ascending order as we use
+     * tree_inser_node() which always inserts
+     * node in the left most position.
+     */
     qsort(v, num, sizeof(struct tree_node_ *), cmp);
 
     for (i = 0; i < num; i++) {
@@ -592,9 +613,40 @@ node_cmp(const void *x, const void *y)
     s1 = n1->data;
     s2 = n2->data;
 
+    /* We want to sort in ascending order as we use
+     * tree_inser_node() which always inserts
+     * node in the left most position.
+     */
     if (s1->shares > s2->shares)
         return 1;
     if (s1->shares < s2->shares)
+        return -1;
+
+    return 0;
+}
+
+/* node_cmp2()
+ */
+static int node_cmp2(const void *x, const void *y)
+{
+    struct tree_node_ *n1;
+    struct tree_node_ *n2;
+    struct share_acct *s1;
+    struct share_acct *s2;
+
+    n1 = *(struct tree_node_ **)x;
+    n2 = *(struct tree_node_ **)y;
+
+    s1 = n1->data;
+    s2 = n2->data;
+
+    /* We want to sort in ascending order as we use
+     * tree_inser_node() which always inserts
+     * node in the left most position.
+     */
+    if (s1->dsrv2 > s2->dsrv2)
+        return 1;
+    if (s1->dsrv2 < s2->dsrv2)
         return -1;
 
     return 0;
