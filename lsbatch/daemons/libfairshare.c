@@ -77,7 +77,7 @@ fs_update_sacct(struct qData *qPtr,
      */
     numRAN = 0;
     if (numRUN > 0)
-        numRAN = numRAN;
+        numRAN = numRUN;
 
     while (n) {
         sacct = n->data;
@@ -157,6 +157,7 @@ fs_elect_job(struct qData *qPtr,
         if (jref->back == (void *)jRefList
             || jPtr->qPtr->queueId != jPtr->back->qPtr->queueId) {
             *jRef = NULL;
+            return -1;
         }
 
         if (jPtr->userId == s->uid)

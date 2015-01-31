@@ -71,7 +71,6 @@ tree_insert_node(struct tree_node_ *parent,
 
         parent->child = child;
         child->parent = parent;
-        child->child = child->right = child->left = NULL;
 
         return child;
     }
@@ -82,7 +81,6 @@ tree_insert_node(struct tree_node_ *parent,
     child->right = parent->child;
     child->left = parent->child->left;
     parent->child->left = child;
-    child->child = NULL;
     parent->child = child;
 
     return child;
@@ -100,7 +98,6 @@ tree_rm_node(struct tree_node_ *n)
     if (n->parent
         && n->parent->child == n)
         n->parent->child = n->right;
-
     return n;
 }
 
