@@ -39,10 +39,10 @@ static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
 static int node_cmp2(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
-static uint32_t harvest_leafs(struct tree_ *);
-static void distribute_more(struct tree_ *, uint32_t);
-static uint32_t compute_distance(struct tree_node_ *, uint32_t, uint32_t);
-static void sort_tree_by_ran(struct tree_ *);
+static uint32_t set_leaf_slots(struct tree_ *);
+static uint32_t set_leaf_slots2(struct tree_ *, uint32_t);
+static void sort_by_deviate(struct tree_ *);
+static uint32_t compute_deviate(struct tree_node_ *, uint32_t, uint32_t);
 
 /* sshare_make_tree()
  */
@@ -194,8 +194,15 @@ znovu:
 
     free = harvest_leafs(t);
 
-    if (0 && free > 0)
-        distribute_more(t, free);
+    if (0 && free > 0) {
+        sort_by_deviate(t);
+        set_leaf_slots2(t, free);
+    }
+
+    /* Sort by shares again so the rightmost
+     * branch is always the highest priority.
+     */
+    sort_siblings(root, node_cmp);
 
     return 0;
 }
@@ -281,13 +288,13 @@ harvest_leafs(struct tree_ *t)
     return free;
 }
 
-/* distribute_more()
+/* sort_by_deviate()
  *
  * First sort the tree by total ran job
  * the redistribute the eventual free
  */
 static void
-distribute_more(struct tree_ *t, uint32_t free)
+sort_by_deviate(struct tree_ *t)
 {
     sort_tree_by_ran(t);
 }
@@ -324,25 +331,58 @@ znovu:
     n = n2;
     while (n) {
 
-        avail = avail - compute_distance(n, sum, avail);
+        avail = avail - compute_deviate(n, sum, avail);
         n = n->right;
     }
 
-    sort_siblings(n2, node_cmp2);
+    /* sort by deviate
+     */
+    sort_siblings(t, node_cmp2);
 
     n = pop_link(stack);
     if (n)
         goto znovu;
 
+
     fin_link(stack);
+}
+
+/* set_leaf_slots()
+ */
+static uint32_t
+set_leaf_slots2(struct tree_ *t, uint32_t free)
+{
+    linkiter_t iter;
+    struct tree_node_ *n;
+    struct share_acct *s;
+
+    traverse_init(t->leafs, &iter);
+    while ((n = traverse_link(&iter))) {
+
+        s = n->data;
+        x = abs(s->dsrv2);
+        d = x - free;
+        if (d >= 0) {
+            s->sent = s->sent + free;
+            free = 0;
+        } else {
+            s->sent = s->sent + x;
+            free = free - x;
+        }
+        assert(free >= 0);
+        if (free == 0)
+            break;
+    }
+
+    return free;
 }
 
 /* compute_distance()
  */
 static uint32_t
-compute_distance(struct tree_node_ *n,
-                 uint32_t sum,
-                 uint32_t avail)
+compute_deviate(struct tree_node_ *n,
+                uint32_t sum,
+                uint32_t avail)
 {
     double q;
     struct share_acct *s;
@@ -597,7 +637,8 @@ get_next_word(char **line)
 
 /* node_cmp()
  *
- * Function for qsort()
+ * Function for qsort(), sort nodes by
+ * shares
  */
 static int
 node_cmp(const void *x, const void *y)
@@ -626,8 +667,12 @@ node_cmp(const void *x, const void *y)
 }
 
 /* node_cmp2()
+ *
+ * Function for qsort(), sort nodes by
+ * dsrv2 which is the historical deviation
+ * from dsrv
  */
-static int node_cmp2(const void *x, const void *y)
+static int node_cmp2(const void *x, const void *v)
 {
     struct tree_node_ *n1;
     struct tree_node_ *n2;
@@ -640,14 +685,18 @@ static int node_cmp2(const void *x, const void *y)
     s1 = n1->data;
     s2 = n2->data;
 
-    /* We want to sort in ascending order as we use
-     * tree_inser_node() which always inserts
-     * node in the left most position.
+    /* Sort in descending order as the
+     * tree insertion algorithm always
+     * inserts right.
+     * 5 2 -1 -4
+     * will become
+     * -4 -1 2 5
+     * once on the tree
      */
     if (s1->dsrv2 > s2->dsrv2)
-        return 1;
-    if (s1->dsrv2 < s2->dsrv2)
         return -1;
+    if (s1->dsrv2 < s2->dsrv2)
+        return 1;
 
     return 0;
 }
