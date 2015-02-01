@@ -37,11 +37,14 @@ static void sort_siblings(struct tree_node_ *,
 static void tokenize(char *);
 static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
+static int node_cmp2(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
 static uint32_t harvest_leafs(struct tree_ *);
 static uint32_t set_leaf_slots(struct tree_ *, uint32_t);
-static void compute_tree_deviate(struct tree_ *);
+static void sort_tree_by_deviate(struct tree_ *);
+static void sort_tree_by_shares(struct tree_ *);
 static uint32_t compute_deviate(struct tree_node_ *, uint32_t, uint32_t);
+static void make_leafs(struct tree_ *);
 
 /* sshare_make_tree()
  */
@@ -201,11 +204,47 @@ znovu:
     free = harvest_leafs(t);
 
     if (free > 0) {
-        compute_tree_deviate(t);
+        sort_tree_by_deviate(t);
         set_leaf_slots(t, free);
+        sort_tree_by_shares(t);
     }
 
     return 0;
+}
+
+/* sort_tree_by_shares()
+ */
+static void
+sort_tree_by_shares(struct tree_ *t)
+{
+    link_t *stack;
+    struct tree_node_ *root;
+    struct tree_node_ *n;
+
+    stack = make_link();
+    root = t->root;
+    n = root->child;
+
+znovu:
+    while (n) {
+
+        if (n->child)
+            enqueue_link(stack, n);
+
+        n = n->right;
+    }
+
+    sort_siblings(root, node_cmp);
+
+    n = pop_link(stack);
+    if (n) {
+        root = n;
+        n = root->child;
+        goto znovu;
+    }
+
+    fin_link(stack);
+    make_leafs(t);
 }
 
 /* make_saccount()
@@ -289,11 +328,11 @@ harvest_leafs(struct tree_ *t)
     return free;
 }
 
-/* compute_by_deviate()
+/* sort_tree_by_deviate()
  *
  */
 static void
-compute_tree_deviate(struct tree_ *t)
+sort_tree_by_deviate(struct tree_ *t)
 {
     struct tree_node_ *n;
     struct tree_node_ *n2;
@@ -317,6 +356,8 @@ znovu:
 
         s = n->data;
         s->dsrv2 = 0;
+        /* sum up the historical.
+         */
         sum = sum + s->numRAN;
         n = n->right;
     }
@@ -330,6 +371,8 @@ znovu:
         n = n->right;
     }
 
+    sort_siblings(root, node_cmp2);
+
     n = pop_link(stack);
     if (n) {
         root = n;
@@ -338,6 +381,7 @@ znovu:
     }
 
     fin_link(stack);
+    make_leafs(t);
 }
 
 /* set_leaf_slots()
@@ -448,6 +492,25 @@ sort_siblings(struct tree_node_ *root,
     }
 
     free(v);
+}
+
+/* make_leafs()
+ */
+static void
+make_leafs(struct tree_ *t)
+{
+    struct tree_node_ *n;
+
+    while(pop_link(t->leafs))
+        ;
+
+    n = t->root;
+    while ((n = tree_next_node(n))) {
+
+        if (n->child == NULL) {
+            enqueue_link(t->leafs, n);
+        }
+    }
 }
 
 /* parse_user_shares()
@@ -665,6 +728,41 @@ node_cmp(const void *x, const void *y)
         return 1;
     if (s1->shares < s2->shares)
         return -1;
+
+    return 0;
+}
+
+/* node_cmp2()
+ *
+ * Function for qsort() sort nodes by
+ * dsrv2.
+ */
+static int
+node_cmp2(const void *x, const void *y)
+{
+    struct tree_node_ *n1;
+    struct tree_node_ *n2;
+    struct share_acct *s1;
+    struct share_acct *s2;
+
+    n1 = *(struct tree_node_ **)x;
+    n2 = *(struct tree_node_ **)y;
+
+    s1 = n1->data;
+    s2 = n2->data;
+
+    /* Sort in descending order as the
+     * tree insertion algorithm always
+     * inserts right.
+     * 5 2 -1 -4
+     * will become
+     * -4 -1 2 5
+     * once on the tree
+     */
+    if (s1->dsrv2 > s2->dsrv2)
+        return -1;
+    if (s1->dsrv2 < s2->dsrv2)
+        return 1;
 
     return 0;
 }
