@@ -2,6 +2,8 @@ TAGS
 *.o
 *.lo
 *.a
+*.la
+.libs
 *~
 libtool
 *Makefile.in
