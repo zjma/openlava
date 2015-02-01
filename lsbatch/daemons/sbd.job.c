@@ -2498,82 +2498,85 @@ inJobLink (struct jobCard *jp)
 int
 setIds(struct jobCard *jobCardPtr)
 {
-    static char fname[] = "setIds()";
     struct jobSpecs *jobSpecsPtr = &(jobCardPtr->jobSpecs);
-    char *tGname, *sGname = NULL;
+    char *tGname;
+    char *sGname = NULL;
     struct group *grEntry;
 
-    if (! debug) {
+    if (debug)
+        return 0;
 
-        if (initgroups(jobCardPtr->execUsername, jobCardPtr->execGid) < 0) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jobSpecsPtr->jobId), "initgroups",
-                      jobCardPtr->execUsername);
-            return (-1);
-        }
-
-
-        if (setgid(jobCardPtr->execGid) < 0) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_D_M, fname,
-                      lsb_jobid2str(jobSpecsPtr->jobId), "setgid",
-                      (int) jobCardPtr->execGid);
-            return (-1);
-        }
-
-
-        if ((tGname = getenv("LSB_UNIXGROUP"))) {
-            if (logclass & ( LC_TRACE | LC_EXEC) )
-                ls_syslog(LOG_DEBUG, "got the LSB_UNIXGROUP=%s", tGname);
-
-            if (tGname != NULL ) {
-                sGname = putstr_(tGname);
-                if ((grEntry = getgrnam(sGname)) == NULL) {
-                    ls_syslog(LOG_DEBUG,
-                              "setIds: Job <%s> getgrnam(%s) failed: ",
-                              lsb_jobid2str(jobSpecsPtr->jobId), sGname);
-                } else {
-
-                    char **memp = grEntry->gr_mem;
-                    while (memp != NULL && *memp != NULL) {
-                        if (strcmp(*memp, jobCardPtr->execUsername) == 0) {
-
-
-                            if (setgid(grEntry->gr_gid) < 0) {
-                                ls_syslog(LOG_DEBUG,
-                                          "setIds: Job <%s> setgid(%d) for LSB_UNIXGROUP=%s  failed: %m", lsb_jobid2str(jobSpecsPtr->jobId), (int)grEntry->gr_gid, sGname);
-                            } else {
-
-                                jobCardPtr->execGid = grEntry->gr_gid;
-                            }
-                            break;
-                        }
-                        memp++;
-                    }
-                }
-
-
-                FREEUP(sGname);
-            }
-        }
-
-
-        if ((jobSpecsPtr->options & SUB_INTERACTIVE) &&
-            (jobSpecsPtr->options & SUB_PTY)) {
-            chuser(jobSpecsPtr->execUid);
-        } else if (lsfSetUid(jobSpecsPtr->execUid) < 0) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jobSpecsPtr->jobId), "setuid",
-                      jobCardPtr->execUsername);
-            return (-1);
-        }
-
-        if (logclass & LC_EXEC)
-            ls_syslog(LOG_DEBUG, "setIds: Job <%s> uid %d euid %d",
-                      lsb_jobid2str(jobSpecsPtr->jobId), getuid(), geteuid());
+    if (initgroups(jobCardPtr->execUsername, jobCardPtr->execGid) < 0) {
+        ls_syslog(LOG_ERR, "%s: initgroups() jobid %s user %s failed: %m",
+                  __func__, lsb_jobid2str(jobSpecsPtr->jobId),
+                  jobCardPtr->execUsername);
+        return -1;
     }
-    return (0);
-}
 
+    if (setgid(jobCardPtr->execGid) < 0) {
+        ls_syslog(LOG_ERR, "%s: setgid() failed jobid %s gid %d",
+                  __func__, lsb_jobid2str(jobSpecsPtr->jobId),
+                  jobCardPtr->execGid);
+        return -1;
+    }
+
+
+    if ((tGname = getenv("LSB_UNIXGROUP"))) {
+
+        if (logclass & ( LC_TRACE | LC_EXEC) )
+            ls_syslog(LOG_DEBUG, "got the LSB_UNIXGROUP=%s", tGname);
+
+        if (tGname != NULL) {
+
+            sGname = putstr_(tGname);
+            if ((grEntry = getgrnam(sGname)) == NULL) {
+                ls_syslog(LOG_DEBUG, "\
+%s: Job <%s> getgrnam(%s) failed: ", __func__,
+                          lsb_jobid2str(jobSpecsPtr->jobId), sGname);
+            } else {
+
+                char **memp = grEntry->gr_mem;
+                while (memp != NULL && *memp != NULL) {
+
+                    if (strcmp(*memp, jobCardPtr->execUsername) == 0) {
+
+                        if (setgid(grEntry->gr_gid) < 0) {
+                            ls_syslog(LOG_DEBUG, "\
+%s: Job %s setgid(%d) for LSB_UNIXGROUP=%s  failed: %m",
+                                      __func__,
+                                      lsb_jobid2str(jobSpecsPtr->jobId),
+                                      (int)grEntry->gr_gid, sGname);
+                        } else {
+
+                            jobCardPtr->execGid = grEntry->gr_gid;
+                        }
+                        break;
+                    }
+                    memp++;
+                }
+            }
+
+            FREEUP(sGname);
+        }
+    }
+
+    if ((jobSpecsPtr->options & SUB_INTERACTIVE) &&
+        (jobSpecsPtr->options & SUB_PTY)) {
+        chuser(jobSpecsPtr->execUid);
+    } else if (lsfSetUid(jobSpecsPtr->execUid) < 0) {
+        ls_syslog(LOG_ERR, "%s: setuid() failed jobid %s user %s %m",
+                  __func__, lsb_jobid2str(jobSpecsPtr->jobId),
+                  jobCardPtr->execUsername);
+        return -1;
+    }
+
+    if (logclass & LC_EXEC)
+        ls_syslog(LOG_DEBUG, "\
+%s: Job %s uid %d euid %d", __func__,
+                  lsb_jobid2str(jobSpecsPtr->jobId),
+                  getuid(), geteuid());
+    return 0;
+}
 
 void
 deallocJobCard(struct jobCard *jobCard)
