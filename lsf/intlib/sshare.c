@@ -108,9 +108,13 @@ z:
         /* Create the hash table of nodes and their
          * immediate parent.
          */
+        sacct = n->data;
         if (n->child == NULL) {
+            sacct->options |= SACCT_USER;
             sprintf(buf, "%s/%s", n->parent->path, n->path);
             hash_install(t->node_tab, buf, n, NULL);
+        } else {
+            sacct->options |= SACCT_GROUP;
         }
         sprintf(buf, "%s", n->path);
         hash_install(t->node_tab, buf, n, NULL);

@@ -215,7 +215,6 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
     /* Nwo simply address the array elemens
      * to the nodes. Don't dup memory
      */
-
     i = 0;
     n = t->root;
     while ((n = tree_next_node(n))) {

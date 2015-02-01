@@ -48,7 +48,6 @@ inQueueList (struct qData *entry)
 {
     struct qData *qp;
 
-
     for (qp = qDataList->forw; qp != qDataList; qp = qp->forw)
         if (entry->priority <= qp->priority)
             break;

@@ -21,8 +21,10 @@
 #include "cmd.h"
 #include "../../lsf/intlib/sshare.h"
 
-static void prtQueuesLong (int, struct queueInfoEnt *);
-static void prtQueuesShort (int, struct queueInfoEnt *);
+static void prtQueuesLong(int, struct queueInfoEnt *);
+static void prtQueuesShort(int, struct queueInfoEnt *);
+static void print_slot_shares(struct queueInfoEnt *);
+
 static char wflag = FALSE;
 extern int terminateWhen_(int *, char *);
 
@@ -46,7 +48,6 @@ void
 usage(const char *cmd)
 {
     fprintf(stderr, ": %s [-h] [-V] [-w | -l] [-m host_name | -m cluster_name]\n", cmd);
-
     fprintf(stderr, " [-u user_name]");
     fprintf(stderr, " [queue_name ...]\n");
 }
@@ -325,21 +326,7 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
          * shareAcctInforEnt data structure.
          */
         if (qp->qAttrib & Q_ATTRIB_FAIRSHARE) {
-		printf("\
-\nTOTAL_QUEUE_SLOTS: %u\n", qp->numFairSlots);
-		printf("\
-%9s   %6s   %8s   %6s   %6s   %6s\n",
-"USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
-                for (i = 0; i < qp->numAccts; i++) {
-                    printf("%-9s   %6d    %8.3f",
-                           qp->saccts[i]->name,
-                           qp->saccts[i]->shares,
-                           qp->saccts[i]->dshares);
-                    printf("   %6d   %6d   %6d\n",
-                           qp->saccts[i]->dsrv,
-                           qp->saccts[i]->numPEND,
-                           qp->saccts[i]->numRUN);
-                }
+            print_slot_shares(qp);
         }
 
         if (strcmp (qp->defaultHostSpec, " ") !=  0)
@@ -527,5 +514,45 @@ prtQueuesShort(int numQueues, struct queueInfoEnt *queueInfo)
                    qp->numJobs, qp->numPEND, qp->numRUN,
                    qp->numSSUSP + qp->numUSUSP);
         }
+    }
+}
+
+/* print_slot_shares()
+ */
+static void
+print_slot_shares(struct queueInfoEnt *qp)
+{
+    int i;
+    int numRUN;
+
+    numRUN = 0;
+    for (i = 0; i < qp->numAccts; i++) {
+        if (qp->saccts[i]->options & SACCT_GROUP)
+            numRUN = numRUN + qp->saccts[i]->numRUN;
+    }
+
+    printf("\
+\nTOTAL_SLOTS: %u FREE_SLOTS: %d\n", qp->numFairSlots,
+           qp->numFairSlots - numRUN);
+
+    printf("\
+%9s   %6s   %8s   %6s   %6s   %6s\n",
+           "USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
+    for (i = 0; i < qp->numAccts; i++) {
+        char buf[MAXLSFNAMELEN];
+
+        if (qp->saccts[i]->options & SACCT_GROUP)
+            sprintf(buf, "%s/", qp->saccts[i]->name);
+        else
+            sprintf(buf, "%s", qp->saccts[i]->name);
+
+        printf("%-9s   %6d    %8.3f",
+               buf,
+               qp->saccts[i]->shares,
+               qp->saccts[i]->dshares);
+        printf("   %6d   %6d   %6d\n",
+               qp->saccts[i]->dsrv,
+               qp->saccts[i]->numPEND,
+               qp->saccts[i]->numRUN);
     }
 }

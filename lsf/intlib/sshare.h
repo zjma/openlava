@@ -5,6 +5,9 @@
 #include "tree.h"
 #include "link.h"
 
+#define SACCT_GROUP 0x1
+#define SACCT_USER  0x2
+
 /* The share account structure which is on the
  * share tree representing each user and group.
  */
@@ -19,6 +22,7 @@ struct share_acct {
     int numRUN;
     int numRAN;
     int32_t dsrv2;
+    uint32_t options;
 };
 
 /* Support data structure equivalent of groupInfoEnt
