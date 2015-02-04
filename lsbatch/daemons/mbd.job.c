@@ -4511,7 +4511,7 @@ removeJob(LS_LONG_INT jobId)
     }
 }
 
-/* inPendJobList2()
+/* inPendJobList()
  *
  */
 void
@@ -4536,6 +4536,9 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
 }
 
 /* inPendJobList2()
+ *
+ * Return the last job in the given priority group
+ * before job is inserted.
  */
 static void
 inPendJobList2(struct jData *job,
@@ -4548,14 +4551,15 @@ inPendJobList2(struct jData *job,
     *lastJob = NULL;
     /* Start from the forw point which points to
      * the latest submitted job to the lowest
-     * priority queue. In the simplest case the
-     * jobs are sorted like 106 105 104 103
+     * priority queue or the queue's last job.
+     * In the simplest case the jobs are sorted
+     * like 106 105 104 103
      */
     for (jp = startJob ? startJob : jDataList[listno]->forw;
          jp != jDataList[listno];
          jp = jp->forw) {
 
-        /* If the job A ahead of me has higher priority
+        /* If the job B ahead of me has higher priority
          * then me I go before him BA
          */
         if (job->qPtr->priority < jp->qPtr->priority) {
@@ -4571,7 +4575,7 @@ inPendJobList2(struct jData *job,
            if (*lastJob == NULL)
                *lastJob = jp;
 
-           /* If B priority is higher then job ahead
+           /* If A priority is higher then job ahead
             * keep moving ahead until we find one with
             * higher priority or equal one in which
             * the jobid will decide.
@@ -4587,9 +4591,9 @@ inPendJobList2(struct jData *job,
        }
    }
 
-   /* If the new jobs comes in a A and the finds the
+   /* If the new jobs comes in as A and finds the
     * job B which is the one that has higher priority
-    * it has be put before it BA. The head is A.
+    * it has be put before it AB. Logically the head is B.
     */
    listInsertEntryBefore((LIST_T *)jDataList[listno],
 			 (LIST_ENTRY_T *)jp,
