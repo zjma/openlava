@@ -687,24 +687,23 @@ readQueueConf(int mbdInitFlags)
 static void
 createDefQueue(void)
 {
-    static char fname[] = "createDefQueue";
     struct qData *qp;
 
-    ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 6136,
-                                         "%s: Using the default queue <default> provided by the batch system"), fname); /* catgets 6136 */
-    FREEUP (defaultQueues);
-    defaultQueues = safeSave ("default");
+    ls_syslog(LOG_WARNING, "\
+%s: Using the default queue <default> provided by the batch system", __func__);
+
+    FREEUP(defaultQueues);
+    defaultQueues = safeSave("default");
     qp = initQData();
     qp->qAttrib |= Q_ATTRIB_DEFAULT;
-    qp->description        = safeSave ("This is the default queue provided by the batch system. Jobs are scheduled with very loose control.");
-    qp->queue              = safeSave ("default");
-
+    qp->description = safeSave("This is the default queue provided by the batch system.");
+    qp->queue = safeSave("default");
     qp->hostSpec = safeSave (masterHost);
     qp->flags |=  QUEUE_UPDATE;
     qp->numProcessors = numofprocs;
     qp->askedOthPrio = 0;
     qp->acceptIntvl = accept_intvl;
-    inQueueList (qp);
+    inQueueList(qp);
 }
 
 /* addHost()
@@ -1431,6 +1430,7 @@ initQData (void)
     int i;
 
     qPtr = my_calloc(1, sizeof (struct qData), "initQData");
+
     qPtr->queue = NULL;
     qPtr->queueId = 0;
     qPtr->description = NULL;
@@ -1472,7 +1472,6 @@ initQData (void)
                               sizeof(float), __func__);
     qPtr->loadStop = my_calloc(allLsInfo->numIndx,
                              sizeof(float), __func__);
-
     initThresholds (qPtr->loadSched, qPtr->loadStop);
     qPtr->procLimit = -1;
     qPtr->minProcLimit = -1;
@@ -1517,12 +1516,8 @@ initQData (void)
     qPtr->reasonTb[1] = my_calloc(numofhosts() + 1,
                                   sizeof(int), __func__);
     qPtr->schedStage = 0;
-    for (i = 0; i <= PJL; i++) {
-        qPtr->firstJob[i] = NULL;
-        qPtr->lastJob[i] = NULL;
-    }
     qPtr->chkpntPeriod = -1;
-    qPtr->chkpntDir    = NULL;
+    qPtr->chkpntDir = NULL;
     qPtr->fairshare = NULL;
 
     return qPtr;

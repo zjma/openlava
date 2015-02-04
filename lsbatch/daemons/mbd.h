@@ -579,8 +579,6 @@ struct qData {
     struct  askedHost *askedPtr;
     int     numAskedPtr;
     int     askedOthPrio;
-    struct jData *firstJob[PJL+1];
-    struct jData *lastJob[PJL+1];
     time_t chkpntPeriod;
     char   *chkpntDir;
     int    minProcLimit;
@@ -588,6 +586,7 @@ struct qData {
     char   *fairshare;
     uint32_t numFairSlots;
     struct fair_sched *scheduler;
+    struct jData *lastJob;
 };
 
 

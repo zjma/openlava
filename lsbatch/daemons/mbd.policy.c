@@ -255,19 +255,6 @@ static void getNumSlots(struct jData *);
 static enum dispatchAJobReturnCode dispatchToCandHost(struct jData *);
 static void getNumProcs(struct jData *);
 static void removeCandHost(struct jData *, int);
-static bool_t schedulerObserverSelect(void *, LIST_EVENT_T *);
-static int schedulerObserverEnter(LIST_T *, void *, LIST_EVENT_T *);
-static int schedulerObserverLeave(LIST_T *, void *, LIST_EVENT_T *);
-static int j1IsBeforeJ2(struct jData *, struct jData *, struct jData *);
-static int queueObserverEnter(LIST_T *, void *, LIST_EVENT_T *);
-static int queueObserverLeave(LIST_T *, void *, LIST_EVENT_T *);
-static int listNumber(struct jData *);
-static int jobIsFirstOnSegment(struct jData *, struct jData *);
-static int jobIsLastOnSegment(struct jData *, struct jData *);
-int jobsOnSameSegment(struct jData *, struct jData *, struct jData *);
-static struct jData *nextJobOnSegment(struct jData *, struct jData *);
-static struct jData *prevJobOnSegment(struct jData *, struct jData *);
-static void setQueueFirstAndLastJob(struct qData *, int);
 static int numOfOccuranceOfHost(struct jData *, struct hData *);
 static void removeNOccuranceOfHost(struct jData *, struct hData *, int,
                                    struct hData **);
@@ -290,7 +277,6 @@ static void copyCandHosts(int, struct askedHost *, struct candHost *,
 static void copyCandHostData(struct candHost* , struct candHost* );
 static int noPreference(struct askedHost *, int, int);
 static int imposeDCSOnJob(struct jData *, time_t *, int *, int *);
-static void updateQueueJobPtr(int, struct qData *);
 static void copyReason(void);
 static void clearJobReason(void);
 static int isInCandList (struct candHost *, struct hData *, int);
@@ -316,36 +302,36 @@ void updPreemptResourceByRUNJob(struct jData *);
 void checkAndReserveForPreemptWait(struct jData *);
 int markPreemptForPRHQValues(struct resVal *, int, struct hData **,
                              struct qData *);
-int markPreemptForPRHQInstance(int needResN, float needVal,
-                               struct hData *needHost, struct qData *needQPtr);
-
+int markPreemptForPRHQInstance(int, float,
+                               struct hData *, struct qData *);
 static int needHandleXor(struct jData *);
 static enum candRetCode handleXor(struct jData *);
 static enum candRetCode XORCheckIfCandHostIsOk(struct jData *);
-static enum dispatchAJobReturnCode XORDispatch(struct jData *, int, enum dispatchAJobReturnCode (*)(struct jData *, int));
+static enum dispatchAJobReturnCode XORDispatch(struct jData *,
+                                               int,
+                                               enum dispatchAJobReturnCode
+                                               (*)(struct jData *, int));
 static void copyCandHostPtr(struct candHost **, struct candHost **, int *, int *);
-static void removeCandHostFromCandPtr(struct candHost **, int *, int i);
-static void groupCandsCopy(struct jData *dest, struct jData *src);
-static void groupCandHostsCopy(struct groupCandHosts *dest, struct groupCandHosts *src);
-static void groupCandHostsInit(struct groupCandHosts *gc);
-static void inEligibleGroupsInit(int **inEligibleGroups, int numGroups);
-static void groupCands2CandPtr(int numOfGroups, struct groupCandHosts *gc,
-                               int *numCandPtr, struct candHost **candPtr);
-
+static void removeCandHostFromCandPtr(struct candHost **, int *, int);
+static void groupCandsCopy(struct jData *, struct jData *);
+static void groupCandHostsCopy(struct groupCandHosts *, struct groupCandHosts *);
+static void groupCandHostsInit(struct groupCandHosts *);
+static void inEligibleGroupsInit(int **, int);
+static void groupCands2CandPtr(int, struct groupCandHosts *,
+                               int *, struct candHost **);
+static int PJLObserverEnter(LIST_T *, void *, LIST_EVENT_T *);
+static int PJLObserverLeave(LIST_T *, void *, LIST_EVENT_T *);
 static void jiter_init(LIST_T *);
 static struct jData *jiter_next_job(LIST_T *);
 static void jiter_fin(LIST_T *);
 
-static bool_t      lsbPtilePack = FALSE;
+static bool_t lsbPtilePack = FALSE;
 
 float bThresholds[]={0.1, 0.1, 0.1, 0.1, 5.0, 5.0, 1.0, 5.0, 2.0, 2.0, 3.0};
 int numLsbUsable = 0;
 int freedSomeReserveSlot;
 
-static struct jData *currentJob[PJL+1];
-
 static time_t now_disp;
-static int newSession[PJL+1];
 
 #undef MBD_PROF_COUNTER
 #define MBD_PROF_COUNTER(Func) { 0, #Func },
@@ -3193,12 +3179,11 @@ jobStarted (struct jData *jp, struct jobReply *jobReply)
             jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
     }
 
-
     if (jp->shared->jobBill.options & SUB_PRE_EXEC)
         jp->jStatus |= JOB_STAT_PRE_EXEC;
 
-    jStatusChange (jp, JOB_STAT_RUN, LOG_IT, "jobStarted");
-    adjLsbLoad (jp, FALSE, TRUE);
+    jStatusChange(jp, JOB_STAT_RUN, LOG_IT, "jobStarted");
+    adjLsbLoad(jp, FALSE, TRUE);
 
     INC_CNT(PROF_CNT_numStartedJobsPerSession);
 
@@ -5333,384 +5318,86 @@ removeCandHost(struct jData *jp, int i)
 
 }
 
-static bool_t
-schedulerObserverSelect(void *extra, LIST_EVENT_T *event)
-{
-    if (mSchedStage & M_STAGE_QUE_CAND) {
-        return TRUE;
-    } else {
-
-        return FALSE;
-    }
-}
-
 static int
-schedulerObserverEnter(LIST_T *list, void *extra, LIST_EVENT_T *event)
+PJLObserverEnter(LIST_T *list, void *extra, LIST_EVENT_T *event)
 {
-    struct jData *jp;
-    int listNo;
-
-    jp = (struct jData *)event->entry;
-    if (JOB_IS_PROCESSED(jp)) {
-
-        return 0;
-    }
-    if (list == (LIST_T *)jDataList[PJL]) {
-        listNo = PJL;
-    } else {
-        listNo = MJL;
-    }
-
-    if (currentJob[MJL] == NULL && currentJob[PJL] == NULL &&
-        newSession[MJL] && newSession[PJL]) {
-
-        return 0;
-    }
-    if (listNo == MJL && currentJob[MJL] == NULL) {
-
-        currentJob[MJL] = jp;
-        return 0;
-    }
-    if (listNo == PJL && currentJob[PJL] == NULL) {
-
-        return 0;
-    }
-    if ( ((jp->qPtr != currentJob[listNo]->qPtr)
-          && j1IsBeforeJ2(jp, currentJob[listNo], (struct jData *)list))
-         || ((jp->qPtr == currentJob[listNo]->qPtr)
-             && j1IsBeforeJ2(jp, currentJob[listNo], (struct jData *)list)) ) {
-        currentJob[listNo] = jp;
-    }
     return 0;
 }
 
 static int
-schedulerObserverLeave(LIST_T *list, void *extra, LIST_EVENT_T *event)
+PJLObserverLeave(LIST_T *list, void *extra, LIST_EVENT_T *event)
 {
-    struct jData *jp;
-    int listNo;
+    struct qData *qPtr;
+    struct jData *jPtr;
 
-    jp = (struct jData *)event->entry;
-    if (list == (LIST_T *)jDataList[PJL]) {
-        listNo = PJL;
-    } else {
-        listNo = MJL;
+    jPtr = (struct jData *)event->entry;
+    qPtr = jPtr->qPtr;
+
+    /* The only job in the list
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back == (void *)list) {
+        qPtr->lastJob = NULL;
+        return 0;
     }
-    if (currentJob[listNo] == jp) {
-        currentJob[listNo] = jp->back;
-        if (END_OF_JOB_LIST(currentJob[listNo], listNo)) {
-            currentJob[listNo] = NULL;
-        }
+
+    /* The only job in this priority group with
+     * the list in front, dont try to derefrence list->priority
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
     }
+
+    /* The only job in this priority group with
+     * the list at the back, dont try to derefrence list->priority
+     */
+    if (jPtr->back == (void *)list
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The last job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
+        qPtr->lastJob = jPtr->forw;
+    }
+
     return 0;
-}
-
-static int
-j1IsBeforeJ2(struct jData *j1, struct jData *j2, struct jData *list)
-{
-    struct jData *jp;
-
-    if (j1->qPtr->priority > j2->qPtr->priority) {
-        return TRUE;
-    } else if (j1->qPtr->priority < j2->qPtr->priority) {
-        return FALSE;
-    } else {
-
-        for (jp = j1->back; jp != list; jp = jp->back) {
-
-            if (jp->qPtr->priority < j1->qPtr->priority) {
-                return FALSE;
-            }
-            if (jp == j2) {
-                return TRUE;
-            }
-        }
-        return FALSE;
-    }
 }
 
 
 void
-schedulerInit()
+schedulerInit(void)
 {
-    static char fname[] = "schedulerInit";
-    char myhostname[MAXHOSTNAMELEN], *myhostp = myhostname;
-    static LIST_OBSERVER_T *schedulerObserverOnPJL,
-        *schedulerObserverOnMJL,
-        *queueObserverOnPJL,
-        *queueObserverOnMJL,
-        *queueObserverOnSJL;
-    struct qData *qp;
-    int i;
+    static LIST_OBSERVER_T *schedulerObserverOnPJL;
 
     mSchedStage = 0;
-
-    for (qp = qDataList->back; qp != qDataList; qp = qp->back) {
-        for (i = 0; i <= PJL; i++) {
-            if (i != PJL && i != MJL && i != SJL) {
-                continue;
-            }
-            setQueueFirstAndLastJob(qp, i);
-            if (logclass & LC_SCHED) {
-                if (qp->firstJob[i]) {
-                    char tmpJobid[32];
-                    strcpy(tmpJobid, lsb_jobid2str(qp->firstJob[i]->jobId));
-                    ls_syslog(LOG_DEBUG3, "%s: queue <%s> list <%d> firstJob <%s> lastJob <%s>", fname, qp->queue, i, tmpJobid, lsb_jobid2str(qp->lastJob[i]->jobId));
-                }
-            }
-        }
-    }
 
     listAllowObservers((LIST_T *)jDataList[PJL]);
     listAllowObservers((LIST_T *)jDataList[MJL]);
     listAllowObservers((LIST_T *)jDataList[SJL]);
     schedulerObserverOnPJL = listObserverCreate("schedulerObserverOnPJL",
                                                 NULL,
-                                                &schedulerObserverSelect,
-                                                LIST_EVENT_ENTER,
-                                                &schedulerObserverEnter,
-                                                LIST_EVENT_LEAVE,
-                                                &schedulerObserverLeave,
-                                                LIST_EVENT_NULL);
-    schedulerObserverOnMJL = listObserverCreate("schedulerObserverOnMJL",
                                                 NULL,
-                                                &schedulerObserverSelect,
                                                 LIST_EVENT_ENTER,
-                                                &schedulerObserverEnter,
+                                                &PJLObserverEnter,
                                                 LIST_EVENT_LEAVE,
-                                                &schedulerObserverLeave,
+                                                &PJLObserverLeave,
                                                 LIST_EVENT_NULL);
-    queueObserverOnPJL = listObserverCreate("queueObserverOnPJL",
-                                            NULL,
-                                            NULL,
-                                            LIST_EVENT_ENTER,
-                                            &queueObserverEnter,
-                                            LIST_EVENT_LEAVE,
-                                            &queueObserverLeave,
-                                            LIST_EVENT_NULL);
-    queueObserverOnMJL = listObserverCreate("queueObserverOnMJL",
-                                            NULL,
-                                            NULL,
-                                            LIST_EVENT_ENTER,
-                                            &queueObserverEnter,
-                                            LIST_EVENT_LEAVE,
-                                            &queueObserverLeave,
-                                            LIST_EVENT_NULL);
-    queueObserverOnSJL = listObserverCreate("queueObserverOnSJL",
-                                            NULL,
-                                            NULL,
-                                            LIST_EVENT_ENTER,
-                                            &queueObserverEnter,
-                                            LIST_EVENT_LEAVE,
-                                            &queueObserverLeave,
-                                            LIST_EVENT_NULL);
-
-    if ((schedulerObserverOnPJL == NULL)
-        || (schedulerObserverOnMJL == NULL)
-        || (queueObserverOnPJL == NULL)
-        || (queueObserverOnMJL == NULL)
-        || (queueObserverOnSJL == NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "listObserverCreate");
-
-        if (gethostname(myhostp, MAXHOSTNAMELEN) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "gethostname");
-            strcpy(myhostp, "localhost");
-        }
-        die(MASTER_MEM);
-    }
     listObserverAttach(schedulerObserverOnPJL, (LIST_T *)jDataList[PJL]);
-    listObserverAttach(schedulerObserverOnMJL, (LIST_T *)jDataList[MJL]);
-    listObserverAttach(queueObserverOnPJL, (LIST_T *)jDataList[PJL]);
-    listObserverAttach(queueObserverOnMJL, (LIST_T *)jDataList[MJL]);
-    listObserverAttach(queueObserverOnSJL, (LIST_T *)jDataList[SJL]);
-
 }
-
-static int
-queueObserverEnter(LIST_T *list, void *extra, LIST_EVENT_T *event)
-{
-    struct jData *jp, *jList;
-    int    listNo;
-
-    jp = (struct jData *)event->entry;
-    jList = (struct jData *)list;
-    listNo = listNumber(jList);
-
-    if (jobIsFirstOnSegment(jp, jList)) {
-        jp->qPtr->firstJob[listNumber(jList)] = jp;
-    }
-    if (jobIsLastOnSegment(jp, jList)) {
-        jp->qPtr->lastJob[listNumber(jList)] = jp;
-    }
-    updateQueueJobPtr(listNumber(jList), jp->qPtr);
-    return 0;
-}
-
-static int
-queueObserverLeave(LIST_T *list, void *extra, LIST_EVENT_T *event)
-{
-    struct jData *jp, *jList;
-    int  listNo;
-
-    jp = (struct jData *)event->entry;
-    jList = (struct jData *)list;
-    listNo = listNumber(jList);
-    if (jobIsFirstOnSegment(jp, jList)) {
-        jp->qPtr->firstJob[listNumber(jList)] = nextJobOnSegment(jp, jList);
-    }
-    if (jobIsLastOnSegment(jp, jList)) {
-        jp->qPtr->lastJob[listNumber(jList)] = prevJobOnSegment(jp, jList);
-    }
-    updateQueueJobPtr(listNumber(jList), jp->qPtr);
-
-    return 0;
-}
-
-static int
-listNumber(struct jData *jList)
-{
-    static char fname[] = "listNumber";
-    char myhostname[MAXHOSTNAMELEN], *myhostp = myhostname;
-
-    if (jList == jDataList[MJL]) {
-        return MJL;
-    } else if (jList == jDataList[PJL]) {
-        return PJL;
-    } else if (jList == jDataList[SJL]) {
-        return SJL;
-    } else {
-
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7236,
-                                         "%s: internal error"), fname); /* catgets 7236 */
-
-        if (gethostname(myhostp, MAXHOSTNAMELEN) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "gethostname");
-            strcpy(myhostp, "localhost");
-        }
-        die(MASTER_FATAL);
-    }
-
-
-    return 0;
-
-}
-
-static int
-jobIsFirstOnSegment(struct jData *jp, struct jData *jList)
-{
-    struct jData *prevJob;
-
-    prevJob = jp->forw;
-    if (prevJob == jList) {
-        return TRUE;
-    }
-    if (jobsOnSameSegment(jp, prevJob, jList)) {
-        return FALSE;
-    } else {
-        return TRUE;
-    }
-}
-
-static int
-jobIsLastOnSegment(struct jData *jp, struct jData *jList)
-{
-    struct jData *nextJob;
-
-    nextJob = jp->back;
-    if (nextJob == jList) {
-        return TRUE;
-    }
-    if (jobsOnSameSegment(jp, nextJob, jList)) {
-        return FALSE;
-    } else {
-        return TRUE;
-    }
-}
-
-int
-jobsOnSameSegment(struct jData *j1, struct jData *j2, struct jData *jList)
-{
-    if (j2->qPtr == j1->qPtr) {
-        return TRUE;
-    } else {
-        if (j2->qPtr->priority == j1->qPtr->priority) {
-            return TRUE;
-        } else {
-            return FALSE;
-        }
-    }
-}
-
-static struct jData *
-nextJobOnSegment(struct jData *jp, struct jData *jList)
-{
-    struct jData *nextJob;
-
-    nextJob = jp->back;
-    if (nextJob == jList) {
-        return NULL;
-    }
-    if (jobsOnSameSegment(jp, nextJob, jList)) {
-        return nextJob;
-    } else {
-        return NULL;
-    }
-}
-
-static struct jData *
-prevJobOnSegment(struct jData *jp, struct jData *jList)
-{
-    struct jData *prevJob;
-
-    prevJob = jp->forw;
-    if (prevJob == jList) {
-        return NULL;
-    }
-    if (jobsOnSameSegment(jp, prevJob, jList)) {
-        return prevJob;
-    } else {
-        return NULL;
-    }
-}
-
-static void
-setQueueFirstAndLastJob(struct qData *qp, int listNo)
-{
-    struct jData *jp;
-
-    for (jp = jDataList[listNo]->back; jp != jDataList[listNo]; jp = jp->back) {
-        if (jp->qPtr->priority == qp->priority) {
-            if (jp->qPtr == qp) {
-                qp->firstJob[listNo] = jp;
-                break;
-            } else {
-                if (listNo == SJL) {
-                    qp->firstJob[listNo] = jp;
-                    break;
-                } else {
-                    qp->firstJob[listNo] = jp;
-                    break;
-                }
-            }
-        } else if (jp->qPtr->priority < qp->priority) {
-            break;
-        }
-    }
-    if (qp->firstJob[listNo] == NULL) {
-        return;
-    }
-    for (jp = qp->firstJob[listNo]->back; jp != jDataList[listNo]; jp = jp->back) {
-        if (jp->qPtr->priority < qp->priority) {
-            qp->lastJob[listNo] = jp->forw;
-            break;
-        }
-    }
-    if (jp == jDataList[listNo]) {
-        qp->lastJob[listNo] = jDataList[listNo]->forw;
-    }
-    return;
-}
-
 
 static int
 numOfOccuranceOfHost(struct jData *jp, struct hData *host)
@@ -6174,21 +5861,6 @@ imposeDCSOnJob(struct jData *jp, time_t *deadlinePtr, int *isWinDeadlinePtr,
     }
 
     return FALSE;
-}
-
-static void
-updateQueueJobPtr(int listNo, struct qData *qp)
-{
-    struct qData *qPtr;
-
-    for (qPtr = qDataList->forw; qPtr != qDataList; qPtr = qPtr->forw) {
-        if (qPtr->priority != qp->priority ||
-            qPtr == qp) {
-            continue;
-        }
-        qPtr->firstJob[listNo] = qp->firstJob[listNo];
-        qPtr->lastJob[listNo] = qp->lastJob[listNo];
-    }
 }
 
 static void
