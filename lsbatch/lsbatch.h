@@ -90,6 +90,7 @@
 #define Q_ATTRIB_EXCLUSIVE        0x01
 #define Q_ATTRIB_DEFAULT          0x02
 #define Q_ATTRIB_ROUND_ROBIN      0x04
+#define Q_ATTRIB_PREEMPTIVE       0x08
 #define Q_ATTRIB_BACKFILL         0x80
 #define Q_ATTRIB_HOST_PREFER      0x100
 #define Q_ATTRIB_NO_INTERACTIVE   0x800
@@ -603,6 +604,7 @@ struct submig {
 #define LSB_MAX_ARRAY_JOBID     0x0FFFFFFFF
 #define LSB_MAX_ARRAY_IDX       0x0FFFF
 #define LSB_MAX_SEDJOB_RUNID    (0x0F)
+
 #define LSB_JOBID(array_jobId, array_idx)               \
     (((LS_UNS_LONG_INT)array_idx << 32) | array_jobId)
 #define LSB_ARRAY_IDX(jobId)                                            \
@@ -612,19 +614,17 @@ struct submig {
     (((jobId) == -1) ? (-1) : (int)(jobId & LSB_MAX_ARRAY_JOBID))
 
 
-#define    JGRP_ACTIVE        1
-#define    JGRP_UNDEFINED     -1
-
-#define     JGRP_COUNT_NJOBS   0
-#define     JGRP_COUNT_PEND    1
-#define     JGRP_COUNT_NPSUSP  2
-#define     JGRP_COUNT_NRUN    3
-#define     JGRP_COUNT_NSSUSP  4
-#define     JGRP_COUNT_NUSUSP  5
-#define     JGRP_COUNT_NEXIT   6
-#define     JGRP_COUNT_NDONE   7
-
-#define    NUM_JGRP_COUNTERS 8
+#define JGRP_ACTIVE        1
+#define JGRP_UNDEFINED     -1
+#define JGRP_COUNT_NJOBS   0
+#define JGRP_COUNT_PEND    1
+#define JGRP_COUNT_NPSUSP  2
+#define JGRP_COUNT_NRUN    3
+#define JGRP_COUNT_NSSUSP  4
+#define JGRP_COUNT_NUSUSP  5
+#define JGRP_COUNT_NEXIT   6
+#define JGRP_COUNT_NDONE   7
+#define NUM_JGRP_COUNTERS 8
 
 struct jobAttrInfoEnt {
     LS_LONG_INT jobId;
@@ -708,9 +708,10 @@ struct userInfoEnt {
 #define CHECK_USER      0x100
 #define SORT_HOST       0x200
 
-#define LSB_SIG_NUM               23
+#define LSB_SIG_NUM 23
 
-
+/* queueInfoEnt
+ */
 struct queueInfoEnt {
     char   *queue;
     char   *description;
@@ -765,6 +766,7 @@ struct queueInfoEnt {
     int    numAccts;
     uint32_t numFairSlots;
     struct share_acct **saccts;
+    char *preemption;
 };
 
 #define ACT_NO              0

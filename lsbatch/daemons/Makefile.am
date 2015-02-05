@@ -24,7 +24,8 @@ mbd.h daemonout.h daemons.h jgrp.h proxy.h mbd.profcnt.def
 
 mbatchd_LDADD = ../lib/liblsbatch.la \
                 ../../lsf/lib/liblsf.la \
-                ../../lsf/intlib/liblsfint.la -lm -lnsl
+                ../../lsf/intlib/liblsfint.la \
+		../../lsf/intlib/libtools.la -lm -lnsl
 if !CYGWIN
 mbatchd_LDADD += -lnsl
 endif

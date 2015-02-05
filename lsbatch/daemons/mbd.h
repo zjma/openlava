@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011 - 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -24,6 +25,7 @@
 #include "daemonout.h"
 #include "daemons.h"
 #include "../../lsf/intlib/bitset.h"
+#include "../../lsf/intlib/link.h"
 #include "jgrp.h"
 
 #define  DEF_CLEAN_PERIOD     3600
@@ -521,7 +523,6 @@ struct qData {
     char      *preCmd;
     char      *postCmd;
     char      *prepostUsername;
-
     struct requeueEStruct {
         int type;
 #define RQE_NORMAL   0
@@ -587,11 +588,11 @@ struct qData {
     uint32_t numFairSlots;
     struct fair_sched *scheduler;
     struct jData *lastJob;
+    char *preemption;
+    link_t *preemptable;
 };
 
-
 #define HOST_STAT_REMOTE       0x80000000
-
 
 struct hData {
     struct hData *forw;

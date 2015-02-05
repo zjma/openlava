@@ -40,7 +40,7 @@ getNextWord_(char **line)
         *wordp++ = *(*line)++;
 
     if (wordp == word)
-        return(NULL);
+        return NULL;
 
     *wordp = '\0';
     return word;
@@ -52,24 +52,19 @@ getNextWord1_(char **line)
     static char word[4*MAXLINELEN];
     char *wordp = word;
 
-
-
     while(isspace(**line))
         (*line)++;
-
 
     while (**line && !isspace(**line)&& (**line != ',')
            && (**line != ']')&& (**line != '['))
         *wordp++ = *(*line)++;
 
     if (wordp == word)
-
-        return(NULL);
-
+        return NULL;
 
     *wordp = '\0';
-    return(word);
 
+    return word;
 }
 
 static int charInSet(char c, const char *set)

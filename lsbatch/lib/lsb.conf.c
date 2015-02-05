@@ -84,21 +84,19 @@ static char do_Hosts(struct lsConf *, char *, int *, struct lsInfo *, int);
 static char do_Queues(struct lsConf *, char *, int *, struct lsInfo *, int);
 static char do_Groups(struct groupInfoEnt **, struct lsConf *, char *,
                       int *, int *, int);
-static int isHostName (char *grpName);
+static int isHostName(char *);
 static int addHost(struct hostInfoEnt *, struct hostInfo *, int);
 static char addQueue(struct queueInfoEnt *, char *, int);
-static char addUser (char *, int, float, char *, int);
+static char addUser(char *, int, float, char *, int);
 static char addMember(struct groupInfoEnt *, char *, int, char *,
                       int, char *, int, int);
-
 static char isInGrp (char *, struct groupInfoEnt *, int, int);
 static char **expandGrp(char *, int *, int);
-static struct groupInfoEnt *addGroup(struct groupInfoEnt **, char *, int *, int);
-
+static struct groupInfoEnt *addGroup(struct groupInfoEnt **,
+                                     char *, int *, int);
 static struct groupInfoEnt *addUnixGrp(struct group *,
                                        char *, char *, int, char *, int);
-static char *parseGroups (char *, char *, int *, char *, int, int);
-
+static char *parseGroups(char *, char *, int *, char *, int, int);
 static struct groupInfoEnt *getUGrpData(char *);
 static struct groupInfoEnt *getHGrpData(char *);
 static struct groupInfoEnt *getGrpData(struct groupInfoEnt **, char *, int);
@@ -3704,6 +3702,8 @@ lsb_readqueue(struct lsConf *conf,
     }
 }
 
+/* do_Queues()
+ */
 static char
 do_Queues(struct lsConf *conf,
           char *fname,
@@ -3762,22 +3762,26 @@ do_Queues(struct lsConf *conf,
 #define QKEY_ROUND_ROBIN_POLICY info->numIndx+46
 #define QKEY_PRE_POST_EXEC_USER info->numIndx+47
 #define QKEY_FAIRSHARE info->numIndx + 48
-#define KEYMAP_SIZE info->numIndx+50
+#define QKEY_PREEMPTION info->numIndx + 49
+#define KEYMAP_SIZE info->numIndx+51
 
     struct queueInfoEnt queue;
-    char *linep, *sp, *word;
+    char *linep;
+    char *sp;
+    char *word;
     int retval;
-    char *originalString = NULL, *subString = NULL;
+    char *originalString = NULL;
+    char *subString = NULL;
 
     if (conf == NULL)
         return FALSE;
 
-    FREEUP (keylist);
+    FREEUP(keylist);
     keylist = calloc(KEYMAP_SIZE, sizeof(struct keymap));
     if (keylist == NULL)
         return FALSE;
 
-    initkeylist(keylist, QKEY_NAME + 1, KEYMAP_SIZE, info );
+    initkeylist(keylist, QKEY_NAME + 1, KEYMAP_SIZE, info);
 
     keylist[QKEY_NAME].key="QUEUE_NAME";
     keylist[QKEY_PRIORITY].key="PRIORITY";
@@ -3828,6 +3832,7 @@ do_Queues(struct lsConf *conf,
     keylist[QKEY_ROUND_ROBIN_POLICY].key = "ROUND_ROBIN_POLICY";
     keylist[QKEY_PRE_POST_EXEC_USER].key="PRE_POST_EXEC_USER";
     keylist[QKEY_FAIRSHARE].key = "FAIRSHARE";
+    keylist[QKEY_PREEMPTION].key = "PREEMPTION";
     keylist[KEYMAP_SIZE - 1].key = NULL;
 
     initQueueInfo(&queue);
@@ -4589,6 +4594,20 @@ do_Queues(struct lsConf *conf,
             }
         }
 
+        if (keylist[QKEY_PREEMPTION].val != NULL) {
+            if (strcasestr(keylist[QKEY_PREEMPTION].val, "PREEMPTIVE")) {
+                queue.preemption = strdup(keylist[QKEY_PREEMPTION].val);
+            } else  {
+                ls_syslog(LOG_ERR, "\
+%s: unsupported PREEMPTION %s key, ignored",
+                          __func__,keylist[QKEY_PREEMPTION].val);
+                lsberrno = LSBE_CONF_WARNING;
+                freekeyval(keylist);
+                freeQueueInfo(&queue);
+                return FALSE;
+            }
+        }
+
         if (info->numIndx
             && (queue.loadSched = calloc(info->numIndx,
                                          sizeof(float *))) == NULL) {
@@ -4683,6 +4702,7 @@ initQueueInfo(struct queueInfoEnt *qp)
     qp->chkpntPeriod = -1;
     qp->chkpntDir  = NULL;
     qp->fairshare = NULL;
+    qp->preemption = NULL;
 }
 
 static void
