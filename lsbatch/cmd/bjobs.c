@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  *
  * $Id: bjobs.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
@@ -15,7 +15,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -81,7 +82,7 @@ usage (char *cmd)
 }
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     char *jobName;
     int  options;
@@ -158,22 +159,14 @@ main (int argc, char **argv)
 
         if (numJids >= 1) {
             for (i = 0; i < numJids; i++)
-                jobInfoErr (usrJids[i], jobName, user, queue, host, options);
+                jobInfoErr(usrJids[i], jobName, user, queue, host, options);
         } else {
-            /* openlava. bjobs without a parameter returns an error
-             * if there are no jobs in the system, it does not allow
-             * the set of jobs specified on the command line to be an
-             * empty set. We change it here by still returning an
-             * error but with a different numerical value. We hope
-             * to minimize problems with backward compatibility.
-             */
             jobInfoErr(LSB_ARRAY_JOBID(jobId),
                        jobName,
                        user,
                        queue,
                        host,
                        options);
-            exit(-2);
         }
 
         exit(-1);
