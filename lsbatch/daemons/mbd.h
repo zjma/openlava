@@ -17,7 +17,6 @@
  * MA  02110-1301, USA
  *
  */
-
 #if ! defined(_MBD_HEADER_)
 #define _MBD_HEADER_
 
@@ -531,7 +530,6 @@ struct qData {
         int  value;
         int  interval;
     } *requeEStruct;
-
     char      *requeueEValues;
     char      *windowsD;
     windows_t *week[8];

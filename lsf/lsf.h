@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
+#define _GNU_SOURCE
+
 #ifndef _LSF_H_
 #define _LSF_H_
 

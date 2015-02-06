@@ -4645,28 +4645,12 @@ initQueueInfo(struct queueInfoEnt *qp)
 {
     int i;
 
-    qp->queue = NULL;
-    qp->description = NULL;
-    qp->userList = NULL;
-    qp->hostList = NULL;
-    qp->loadSched = NULL;
-    qp->loadStop = NULL;
-    qp->windows = NULL;
-    qp->hostSpec = NULL;
-    qp->windowsD = NULL;
-    qp->defaultHostSpec = NULL;
-    qp->admins = NULL;
-    qp->preCmd = NULL;
-    qp->postCmd = NULL;
-    qp->prepostUsername = NULL;
-    qp->requeueEValues = NULL;
-    qp->resReq = NULL;
+    memset(qp, 0, sizeof(struct queueInfoEnt));
+
     qp->priority = INFINIT_INT;
     qp->nice = INFINIT_SHORT;
-    qp->nIdx = 0;
     qp->userJobLimit = INFINIT_INT;
     qp->procJobLimit = INFINIT_FLOAT;
-    qp->qAttrib = 0;
     qp->qStatus = INFINIT_INT;
     qp->maxJobs = INFINIT_INT;
     qp->numJobs = INFINIT_INT;
@@ -4689,20 +4673,7 @@ initQueueInfo(struct queueInfoEnt *qp)
 
     qp->numRESERVE = INFINIT_INT;
     qp->slotHoldTime = INFINIT_INT;
-    qp->resumeCond = NULL;
-    qp->stopCond = NULL;
-    qp->jobStarter = NULL;
-
-    qp->suspendActCmd = NULL;
-    qp->resumeActCmd = NULL;
-    qp->terminateActCmd = NULL;
-    for (i = 0; i < LSB_SIG_NUM; i ++ )
-        qp->sigMap[i] = 0;
-
     qp->chkpntPeriod = -1;
-    qp->chkpntDir  = NULL;
-    qp->fairshare = NULL;
-    qp->preemption = NULL;
 }
 
 static void
