@@ -19,6 +19,8 @@
 #include "fairshare.h"
 
 static char *get_user_key(struct jData *);
+static struct tree_node_ *get_user_node(struct hash_tab *,
+                                        const char *);
 
 /* fs_init()
  */
@@ -32,6 +34,15 @@ fs_init(struct qData *qPtr, struct userConf *uConf)
         = sshare_make_tree(qPtr->fairshare,
                            (uint32_t )uConf->numUgroups,
                            (struct group_acct *)uConf->ugroups);
+
+    if (qPtr->scheduler->tree == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: queues %s failed to fairshare configuration, fairshare disabled",
+                  __func__, qPtr->queue);
+        _free_(qPtr->fairshare);
+        qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
+        return -1;
+    }
 
     n = qPtr->scheduler->tree->root;
     while ((n = tree_next_node(n))) {
@@ -66,7 +77,7 @@ fs_update_sacct(struct qData *qPtr,
 
     key = get_user_key(jPtr);
 
-    n = hash_lookup(t->node_tab, key);
+    n = get_user_node(t->node_tab, key);
     if (n == NULL)
         return -1;
 
@@ -243,4 +254,46 @@ get_user_key(struct jData *jPtr)
     }
 
     return buf;
+}
+
+/* get_user_node()
+ */
+static struct tree_node_ *
+get_user_node(struct hash_tab *node_tab,
+              const char *key)
+{
+    struct tree_node_ *n;
+    struct tree_node_ *n2;
+    struct share_acct *sacct;
+    uint32_t sum;
+
+    n = hash_lookup(node_tab, key);
+    if (n)
+        return n;
+
+    /* try user all or G/all
+     */
+    n = hash_lookup(node_tab, "all");
+    if (n == NULL)
+        return NULL;
+
+    sacct = n->data;
+    sacct = make_sacct(key, sacct->shares);
+    tree_insert_node(n->parent, n);
+    sum = 0;
+    n2 = n;
+
+    while (n) {
+        sacct = n->data;
+        sum = sum + sacct->shares;
+        n  = n->right;
+    }
+
+    n = n2;
+    while (n) {
+        sacct = n->data;
+        sacct->dshares = (double)sacct->shares/(double)sum;
+    }
+
+    return n2;
 }

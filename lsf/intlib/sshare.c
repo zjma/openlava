@@ -75,6 +75,10 @@ z:
     else
         root = t->root;
 
+    if (l == NULL) {
+        return NULL;
+    }
+
     traverse_init(l, &iter);
     while ((sacct = traverse_link(&iter))) {
 
@@ -598,6 +602,7 @@ parse_group_member(const char *gname,
     uint32_t sum;
     struct share_acct *sacct;
 
+    l = make_link();
     g = NULL;
     for (cc = 0; cc < num; cc++) {
 
@@ -612,17 +617,23 @@ parse_group_member(const char *gname,
         }
     }
 
-    /* gudness...
+    /* gudness leaf member
+     * caller will free the link
      */
     if (g == NULL)
-        return NULL;
+        return l;
 
     p = g->memberList;
-    l = make_link();
     sum = 0;
     while ((w = get_next_word(&p))) {
 
         sacct = get_sacct(w, g->user_shares);
+        if (sacct == NULL) {
+            while ((sacct = pop_link(l)))
+                free_sacct(sacct);
+            fin_link(l);
+            return NULL;
+        }
         sum = sum + sacct->shares;
         enqueue_link(l, sacct);
     }
@@ -653,6 +664,22 @@ get_sacct(const char *acct_name, const char *user_list)
 
     p0 = p = strdup(user_list);
 
+    cc = sscanf(p, "%s%u%n", name, &shares, &n);
+    if (cc == EOF) {
+        _free_(p);
+        return NULL;
+    }
+
+    /* default can have users all
+     * or explicitly named users
+     */
+    if (strcmp(name, "default") == 0) {
+        sacct = make_sacct(acct_name, shares);
+        goto pryc;
+    }
+
+    /* Match the user in the user_list
+     */
     while (1) {
 
         cc = sscanf(p, "%s%u%n", name, &shares, &n);
@@ -666,6 +693,7 @@ get_sacct(const char *acct_name, const char *user_list)
         break;
     }
 
+pryc:
     _free_(p0);
     return sacct;
 }

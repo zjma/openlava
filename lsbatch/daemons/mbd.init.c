@@ -3544,6 +3544,9 @@ parse_preemption(struct qData *qPtr)
     int i;
     struct qData *qPtr2;
 
+    if (! (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE))
+        return 0;
+
     i = 0;
     p0 = p = strdup(qPtr->preemption);
     p = strcasestr(p0, "PREEMPTIVE");
