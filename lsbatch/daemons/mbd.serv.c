@@ -32,15 +32,14 @@ extern  bool_t xdr_resourceInfoReply(XDR *, struct resourceInfoReply *,
                                      struct LSFHeader *);
 extern bool_t xdr_resourceInfoReq(XDR *, struct resourceInfoReq *,
                                   struct LSFHeader *);
-extern char *jgrpNodeParentPath(struct jgTreeNode *);
 static int packJgrpInfo(struct jgTreeNode *, int, char **, int, int);
 static int packJobInfo(struct jData *, int, char **, int, int, int);
 static void initSubmit(int *, struct submitReq *, struct submitMbdReply *);
 static int sendBack(int, struct submitReq *, struct submitMbdReply *, int);
 static void addPendSigEvent(struct sbdNode *);
-static void freeJobHead (struct jobInfoHead *);
-static void freeJobInfoReply (struct jobInfoReply *);
-static void freeShareResourceInfoReply (struct  lsbShareResourceInfoReply *);
+static void freeJobHead(struct jobInfoHead *);
+static void freeJobInfoReply(struct jobInfoReply *);
+static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
 extern void closeSession(int);
 
@@ -68,20 +67,23 @@ do_submitReq(XDR *xdrs,
 
     initSubmit(&first, &subReq, &submitReply);
 
-
     if (!xdr_submitReq(xdrs, &subReq, reqHdr)) {
         reply = LSBE_XDR;
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_submitReq");
         goto sendback;
     }
 
-
     if (!(subReq.options & SUB_RLIMIT_UNIT_IS_KB)) {
         convertRLimit(subReq.rLimits, 1);
     }
 
-    reply = newJob (&subReq, &submitReply, chfd, auth, schedule, dispatch,
-                    jobData);
+    reply = newJob(&subReq,
+                   &submitReply,
+                   chfd,
+                   auth,
+                   schedule,
+                   dispatch,
+                   jobData);
 sendback:
     if (reply != 0 || submitReply.jobId <= 0 ) {
         if (logclass & (LC_TRACE | LC_EXEC )) {
@@ -116,7 +118,7 @@ sendback:
                   subReq.numAskedHosts,subReq.nxf);
     }
 
-    if (sendBack (reply, &subReq, &submitReply, chfd) < 0) {
+    if (sendBack(reply, &subReq, &submitReply, chfd) < 0) {
         return -1;
     }
 

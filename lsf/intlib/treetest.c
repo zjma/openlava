@@ -58,7 +58,7 @@ z:
     while ((p = traverse_link(&iter))) {
 
         n = calloc(1, sizeof(struct tree_node_));
-        n->path = strdup(p);
+        n->name = strdup(p);
 
         n = tree_insert_node(N, n);
         enqueue_link(stack, n);
@@ -71,7 +71,7 @@ z:
         /* New root and new group name
          */
         N = n;
-        name = n->path;
+        name = n->name;
         goto z;
     }
 
@@ -80,9 +80,9 @@ z:
     tree_walk(t, tree_print);
 
     n = t->root;
-    printf("%s\n", n->path);
+    printf("%s\n", n->name);
     while ((n = tree_next_node(n))) {
-        printf("%s\n", n->path);
+        printf("%s\n", n->name);
     }
 
     tree_free(t);

@@ -71,7 +71,7 @@ struct tree_ *sshare_make_tree(const char *user_shares,
 
 z:
     if (root)
-        l = parse_group_member(n->path, num_grp, grp);
+        l = parse_group_member(n->name, num_grp, grp);
     else
         root = t->root;
 
@@ -83,7 +83,7 @@ z:
     while ((sacct = traverse_link(&iter))) {
 
         n = calloc(1, sizeof(struct tree_node_));
-        n->path = sacct->name;
+        n->name = sacct->name;
 
         n = tree_insert_node(root, n);
         enqueue_link(stack, n);
@@ -114,13 +114,15 @@ z:
          */
         sacct = n->data;
         if (n->child == NULL) {
+            if (strcasecmp(sacct->name, "all") == 0)
+                sacct->options |= SACCT_USER_ALL;
             sacct->options |= SACCT_USER;
-            sprintf(buf, "%s/%s", n->parent->path, n->path);
+            sprintf(buf, "%s/%s", n->parent->name, n->name);
             hash_install(t->node_tab, buf, n, NULL);
         } else {
             sacct->options |= SACCT_GROUP;
         }
-        sprintf(buf, "%s", n->path);
+        sprintf(buf, "%s", n->name);
         hash_install(t->node_tab, buf, n, NULL);
         print_node(n, t);
     }
@@ -176,13 +178,18 @@ znovu:
      */
     while (n) {
 
+        sacct = n->data;
+        if (sacct->options & SACCT_USER_ALL) {
+            n = n->right;
+            continue;
+        }
+
         /* enqueue as we want to traverse
          * the tree by priority
          */
         if (n->child)
             enqueue_link(stack, n);
 
-        sacct = n->data;
         sacct->sent = 0;
         sacct->dsrv = compute_slots(n, slots, avail);
         avail = avail - sacct->dsrv;
@@ -255,7 +262,7 @@ znovu:
     make_leafs(t);
 }
 
-/* make_saccount()
+/* make_sacct()
  */
 struct share_acct *
 make_sacct(const char *name, uint32_t shares)
@@ -813,7 +820,7 @@ print_node(struct tree_node_ *n, struct tree_ *t)
     s = n->data;
 
     printf("%s: node %s shares %d dshares %4.2f\n",
-           __func__, n->path, s->shares, s->dshares);
+           __func__, n->name, s->shares, s->dshares);
 
     return -1;
 }

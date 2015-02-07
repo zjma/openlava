@@ -37,7 +37,7 @@ struct tree_node_ {
     struct tree_node_ *child;
     struct tree_node_ *left;
     struct tree_node_ *right;
-    char *path;
+    char *name;
     void *data;
 };
 
