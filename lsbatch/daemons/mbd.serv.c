@@ -1390,7 +1390,8 @@ xdrsize_QueueInfoReply(struct queueInfoReply * qInfoReply)
             + getXdrStrlen(qInfoReply->queues[i].suspendActCmd)
             + getXdrStrlen(qInfoReply->queues[i].resumeActCmd)
             + getXdrStrlen(qInfoReply->queues[i].terminateActCmd)
-            + getXdrStrlen(qInfoReply->queues[i].chkpntDir);
+            + getXdrStrlen(qInfoReply->queues[i].chkpntDir)
+            + getXdrStrlen(qInfoReply->queues[i].preemption);
         if (qInfoReply->queues[i].numAccts > 0) {
             len = len
                 + qInfoReply->queues[i].numAccts

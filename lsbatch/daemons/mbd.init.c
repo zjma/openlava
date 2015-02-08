@@ -3678,14 +3678,19 @@ check_same_priority_queues(void)
                 qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
                 FREEUP(qPtr->preemption);
                 fin_link(qPtr->preemptable);
+                ls_syslog(LOG_ERR, "\
+%s: queue %s %d same priority as queue %s %d cannot use preemtion",
+                          __func__, qPtr->queue, qPtr->priority,
+                          qPtr2->queue, qPtr2->priority);
             }
             if (qPtr2->qAttrib & Q_ATTRIB_PREEMPTIVE) {
                 qPtr2->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
-                ls_syslog(LOG_ERR, "\
-%s: queues with same priority %s %s cannot use preemptive policy.",
-                          __func__, qPtr->queue, qPtr2->queue);
                 FREEUP(qPtr2->preemption);
                 fin_link(qPtr2->preemptable);
+                ls_syslog(LOG_ERR, "\
+%s: queue %s same priority %d as queue %s %d cannot use preemtion",
+                          __func__, qPtr->queue, qPtr->priority,
+                          qPtr2->queue, qPtr2->priority);
             }
         }
     }

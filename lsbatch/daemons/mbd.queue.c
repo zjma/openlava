@@ -199,7 +199,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
 
     for (j = 0; j < queueInfoReqPtr->numNames; j++) {
 
-        for (qp = qDataList->back; (qp != qDataList); qp = qp->back) {
+        for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
 
             if (strcmp(qp->queue, LOST_AND_FOUND) == 0 && qp->numJobs == 0) {
                 continue;
@@ -237,7 +237,8 @@ checkQueues(struct infoReq *queueInfoReqPtr,
             if (i < queueInfoReplyPtr->numQueues)
                 continue;
 
-            qRep = &(queueInfoReplyPtr->queues[queueInfoReplyPtr->numQueues]);
+            qRep =
+                &(queueInfoReplyPtr->queues[queueInfoReplyPtr->numQueues]);
 
             qRep->queue       = qp->queue;
             qRep->description = qp->description;
@@ -364,7 +365,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
             }
 
             qRep->chkpntPeriod = qp->chkpntPeriod;
-            if ( qp->chkpntDir)
+            if (qp->chkpntDir)
                 qRep->chkpntDir = safeSave(qp->chkpntDir);
             else
                 qRep->chkpntDir = safeSave(" ");
@@ -435,6 +436,13 @@ checkQueues(struct infoReq *queueInfoReqPtr,
                                                 &qRep->saccts);
             }
             qRep->numFairSlots = qp->numFairSlots;
+
+            if (qp->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+                qRep->preemption = strdup(qp->preemption);
+            } else {
+                qRep->preemption = strdup("");
+            }
+
             queueInfoReplyPtr->numQueues++;
         }
 
