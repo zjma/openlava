@@ -1094,7 +1094,6 @@ extern void                 offJobList (struct jData *, int);
 extern void                 handleRequeueJob (struct jData *, time_t);
 extern int                  PJLorMJL(struct jData *);
 
-extern void                 schedulerInit(void);
 extern int                  scheduleAndDispatchJobs(void);
 extern int                  scheduleJobs(int *schedule, int *dispatch,
                                          struct jData *);

@@ -319,8 +319,6 @@ static void groupCandHostsInit(struct groupCandHosts *);
 static void inEligibleGroupsInit(int **, int);
 static void groupCands2CandPtr(int, struct groupCandHosts *,
                                int *, struct candHost **);
-static int PJLObserverEnter(LIST_T *, void *, LIST_EVENT_T *);
-static int PJLObserverLeave(LIST_T *, void *, LIST_EVENT_T *);
 static void jiter_init(LIST_T *);
 static struct jData *jiter_next_job(LIST_T *);
 static void jiter_fin(LIST_T *);
@@ -3148,7 +3146,7 @@ jobStartError(struct jData *jData, sbdReplyType reply)
 }
 
 static void
-jobStarted (struct jData *jp, struct jobReply *jobReply)
+jobStarted(struct jData *jp, struct jobReply *jobReply)
 {
     int i;
     int hostAcceptJobTime;
@@ -3161,13 +3159,12 @@ jobStarted (struct jData *jp, struct jobReply *jobReply)
     jp->oldReason = 0;
     jp->numReasons = 0;
 
-
     hostAcceptJobTime = time(NULL);
 
     for (i = 0; i < jp->numHostPtr; i++)
         jp->hPtr[i]->acceptTime = hostAcceptJobTime;
 
-    FREEUP (jp->reasonTb);
+    FREEUP(jp->reasonTb);
 
     jp->dispCount ++;
     jp->jobPid = jobReply->jobPid;
@@ -3449,8 +3446,7 @@ copyCandHosts (int i, struct askedHost *askedPtr, struct candHost *tmpCandPtr,
 static void
 copyCandHostData(struct candHost* dst, struct candHost* source)
 {
-    static char fname[] = "copyCandHostData";
-    LIST_T*     list;
+    LIST_T *list;
 
     *dst = *source;
 
@@ -3458,13 +3454,6 @@ copyCandHostData(struct candHost* dst, struct candHost* source)
 
         list = listDup(source->backfilleeList,
                        sizeof(struct backfillee));
-        if (list == NULL) {
-            ls_syslog(LOG_ERR,I18N(7242,"\
-%s: Duplicating backfillee list failed:%s"),  /* catgets 7242 */
-                      fname, listStrError(listerrno));
-            mbdDie(MASTER_FATAL);
-        }
-
         dst->backfilleeList = list;
 
     } else {
@@ -4407,7 +4396,9 @@ scheduleAndDispatchJobs(void)
         scheduleTime =
             (scheduleFinishTime.tv_sec - scheduleStartTime.tv_sec)*1000 +
             (scheduleFinishTime.tv_usec - scheduleStartTime.tv_usec)/1000;
-        ls_syslog(LOG_DEBUG, "%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms", __func__, schedSeqNo, scheduleTime);
+        ls_syslog(LOG_DEBUG, "\
+%s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms",
+                  __func__, schedSeqNo, scheduleTime);
     }
 
     jiter_fin(jRefList);
@@ -4418,6 +4409,10 @@ scheduleAndDispatchJobs(void)
         schedSeqNo = 0;
     }
 
+    /* Scheduling cycle is over or it never initiated
+     * because no resources. See is preemptive queue
+     * can canibalize some lower priority ones.
+     */
     tryPreempt();
 
     DUMP_TIMERS(__func__);
@@ -4432,7 +4427,11 @@ scheduleAndDispatchJobs(void)
 static void
 jiter_init(LIST_T *jRefList)
 {
-
+    /* The jRefList is initialized at the start of
+     * scheduleAndDispatch() function where we iterate
+     * on PJL already so don't do it twice but keep
+     * this initializer.
+     */
 }
 
 /* jiter_fin()
@@ -5316,87 +5315,6 @@ removeCandHost(struct jData *jp, int i)
     }
     removeCandHostFromCandPtr(&(jp->candPtr), &(jp->numCandPtr), i);
 
-}
-
-static int
-PJLObserverEnter(LIST_T *list, void *extra, LIST_EVENT_T *event)
-{
-    return 0;
-}
-
-static int
-PJLObserverLeave(LIST_T *list, void *extra, LIST_EVENT_T *event)
-{
-    struct qData *qPtr;
-    struct jData *jPtr;
-
-    jPtr = (struct jData *)event->entry;
-    qPtr = jPtr->qPtr;
-
-    /* The only job in the list
-     */
-    if (jPtr->forw == (void *)list
-        && jPtr->back == (void *)list) {
-        qPtr->lastJob = NULL;
-        return 0;
-    }
-
-    /* The only job in this priority group with
-     * the list in front, dont try to derefrence list->priority
-     */
-    if (jPtr->forw == (void *)list
-        && jPtr->back->qPtr->priority != jPtr->qPtr->priority) {
-        qPtr->lastJob = NULL;
-        return 0;
-    }
-
-    /* The only job in this priority group with
-     * the list at the back, dont try to derefrence list->priority
-     */
-    if (jPtr->back == (void *)list
-        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
-        qPtr->lastJob = NULL;
-        return 0;
-    }
-
-    /* The only job in this priority group
-     */
-    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
-        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
-        qPtr->lastJob = NULL;
-        return 0;
-    }
-
-    /* The last job in this priority group
-     */
-    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
-        && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
-        qPtr->lastJob = jPtr->forw;
-    }
-
-    return 0;
-}
-
-
-void
-schedulerInit(void)
-{
-    static LIST_OBSERVER_T *schedulerObserverOnPJL;
-
-    mSchedStage = 0;
-
-    listAllowObservers((LIST_T *)jDataList[PJL]);
-    listAllowObservers((LIST_T *)jDataList[MJL]);
-    listAllowObservers((LIST_T *)jDataList[SJL]);
-    schedulerObserverOnPJL = listObserverCreate("schedulerObserverOnPJL",
-                                                NULL,
-                                                NULL,
-                                                LIST_EVENT_ENTER,
-                                                &PJLObserverEnter,
-                                                LIST_EVENT_LEAVE,
-                                                &PJLObserverLeave,
-                                                LIST_EVENT_NULL);
-    listObserverAttach(schedulerObserverOnPJL, (LIST_T *)jDataList[PJL]);
 }
 
 static int
@@ -6944,4 +6862,39 @@ setLsbPtilePack(const bool_t x)
 static void
 tryPreempt(void)
 {
+    struct qData *qPtr;
+    link_t *l;
+    struct jData *jPtr;
+    struct jData *jPtr2;
+
+    l = make_link();
+    for (qPtr = qDataList->forw; qPtr != qDataList; qPtr = qPtr->forw) {
+
+        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+            enqueue_link(l, qPtr);
+        }
+    }
+
+    while ((qPtr = pop_link(l))) {
+
+        /* Gut nicht jobs
+         */
+        jPtr = qPtr->lastJob;
+        if (jPtr == NULL)
+            continue;
+
+        while (jPtr) {
+
+            jPtr2 = jPtr->forw;
+
+            /* Fine della coda
+             */
+            if (jPtr2 == (void *)jDataList[PJL]
+                || jPtr->qPtr->priority != jPtr2->qPtr->priority)
+                break;
+            jPtr = jPtr2;
+        }
+    }
+
+    fin_link(l);
 }

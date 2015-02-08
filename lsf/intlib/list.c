@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -75,31 +75,8 @@ listDestroy(LIST_T *list, void (*destroy)(LIST_ENTRY_T *))
             free(entry);
     }
 
-    if (list->allowObservers) {
-
-        listDestroy(list->observers,
-                    (LIST_ENTRY_DESTROY_FUNC_T)&listObserverDestroy);
-    }
-
     free(list->name);
     free(list);
-}
-
-int
-listAllowObservers(LIST_T *list)
-{
-    if (list->allowObservers)
-
-        return 0;
-
-    list->allowObservers = TRUE;
-    list->observers = listCreate("Observer list");
-
-    if (! list->observers)
-
-        return(-1);
-
-    return(0);
 }
 
 LIST_ENTRY_T *
@@ -157,15 +134,6 @@ listInsertEntryBefore(LIST_T * list,
     entry->back = succ->back;
     succ->back->forw = entry;
     succ->back = entry;
-
-    if (list->allowObservers && ! LIST_IS_EMPTY(list->observers)) {
-        LIST_EVENT_T event;
-
-        event.type = LIST_EVENT_ENTER;
-        event.entry = entry;
-
-        listNotifyObservers(list, &event);
-    }
 
     list->numEnts++;
 
@@ -229,51 +197,7 @@ listRemoveEntry(LIST_T *list, LIST_ENTRY_T *entry)
     entry->back->forw = entry->forw;
     entry->forw->back = entry->back;
 
-    if (list->allowObservers && ! LIST_IS_EMPTY(list->observers)) {
-        LIST_EVENT_T event;
-
-        event.type = LIST_EVENT_LEAVE;
-        event.entry = entry;
-
-        (void) listNotifyObservers(list, &event);
-    }
-
     list->numEnts--;
-}
-
-int
-listNotifyObservers(LIST_T *list, LIST_EVENT_T *event)
-{
-    LIST_OBSERVER_T *observer;
-    LIST_ITERATOR_T iter;
-
-    listIteratorAttach(&iter, list->observers);
-
-    for (observer = (LIST_OBSERVER_T *)listIteratorGetCurEntry(&iter);
-         ! listIteratorIsEndOfList(&iter);
-         listIteratorNext(&iter, (LIST_ENTRY_T **)&observer))
-    {
-        if (observer->select != NULL) {
-            if (! (*observer->select)(observer->extra, event))
-                continue;
-        }
-
-        switch (event->type) {
-        case (int) LIST_EVENT_ENTER:
-            if (observer->enter)
-                (*observer->enter)(list, observer->extra, event);
-            break;
-        case (int) LIST_EVENT_LEAVE:
-            if (observer->leave_)
-                (*observer->leave_)(list, observer->extra, event);
-            break;
-        default:
-            listerrno = LIST_ERR_BADARG;
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 void
@@ -436,96 +360,6 @@ listDump(LIST_T* list)
 
 }
 
-LIST_OBSERVER_T *
-listObserverCreate(char *name, void *extra, LIST_ENTRY_SELECT_OP_T select, ...)
-{
-    LIST_OBSERVER_T *observer;
-    LIST_EVENT_TYPE_T etype;
-    LIST_EVENT_CALLBACK_FUNC_T callback;
-    va_list ap;
-
-    observer = calloc(1, sizeof(LIST_OBSERVER_T));
-    if (observer == NULL) {
-        listerrno = LIST_ERR_NOMEM;
-        goto Fail;
-    }
-
-    observer->name = putstr_(name);
-    observer->select = select;
-    observer->extra = extra;
-
-    va_start(ap, select);
-
-    for (;;) {
-        etype = va_arg(ap, LIST_EVENT_TYPE_T);
-
-        if (etype == LIST_EVENT_NULL)
-            break;
-
-        callback = va_arg(ap, LIST_EVENT_CALLBACK_FUNC_T);
-
-        switch (etype) {
-        case (int) LIST_EVENT_ENTER:
-            observer->enter = callback;
-            break;
-
-        case (int) LIST_EVENT_LEAVE:
-            observer->leave_ = callback;
-            break;
-
-        default:
-            listerrno = LIST_ERR_BADARG;
-            goto Fail;
-        }
-    }
-
-    return observer;
-
-  Fail:
-    FREEUP(observer);
-    return NULL;
-}
-
-
-void
-listObserverDestroy(LIST_OBSERVER_T *observer)
-{
-    free(observer->name);
-    free(observer);
-}
-
-
-int
-listObserverAttach(LIST_OBSERVER_T *observer, LIST_T *list)
-{
-    int cc;
-
-    if (! list->allowObservers) {
-        listerrno = (int) LIST_ERR_NOOBSVR;
-        return -1;
-    }
-
-    cc = listInsertEntryBefore(list->observers,
-                               (LIST_ENTRY_T *)list->observers,
-                               (LIST_ENTRY_T *)observer);
-    if (cc < 0)
-        return cc;
-
-    observer->list = list;
-
-    return 0;
-}
-
-
-void
-listObserverDetach(LIST_OBSERVER_T *observer, LIST_T *list)
-{
-    if (observer->list)
-        listRemoveEntry(observer->list, (LIST_ENTRY_T *)observer);
-
-    observer->list = NULL;
-}
-
 LIST_ITERATOR_T *
 listIteratorCreate(char *name)
 {
@@ -615,7 +449,7 @@ listIteratorSetCurEntry(LIST_ITERATOR_T *iter,
     }
 
     iter->curEnt = entry;
-    return (0);
+    return 0;
 
 }
 
@@ -646,50 +480,6 @@ int listerrno;
 
 #undef LIST_ERROR_CODE_ENTRY
 #define LIST_ERROR_CODE_ENTRY(Id, Desc) Desc,
-
-static char *listErrList[] = {
-
-/* catgets 6510  */         "No Error",
-/* catgets 6511  */         "Bad arguments",
-/* catgets 6512  */         "Memory allocation failed",
-/* catgets 6513  */         "Permission denied for attaching observers",
-                            "Last Error (no error)"
-};
-
-#ifdef  I18N_COMPILE
-static int listErrListID[] = {
-       6510,
-       6511,
-       6512,
-       6513
-};
-#endif
-
-char *
-listStrError(int errnum)
-{
-    static char buf[216];
-
-    if (errnum < 0 || errnum > (int) LIST_ERR_LAST) {
-        sprintf(buf, "Unknown error number %d", errnum);
-        return (buf);
-    }
-
-    return listErrList[errnum];
-
-}
-
-void
-listPError(char *usrmsg)
-{
-    if (usrmsg) {
-        fputs(usrmsg, stderr);
-        fputs(": ", stderr);
-    }
-    fputs(listStrError(listerrno), stderr);
-    putc('\n', stderr);
-
-}
 
 void
 inList(struct listEntry *pred, struct listEntry *entry)

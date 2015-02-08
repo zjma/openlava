@@ -175,7 +175,6 @@ minit(int mbdInitFlags)
         char name[128];
         sprintf(name, "Job Data List <%d>", list);
         jDataList[list] = (struct jData *)listCreate(name);
-        listAllowObservers((LIST_T *) jDataList[list]);
     }
 
     initTab(&jobIdHT);

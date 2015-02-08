@@ -97,6 +97,8 @@ static bool_t requestByClusterAdmin(void);
 static int    mbdRcvJobFile(int, struct lenData *);
 
 static void closeSbdConnect4ZombieJob(struct jData *);
+static int set_queue_last_job(LIST_T *, struct jData *);
+
 extern int glMigToPendFlag;
 extern int requeueToBottom;
 extern int arraySchedOrder;
@@ -4586,7 +4588,7 @@ inPendJobList2(struct jData *job,
            if (job->jobPriority < jp->jobPriority)
                break;
 
-           if (job->jobId > jp->jobId)
+           if (LSB_ARRAY_JOBID(job->jobId) >= LSB_ARRAY_JOBID(jp->jobId))
                break;
        }
    }
@@ -4602,17 +4604,21 @@ inPendJobList2(struct jData *job,
 
 
 void
-offJobList (struct jData *jp, int listno)
+offJobList(struct jData *jp, int listno)
 {
     listRemoveEntry((LIST_T *)jDataList[listno], (LIST_ENTRY_T *)jp);
 
+    /* If leaving PJL adjust the queue's last job
+     */
+    if (listno == PJL) {
+        set_queue_last_job((LIST_T *)jDataList[listno], jp);
+    }
 }
 
 void
 inStartJobList (struct jData *job)
 {
     struct jData *jp;
-
 
     for (jp = jDataList[SJL]->forw;
          jp != jDataList[SJL]; jp = jp->forw) {
@@ -4622,12 +4628,12 @@ inStartJobList (struct jData *job)
         else if (job->qPtr->priority == jp->qPtr->priority) {
             if (job->startTime > jp->startTime)
                 break;
-            else if ((job->startTime == jp->startTime || job->startTime == 0)
+            else if ((job->startTime == jp->startTime
+                      || job->startTime == 0)
                      && (job->jobId > jp->jobId))
                 break;
         }
     }
-
 
     listInsertEntryBefore((LIST_T *)jDataList[SJL],
                           (LIST_ENTRY_T *)jp,
@@ -8867,6 +8873,59 @@ static int checkSubHost(struct jData *job)
     return LSBE_NO_ERROR;
 }
 
+/* set_queue_last_job()
+ */
+static int
+set_queue_last_job(LIST_T *list, struct jData *jPtr)
+{
+    struct qData *qPtr;
+
+    qPtr = jPtr->qPtr;
+
+    /* The only job in the list
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back == (void *)list) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group with
+     * the list in front, dont try to derefrence list->priority
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group with
+     * the list at the back, dont try to derefrence list->priority
+     */
+    if (jPtr->back == (void *)list
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The last job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
+        qPtr->lastJob = jPtr->forw;
+    }
+
+    return 0;
+}
+
 /* jcompare()
  *
  * Job sorting function.
@@ -8940,3 +8999,4 @@ jcompare(const void *j1, const void *j2)
     return 0;
 }
 #endif
+
