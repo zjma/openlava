@@ -16,14 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
+
+#define USE_INTERP_RESULT 1
+
 #include "../lsf.h"
 #include "resreq.h"
-#if defined(HAVE_TCL_TCL_H)
+
+#if defined(HAVE_TCL8_6_TCL_H)
+#include <tcl8.6/tcl.h>
+#elif defined(HAVE_TCL8_5_TCL_H)
+#include <tcl8.5/tcl.h>
+#elif defined(HAVE_TCL_TCL_H)
 #include <tcl/tcl.h>
-#endif
-#if defined(HAVE_TCL_H)
+#elif defined(HAVE_TCL_H)
 #include <tcl.h>
 #endif
+
 #include "lsftcl.h"
 #include "../lib/lproto.h"
 

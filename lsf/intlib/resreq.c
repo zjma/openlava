@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2007-2015 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -784,7 +784,7 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
 static int
 resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
-    int i, s, t, len, entry, hasFunction = FALSE, hasQuote;
+    int i, s, t, len, entry, hasQuote;
     char res[MAXLSFNAMELEN], val[MAXLSFNAMELEN];
     char tmpbuf[MAXLSFNAMELEN*2];
     char *sp, *op;
@@ -934,7 +934,6 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                 default:
                     break;
             }
-	    hasFunction = FALSE;
         } else {
             return (PARSE_BAD_EXP);
         }
