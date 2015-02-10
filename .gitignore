@@ -36,3 +36,5 @@ config/openlava.setup
 config/openlava.sh
 config.guess
 config.sub
+stest
+treetest
