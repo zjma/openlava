@@ -4049,7 +4049,7 @@ switchAJob (struct jobSwitchReq *switchReq,
         }
     }
 
-    if ((returnErr = acceptJob (qtp, job, &noUse, auth)) != LSBE_NO_ERROR)
+    if ((returnErr = acceptJob(qtp, job, &noUse, auth)) != LSBE_NO_ERROR)
         return(returnErr);
 
 
@@ -4070,14 +4070,14 @@ switchAJob (struct jobSwitchReq *switchReq,
     if (JOB_PREEMPT_WAIT(job))
         freeReservePreemptResources(job);
 
-    jobInQueueEnd (job, qtp);
-    updSwitchJob (job, qfp, qtp, job->shared->jobBill.maxNumProcessors);
+    jobInQueueEnd(job, qtp);
+    updSwitchJob(job, qfp, qtp, job->shared->jobBill.maxNumProcessors);
 
     if (qfp != qtp) {
         if (auth != NULL)
-            log_switchjob (switchReq, auth->uid, auth->lsfUserName);
+            log_switchjob(switchReq, auth->uid, auth->lsfUserName);
         else
-            log_switchjob (switchReq, job->userId, job->userName);
+            log_switchjob(switchReq, job->userId, job->userName);
     }
     if (!IS_PEND (job->jStatus)) {
 
@@ -4093,32 +4093,31 @@ switchAJob (struct jobSwitchReq *switchReq,
 
 
     if (job->newSub) {
-        freeSubmitReq (job->newSub);
-        FREEUP (job->newSub);
+        freeSubmitReq(job->newSub);
+        FREEUP(job->newSub);
     }
-    if ( IS_START(job->jStatus) ) {
-        newSub = (struct submitReq *) my_malloc
-            (sizeof (struct submitReq), "switchAJob");
-        copyJobBill (&(job->shared->jobBill), newSub, FALSE);
+    if (IS_START(job->jStatus)) {
+        newSub = my_malloc(sizeof (struct submitReq), "switchAJob");
+        copyJobBill(&(job->shared->jobBill), newSub, FALSE);
         job->newSub = newSub;
     }
 
 
-    if ( qfp != qtp ) {
+    if (qfp != qtp) {
         if ((job->shared->jobBill.options & SUB_CHKPNT_DIR )
             && !(job->shared->jobBill.options2 & SUB2_QUEUE_CHKPNT)) {
 
 
         } else {
 
-            if ( !IS_START (job->jStatus)) {
+            if (!IS_START (job->jStatus)) {
 
 
                 FREEUP(job->shared->jobBill.chkpntDir);
                 job->shared->jobBill.options  &= ~ SUB_CHKPNT_DIR;
                 job->shared->jobBill.options  &= ~ SUB_CHKPNT_PERIOD;
                 job->shared->jobBill.options2 &= ~ SUB2_QUEUE_CHKPNT;
-                if ( qtp->qAttrib & Q_ATTRIB_CHKPNT ) {
+                if (qtp->qAttrib & Q_ATTRIB_CHKPNT) {
 
                     char dir[MAXLINELEN];
                     sprintf(dir, "%s/%s", qtp->chkpntDir,
@@ -4521,20 +4520,10 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
     struct jData *lastJob;
 
-    if (job->qPtr->lastJob) {
-
+    if (job->qPtr->lastJob)
         inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
-        if (job->forw == job->qPtr->lastJob)
-            job->qPtr->lastJob = job;
-
-    } else {
-
+    else
         inPendJobList2(job, listno, NULL, &lastJob);
-        if (job->forw == lastJob)
-            job->qPtr->lastJob = job;
-        else
-            job->qPtr->lastJob = lastJob;
-    }
 }
 
 /* inPendJobList2()
@@ -4574,24 +4563,33 @@ inPendJobList2(struct jData *job,
         */
        if (job->qPtr->priority == jp->qPtr->priority) {
 
-           if (*lastJob == NULL)
-               *lastJob = jp;
-
            /* If A priority is higher then job ahead
             * keep moving ahead until we find one with
             * higher priority or equal one in which
             * the jobid will decide.
             */
-           if (job->jobPriority > jp->jobPriority)
+           if (job->jobPriority > jp->jobPriority) {
+               if (*lastJob == NULL)
+                   *lastJob = jp;
                continue;
+           }
 
-           if (job->jobPriority < jp->jobPriority)
+           if (job->jobPriority < jp->jobPriority) {
+               if (*lastJob == NULL)
+                   *lastJob = job;
                break;
+           }
 
-           if (LSB_ARRAY_JOBID(job->jobId) >= LSB_ARRAY_JOBID(jp->jobId))
-               break;
+           if (LSB_ARRAY_JOBID(job->jobId) >= LSB_ARRAY_JOBID(jp->jobId)) {
+               if (*lastJob == NULL)
+                   *lastJob = job;
+           }
+           break;
        }
    }
+
+    if (*lastJob == NULL)
+        *lastJob = job;
 
    /* If the new jobs comes in as A and finds the
     * job B which is the one that has higher priority
@@ -4616,21 +4614,23 @@ offJobList(struct jData *jp, int listno)
 }
 
 void
-inStartJobList (struct jData *job)
+inStartJobList(struct jData *job)
 {
     struct jData *jp;
 
     for (jp = jDataList[SJL]->forw;
-         jp != jDataList[SJL]; jp = jp->forw) {
+         jp != jDataList[SJL];
+         jp = jp->forw) {
 
         if (job->qPtr->priority < jp->qPtr->priority)
             break;
-        else if (job->qPtr->priority == jp->qPtr->priority) {
+
+        if (job->qPtr->priority == jp->qPtr->priority) {
+
             if (job->startTime > jp->startTime)
                 break;
-            else if ((job->startTime == jp->startTime
-                      || job->startTime == 0)
-                     && (job->jobId > jp->jobId))
+
+            if (LSB_ARRAY_JOBID(job->jobId) > LSB_ARRAY_JOBID(jp->jobId))
                 break;
         }
     }
@@ -4641,7 +4641,7 @@ inStartJobList (struct jData *job)
 
 }
 void
-jobInQueueEnd (struct jData *job, struct qData *qp)
+jobInQueueEnd(struct jData *job, struct qData *qp)
 {
     int listno;
 
@@ -4664,12 +4664,12 @@ jobInQueueEnd (struct jData *job, struct qData *qp)
 
                 job->jStatus &= ~JOB_STAT_MIG;
             } else
-                inPendJobList (job, MJL, 0);
+                inPendJobList(job, MJL, 0);
         }
         else
-            inPendJobList (job, PJL, 0);
+            inPendJobList(job, PJL, 0);
     } else
-        inStartJobList (job);
+        inStartJobList(job);
     return;
 }
 
