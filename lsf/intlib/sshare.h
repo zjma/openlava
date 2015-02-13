@@ -23,6 +23,7 @@ struct share_acct {
     int numRUN;
     int numRAN;
     int32_t dsrv2;
+    int32_t wPEND;
     uint32_t options;
 };
 
