@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -155,7 +156,8 @@
 #define    EVENT_UNUSED_31        31
 #define    EVENT_UNUSED_32        32
 
-
+/* Job specific reasons
+ */
 #define PEND_JOB_REASON        0
 #define PEND_JOB_NEW           1
 #define PEND_JOB_START_TIME    2
@@ -179,6 +181,8 @@
 #define PEND_JOB_ARRAY_JLIMIT  38
 #define PEND_CHKPNT_DIR        39
 
+/* Queue and sys reasons
+ */
 #define PEND_QUE_INACT             301
 #define PEND_QUE_WINDOW            302
 #define PEND_QUE_JOB_LIMIT         303
@@ -193,6 +197,8 @@
 #define PEND_QUE_WINDOW_WILL_CLOSE 315
 #define PEND_QUE_PROCLIMIT         316
 
+/* User reasons
+ */
 #define PEND_USER_JOB_LIMIT    601
 #define PEND_UGRP_JOB_LIMIT    602
 #define PEND_USER_PJOB_LIMIT   603
@@ -203,7 +209,8 @@
 #define PEND_RMT_PERMISSION    609
 #define PEND_ADMIN_STOP        610
 
-
+/* Host/job reasons
+ */
 #define PEND_HOST_RES_REQ      1001
 #define PEND_HOST_NONEXCLUSIVE 1002
 #define PEND_HOST_JOB_SSUSP    1003
@@ -214,6 +221,9 @@
 #define PEND_HOST_WIN_WILL_CLOSE 1009
 #define PEND_HOST_MISS_DEADLINE  1010
 #define PEND_FIRST_HOST_INELIGIBLE 1011
+
+/* Host reasons
+ */
 #define PEND_HOST_DISABLED     1301
 #define PEND_HOST_LOCKED       1302
 #define PEND_HOST_LESS_SLOTS   1303
@@ -240,6 +250,8 @@
 #define PEND_QUEUE_HOST        1326
 #define PEND_HOST_LOCKED_MASTER 1327
 
+/* sbatchd reasons
+ */
 #define PEND_SBD_UNREACH       1601
 #define PEND_SBD_JOB_QUOTA     1602
 #define PEND_JOB_START_FAIL    1603
@@ -249,19 +261,22 @@
 #define PEND_SBD_SOCKETPAIR    1607
 #define PEND_SBD_JOB_ACCEPT    1608
 
+/* Load reasons
+ */
 #define PEND_HOST_LOAD         2001
-
 #define PEND_HOST_QUE_RUSAGE  2301
 
+/* Rusage reason
+ */
 #define PEND_HOST_JOB_RUSAGE 2601
 
 #define PEND_MAX_REASONS 2900
 
-
+/* Reason bits for queue
+ */
 #define SUSP_USER_REASON      0x00000000
 #define SUSP_USER_RESUME      0x00000001
 #define SUSP_USER_STOP        0x00000002
-
 #define SUSP_QUEUE_REASON     0x00000004
 #define SUSP_QUEUE_WINDOW     0x00000008
 #define SUSP_HOST_LOCK        0x00000020
@@ -282,6 +297,9 @@
 #define SUB_REASON_MEMLIMIT     0x00000010
 #define SUSP_SBD_STARTUP        0x00040000
 #define SUSP_HOST_LOCK_MASTER   0x00080000
+
+/* Exit reasons
+ */
 #define EXIT_NORMAL         0x00000000
 #define EXIT_RESTART        0x00000001
 #define EXIT_ZOMBIE         0x00000002
