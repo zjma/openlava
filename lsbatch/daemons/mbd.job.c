@@ -4524,6 +4524,8 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
         inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
     else
         inPendJobList2(job, listno, NULL, &lastJob);
+
+    job->qPtr->lastJob = lastJob;
 }
 
 /* inPendJobList2()
