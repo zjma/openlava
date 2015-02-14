@@ -1508,5 +1508,6 @@ extern struct timeWindow *newTimeWindow (void);
 extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
+extern void tryPreempt(void);
 
 #endif /* _MBD_HEADER_ */

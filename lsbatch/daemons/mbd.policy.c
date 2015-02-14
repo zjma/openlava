@@ -396,7 +396,6 @@ timeCollectPendReason %dms",                                            \
 static bool_t  updateAccountsInQueue;
 
 static void resetSchedulerSession(void);
-static void tryPreempt(void);
 
 /* Global as it is shared among few routines.
  */
@@ -6859,14 +6858,17 @@ setLsbPtilePack(const bool_t x)
  * then requeue it.
  *
  */
-static void
+void
 tryPreempt(void)
 {
     struct qData *qPtr;
     link_t *l;
+    link_t *jl;
     struct jData *jPtr;
     struct jData *jPtr2;
+    uint32_t numPEND;
 
+    jl = make_link();
     l = make_link();
     for (qPtr = qDataList->forw; qPtr != qDataList; qPtr = qPtr->forw) {
 
@@ -6875,6 +6877,7 @@ tryPreempt(void)
         }
     }
 
+    numPEND = 0;
     while ((qPtr = pop_link(l))) {
 
         /* Gut nicht jobs
@@ -6886,6 +6889,14 @@ tryPreempt(void)
         while (jPtr) {
 
             jPtr2 = jPtr->forw;
+            assert(jPtr->jStatus & JOB_STAT_PEND
+                   || jPtr->jStatus & JOB_STAT_PSUSP);
+
+            if (jPtr->jStatus & JOB_STAT_PEND
+                && jPtr->newReason == 0) {
+                ++numPEND;
+                push_link(jl, jPtr);
+            }
 
             /* Fine della coda
              */
@@ -6894,6 +6905,12 @@ tryPreempt(void)
                 break;
             jPtr = jPtr2;
         }
+    }
+
+    if (numPEND == 0) {
+        fin_link(l);
+        fin_link(jl);
+        return;
     }
 
     fin_link(l);
