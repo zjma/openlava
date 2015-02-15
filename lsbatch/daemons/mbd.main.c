@@ -1327,6 +1327,7 @@ preempt(void)
             /* requeue me darling
              */
             s.sigValue = SIG_ARRAY_REQUEUE;
+            s.jobId = jPtr->jobId;
             s.actFlags = REQUEUE_RUN;
             s.chkPeriod = JOB_STAT_PEND;
 
