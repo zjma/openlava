@@ -19,6 +19,7 @@
  */
 
 #include "mbd.h"
+#include "preempt.h"
 
 #define MBD_THREAD_MIN_STACKSIZE  512
 #define POLL_INTERVAL MAX(msleeptime/10, 1)
@@ -536,7 +537,6 @@ clientIO(struct Masks *chanmask)
             processSbdNode(sbdPtr, exception);
         }
     }
-
 
     for (cliPtr = clientList->forw;
          cliPtr != clientList;
@@ -1295,22 +1295,48 @@ preempt(void)
 {
     link_t *rl;
     struct jData *jPtr;
+    struct qData *qPtr;
 
-    rl = tryPreempt();
-    if (rl == NULL)
-        return;
+    /* Select preemptive queues and for each
+     * invoke the preemption plugin which will
+     * return the set of candidate jobs for preemption
+     */
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
 
-    if (LINK_NUM_ENTRIES(rl) == 0) {
-        ls_syslog(LOG_DEBUG, "%s: no jobs to preempt...", __func__);
-        fin_link(rl);
-        return;
-    }
+        rl = make_link();
 
-    while ((jPtr = pop_link(rl))) {
-        ls_syslog(LOG_DEBUG, "\
+        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+            (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, 0);
+        }
+
+        if (LINK_NUM_ENTRIES(rl) == 0) {
+            ls_syslog(LOG_DEBUG, "%s: no jobs to preempt...", __func__);
+            fin_link(rl);
+            continue;
+        }
+
+        while ((jPtr = pop_link(rl))) {
+            struct signalReq s;
+            int cc;
+
+            ls_syslog(LOG_DEBUG, "\
 %s: job %s queue %s preemption candidate", __func__,
-                  lsb_jobid2str(jPtr->jobId), jPtr->qPtr->queue);
-    }
+                      lsb_jobid2str(jPtr->jobId), jPtr->qPtr->queue);
+            /* requeue me darling
+             */
+            s.sigValue = SIG_ARRAY_REQUEUE;
+            s.actFlags = REQUEUE_RUN;
+            s.chkPeriod = JOB_STAT_PEND;
 
-    fin_link(rl);
+            cc = signalJob(&s, NULL);
+            if (cc != LSBE_NO_ERROR) {
+                ls_syslog(LOG_ERR, "\
+%s: error while requeue job %s state %d", __func__,
+                          lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+            }
+        }
+        fin_link(rl);
+    }
 }

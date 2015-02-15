@@ -243,8 +243,6 @@ struct jobPeekReply {
     char *pSpoolDir;
 };
 
-
-
 struct signalReq {
     int    sigValue;
     LS_LONG_INT jobId;
