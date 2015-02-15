@@ -4408,12 +4408,6 @@ scheduleAndDispatchJobs(void)
         schedSeqNo = 0;
     }
 
-    /* Scheduling cycle is over or it never initiated
-     * because no resources. See is preemptive queue
-     * can canibalize some lower priority ones.
-     */
-    tryPreempt();
-
     DUMP_TIMERS(__func__);
     DUMP_CNT();
     RESET_CNT();
@@ -6854,23 +6848,29 @@ setLsbPtilePack(const bool_t x)
  * Walk on the PJL and look if jobs with pending reason
  * PEND_HOST_JOB_LIMIT belong to a preemptive queue.
  * If so search in SJL jobs that can be preempted and
- * from the shortest running job find a slot candidate
- * then requeue it.
- *
+ * from the shortest running job find a slot candidate.
  */
-void
+link_t *
 tryPreempt(void)
 {
     struct qData *qPtr;
     link_t *l;
     link_t *jl;
+    link_t *rl;
     struct jData *jPtr;
     struct jData *jPtr2;
     uint32_t numPEND;
+    uint32_t numSLOTS;
+    linkiter_t iter;
 
     jl = make_link();
     l = make_link();
-    for (qPtr = qDataList->forw; qPtr != qDataList; qPtr = qPtr->forw) {
+
+    /* Select all preemptive queues
+     */
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
 
         if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
             enqueue_link(l, qPtr);
@@ -6910,8 +6910,41 @@ tryPreempt(void)
     if (numPEND == 0) {
         fin_link(l);
         fin_link(jl);
-        return;
+        return NULL;
+    }
+
+    rl = make_link();
+
+    while ((jPtr = dequeue_link(jl))) {
+        struct qData *qPtr2;
+        int num;
+
+        traverse_init(jPtr->qPtr->preemptable, &iter);
+        numSLOTS = jPtr->shared->jobBill.numProcessors;
+        num = 0;
+
+        while ((qPtr2 = traverse_link(&iter))) {
+
+            for (jPtr2 = jDataList[SJL]->forw;
+                 jPtr2 != jDataList[SJL];
+                 jPtr2 = jPtr2->forw) {
+
+                if (jPtr2->qPtr != qPtr2)
+                    continue;
+                if (jPtr2->hPtr[0]->hStatus != HOST_STAT_FULL)
+                    continue;
+                num = num + jPtr2->shared->jobBill.numProcessors;
+                if (num < numSLOTS)
+                    continue;
+                push_link(rl, jPtr2);
+                goto nextJob;
+            }
+        }
+    nextJob:;
     }
 
     fin_link(l);
+    fin_link(jl);
+
+    return rl;
 }
