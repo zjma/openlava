@@ -26,12 +26,12 @@ static struct tree_node_ *get_user_node(struct hash_tab *,
 int
 fs_init(struct qData *qPtr, struct userConf *uConf)
 {
-    qPtr->scheduler->tree
+    qPtr->fsSched->tree
         = sshare_make_tree(qPtr->fairshare,
                            (uint32_t )uConf->numUgroups,
                            (struct group_acct *)uConf->ugroups);
 
-    if (qPtr->scheduler->tree == NULL) {
+    if (qPtr->fsSched->tree == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: queues %s failed to fairshare configuration, fairshare disabled",
                   __func__, qPtr->queue);
@@ -57,7 +57,7 @@ fs_update_sacct(struct qData *qPtr,
     struct share_acct *sacct;
     int numRAN;
 
-    t = qPtr->scheduler->tree;
+    t = qPtr->fsSched->tree;
 
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
@@ -90,7 +90,7 @@ fs_init_sched_session(struct qData *qPtr)
 {
     struct tree_ *t;
 
-    t = qPtr->scheduler->tree;
+    t = qPtr->fsSched->tree;
 
     /* Distribute the tokens all the way
      * down the leafs
@@ -114,7 +114,7 @@ fs_elect_job(struct qData *qPtr,
     struct jData *jPtr;
     uint32_t sent;
 
-    l = qPtr->scheduler->tree->leafs;
+    l = qPtr->fsSched->tree->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
         *jRef = NULL;
         return -1;
@@ -194,7 +194,7 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
     int nents;
     int i;
 
-    t = qPtr->scheduler->tree;
+    t = qPtr->fsSched->tree;
 
     /* First let's count the number of nodes
      */

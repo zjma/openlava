@@ -4317,8 +4317,8 @@ scheduleAndDispatchJobs(void)
 
             /* Initialize the slot fairshare scheduler.
              */
-            if (qp->scheduler) {
-                (*qp->scheduler->fs_init_sched_session)(qp);
+            if (qp->fsSched) {
+                (*qp->fsSched->fs_init_sched_session)(qp);
             }
 
         }
@@ -4488,7 +4488,7 @@ jiter_next_job(LIST_T *jRefList)
          */
         if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
             struct qData *qPtr = jPtr->qPtr;
-            (*qPtr->scheduler->fs_elect_job)(qPtr,
+            (*qPtr->fsSched->fs_elect_job)(qPtr,
                                              jRefList,
                                              &jR0);
             if (jR0) {
@@ -4502,7 +4502,7 @@ jiter_next_job(LIST_T *jRefList)
              * so finalize the local plugin data for this
              * session.
              */
-            (*qPtr->scheduler->fs_fin_sched_session)(qPtr);
+            (*qPtr->fsSched->fs_fin_sched_session)(qPtr);
             continue;
         }
 

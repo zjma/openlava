@@ -583,7 +583,7 @@ struct qData {
     int    defProcLimit;
     char   *fairshare;
     uint32_t numFairSlots;
-    struct fair_sched *scheduler;
+    struct fair_sched *fsSched;
     struct jData *lastJob;
     char *preemption;
     link_t *preemptable;
