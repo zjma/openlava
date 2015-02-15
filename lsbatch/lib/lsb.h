@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
 
@@ -28,6 +29,8 @@
 #include "../../lsf/intlib/intlibout.h"
 #include "../daemons/daemonout.h"
 #include "lsb.spool.h"
+#include "../cmd/cmd.h"
+#include "lsb.sig.h"
 
 #ifndef MIN
 #define MIN(x,y)        ((x) < (y) ? (x) : (y))

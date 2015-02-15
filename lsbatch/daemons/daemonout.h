@@ -19,12 +19,11 @@
 #ifndef MBDOUT_H
 #define MBDOUT_H
 
-#include "../../lsf/lsf.h"
 #include "../lsbatch.h"
-
-#include "../../lsf/lib/lib.hdr.h"
 #include "../../lsf/lib/lproto.h"
-#include "../lib/lsb.sig.h"
+#include "../../lsf/intlib/intlibout.h"
+#include "../../lsf/lib/lib.table.h"
+#include "../../lsf/lib/lib.queue.h"
 
 #define BATCH_MASTER_PORT   40000
 #define ALL_HOSTS      "all"

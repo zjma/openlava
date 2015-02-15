@@ -26,6 +26,7 @@
 #include "../../lsf/intlib/bitset.h"
 #include "../../lsf/intlib/link.h"
 #include "jgrp.h"
+#include "../lib/lsb.sig.h"
 
 #define  DEF_CLEAN_PERIOD     3600
 #define  DEF_MAX_RETRY        5

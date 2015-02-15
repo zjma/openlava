@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -13,9 +13,13 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
+
+#if !defined(_LSB_CMD_)
+#define _LSB_CMD_
 
 #include <stdio.h>
 #include <string.h>
@@ -127,3 +131,5 @@ extern int searchEventFile(struct histReq *, int *);
 extern int bmsg(int, char **);
 
 extern void bmove (int, char **, int);
+
+#endif

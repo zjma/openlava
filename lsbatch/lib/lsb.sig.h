@@ -50,7 +50,7 @@
 #define  SIG_TERM_MEMLIMIT       -22
 #define  SIG_ARRAY_REQUEUE       -23
 
-extern int sigNameToValue(char *);
+extern int sigNameToValue_(char *);
 extern char *getLsbSigSymbol(int);
 extern int getDefSigValue_(int, char *);
 extern int isSigTerm(int);

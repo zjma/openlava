@@ -19,10 +19,10 @@
 #ifndef DAEMONS_H
 #define DAEMONS_H
 
+#include "../lsbatch.h"
 #include "../../lsf/lib/lproto.h"
 #include "../../lsf/intlib/intlibout.h"
 #include "../../lsf/lib/lib.table.h"
-#include "../lsbatch.h"
 #include "../../lsf/lib/lib.queue.h"
 #include "daemonout.h"
 
