@@ -149,31 +149,28 @@ static time_t nextSchedTime = 0;
 
 void setJobPriUpdIntvl(void);
 static void updateJobPriorityInPJL(void);
-static void houseKeeping (int *);
-static void periodicCheck (void);
+static void houseKeeping(int *);
+static void periodicCheck(void);
 static int authRequest(struct lsfAuth *, XDR *, struct LSFHeader *,
                        struct sockaddr_in *, struct sockaddr_in *,
                        char *, int);
 static int processClient(struct clientNode *, int *);
-
 static void clientIO(struct Masks *);
 static int forkOnRequest(mbdReqType);
 static void shutdownSbdConnections(void);
 static void processSbdNode(struct sbdNode *, int);
 static void setNextSchedTimeWhenJobFinish(void);
 static void acceptConnection(int);
-
 extern void chanInactivate_(int);
 extern void chanActivate_(int);
 extern int do_chunkStatusReq(XDR *, int, struct sockaddr_in *, int *,
                              struct LSFHeader *);
 extern int do_setJobAttr(XDR *, int, struct sockaddr_in *, char *,
                          struct LSFHeader *, struct lsfAuth *);
-extern void chanCloseAllBut_(int);
-extern int initLimSock_(void);
+static void preempt(void);
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     fd_set readmask;
     struct Masks sockmask;
@@ -843,7 +840,7 @@ shutDownClient(struct clientNode *client)
 }
 
 static void
-houseKeeping (int *hsKeeping)
+houseKeeping(int *hsKeeping)
 {
 #define SCHED  1
 #define DISPT  2
@@ -861,7 +858,7 @@ houseKeeping (int *hsKeeping)
     if (lastAcctSched == 0){
         lastAcctSched = now;
     } else{
-        if ((now - lastAcctSched) > T15MIN){
+        if ((now - lastAcctSched) > T15MIN) {
             lastAcctSched = now;
             checkAcctLog();
         }
@@ -873,7 +870,7 @@ houseKeeping (int *hsKeeping)
         if (eventPending) {
             resignal = TRUE;
         }
-        now = time(0);
+        now = time(NULL);
         if (schedule) {
             lastSchedTime = now;
             nextSchedTime = now + msleeptime;
@@ -884,11 +881,10 @@ houseKeeping (int *hsKeeping)
             } else {
                 schedule = TRUE;
             }
+            preempt();
             return;
         }
     }
-
-    tryPreempt();
 
     if (myTurn == SCHED)
         myTurn = RESIG;
@@ -1287,4 +1283,34 @@ updateJobPriorityInPJL(void)
         unsigned int newVal = jp->jobPriority + priority;
         jp->jobPriority = MIN(newVal, (unsigned int)MAX_JOB_PRIORITY);
     }
+}
+
+/* preempt()
+ *
+ * Run the preemption algorithm
+ *
+ */
+static void
+preempt(void)
+{
+    link_t *rl;
+    struct jData *jPtr;
+
+    rl = tryPreempt();
+    if (rl == NULL)
+        return;
+
+    if (LINK_NUM_ENTRIES(rl) == 0) {
+        ls_syslog(LOG_DEBUG, "%s: no jobs to preempt...", __func__);
+        fin_link(rl);
+        return;
+    }
+
+    while ((jPtr = pop_link(rl))) {
+        ls_syslog(LOG_DEBUG, "\
+%s: job %s queue %s preemption candidate", __func__,
+                  lsb_jobid2str(jPtr->jobId), jPtr->qPtr->queue);
+    }
+
+    fin_link(rl);
 }

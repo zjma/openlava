@@ -218,7 +218,6 @@ struct askedHost {
 
 #define NON_PRMPT_Q(qAttrib)    TRUE
 
-
 struct rqHistory{
     struct hData *host;
     int retry_num;
@@ -588,6 +587,7 @@ struct qData {
     struct jData *lastJob;
     char *preemption;
     link_t *preemptable;
+    struct prm_sched *prmSched;
 };
 
 #define HOST_STAT_REMOTE       0x80000000
@@ -1508,6 +1508,6 @@ extern struct timeWindow *newTimeWindow (void);
 extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
-extern void tryPreempt(void);
+extern link_t *tryPreempt(void);
 
 #endif /* _MBD_HEADER_ */
