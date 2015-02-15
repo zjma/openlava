@@ -619,9 +619,6 @@ handShake_(int s, char client, int timeout)
 int
 authTicketTokens_(struct lsfAuth *auth, char *toHost)
 {
-
-
-
     if (toHost == NULL) {
 	char *clusterName;
 	char buf[1024];

@@ -19,6 +19,8 @@
  */
 
 #include "lsb.h"
+#include "lsb.sig.h"
+#include "../daemons/daemonout.h"
 
 static int signalJob_(int, LS_LONG_INT, time_t, int);
 
