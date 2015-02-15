@@ -1745,7 +1745,6 @@ do_reconfigReq(XDR *xdrs,
 
     if (reqHdr->reserved == MBD_RESTART ) {
         ls_syslog(LOG_INFO, "%s: restart a new mbatchd", __func__);
-        millisleep_(3000);
         mbdDie(MASTER_RECONFIG);
     }
 
