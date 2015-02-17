@@ -1,5 +1,6 @@
-/* $Id: brequeue.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,15 +13,14 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
 #include "cmd.h"
 
-#define NL_SETN 8	
-
-void 
+void
 usage (char *cmd)
 {
     fprintf(stderr, I18N_Usage);
@@ -29,29 +29,25 @@ usage (char *cmd)
     exit(-1);
 }
 
-int 
+int
 main (int argc, char **argv)
 {
-    char                *queue = NULL;
-    char                *user = NULL;
-    char                *host = NULL;
-    char                *jobName = NULL;
-    char                Job[80];
-    int                 numJobs;
-    LS_LONG_INT         *jobIds;
-    struct jobrequeue   reqJob;
-    int                 i;
-    int                 cc;
-    int                 exitrc = 0;
-    int                 rc;
-    int                 options;
-    int                 options1 = FALSE;
-
-    rc = _i18n_init ( I18N_CAT_MIN );	
+    char *queue = NULL;
+    char *user = NULL;
+    char *host = NULL;
+    char *jobName = NULL;
+    char Job[128];
+    int numJobs;
+    LS_LONG_INT *jobIds;
+    struct jobrequeue reqJob;
+    int i;
+    int cc;
+    int options;
+    int options1 = FALSE;
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
-	exit(-1);
+	return -1;
     }
 
     memset(&reqJob,0,sizeof(struct jobrequeue));
@@ -112,14 +108,14 @@ main (int argc, char **argv)
                 }
                 break;
             case 'a':
-           
+
                 reqJob.options = 0 ;
                 options = 0 ;
                 reqJob.options |= (REQUEUE_DONE | REQUEUE_EXIT | REQUEUE_RUN);
                 options |= (CUR_JOB|DONE_JOB);
                 break;
             case 'H':
-           
+
                 reqJob.status = 0;
                 reqJob.status = JOB_STAT_PSUSP;
                 break;
@@ -142,29 +138,29 @@ main (int argc, char **argv)
         }
     }
 
-    numJobs = getJobIds(argc, 
-                        argv, 
-                        jobName, 
-                        user, 
-                        queue, 
-                        host, 
-                        &jobIds, 
+    numJobs = getJobIds(argc,
+                        argv,
+                        jobName,
+                        user,
+                        queue,
+                        host,
+                        &jobIds,
                         options);
-    
+
+    cc = 0;
     for (i = 0; i < numJobs; i++) {
+
         reqJob.jobId = jobIds[i] ;
+
         if (lsb_requeuejob(&reqJob) < 0 ) {
-            exitrc = -1;
-            sprintf (Job,"%s <%s> ", I18N_Job, lsb_jobid2str(jobIds[i]));	    
+            cc = -1;
+            sprintf(Job,"Job <%s> ", lsb_jobid2str(jobIds[i]));
             lsb_perror(Job);
-	}
-	else {
-	    printf((_i18n_msg_get(ls_catd,NL_SETN,3151, "Job <%s> is being requeued \n")), /* catgets 3151 */
-		   lsb_jobid2str(jobIds[i]));
+	} else {
+	    printf("Job <%s> is being requeued \n", lsb_jobid2str(jobIds[i]));
 	}
     }
-    _i18n_end ( ls_catd ); 			
-    exit(exitrc);
 
-} 
+    return cc;
+}
 
