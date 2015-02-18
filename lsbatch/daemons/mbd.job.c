@@ -3471,6 +3471,7 @@ handleFinishJob(struct jData *jData, int oldStatus, int eventTime)
     jData->jStatus &= ~JOB_STAT_MIG;
     jData->pendEvent.sig1 = SIG_NULL;
     jData->pendEvent.sig = SIG_NULL;
+    jData->pendEvent.sigDel = 0;
     jData->pendEvent.notSwitched = FALSE;
     jData->pendEvent.notModified = FALSE;
 
