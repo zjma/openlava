@@ -1319,7 +1319,9 @@ preempt(void)
 
         while ((jPtr = pop_link(rl))) {
             struct signalReq s;
+            struct lsfAuth auth;
             int cc;
+
 
             ls_syslog(LOG_DEBUG, "\
 %s: job %s queue %s preemption candidate", __func__,
@@ -1331,7 +1333,11 @@ preempt(void)
             s.actFlags = REQUEUE_RUN;
             s.chkPeriod = JOB_STAT_PEND;
 
-            cc = signalJob(&s, NULL);
+            memset(&auth, 0, sizeof(struct lsfAuth));
+            strcpy(auth.lsfUserName, lsbManager);
+            auth.gid = auth.uid = managerId;
+
+            cc = signalJob(&s, &auth);
             if (cc != LSBE_NO_ERROR) {
                 ls_syslog(LOG_ERR, "\
 %s: error while requeue job %s state %d", __func__,

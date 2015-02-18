@@ -3736,6 +3736,8 @@ load_preempt_plugin(struct qData *qPtr)
     if (p->handle == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: gudness cannot open %s: %s", __func__, buf, dlerror());
+        _free_(qPtr->prmSched->name);
+        _free_(qPtr->prmSched);
         return -1;
     }
 
