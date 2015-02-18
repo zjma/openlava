@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2012 David Bigagli
+ * Copyright (C) 2011 - 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -109,8 +109,8 @@ idletime(void)
          */
         ++loginses;
 
-        ls_syslog(LOG_DEBUG, "\
-%s: %s %s %s %d", __func__, u->ut_user, u->ut_line, buf, t - statbuf.st_atime);
+        ls_syslog(LOG_DEBUG2, "%s: %s %s %s %d", __func__,
+                  u->ut_user, u->ut_line, buf, t - statbuf.st_atime);
         l = t - statbuf.st_atime;
         if (l <= 0) {
             /* Somebody just send a char down the line
