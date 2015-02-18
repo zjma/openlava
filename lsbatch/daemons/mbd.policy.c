@@ -4172,6 +4172,9 @@ scheduleAndDispatchJobs(void)
                  * list is to make sure that each pending job
                  * is looked at by the scheduler only once.
                  */
+                if (! jobIsReady(jPtr))
+                    continue;
+
                 jR = calloc(1, sizeof(struct jRef));
                 jR->job = jPtr;
 
@@ -6244,15 +6247,14 @@ resetStaticSchedVariables(void)
 static bool_t
 jobIsReady(struct jData *jp)
 {
-    static char fname[] = "jobIsReady()";
     int ret;
-
 
     ret = checkIfJobIsReady(jp);
 
     jp->processed |= JOB_STAGE_READY;
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG3, "%s: job=%s numSlots=%d numAvailSlots=%d", fname,
+        ls_syslog(LOG_DEBUG3, "\
+%s: job=%s numSlots=%d numAvailSlots=%d", __func__,
                   lsb_jobid2str(jp->jobId), jp->numSlots, jp->numAvailSlots);
     }
     if (ret) {
@@ -6260,7 +6262,8 @@ jobIsReady(struct jData *jp)
         return TRUE;
     } else {
         if (logclass & (LC_SCHED | LC_PEND)) {
-            ls_syslog(LOG_DEBUG1, "%s: job <%s> is not ready", fname, lsb_jobid2str(jp->jobId));
+            ls_syslog(LOG_DEBUG1, "\
+%s: job %s is not ready", __func__, lsb_jobid2str(jp->jobId));
         }
         jp->processed |= JOB_STAGE_DONE;
         return FALSE;
