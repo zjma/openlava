@@ -36,3 +36,4 @@ config/openlava.setup
 config/openlava.sh
 config.guess
 config.sub
+ltmain.sh
