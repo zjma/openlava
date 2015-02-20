@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -39,7 +39,7 @@ tree_init(const char *name)
 
     t->root = calloc(1, sizeof(struct tree_node_));
     assert(t->root);
-    t->root->path = strdup("/");
+    t->root->name = strdup("/");
     t->root->parent = NULL;
     t->node_tab = hash_make(11);
     t->leafs = make_link();
@@ -114,7 +114,7 @@ tree_print(struct tree_node_ *n, struct tree_ *t)
         return 0;
     }
 
-    printf("%s: node path %s\n", __func__, n->path);
+    printf("%s: node name %s\n", __func__, n->name);
 
     return 0;
 }
@@ -297,11 +297,11 @@ tree_free(struct tree_ *t)
     while ((n = tree_rm_leaf(t->root))) {
         if (n == t->root)
             break;
-        _free_(n->path);
+        _free_(n->name);
         _free_(n);
     }
 
-    _free_(t->root->path);
+    _free_(t->root->name);
     _free_(t->root);
     _free_(t->name);
     hash_free(t->node_tab, NULL);

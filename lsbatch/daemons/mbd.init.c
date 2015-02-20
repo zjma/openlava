@@ -130,10 +130,19 @@ static void createDefQueue(void);
 static void freeGrp(struct gData *);
 static int validHostSpec(char *);
 static void getMaxCpufactor(void);
-static int parseFirstHostErr(int , char *, char *, struct qData *, struct askedHost *, int );
+static int parseFirstHostErr(int,
+                             char *,
+                             char *,
+                             struct qData *,
+                             struct askedHost *,
+                             int);
 static struct hData *mkLostAndFoundHost(void);
 static int init_fairshare_scheduler(void);
 static int load_fair_plugin(struct qData *);
+static int parse_preemption(struct qData *);
+static int sort_queues(void);
+static int queue_cmp(const void *, const void *);
+static void check_same_priority_queues(void);
 
 int
 minit(int mbdInitFlags)
@@ -166,7 +175,6 @@ minit(int mbdInitFlags)
         char name[128];
         sprintf(name, "Job Data List <%d>", list);
         jDataList[list] = (struct jData *)listCreate(name);
-        listAllowObservers((LIST_T *) jDataList[list]);
     }
 
     initTab(&jobIdHT);
@@ -236,7 +244,7 @@ minit(int mbdInitFlags)
     for (i = allLsInfo->nModels; i < MAXMODELS; i++)
         allLsInfo->cpuFactor[i] = 1.0;
 
-    TIMEIT(0, getLsfHostInfo(TRUE), "minit_getLsfHostInfo");
+    TIMEIT(0, getLsfHostInfo(true), "minit_getLsfHostInfo");
     if (LIMhosts == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh ls_gethostinfo() failed just now... %M", __func__);
@@ -271,7 +279,7 @@ minit(int mbdInitFlags)
      */
     getLsbHostLoad();
     updHostList();
-    copyGroups(TRUE);
+    copyGroups(true);
 
     if ((hPtr = getHostData(masterHost)) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -283,8 +291,8 @@ minit(int mbdInitFlags)
         ls_syslog(LOG_ERR, "\
 %s: Invalid system defined DEFAULT_HOST_SPEC %s; ignored",
                   __func__, defaultHostSpec);
-        FREEUP (defaultHostSpec);
-        FREEUP (paramConf->param->defaultHostSpec);
+        FREEUP(defaultHostSpec);
+        FREEUP(paramConf->param->defaultHostSpec);
         lsb_CheckError = WARNING_ERR;
     }
 
@@ -687,24 +695,23 @@ readQueueConf(int mbdInitFlags)
 static void
 createDefQueue(void)
 {
-    static char fname[] = "createDefQueue";
     struct qData *qp;
 
-    ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 6136,
-                                         "%s: Using the default queue <default> provided by the batch system"), fname); /* catgets 6136 */
-    FREEUP (defaultQueues);
-    defaultQueues = safeSave ("default");
+    ls_syslog(LOG_WARNING, "\
+%s: Using the default queue <default> provided by the batch system", __func__);
+
+    FREEUP(defaultQueues);
+    defaultQueues = safeSave("default");
     qp = initQData();
     qp->qAttrib |= Q_ATTRIB_DEFAULT;
-    qp->description        = safeSave ("This is the default queue provided by the batch system. Jobs are scheduled with very loose control.");
-    qp->queue              = safeSave ("default");
-
+    qp->description = safeSave("This is the default queue provided by the batch system.");
+    qp->queue = safeSave("default");
     qp->hostSpec = safeSave (masterHost);
     qp->flags |=  QUEUE_UPDATE;
     qp->numProcessors = numofprocs;
     qp->askedOthPrio = 0;
     qp->acceptIntvl = accept_intvl;
-    inQueueList (qp);
+    inQueueList(qp);
 }
 
 /* addHost()
@@ -1173,62 +1180,62 @@ setAllusers (struct qData *qp, struct admins *admins)
 
 }
 void
-freeQData (struct qData *qp, int delete)
+freeQData(struct qData *qp, int delete)
 {
-    FREEUP (qp->queue);
-    FREEUP (qp->description);
+    FREEUP(qp->queue);
+    FREEUP(qp->description);
     if (qp->uGPtr) {
         freeGrp (qp->uGPtr);
     }
 
     FREEUP(qp->loadSched);
     FREEUP(qp->loadStop);
-    FREEUP (qp->windows);
-    FREEUP (qp->windowsD);
-    freeWeek (qp->weekR);
-    freeWeek (qp->week);
-    FREEUP (qp->hostSpec);
-    FREEUP (qp->defaultHostSpec);
+    FREEUP(qp->windows);
+    FREEUP(qp->windowsD);
+    freeWeek(qp->weekR);
+    freeWeek(qp->week);
+    FREEUP(qp->hostSpec);
+    FREEUP(qp->defaultHostSpec);
     if (qp->nAdmins > 0) {
-        FREEUP (qp->adminIds);
-        FREEUP (qp->admins);
+        FREEUP(qp->adminIds);
+        FREEUP(qp->admins);
     }
-    FREEUP (qp->preCmd);
-    FREEUP (qp->postCmd);
-    FREEUP (qp->prepostUsername);
+    FREEUP(qp->preCmd);
+    FREEUP(qp->postCmd);
+    FREEUP(qp->prepostUsername);
     if (qp->requeueEValues) {
         clean_requeue(qp);
     }
-    FREEUP (qp->requeueEValues);
-    FREEUP (qp->resReq);
+    FREEUP(qp->requeueEValues);
+    FREEUP(qp->resReq);
     if (qp->resValPtr) {
         FREEUP(qp->resValPtr->rusgBitMaps);
-        FREEUP (qp->resValPtr);
+        FREEUP(qp->resValPtr);
     }
     if (qp->uAcct)
         h_delTab_(qp->uAcct);
     if (qp->hAcct)
         h_delTab_(qp->hAcct);
-    FREEUP (qp->resumeCond);
-    lsbFreeResVal (&qp->resumeCondVal);
-    FREEUP (qp->stopCond);
-    FREEUP (qp->jobStarter);
+    FREEUP(qp->resumeCond);
+    lsbFreeResVal(&qp->resumeCondVal);
+    FREEUP(qp->stopCond);
+    FREEUP(qp->jobStarter);
 
-    FREEUP (qp->suspendActCmd);
-    FREEUP (qp->resumeActCmd);
-    FREEUP (qp->terminateActCmd);
+    FREEUP(qp->suspendActCmd);
+    FREEUP(qp->resumeActCmd);
+    FREEUP(qp->terminateActCmd);
 
-    FREEUP (qp->askedPtr);
-    FREEUP (qp->hostList);
+    FREEUP(qp->askedPtr);
+    FREEUP(qp->hostList);
 
     if (delete == TRUE) {
-        offList ((struct listEntry *)qp);
+        offList((struct listEntry *)qp);
         numofqueues--;
     }
-    if ( qp->reasonTb) {
-        FREEUP (qp->reasonTb[0]);
-        FREEUP (qp->reasonTb[1]);
-        FREEUP (qp->reasonTb);
+    if (qp->reasonTb) {
+        FREEUP(qp->reasonTb[0]);
+        FREEUP(qp->reasonTb[1]);
+        FREEUP(qp->reasonTb);
     }
 
     if (qp->hostInQueue) {
@@ -1236,8 +1243,7 @@ freeQData (struct qData *qp, int delete)
         qp->hostInQueue = NULL;
     }
 
-    FREEUP (qp);
-    return;
+    FREEUP(qp);
 }
 
 static void
@@ -1431,6 +1437,7 @@ initQData (void)
     int i;
 
     qPtr = my_calloc(1, sizeof (struct qData), "initQData");
+
     qPtr->queue = NULL;
     qPtr->queueId = 0;
     qPtr->description = NULL;
@@ -1472,7 +1479,6 @@ initQData (void)
                               sizeof(float), __func__);
     qPtr->loadStop = my_calloc(allLsInfo->numIndx,
                              sizeof(float), __func__);
-
     initThresholds (qPtr->loadSched, qPtr->loadStop);
     qPtr->procLimit = -1;
     qPtr->minProcLimit = -1;
@@ -1517,12 +1523,8 @@ initQData (void)
     qPtr->reasonTb[1] = my_calloc(numofhosts() + 1,
                                   sizeof(int), __func__);
     qPtr->schedStage = 0;
-    for (i = 0; i <= PJL; i++) {
-        qPtr->firstJob[i] = NULL;
-        qPtr->lastJob[i] = NULL;
-    }
     qPtr->chkpntPeriod = -1;
-    qPtr->chkpntDir    = NULL;
+    qPtr->chkpntDir = NULL;
     qPtr->fairshare = NULL;
 
     return qPtr;
@@ -1538,7 +1540,7 @@ searchAll (char *word)
     cp = word;
     while ((sp = getNextWord_(&cp))) {
         if (strcmp (sp, "all") == 0)
-            return (TRUE);
+            return  true;
     }
     return (FALSE);
 
@@ -2187,7 +2189,7 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
         }
 
         badqueue = FALSE;
-        if (qPtr->uGPtr)
+        if (qPtr->uGPtr) {
             if (qPtr->uGPtr->memberTab.numEnts == 0
                 && qPtr->uGPtr->numGroups == 0) {
 
@@ -2197,6 +2199,8 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
                 lsb_CheckError = WARNING_ERR;
                 badqueue = TRUE;
             }
+        }
+
         if (qPtr->hostList != NULL
             && strcmp(qPtr->hostList, "none")
             && qPtr->numAskedPtr <= 0
@@ -2222,11 +2226,11 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
         } else {
             copyQData (qPtr, oldQPtr);
             oldQPtr->flags |= QUEUE_UPDATE;
-            FREEUP (qPtr->queue);
+            FREEUP(qPtr->queue);
             FREEUP(qPtr->reasonTb[0]);
             FREEUP(qPtr->reasonTb[1]);
             FREEUP(qPtr->reasonTb);
-            FREEUP (qPtr);
+            FREEUP(qPtr);
 
             if (mbdInitFlags == RECONFIG_CONF
                 || mbdInitFlags == WINDOW_CONF) {
@@ -2250,6 +2254,11 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
         if (queue->fairshare) {
             qPtr->fairshare = strdup(queue->fairshare);
             qPtr->qAttrib |= Q_ATTRIB_FAIRSHARE;
+        }
+
+        if (queue->preemption) {
+            qPtr->preemption = strdup(queue->preemption);
+            qPtr->qAttrib |= Q_ATTRIB_PREEMPTIVE;
         }
     }
 
@@ -2836,18 +2845,18 @@ needPollQHost (struct qData *newQp, struct qData *oldQp)
         (newQp->resumeCond != NULL && oldQp->resumeCond == NULL) ||
         (newQp->resumeCond != NULL && oldQp->resumeCond != NULL &&
          strcmp (newQp->resumeCond, oldQp->resumeCond)))
-        return (TRUE);
+        return true;
     if ((newQp->stopCond == NULL && oldQp->stopCond != NULL) ||
         (newQp->stopCond != NULL && oldQp->stopCond == NULL) ||
         (newQp->stopCond != NULL && oldQp->stopCond != NULL &&
          strcmp (newQp->stopCond, oldQp->stopCond)))
-        return (TRUE);
+        return true;
 
     if ((newQp->windows == NULL && oldQp->windows != NULL) ||
         (newQp->windows != NULL && oldQp->windows == NULL) ||
         (newQp->windows != NULL && oldQp->windows != NULL &&
          strcmp (newQp->windows, oldQp->windows)))
-        return (TRUE);
+        return true;
 
     if (newQp->nice != oldQp->nice ||
         newQp->mig != oldQp->mig)
@@ -2961,63 +2970,54 @@ updQueueList(void)
     int list, allHosts = FALSE;
     struct qData *qp;
     struct qData *lost_and_found = NULL;
-    struct qData *next;
     struct jData *jpbw;
-    struct qData *entry;
-    struct qData *newqDataList;
 
-    if ((newqDataList = (struct qData *) listCreate("Queue List")) ==
-        NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, "updQueueList", "listCreate");
-        mbdDie(MASTER_FATAL);
-    }
-    for (entry = qDataList->forw; entry != qDataList; entry = next) {
-        next = entry->forw;
-        listRemoveEntry((LIST_T*)qDataList, (LIST_ENTRY_T *)entry);
-        for(qp = newqDataList->forw; qp != newqDataList; qp = qp->forw)
-            if (entry->priority < qp->priority)
-                break;
+    /* Sort by increasing priority
+     */
+    sort_queues();
 
-        inList((struct listEntry *)qp, (struct listEntry *)entry);
-    }
-    listDestroy((LIST_T *)qDataList, NULL);
-    qDataList = newqDataList;
+    for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
 
-    for (qp = qDataList->forw; qp != qDataList; qp = next) {
-        next = qp->forw;
         if (strcmp (qp->queue, LOST_AND_FOUND) == 0)
             continue;
+
         if (qp->flags & QUEUE_UPDATE) {
             qp->flags &= ~QUEUE_UPDATE;
             continue;
         }
 
-        if (lost_and_found == NULL &&
-            (lost_and_found = getQueueData(LOST_AND_FOUND)) == NULL)
+        if (lost_and_found == NULL
+            && (lost_and_found = getQueueData(LOST_AND_FOUND)) == NULL)
             lost_and_found = lostFoundQueue();
+
         for (list = SJL; list < FJL; list++) {
-            for (jpbw = jDataList[list]->back; jpbw != jDataList[list];
+
+            for (jpbw = jDataList[list]->back;
+                 jpbw != jDataList[list];
                  jpbw = jpbw->back) {
+
                 if (jpbw->qPtr != qp)
                     continue;
 
-                updSwitchJob(jpbw, qp, lost_and_found,
+                updSwitchJob(jpbw,
+                             qp,
+                             lost_and_found,
                              jpbw->shared->jobBill.maxNumProcessors);
             }
         }
-
-        freeQData(qp, TRUE);
     }
-
 
     numofqueues = 0;
     for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
+        parse_preemption(qp);
         queueHostsPF(qp, &allHosts);
         createQueueHostSet(qp);
         numofqueues++;
     }
 
     checkQWindow();
+
+    check_same_priority_queues();
 }
 
 static void
@@ -3292,11 +3292,11 @@ fillSharedConf(struct sharedConf *sConf)
     sConf->lsinfo = allLsInfo;
     sConf->servers = NULL;
 
-    sConf->clusterName = my_malloc (sizeof (char *), fname);
+    sConf->clusterName = my_malloc(sizeof (char *), fname);
 }
 
 static void
-freeGrp (struct gData *grpPtr)
+freeGrp(struct gData *grpPtr)
 {
     if (grpPtr == NULL)
         return;
@@ -3306,13 +3306,11 @@ freeGrp (struct gData *grpPtr)
         FREEUP(grpPtr->group);
 
     FREEUP(grpPtr);
-
 }
 
 static  int
-validHostSpec (char *hostSpec)
+validHostSpec(char *hostSpec)
 {
-
     if (hostSpec == NULL)
         return FALSE;
 
@@ -3529,4 +3527,170 @@ getQueueSlots(struct qData *qPtr)
     }
 
     return numSlots;
+}
+
+/* parse_preemption()
+ *
+ * This function expects the queue list
+ * to be sorted.
+ */
+static int
+parse_preemption(struct qData *qPtr)
+{
+    char *p;
+    char *p2;
+    char *p0;
+    int i;
+    struct qData *qPtr2;
+
+    if (! (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE))
+        return 0;
+
+    i = 0;
+    p0 = p = strdup(qPtr->preemption);
+    p = strcasestr(p0, "PREEMPTIVE");
+    if (p == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Ohmygosh keyword PREEMPTIVE missing in %s queue %s", __func__,
+                  qPtr->preemption, qPtr->queue);
+        FREEUP(qPtr->preemption);
+        qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
+        return -1;
+    }
+
+    p = p + strlen("PREEMPTIVE");
+    while (p[i]) {
+        if (p[i] == '['
+            || p[i] == ']')
+            p[i] = ' ';
+        ++i;
+    }
+
+    qPtr->preemptable = make_link();
+    while ((p2 = getNextWord_(&p))) {
+
+        for (qPtr2 = qDataList->forw;
+             qPtr2 != (void *)qDataList;
+             qPtr2 = qPtr2->forw) {
+
+            if (strcasecmp(qPtr2->queue, p2) == 0)
+                break;
+        }
+
+        if (qPtr2 == qDataList) {
+            ls_syslog(LOG_ERR, "\
+%s: queue %s not found preemption for queue %s disbled",
+                      __func__, p2, qPtr->queue);
+            fin_link(qPtr->preemptable);
+            FREEUP(qPtr->preemption);
+            FREEUP(p0);
+            return -1;
+        }
+        enqueue_link(qPtr->preemptable, qPtr2);
+    }
+
+    ls_syslog(LOG_DEBUG, "\
+%s: preeption for queue %s built %s", __func__,
+              qPtr->queue, qPtr->preemption);
+
+    return 0;
+}
+
+/* sort_queues()
+ */
+static int
+sort_queues(void)
+{
+    struct qData *qPtr;
+    struct qData *qPtr2;
+    struct qData **v;
+    int n;
+    int i;
+
+    n = 0;
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw)
+        ++n;
+
+    v = calloc(n, sizeof(struct qData *));
+
+    i = 0;
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr2) {
+
+        qPtr2 = qPtr->forw;
+
+        v[i] = qPtr;
+        listRemoveEntry((LIST_T *)qDataList, (LIST_ENTRY_T *)qPtr);
+        ++i;
+    }
+
+    qsort(v, n, sizeof(struct qData *), queue_cmp);
+
+    for (i = 0; i < n; i++) {
+        listInsertEntryAtFront((LIST_T *)qDataList, (LIST_ENTRY_T *)v[i]);
+    }
+
+    return 0;
+}
+
+/* queue_cmp()
+ */
+static int
+queue_cmp(const void *x, const void *y)
+{
+    struct qData *q1;
+    struct qData *q2;
+
+    q1 = *(struct qData **)x;
+    q2 = *(struct qData **)y;
+
+    if (q1->priority > q2->priority)
+        return 1;
+    if (q1->priority < q2->priority)
+        return -1;
+    return 0;
+}
+
+/* check_same_priority_queues()
+ *
+ * Disable preemption for queues with
+ * the same priority.
+ */
+static void
+check_same_priority_queues(void)
+{
+    struct qData *qPtr;
+    struct qData *qPtr2;
+
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr2) {
+
+        qPtr2 = qPtr->forw;
+
+        if (qPtr->priority == qPtr2->priority) {
+
+            if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+                qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
+                FREEUP(qPtr->preemption);
+                fin_link(qPtr->preemptable);
+                ls_syslog(LOG_ERR, "\
+%s: queue %s %d same priority as queue %s %d cannot use preemtion",
+                          __func__, qPtr->queue, qPtr->priority,
+                          qPtr2->queue, qPtr2->priority);
+            }
+            if (qPtr2->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+                qPtr2->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
+                FREEUP(qPtr2->preemption);
+                fin_link(qPtr2->preemptable);
+                ls_syslog(LOG_ERR, "\
+%s: queue %s same priority %d as queue %s %d cannot use preemtion",
+                          __func__, qPtr->queue, qPtr->priority,
+                          qPtr2->queue, qPtr2->priority);
+            }
+        }
+    }
 }

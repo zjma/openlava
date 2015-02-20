@@ -387,7 +387,6 @@ main (int argc, char **argv)
     lastSchedTime  = 0;
     nextSchedTime  = time(0) + msleeptime;
     lastElockTouch = time(0) - msleeptime;
-    schedulerInit();
     setJobPriUpdIntvl();
 
     for (;;) {

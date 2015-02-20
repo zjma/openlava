@@ -318,7 +318,6 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
                 printf("  ONLY_INTERACTIVE");
             if (qp->qAttrib & Q_ATTRIB_ROUND_ROBIN)
                 printf("ROUND_ROBIN_SCHEDULING:  yes\n");
-
             printf("\n");
         }
 
@@ -329,6 +328,9 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
             print_slot_shares(qp);
         }
 
+        if (qp->qAttrib & Q_ATTRIB_PREEMPTIVE)
+            printf("\nPREEMPTION = %s", qp->preemption);
+
         if (strcmp (qp->defaultHostSpec, " ") !=  0)
             printf("\nDEFAULT HOST SPECIFICATION:  %s\n", qp->defaultHostSpec);
 
@@ -336,7 +338,6 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
             printf("\nRUN_WINDOWS:  %s\n", qp->windows);
         if (strcmp (qp->windowsD, " ")  !=  0)
             printf("\nDISPATCH_WINDOW:  %s\n", qp->windowsD);
-
 
         if ( strcmp(qp->userList, " ") == 0) {
             printf("\nUSERS:  all users\n");
@@ -370,7 +371,6 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
         printf("STOP_COND:  %s\n", qp->stopCond);
     if (strcmp (qp->jobStarter, " ") != 0)
         printf("JOB_STARTER:  %s\n", qp->jobStarter);
-
 
     /* CONF_SIG_ACT */
 

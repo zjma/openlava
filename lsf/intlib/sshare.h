@@ -5,8 +5,9 @@
 #include "tree.h"
 #include "link.h"
 
-#define SACCT_GROUP 0x1
-#define SACCT_USER  0x2
+#define SACCT_GROUP    0x1
+#define SACCT_USER     0x2
+#define SACCT_USER_ALL 0x4
 
 /* The share account structure which is on the
  * share tree representing each user and group.

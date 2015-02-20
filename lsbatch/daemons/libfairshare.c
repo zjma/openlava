@@ -18,30 +18,26 @@
  */
 #include "fairshare.h"
 
-static char *get_user_key(struct jData *);
+static struct tree_node_ *get_user_node(struct hash_tab *,
+                                        struct jData *);
 
 /* fs_init()
  */
 int
 fs_init(struct qData *qPtr, struct userConf *uConf)
 {
-    struct tree_node_ *n;
-    hEnt *e;
-
     qPtr->scheduler->tree
         = sshare_make_tree(qPtr->fairshare,
                            (uint32_t )uConf->numUgroups,
                            (struct group_acct *)uConf->ugroups);
 
-    n = qPtr->scheduler->tree->root;
-    while ((n = tree_next_node(n))) {
-
-        e = h_getEnt_(&uDataList, n->path);
-        if (e == NULL) {
-            ls_syslog(LOG_ERR, "\
-%s: skipping uknown user %s", __func__, n->path);
-            continue;
-        }
+    if (qPtr->scheduler->tree == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: queues %s failed to fairshare configuration, fairshare disabled",
+                  __func__, qPtr->queue);
+        _free_(qPtr->fairshare);
+        qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
+        return -1;
     }
 
     return 0;
@@ -59,14 +55,11 @@ fs_update_sacct(struct qData *qPtr,
     struct tree_ *t;
     struct tree_node_ *n;
     struct share_acct *sacct;
-    char *key;
     int numRAN;
 
     t = qPtr->scheduler->tree;
 
-    key = get_user_key(jPtr);
-
-    n = hash_lookup(t->node_tab, key);
+    n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
         return -1;
 
@@ -107,7 +100,7 @@ fs_init_sched_session(struct qData *qPtr)
     return 0;
 }
 
-/* fs_get_next_job()
+/* fs_elect_job()
  */
 int
 fs_elect_job(struct qData *qPtr,
@@ -228,19 +221,89 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
     return 0;
 }
 
-/* get_user_key()
+/* get_user_node()
  */
-static char *
-get_user_key(struct jData *jPtr)
+static struct tree_node_ *
+get_user_node(struct hash_tab *node_tab,
+              struct jData *jPtr)
 {
-    static char buf[MAXLSFNAMELEN];
+    struct tree_node_ *n;
+    struct tree_node_ *n2;
+    struct share_acct *sacct;
+    struct share_acct *sacct2;
+    uint32_t sum;
+    char key[MAXLSFNAMELEN];;
 
     if (jPtr->shared->jobBill.userGroup[0] != 0) {
-        sprintf(buf, "\
+        sprintf(key, "\
 %s/%s", jPtr->shared->jobBill.userGroup, jPtr->userName);
     } else {
-        sprintf(buf, "%s", jPtr->userName);
+        sprintf(key, "%s", jPtr->userName);
     }
 
-    return buf;
+    /* First direct lookup on the table
+     * of nodes.
+     */
+    n = hash_lookup(node_tab, key);
+    if (n)
+        return n;
+
+    /* If job specifies parent group lookup
+     * all in parent group
+     */
+    if (jPtr->shared->jobBill.userGroup[0] != 0) {
+        sprintf(key, "%s/all", jPtr->shared->jobBill.userGroup);
+        n = hash_lookup(node_tab, key);
+    } else {
+        /* Job specifies no parent group
+         * so lookup all in any group
+         */
+        n = hash_lookup(node_tab, "all");
+    }
+
+    if (n == NULL)
+        return NULL;
+
+    sacct = n->data;
+    assert(sacct->options & SACCT_USER);
+
+    n2 = calloc(1, sizeof(struct tree_node_));
+    sacct2 = make_sacct(jPtr->userName, sacct->shares);
+    sacct2->uid = jPtr->userId;
+    n2->data = sacct2;
+    n2->name = strdup(jPtr->userName);
+
+    tree_insert_node(n->parent, n2);
+    sacct2->options |= SACCT_USER;
+    sprintf(key, "%s/%s", n2->parent->name, n2->name);
+    hash_install(node_tab, key, n2, NULL);
+    sprintf(key, "%s", n2->name);
+    hash_install(node_tab, key, n2, NULL);
+
+    sum = 0;
+    n2 = n->parent->child;
+    while (n2) {
+
+        sacct = n2->data;
+        if (sacct->options & SACCT_USER_ALL) {
+            n2 = n2->right;
+            continue;
+        }
+        sum = sum + sacct->shares;
+        n2 = n2->right;
+    }
+
+    n2 = n->parent->child;
+    while (n2) {
+
+        sacct = n2->data;
+        if (sacct->options & SACCT_USER_ALL) {
+            n2 = n2->right;
+            continue;
+        }
+        sacct->dshares = (double)sacct->shares/(double)sum;
+        n2 = n2->right;
+    }
+
+    return n->parent->child;
 }

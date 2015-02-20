@@ -71,15 +71,19 @@ struct tree_ *sshare_make_tree(const char *user_shares,
 
 z:
     if (root)
-        l = parse_group_member(n->path, num_grp, grp);
+        l = parse_group_member(n->name, num_grp, grp);
     else
         root = t->root;
+
+    if (l == NULL) {
+        return NULL;
+    }
 
     traverse_init(l, &iter);
     while ((sacct = traverse_link(&iter))) {
 
         n = calloc(1, sizeof(struct tree_node_));
-        n->path = sacct->name;
+        n->name = sacct->name;
 
         n = tree_insert_node(root, n);
         enqueue_link(stack, n);
@@ -110,13 +114,15 @@ z:
          */
         sacct = n->data;
         if (n->child == NULL) {
+            if (strcasecmp(sacct->name, "all") == 0)
+                sacct->options |= SACCT_USER_ALL;
             sacct->options |= SACCT_USER;
-            sprintf(buf, "%s/%s", n->parent->path, n->path);
+            sprintf(buf, "%s/%s", n->parent->name, n->name);
             hash_install(t->node_tab, buf, n, NULL);
         } else {
             sacct->options |= SACCT_GROUP;
         }
-        sprintf(buf, "%s", n->path);
+        sprintf(buf, "%s", n->name);
         hash_install(t->node_tab, buf, n, NULL);
         print_node(n, t);
     }
@@ -172,13 +178,18 @@ znovu:
      */
     while (n) {
 
+        sacct = n->data;
+        if (sacct->options & SACCT_USER_ALL) {
+            n = n->right;
+            continue;
+        }
+
         /* enqueue as we want to traverse
          * the tree by priority
          */
         if (n->child)
             enqueue_link(stack, n);
 
-        sacct = n->data;
         sacct->sent = 0;
         sacct->dsrv = compute_slots(n, slots, avail);
         avail = avail - sacct->dsrv;
@@ -251,7 +262,7 @@ znovu:
     make_leafs(t);
 }
 
-/* make_saccount()
+/* make_sacct()
  */
 struct share_acct *
 make_sacct(const char *name, uint32_t shares)
@@ -598,6 +609,7 @@ parse_group_member(const char *gname,
     uint32_t sum;
     struct share_acct *sacct;
 
+    l = make_link();
     g = NULL;
     for (cc = 0; cc < num; cc++) {
 
@@ -612,17 +624,23 @@ parse_group_member(const char *gname,
         }
     }
 
-    /* gudness...
+    /* gudness leaf member
+     * caller will free the link
      */
     if (g == NULL)
-        return NULL;
+        return l;
 
     p = g->memberList;
-    l = make_link();
     sum = 0;
     while ((w = get_next_word(&p))) {
 
         sacct = get_sacct(w, g->user_shares);
+        if (sacct == NULL) {
+            while ((sacct = pop_link(l)))
+                free_sacct(sacct);
+            fin_link(l);
+            return NULL;
+        }
         sum = sum + sacct->shares;
         enqueue_link(l, sacct);
     }
@@ -653,6 +671,22 @@ get_sacct(const char *acct_name, const char *user_list)
 
     p0 = p = strdup(user_list);
 
+    cc = sscanf(p, "%s%u%n", name, &shares, &n);
+    if (cc == EOF) {
+        _free_(p);
+        return NULL;
+    }
+
+    /* default can have users all
+     * or explicitly named users
+     */
+    if (strcmp(name, "default") == 0) {
+        sacct = make_sacct(acct_name, shares);
+        goto pryc;
+    }
+
+    /* Match the user in the user_list
+     */
     while (1) {
 
         cc = sscanf(p, "%s%u%n", name, &shares, &n);
@@ -666,6 +700,7 @@ get_sacct(const char *acct_name, const char *user_list)
         break;
     }
 
+pryc:
     _free_(p0);
     return sacct;
 }
@@ -785,7 +820,7 @@ print_node(struct tree_node_ *n, struct tree_ *t)
     s = n->data;
 
     printf("%s: node %s shares %d dshares %4.2f\n",
-           __func__, n->path, s->shares, s->dshares);
+           __func__, n->name, s->shares, s->dshares);
 
     return -1;
 }

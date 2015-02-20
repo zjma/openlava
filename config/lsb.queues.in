@@ -159,8 +159,7 @@
 # commands.
 #
 
-# PREEMPT_BY_SLOT = [list of queues]
-# PREEMPT_BY_SLOT = low normal
+# PREEMPTTION = PREEMPTIVE[list of queues]
 # If defined in a queue the list of queues specified by name and separated
 # by space can be preempted by the given queue. Any queue in the list must
 # have lower priority then the preemptive one. Only jobs that pend for slots

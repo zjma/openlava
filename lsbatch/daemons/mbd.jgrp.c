@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "mbd.h"
-
-#define NL_SETN         10
 
 #include <dirent.h>
 
@@ -71,7 +69,6 @@ extern float version;
 void
 treeInit(void)
 {
-    static char fname[] = "treeInit";
     int mbdPid = getpid();
 
     groupRoot = treeNewNode(JGRP_NODE_GROUP);
@@ -84,12 +81,6 @@ treeInit(void)
     sprintf(treeFile, "/tmp/jgrpTree.%d", mbdPid);
 
     treeObserverList = listCreate("tree observer");
-    if (treeObserverList == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6400,
-                                         "%s: failed to create tree observer list: %s"), /* catgets 6400 */
-                  fname, listStrError(listerrno));
-        mbdDie(MASTER_MEM);
-    }
 
     treeObserverDep = treeObserverCreate("tree eval dependence",
                                          (void *)groupRoot,
@@ -97,31 +88,21 @@ treeInit(void)
     if (treeObserverDep == NULL)
         mbdDie(MASTER_MEM);
 
-    listInsertEntryAtBack(treeObserverList, (LIST_ENTRY_T *)treeObserverDep);
+    listInsertEntryAtBack(treeObserverList,
+                          (LIST_ENTRY_T *)treeObserverDep);
 
 }
 
 static TREE_OBSERVER_T *
 treeObserverCreate(char *name, void *entry, TREE_EVENT_OP_T eventOp)
 {
-    static char                     fname[] = "treeObserverCreate";
-    struct treeObserver             *observer;
+    struct treeObserver  *observer;
 
-    observer = (TREE_OBSERVER_T *)calloc(1, sizeof(TREE_OBSERVER_T));
-    if (observer == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "calloc");
-        lsberrno = LIST_ERR_NOMEM;
-        goto Fail;
-    }
-
+    observer = calloc(1, sizeof(TREE_OBSERVER_T));
     observer->name = safeSave(name);
     observer->eventOp = eventOp;
     observer->entry = entry;
-    return (observer);
-
-Fail:
-    FREEUP(observer);
-    return (TREE_OBSERVER_T *)NULL;
+    return observer;
 }
 
 static void

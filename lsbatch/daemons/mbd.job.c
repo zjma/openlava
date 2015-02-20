@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -18,9 +18,6 @@
  */
 
 #include "mbd.h"
-#define NL_SETN         10
-
-#define SUSP_CAN_PREEMPT_FOR_RSRC(s) !((s)->jStatus & JOB_STAT_USUSP)
 
 #define UNREACHABLE(s) (((s) & HOST_STAT_UNREACH) || ((s) & HOST_STAT_UNAVAIL))
 #define RESUME_JOB    1
@@ -34,13 +31,12 @@
 
 struct listSet  *voidJobList = NULL;
 
-void                 freeNewJob(struct jData *newjob);
+void                 freeNewJob(struct jData *);
 extern void          initResVal(struct resVal* );
 extern int           userJobLimitOk (struct jData *, int, int *);
 extern void          reorderSJL(void);
-
-static int checkSubHost(struct jData *job);
-static bool_t  checkUserPriority(struct jData *jp, int userPriority, int *errnum);
+static int checkSubHost(struct jData *);
+static bool_t  checkUserPriority(struct jData *, int, int *);
 static int           queueOk(char *, struct jData *, int *, struct submitReq *,
                              struct lsfAuth *);
 static int           acceptJob(struct qData *, struct jData *,
@@ -56,11 +52,10 @@ static double        acumulateValue(double, double);
 static void          accumulateRU(struct jData *, struct statusReq *);
 static int           checkJobParams(struct jData *, struct submitReq *,
                                     struct submitMbdReply *, struct lsfAuth *);
-static struct submitReq* saveOldParameters(struct jData *);
+static struct submitReq *saveOldParameters(struct jData *);
 static void              freeExecParams(struct jData *);
-static int mergeSubReq (struct submitReq *to, struct submitReq *old,
-                        struct modifyReq *req, const struct passwd* pwUser);
-
+static int mergeSubReq(struct submitReq *, struct submitReq *,
+                       struct modifyReq *, const struct passwd *);
 static void              copyHosts(struct submitReq *, struct submitReq *);
 static struct submitReq* getMergeSubReq (struct jData *,
                                          struct modifyReq *, int *);
@@ -70,43 +65,40 @@ static void              changeJobParams(struct jData *);
 static void              handleFinishJob(struct jData *, int, int);
 
 static sbdReplyType      msgStartedJob(struct jData *, struct bucket *);
-static void              breakCallback(struct jData *, bool_t terWhiPendStatus);
+static void              breakCallback(struct jData *, bool_t);
 static int               rUsagesOk(struct resVal *, struct resVal *);
 static void              packJobThresholds(struct thresholds *,
                                            struct jData *);
-
-extern void initResVal (struct resVal *resVal);
-
 static void              resetReserve(struct jData *, int);
 static void              getReserveParams(struct resVal *, int *, int *);
 static int               shouldResume(struct jData *, int *);
 static int               shouldResumeByLoad(struct jData *);
 static int               shouldResumeByRes(struct jData *);
 static void              freeThresholds(struct thresholds *);
-
-static char              ususpPendingEvent(struct jData *jpbw);
-static char              terminatePendingEvent(struct jData *jpbw);
+static char              ususpPendingEvent(struct jData *);
+static char              terminatePendingEvent(struct jData *);
 static void              initSubmitReq(struct submitReq *);
 static int               skipJobListByReq (int, int);
 static void              replaceString (char *, char *, char *);
-static void initJobSig (struct jData *, struct jobSig *, int, time_t, int);
-static int modifyAJob (struct modifyReq *, struct submitMbdReply *,
-                       struct lsfAuth *, struct jData *);
+static void initJobSig(struct jData *, struct jobSig *, int, time_t, int);
+static int modifyAJob(struct modifyReq *, struct submitMbdReply *,
+                      struct lsfAuth *, struct jData *);
 static bool_t isSignificantChange(struct jRusage *, struct jRusage *, float );
 static bool_t clusterAdminFlag;
-static void setClusterAdmin(bool_t admin);
+static void setClusterAdmin(bool_t);
 static bool_t requestByClusterAdmin(void);
-
 void   expandFileNameWithJobId(char *, char *, LS_LONG_INT);
 char * getJobAttaDataLocation(struct jData *, int);
 static void jobRequeueTimeUpdate(struct jData *, time_t);
 
 static bool_t clusterAdminFlag;
-static void setClusterAdmin(bool_t admin);
-static bool_t requestByClusterAdmin( );
+static void setClusterAdmin(bool_t);
+static bool_t requestByClusterAdmin(void);
 static int    mbdRcvJobFile(int, struct lenData *);
 
 static void closeSbdConnect4ZombieJob(struct jData *);
+static int set_queue_last_job(LIST_T *, struct jData *);
+
 extern int glMigToPendFlag;
 extern int requeueToBottom;
 extern int arraySchedOrder;
@@ -121,12 +113,11 @@ int  eventPending = FALSE;
 extern int     rusageUpdateRate;
 extern int     rusageUpdatePercent;
 
-static void rLimits2lsfLimits(int *, struct lsfLimit*, int, int);
-static int setUrgentJobExecHosts(struct runJobRequest *, struct jData*);
+static void rLimits2lsfLimits(int *, struct lsfLimit *, int, int);
+static int setUrgentJobExecHosts(struct runJobRequest *, struct jData *);
 extern int chkFirstHost(char *, int *);
-void cleanCandHosts (struct jData *);
+void cleanCandHosts(struct jData *);
 void cleanSbdNode(struct jData *);
-
 void setNewSub(struct jData *,
                struct jData *,
                struct submitReq *,
@@ -135,13 +126,15 @@ void setNewSub(struct jData *,
                int);
 static void updateStopJobPreemptResources(struct jData *);
 extern int getXdrStrlen(char *);
-
-static int rusgMatch(struct resVal* resValPtr, const char *resName);
-
+static int rusgMatch(struct resVal *, const char *);
 static int   switchAJob(struct jobSwitchReq *,
                         struct lsfAuth *,
                         struct qData *);
-static int   moveAJob (struct jobMoveReq *, int, struct lsfAuth *);
+static int   moveAJob(struct jobMoveReq *, int, struct lsfAuth *);
+static void inPendJobList2(struct jData *,
+                           int,
+                           struct jData *,
+                           struct jData **);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
@@ -3215,18 +3208,15 @@ jStatusChange(struct jData *jData,
         == MASK_STATUS (oldStatus & ~JOB_STAT_UNKWN))
         return;
 
-
     newStatus = MASK_STATUS(newStatus);
     if (eventTime == LOG_IT && (jData->jStatus & JOB_STAT_RESERVE))
         resetReserve (jData, newStatus);
-
 
     if (eventTime == LOG_IT && JOB_PREEMPT_WAIT(jData) &&
         ((!IS_PEND(newStatus) && !(newStatus & JOB_STAT_SSUSP))
          || (newStatus & JOB_STAT_PSUSP) || IS_FINISH(newStatus))) {
         freeReservePreemptResources(jData);
     }
-
 
     if (eventTime == LOG_IT) {
         if ((jData->jStatus & JOB_STAT_RUN)
@@ -3265,8 +3255,8 @@ jStatusChange(struct jData *jData,
                 log_startjob (jData, FALSE);
         }
         jData->jStatus &= ~JOB_STAT_MIG;
-        offJobList (jData, PJLorMJL(jData));
-        inStartJobList (jData);
+        offJobList(jData, PJLorMJL(jData));
+        inStartJobList(jData);
 
     } else if (IS_FINISH (newStatus)) {
         int i;
@@ -4525,37 +4515,69 @@ removeJob(LS_LONG_INT jobId)
 
 /* inPendJobList()
  *
- * Put jobs in PJL using insertion sort. There is a experimental code that
- * uses qsort9) instead but since at runtime PJL is sorted there
- * is no benefit to it. We could perhaps speed up replay by simply
- * putting jobs in PJL and then qsort() it once.
- *
  */
 void
 inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
+    struct jData *lastJob;
+
+    if (job->qPtr->lastJob) {
+
+        inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
+        if (job->forw == job->qPtr->lastJob)
+            job->qPtr->lastJob = job;
+
+    } else {
+
+        inPendJobList2(job, listno, NULL, &lastJob);
+        if (job->forw == lastJob)
+            job->qPtr->lastJob = job;
+        else
+            job->qPtr->lastJob = lastJob;
+    }
+}
+
+/* inPendJobList2()
+ *
+ * Return the last job in the given priority group
+ * before job is inserted.
+ */
+static void
+inPendJobList2(struct jData *job,
+               int listno,
+               struct jData *startJob,
+               struct jData **lastJob)
+{
     struct jData *jp;
 
+    *lastJob = NULL;
     /* Start from the forw point which points to
      * the latest submitted job to the lowest
-     * priority queue. In the simplest case the
-     * jobs are sorted like 106 105 104 103
+     * priority queue or the queue's last job.
+     * In the simplest case the jobs are sorted
+     * like 106 105 104 103
      */
-   for (jp = jDataList[listno]->forw;
-        jp != jDataList[listno];
-        jp = jp->forw) {
+    for (jp = startJob ? startJob : jDataList[listno]->forw;
+         jp != jDataList[listno];
+         jp = jp->forw) {
 
-       /* If the job A ahead of me has higher priority
-        * then me I go before him BA
-        */
-       if (job->qPtr->priority < jp->qPtr->priority)
+        /* If the job B ahead of me has higher priority
+         * then me I go before him BA
+         */
+        if (job->qPtr->priority < jp->qPtr->priority) {
+            if (*lastJob == NULL)
+                *lastJob = job;
             break;
+        }
 
        /* Jobs have the same priority
         */
        if (job->qPtr->priority == jp->qPtr->priority) {
 
-           /* If B priority is higher then job ahead
+           if (*lastJob == NULL)
+               *lastJob = jp;
+
+           /* If A priority is higher then job ahead
             * keep moving ahead until we find one with
             * higher priority or equal one in which
             * the jobid will decide.
@@ -4566,32 +4588,37 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
            if (job->jobPriority < jp->jobPriority)
                break;
 
-           if (job->jobId > jp->jobId)
+           if (LSB_ARRAY_JOBID(job->jobId) >= LSB_ARRAY_JOBID(jp->jobId))
                break;
        }
    }
 
-   /* If the new jobs comes in a A and the finds the
+   /* If the new jobs comes in as A and finds the
     * job B which is the one that has higher priority
-    * it has be put before it BA. The head is A.
+    * it has be put before it AB. Logically the head is B.
     */
    listInsertEntryBefore((LIST_T *)jDataList[listno],
 			 (LIST_ENTRY_T *)jp,
                          (LIST_ENTRY_T *)job);
 }
 
+
 void
-offJobList (struct jData *jp, int listno)
+offJobList(struct jData *jp, int listno)
 {
     listRemoveEntry((LIST_T *)jDataList[listno], (LIST_ENTRY_T *)jp);
 
+    /* If leaving PJL adjust the queue's last job
+     */
+    if (listno == PJL) {
+        set_queue_last_job((LIST_T *)jDataList[listno], jp);
+    }
 }
 
 void
 inStartJobList (struct jData *job)
 {
     struct jData *jp;
-
 
     for (jp = jDataList[SJL]->forw;
          jp != jDataList[SJL]; jp = jp->forw) {
@@ -4601,12 +4628,12 @@ inStartJobList (struct jData *job)
         else if (job->qPtr->priority == jp->qPtr->priority) {
             if (job->startTime > jp->startTime)
                 break;
-            else if ((job->startTime == jp->startTime || job->startTime == 0)
+            else if ((job->startTime == jp->startTime
+                      || job->startTime == 0)
                      && (job->jobId > jp->jobId))
                 break;
         }
     }
-
 
     listInsertEntryBefore((LIST_T *)jDataList[SJL],
                           (LIST_ENTRY_T *)jp,
@@ -8846,6 +8873,59 @@ static int checkSubHost(struct jData *job)
     return LSBE_NO_ERROR;
 }
 
+/* set_queue_last_job()
+ */
+static int
+set_queue_last_job(LIST_T *list, struct jData *jPtr)
+{
+    struct qData *qPtr;
+
+    qPtr = jPtr->qPtr;
+
+    /* The only job in the list
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back == (void *)list) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group with
+     * the list in front, dont try to derefrence list->priority
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group with
+     * the list at the back, dont try to derefrence list->priority
+     */
+    if (jPtr->back == (void *)list
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The only job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
+        qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* The last job in this priority group
+     */
+    if (jPtr->back->qPtr->priority != jPtr->qPtr->priority
+        && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
+        qPtr->lastJob = jPtr->forw;
+    }
+
+    return 0;
+}
+
 /* jcompare()
  *
  * Job sorting function.
@@ -8919,3 +8999,4 @@ jcompare(const void *j1, const void *j2)
     return 0;
 }
 #endif
+

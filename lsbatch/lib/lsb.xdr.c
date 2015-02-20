@@ -888,6 +888,7 @@ xdr_queueInfoReply(XDR *xdrs,
             FREEUP(qInfo[i].suspendActCmd);
             FREEUP(qInfo[i].resumeActCmd);
             FREEUP(qInfo[i].terminateActCmd);
+            FREEUP(qInfo[i].preemption);
         }
 
         qInfoReply->queues = qInfo;
@@ -898,7 +899,6 @@ xdr_queueInfoReply(XDR *xdrs,
                              qInfoReply->numQueues * qInfoReply->nIdx) == -1)
                 return false;
         }
-
     }
 
     for (i = 0; i < qInfoReply->numQueues; i++) {
@@ -1046,6 +1046,16 @@ xdr_queueInfoEnt(XDR *xdrs,
     if (hdr->version >= 3) {
         if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
             return false;
+    }
+
+    if (xdrs->x_op == XDR_ENCODE
+        && hdr->version >= 3) {
+        xdr_var_string(xdrs, &qInfo->preemption);
+    }
+
+    if (xdrs->x_op == XDR_DECODE
+        && hdr->version >= 3) {
+        xdr_var_string(xdrs, &qInfo->preemption);
     }
 
     return true;
