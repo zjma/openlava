@@ -25,8 +25,8 @@ extern char *argvmsg_(int argc, char **argv);
 
 int    limSock = -1;
 int    limTcpSock = -1;
-ushort  lim_port;
-ushort  lim_tcp_port;
+uint16_t lim_port;
+uint16_t lim_tcp_port;
 int probeTimeout = 2;
 short  resInactivityCount = 0;
 
@@ -847,6 +847,8 @@ initSock(int checkMode)
         return -1;
     }
 
+    /* lim_port global variable is maintained in network order
+     */
     lim_port = htons(lim_port);
 
     limTcpSock = chanServSocket_(SOCK_STREAM, 0, 10, 0);
