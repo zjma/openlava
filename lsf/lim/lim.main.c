@@ -902,7 +902,7 @@ errorBack(struct sockaddr_in *from,
                   limSock);
 
     xdr_destroy(&xdrs2);
-    return;
+
 }
 static struct tclLsInfo *
 getTclLsInfo(void)

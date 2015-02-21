@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,7 +12,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA
  *
  */
 
@@ -25,7 +26,7 @@ usage(void)
     fprintf(stderr, "\
 lsaddhost: [-h] [-V] -m model -t type -f cpuFactor \
 -D numDisks -R \"resource list\" -w \"windows\" \
--b \"busy onlist \" [-v] hostname\n");
+-b \"busy onlist \" [-v] [-p port] hostname\n");
 }
 static int getResList(struct hostEntry *, const char *);
 static int getBusyThr(struct hostEntry *, const char *);
@@ -45,8 +46,10 @@ main(int argc, char **argv)
     int cc;
     struct hostEntry *hPtr;
     struct hostent *hp;
-    
+    uint16_t port;
+
     v = 0;
+    port = 0;
     hPtr = calloc(1, sizeof(struct hostEntry));
     hPtr->rcv = 1;
     hPtr->window = strdup("");
@@ -55,7 +58,7 @@ main(int argc, char **argv)
     for (cc = 0; cc < 11; cc++)
         hPtr->busyThreshold[cc] = INFINIT_LOAD;
 
-    while ((cc = getopt(argc, argv, "Vhvm:t:f:D:R:w:b:")) != EOF) {
+    while ((cc = getopt(argc, argv, "Vhvm:t:f:D:R:w:b:p:")) != EOF) {
         switch (cc) {
             case 'V':
                 fputs(_LS_VERSION_, stderr);
@@ -85,6 +88,9 @@ main(int argc, char **argv)
             case 'v':
                 v = 1; /* verbose */
                 break;
+            case 'p':
+                port = atoi(optarg);
+                break;
             case 'h':
             case '?':
             default:
@@ -92,12 +98,12 @@ main(int argc, char **argv)
                 return -1;
         }
     }
-    
+
     if (argv[optind] == NULL) {
         fprintf(stderr, "hostname not specified.\n");
         return -1;
     }
-    
+
     hp = gethostbyname(argv[optind]);
     if (hp == NULL) {
         fprintf(stderr, "\
@@ -106,6 +112,8 @@ main(int argc, char **argv)
     }
 
     strcpy(hPtr->hostName, argv[optind]);
+    if (port)
+        sprintf(hPtr->hostName + strlen(hPtr->hostName), "@%d", port);
 
     if (v)
         printInfo(hPtr);

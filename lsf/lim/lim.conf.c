@@ -2940,8 +2940,16 @@ addHost_(struct clusterNode *clPtr,
     struct hostent *hp;
     char *word;
     int i;
+    char hostName[MAXHOSTNAMELEN];
+    char *p;
 
-    if ((hp = Gethostbyname_(hEntPtr->hostName)) == NULL) {
+    strcpy(hostName, hEntPtr->hostName);
+    /* Check for virtual host
+     */
+    if ((p = strchr(hostName, '@')))
+        *p = 0;
+
+    if ((hp = Gethostbyname_(hostName)) == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: Invalid hostname %s in section host. Ignoring host",
                   __func__, hEntPtr->hostName);
@@ -3029,7 +3037,10 @@ addHost_(struct clusterNode *clPtr,
         return NULL;
     }
 
-    hPtr->hostName = putstr_(hp->h_name);
+    /* Set the name as we receive it as
+     * it could be a virtual host banana@3345
+     */
+    hPtr->hostName = strdup(hEntPtr->hostName);
 
     if (hEntPtr->rcv)
         hPtr->hostNo = clPtr->hostList ? clPtr->hostList->hostNo + 1 : 0;
