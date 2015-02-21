@@ -167,7 +167,7 @@ sendLoad(void)
                 if (probeMasterTcp(myClusterPtr) < 0) {
                     /* Let's do a TCP connect towards the
                      * last known master. This is kinda half
-                     * baked because of the master is hanging
+                     * baked because if the master is hanging
                      * the TCP connect is going to succeed
                      * fooling me into believing the master
                      * is all right, the cluster is going
