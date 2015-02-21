@@ -80,7 +80,7 @@ struct config_param limParams[] =
     {"LIM_COMPUTE_ONLY", NULL},
     {"LSB_SHAREDIR", NULL},
     {"LIM_NO_MIGRANT_HOSTS", NULL},
-    {"LIM_NO_FORK", NULL},
+    {"LIM_DONT_FORK", NULL},
     {NULL, NULL},
 };
 

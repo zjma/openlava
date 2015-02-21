@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -321,7 +321,7 @@ typedef enum {
     LIM_COMPUTE_ONLY,
     LSB_SHAREDIR,
     LIM_NO_MIGRANT_HOSTS,
-    LIM_NO_FORK
+    LIM_DONT_FORK
 } limParams_t;
 
 #define LOOP_ADDR       0x7F000001
