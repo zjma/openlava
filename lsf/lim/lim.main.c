@@ -105,11 +105,16 @@ extern char *getExtResourcesVal(char *);
  */
 static char reqBuf[MSGSIZE];
 
+/* If this is a virtual host this is
+ * its name
+ */
+char *machineName;
+
 static void
 usage(void)
 {
     fprintf(stderr, "\
-lim: [-C] [-V] [-h] [-t] [-debug_level] [-d env_dir]\n");
+lim: [-C] [-V] [-h] [-t] [-debug_level] [-d env_dir] [-m machine@port]\n");
 }
 
 /* LIM main()
@@ -132,7 +137,7 @@ main(int argc, char **argv)
     saveDaemonDir_(argv[0]);
     showTypeModel = 0;
 
-    while ((cc = getopt(argc, argv, "12CVthd:")) != EOF) {
+    while ((cc = getopt(argc, argv, "12CVthd:m:")) != EOF) {
 
         switch (cc) {
             case 'd':
@@ -155,6 +160,9 @@ main(int argc, char **argv)
                 return 0;
             case 't':
                 showTypeModel = 1;
+                break;
+            case 'm':
+                machineName = strdup(optarg);
                 break;
             case 'h':
             case '?':
@@ -647,7 +655,7 @@ initAndConfig(int checkMode, int *kernelPerm)
     ls_syslog(LOG_DEBUG, "\
 %s: Entering this routine...; checkMode=%d", __func__, checkMode);
 
-    /* LIM is running in a non shared fiel system mode,
+    /* LIM is running in a non shared file system mode,
      * contact the master and retrieve the shared file
      * and the cluster file.
      */
@@ -820,8 +828,10 @@ child_handler: pim (pid=%d) died", pid);
 int
 initSock(int checkMode)
 {
-    struct sockaddr_in   limTcpSockId;
-    socklen_t            size;
+    struct sockaddr_in limTcpSockId;
+    socklen_t size;
+    struct hostNode hPtr;
+    uint16_t port;
 
     if (limParams[LSF_LIM_PORT].paramValue == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -829,6 +839,9 @@ initSock(int checkMode)
         return -1;
     }
 
+    /* With virtual host the lim_port is specific to each
+     * virtual host and is encoded in the host name.
+     */
     if ((lim_port = atoi(limParams[LSF_LIM_PORT].paramValue)) <= 0) {
         ls_syslog(LOG_ERR, "\
 %s: LSF_LIM_PORT <%s> must be a positive number",
@@ -836,10 +849,24 @@ initSock(int checkMode)
         return -1;
     }
 
+    port = lim_port;
+    if (machineName) {
+        /* A virtual host must bind to its own port
+         * but uses the lim_port to talk to master lim
+         */
+        hPtr.hostName = strdup(machineName);
+        port = getLIMPort(&hPtr);
+        _free_(hPtr.hostName);
+        /* Virtual lim is a compute only one don't
+         * try to take over the master.
+         */
+        limParams[LIM_COMPUTE_ONLY].paramValue = "si";
+    }
+
     /* Tell the channel code to set the reuse option
      * for the socket.
      */
-    limSock = chanServSocket_(SOCK_DGRAM, lim_port, -1, CHAN_OP_SOREUSE);
+    limSock = chanServSocket_(SOCK_DGRAM, port, -1, CHAN_OP_SOREUSE);
     if (limSock < 0) {
         ls_syslog(LOG_ERR, "\
 %s: unable to create datagram socket port %d; another LIM running?: %M ",
@@ -847,10 +874,8 @@ initSock(int checkMode)
         return -1;
     }
 
-    /* lim_port global variable is maintained in network order
+    /* bind to a dynamic port
      */
-    lim_port = htons(lim_port);
-
     limTcpSock = chanServSocket_(SOCK_STREAM, 0, 10, 0);
     if (limTcpSock < 0) {
         ls_syslog(LOG_ERR, "%s: chanServSocket_() failed %M", __func__);
@@ -942,7 +967,12 @@ startPIM(int argc, char **argv)
     int i;
     static time_t lastTime = 0;
 
-    if (time(NULL) - lastTime < 60*2)
+    /* Dont start pim on a virtual host
+     */
+    if (machineName)
+        return;
+
+    if (time(NULL) - lastTime < 60 * 2)
         return;
 
     lastTime = time(NULL);

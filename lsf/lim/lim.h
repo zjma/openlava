@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -326,7 +327,9 @@ typedef enum {
 
 #define LOOP_ADDR       0x7F000001
 
-
+/* Virtual host machine name
+ */
+extern char *machineName;
 extern struct config_param limParams[];
 extern int lim_debug;
 extern int lim_CheckMode;
@@ -502,8 +505,9 @@ extern int xdr_loadmatrix(XDR *, int, struct loadVectorStruct *,
 extern int xdr_masterReg(XDR *, struct masterReg *, struct LSFHeader *);
 extern int xdr_statInfo(XDR *, struct statInfo *, struct LSFHeader *);
 extern void clientIO(struct Masks *);
+extern uint16_t getLIMPort(struct hostNode *);
 
-/* openlava floating host management
+/* openlava migrating host management
  */
 extern void addMigrantHost(XDR *,
                            struct sockaddr_in *,
