@@ -345,91 +345,89 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
             if (strcmp(qp->userList, " ") != 0 && qp->userList[0] != 0)
                 printf("\nUSERS:  %s\n", qp->userList);
         }
-    }
 
-    if (strcmp(qp->hostList, " ") == 0) {
-        printf("HOSTS:  all hosts used by the LSF Batch system\n");
-    } else {
-        if (strcmp(qp->hostList, " ") != 0 && qp->hostList[0])
-            printf("HOSTS:  %s\n", qp->hostList);
-    }
-    if (strcmp (qp->admins, " ") != 0)
-        printf("ADMINISTRATORS:  %s\n", qp->admins);
-    if (strcmp (qp->preCmd, " ") != 0)
-        printf("PRE_EXEC:  %s\n", qp->preCmd);
-    if (strcmp (qp->postCmd, " ") != 0)
-        printf("POST_EXEC:  %s\n", qp->postCmd);
-    if (strcmp (qp->requeueEValues, " ") != 0)
-        printf("REQUEUE_EXIT_VALUES:  %s\n", qp->requeueEValues);
-    if (strcmp (qp->resReq, " ") != 0)
-        printf("RES_REQ:  %s\n", qp->resReq);
-    if (qp->slotHoldTime > 0)
-        printf("Maximum slot reservation time: %d seconds\n", qp->slotHoldTime);
-    if (strcmp (qp->resumeCond, " ") != 0)
-        printf("RESUME_COND:  %s\n", qp->resumeCond);
-    if (strcmp (qp->stopCond, " ") != 0)
-        printf("STOP_COND:  %s\n", qp->stopCond);
-    if (strcmp (qp->jobStarter, " ") != 0)
-        printf("JOB_STARTER:  %s\n", qp->jobStarter);
+        if (strcmp(qp->hostList, " ") == 0) {
+            printf("HOSTS:  all hosts used by the LSF Batch system\n");
+        } else {
+            if (strcmp(qp->hostList, " ") != 0 && qp->hostList[0])
+                printf("HOSTS:  %s\n", qp->hostList);
+        }
+        if (strcmp (qp->admins, " ") != 0)
+            printf("ADMINISTRATORS:  %s\n", qp->admins);
+        if (strcmp (qp->preCmd, " ") != 0)
+            printf("PRE_EXEC:  %s\n", qp->preCmd);
+        if (strcmp (qp->postCmd, " ") != 0)
+            printf("POST_EXEC:  %s\n", qp->postCmd);
+        if (strcmp (qp->requeueEValues, " ") != 0)
+            printf("REQUEUE_EXIT_VALUES:  %s\n", qp->requeueEValues);
+        if (strcmp (qp->resReq, " ") != 0)
+            printf("RES_REQ:  %s\n", qp->resReq);
+        if (qp->slotHoldTime > 0)
+            printf("Maximum slot reservation time: %d seconds\n", qp->slotHoldTime);
+        if (strcmp (qp->resumeCond, " ") != 0)
+            printf("RESUME_COND:  %s\n", qp->resumeCond);
+        if (strcmp (qp->stopCond, " ") != 0)
+            printf("STOP_COND:  %s\n", qp->stopCond);
+        if (strcmp (qp->jobStarter, " ") != 0)
+            printf("JOB_STARTER:  %s\n", qp->jobStarter);
 
-    /* CONF_SIG_ACT */
+        /* CONF_SIG_ACT */
 
-    printf("\n");
-    printFlag = 0;
-    if  ((qp->suspendActCmd != NULL)
-         && (qp->suspendActCmd[0] != ' '))
-        printFlag = 1;
-
-    printFlag1 = 0;
-    if  ((qp->resumeActCmd != NULL)
-         && (qp->resumeActCmd[0] != ' '))
-        printFlag1 = 1;
-
-    printFlag2 = 0;
-    if  ((qp->terminateActCmd != NULL)
-         && (qp->terminateActCmd[0] != ' '))
-        printFlag2 = 1;
-
-    if (printFlag || printFlag1 || printFlag2)
-        printf("JOB_CONTROLS:\n");
-
-
-    if (printFlag) {
-        printf("    SUSPEND:  ");
-        if (strcmp (qp->suspendActCmd, " ") != 0)
-            printf("    [%s]\n", qp->suspendActCmd);
-    }
-
-    if (printFlag1) {
-        printf("    RESUME:   ");
-        if (strcmp (qp->resumeActCmd, " ") != 0)
-            printf("    [%s]\n", qp->resumeActCmd);
-    }
-
-    if (printFlag2) {
-        printf("    TERMINATE:");
-        if (strcmp (qp->terminateActCmd, " ") != 0)
-            printf("    [%s]\n", qp->terminateActCmd);
-    }
-
-    if (printFlag || printFlag1 || printFlag2)
         printf("\n");
+        printFlag = 0;
+        if  ((qp->suspendActCmd != NULL)
+             && (qp->suspendActCmd[0] != ' '))
+            printFlag = 1;
 
-    printFlag = terminateWhen_(qp->sigMap, "USER");
-    printFlag1 = terminateWhen_(qp->sigMap, "PREEMPT");
-    printFlag2 = terminateWhen_(qp->sigMap, "WINDOW");
-    printFlag3 = terminateWhen_(qp->sigMap, "LOAD");
+        printFlag1 = 0;
+        if  ((qp->resumeActCmd != NULL)
+             && (qp->resumeActCmd[0] != ' '))
+            printFlag1 = 1;
 
-    if (printFlag | printFlag1 | printFlag2 | printFlag3) {
-        printf("TERMINATE_WHEN = ");
-        if (printFlag) printf("USER ");
-        if (printFlag1) printf("PREEMPT ");
-        if (printFlag2) printf("WINDOW ");
-        if (printFlag3) printf("LOAD");
-        printf("\n");
+        printFlag2 = 0;
+        if  ((qp->terminateActCmd != NULL)
+             && (qp->terminateActCmd[0] != ' '))
+            printFlag2 = 1;
+
+        if (printFlag || printFlag1 || printFlag2)
+            printf("JOB_CONTROLS:\n");
+
+
+        if (printFlag) {
+            printf("    SUSPEND:  ");
+            if (strcmp (qp->suspendActCmd, " ") != 0)
+                printf("    [%s]\n", qp->suspendActCmd);
+        }
+
+        if (printFlag1) {
+            printf("    RESUME:   ");
+            if (strcmp (qp->resumeActCmd, " ") != 0)
+                printf("    [%s]\n", qp->resumeActCmd);
+        }
+
+        if (printFlag2) {
+            printf("    TERMINATE:");
+            if (strcmp (qp->terminateActCmd, " ") != 0)
+                printf("    [%s]\n", qp->terminateActCmd);
+        }
+
+        if (printFlag || printFlag1 || printFlag2)
+            printf("\n");
+
+        printFlag = terminateWhen_(qp->sigMap, "USER");
+        printFlag1 = terminateWhen_(qp->sigMap, "PREEMPT");
+        printFlag2 = terminateWhen_(qp->sigMap, "WINDOW");
+        printFlag3 = terminateWhen_(qp->sigMap, "LOAD");
+
+        if (printFlag | printFlag1 | printFlag2 | printFlag3) {
+            printf("TERMINATE_WHEN = ");
+            if (printFlag) printf("USER ");
+            if (printFlag1) printf("PREEMPT ");
+            if (printFlag2) printf("WINDOW ");
+            if (printFlag3) printf("LOAD");
+            printf("\n");
+        }
     }
-
-    printf("\n");
 }
 
 /* prtQueuesSort()
