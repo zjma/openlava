@@ -1,0 +1,154 @@
+
+openlava docker integration
+---------------------------
+
+1) Introduction
+
+Docker is a virtualization technology built on linux containers
+and cgroups. It provides prebuilt images of operating systems
+and users can execute applications inside them a running image
+is called container. More details about docker can be found here:
+www.docker.com.
+In order to work with the integration is enough to understand
+images and containers.
+
+2) Supported version
+
+The openlava docker integration is built using openlava 3.0
+and docker client/server version 1.3.2.
+
+3) Architecture
+
+The integration allows users to submit applications as openlava jobs
+that will transparently run in a container. The openlava job control
+commands bstop/bresume/bkill will operate on running containers.
+The integration is done through an openlava queue based job starter
+which runs the 'docker run image:tag' command appending the user
+specified command, so the user does not have to explicitly specify
+the image name. The starter adds a container name which is a fundamental
+parameter for the launch specification, the name is the LSB_JOBID.
+In this way both openlava and docker refer to the container using the
+openlava jobid, all control operation of the openlava and docker side
+are done using the jobid.
+The image:tag that are needed for docker to identify which image has
+to be used to run the container has to be specified in the submission
+environment as LSB_DOCKER_IMAGE. e.g in bash shell:
+
+export  LSB_DOCKER_IMAGE=centos:app
+
+This variable has to be set either by the user or by the tool administrator.
+
+4) Configuration
+
+4.1) openlava base
+
+In the lsf.shared define a new boolean resources called docker and add this
+resource to docker hosts in lsf.cluster.<your cluster name>
+
+Begin Resource
+RESOURCENAME  TYPE    INTERVAL INCREASING  DESCRIPTION        # Keywords
+   docker     Boolean ()       ()          (docker server)
+   ...
+End Resource
+
+Begin   Host
+HOSTNAME       model    type  server r1m  RESOURCES
+prometeo      IntelI5   linux   1    3.5  (cs docker)
+End     Host
+
+4.2) openlava batch
+
+Select a queue or queues where to run the dockerized application and
+configure the job starter and the job control actions.
+
+Begin Queue
+QUEUE_NAME   = normal
+PRIORITY     = 60
+ ...
+JOB_STARTER = /usr/local/openlava3/bin/docker_starter "%USRCMD"
+JOB_CONTROLS = SUSPEND[/usr/local/openlava3/bin/docker_stop] \
+RESUME[/usr/local/openlava3/bin/docker_resume] \
+TERMINATE[/usr/local/openlava3/bin/docker_terminate]
+ ...
+End Queue
+
+The files docker_starter, docker_stop, docker_resume and docker_terminate are
+int the openlava source tree in the examples/docker directory. docker_starter
+is a C program that needs to be compiled while the other are just scripts.
+Copy them to your binary distribution.
+
+4.3) Reconfig and verify that openlava is configured correctly.
+
+$ lshosts
+HOST_NAME      type    model  cpuf ncpus maxmem maxswp server RESOURCES
+prometeo      linux  IntelI5 100.0     4 31807M 63998M    Yes (cs docker)
+$ bqueues -l normal
+
+QUEUE: normal
+  -- For docker jobs.
+ ...
+JOB_STARTER:  /home/david/openlava/master/examples/docker/docker_starter "%USRCMD"
+
+JOB_CONTROLS:
+    SUSPEND:      [/home/david/openlava/master/examples/docker/docker_stop]
+    RESUME:       [/home/david/openlava/master/examples/docker/docker_resume]
+    TERMINATE:    [/home/david/openlava/master/examples/docker/docker_terminate]
+
+5) Example
+
+5.1) Docker images
+
+We have built a docker image called centos:app. This is CentOS 7 based image
+with gcc and our own application called hello built in.
+
+ $ docker images centos
+REPOSITORY  TAG    IMAGE ID       CREATED       VIRTUAL SIZE
+centos      app    62641afe6cf4  4 days ago       603.4 MB
+
+We want to run the application hello inside the image centos:app.
+
+5.2) Set the LSB_DOCKER_IMAGE in the environment, alternatively the
+admin of the tool will set it in the execution script.
+
+export LSB_DOCKER_IMAGE=centos:app
+
+5.3) Submit a batch job.
+
+$ bsub /usr/local/app/hello
+Job <929> is submitted to default queue <normal>.
+
+Both openlava and docker show the job and the container running using
+the same jobid.
+
+ $ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED
+23bc708ef1f4        centos:app    "/usr/local/app/hell"   3 minutes ago
+STATUS                  PORTS               NAMES
+Up 14 seconds                           929
+
+$bjobs
+JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
+929     david   RUN   normal     prometeo    prometeo    sleep 3600 Feb 24 16:43
+
+The docker output is edited for formatting reasons.
+
+We can stop and resume the container:
+
+$ bstop 929
+Job <929> is being stopped
+
+docker ps output will show (Paused)
+
+$ bresume 929
+Job <929> is being resumed
+
+This will clear the (Paused) flag in docker ps.
+
+Finally we terminate the container.
+
+Using 'docker -pa' we can see out job container was terminated
+
+CONTAINER ID        IMAGE          COMMAND                   CREATED
+23bc708ef1f4        centos:app    "/usr/local/app/hell"      4 minutes ago
+STATUS                        PORTS               NAMES
+Exited (-1) 9 seconds ago                         929

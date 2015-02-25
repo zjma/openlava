@@ -5,6 +5,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsbatch
 
+SUBDIRS = docker
 noinst_PROGRAMS = client gethostbyaddr gethostbyname \
                   hdr msg pimme qstring readevent server sobufsiz
 
