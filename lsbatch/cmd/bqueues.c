@@ -66,6 +66,7 @@ main(int argc, char **argv)
     char *user;
 
     numQueues = 0;
+    user = host = NULL;
 
     if (lsb_init(argv[0]) < 0) {
         lsb_perror("lsb_init");
