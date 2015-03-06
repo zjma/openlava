@@ -224,7 +224,7 @@ Reply1:
     {
         pid_t pid = 0;
 
-        if (! limParams[LIM_NO_FORK].paramValue) {
+        if (! limParams[LIM_DONT_FORK].paramValue) {
             pid = fork();
             if (pid < 0)  {
                 ls_syslog(LOG_ERR, "\
@@ -235,7 +235,7 @@ Reply1:
 
         if (pid == 0) {
 
-            if (! limParams[LIM_NO_FORK].paramValue)
+            if (! limParams[LIM_DONT_FORK].paramValue)
                 chanClose_(limSock);
 
             XDR_SETPOS(xdrs, oldpos);
@@ -264,10 +264,10 @@ Reply1:
                     break;
             }
 
-            if (! limParams[LIM_NO_FORK].paramValue)
+            if (! limParams[LIM_DONT_FORK].paramValue)
                 exit(0);
         }
-        /* parent pid > 0 or LIM_NO_FORK
+        /* parent pid > 0 or LIM_DONT_FORK
          *
          * Remember that in LSF the parent
          * shuts down the connection with

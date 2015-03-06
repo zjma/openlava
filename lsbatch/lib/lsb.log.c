@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
@@ -165,8 +166,6 @@ lsb_openelog(struct eventLogFile *ePtr, int *lineNum)
                                          "%s: event directory is NULL"), __func__); /* catgets 5500 */
         return NULL;
     }
-
-
 
     curOpenFile = -1;
     lastOpenFile = -1;
@@ -352,8 +351,7 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
         free(logRec);
     }
 
-
-    logRec = (struct eventRec *) calloc (1, sizeof (struct eventRec));
+    logRec = calloc(1, sizeof (struct eventRec));
     if (logRec == NULL) {
         lsberrno = LSBE_NO_MEM;
         return NULL;

@@ -56,12 +56,10 @@ int
 main(int argc, char **argv)
 {
     int numQueues;
-    char **queueNames;
     char **queues;
     struct queueInfoEnt *queueInfo;
     char lflag = FALSE;
     int cc;
-    int defaultQ;
     char *host;
     char *user;
 
@@ -109,16 +107,15 @@ main(int argc, char **argv)
         }
     }
 
-    numQueues = getNames(argc,
-                         argv,
-                         optind,
-                         &queueNames,
-                         &defaultQ,
-                         "queue");
-    if (!defaultQ && numQueues != 0)
-        queues = queueNames;
-    else
-        queues = NULL;
+    queues = NULL;
+    numQueues = 0;
+
+    if (optind < argc) {
+        numQueues = argc - optind;
+        queues = calloc(argc - optind, sizeof(char *));
+        for (cc = 0; cc < argc - optind; cc++)
+            queues[cc] = argv[optind + cc];
+    }
 
     TIMEIT(0, (queueInfo = lsb_queueinfo(queues,
                                          &numQueues,
@@ -133,16 +130,17 @@ main(int argc, char **argv)
             switch (lsberrno) {
                 case LSBE_BAD_HOST   :
                 case LSBE_QUEUE_HOST :
-                    lsb_perror (host);
+                    lsb_perror(host);
                     break;
                 case LSBE_BAD_USER   :
                 case LSBE_QUEUE_USE  :
-                    lsb_perror (user);
+                    lsb_perror(user);
                     break;
                 default :
-                    lsb_perror (NULL);
+                    lsb_perror(NULL);
             }
         }
+        _free_(queues);
         return -1;
     }
 
@@ -150,6 +148,8 @@ main(int argc, char **argv)
         prtQueuesLong(numQueues, queueInfo);
     else
         prtQueuesShort(numQueues, queueInfo);
+
+    _free_(queues);
 
     return 0;
 }

@@ -396,7 +396,6 @@ timeCollectPendReason %dms",                                            \
 static bool_t  updateAccountsInQueue;
 
 static void resetSchedulerSession(void);
-static void tryPreempt(void);
 
 /* Global as it is shared among few routines.
  */
@@ -4173,6 +4172,9 @@ scheduleAndDispatchJobs(void)
                  * list is to make sure that each pending job
                  * is looked at by the scheduler only once.
                  */
+                if (! jobIsReady(jPtr))
+                    continue;
+
                 jR = calloc(1, sizeof(struct jRef));
                 jR->job = jPtr;
 
@@ -4318,8 +4320,8 @@ scheduleAndDispatchJobs(void)
 
             /* Initialize the slot fairshare scheduler.
              */
-            if (qp->scheduler) {
-                (*qp->scheduler->fs_init_sched_session)(qp);
+            if (qp->fsSched) {
+                (*qp->fsSched->fs_init_sched_session)(qp);
             }
 
         }
@@ -4409,12 +4411,6 @@ scheduleAndDispatchJobs(void)
         schedSeqNo = 0;
     }
 
-    /* Scheduling cycle is over or it never initiated
-     * because no resources. See is preemptive queue
-     * can canibalize some lower priority ones.
-     */
-    tryPreempt();
-
     DUMP_TIMERS(__func__);
     DUMP_CNT();
     RESET_CNT();
@@ -4495,7 +4491,7 @@ jiter_next_job(LIST_T *jRefList)
          */
         if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
             struct qData *qPtr = jPtr->qPtr;
-            (*qPtr->scheduler->fs_elect_job)(qPtr,
+            (*qPtr->fsSched->fs_elect_job)(qPtr,
                                              jRefList,
                                              &jR0);
             if (jR0) {
@@ -4509,7 +4505,7 @@ jiter_next_job(LIST_T *jRefList)
              * so finalize the local plugin data for this
              * session.
              */
-            (*qPtr->scheduler->fs_fin_sched_session)(qPtr);
+            (*qPtr->fsSched->fs_fin_sched_session)(qPtr);
             continue;
         }
 
@@ -6251,15 +6247,14 @@ resetStaticSchedVariables(void)
 static bool_t
 jobIsReady(struct jData *jp)
 {
-    static char fname[] = "jobIsReady()";
     int ret;
-
 
     ret = checkIfJobIsReady(jp);
 
     jp->processed |= JOB_STAGE_READY;
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG3, "%s: job=%s numSlots=%d numAvailSlots=%d", fname,
+        ls_syslog(LOG_DEBUG3, "\
+%s: job=%s numSlots=%d numAvailSlots=%d", __func__,
                   lsb_jobid2str(jp->jobId), jp->numSlots, jp->numAvailSlots);
     }
     if (ret) {
@@ -6267,7 +6262,8 @@ jobIsReady(struct jData *jp)
         return TRUE;
     } else {
         if (logclass & (LC_SCHED | LC_PEND)) {
-            ls_syslog(LOG_DEBUG1, "%s: job <%s> is not ready", fname, lsb_jobid2str(jp->jobId));
+            ls_syslog(LOG_DEBUG1, "\
+%s: job %s is not ready", __func__, lsb_jobid2str(jp->jobId));
         }
         jp->processed |= JOB_STAGE_DONE;
         return FALSE;
@@ -6848,53 +6844,4 @@ setLsbPtilePack(const bool_t x)
         lsbPtilePack = FALSE;
     }
 
-}
-
-/* tryPreempt()
- *
- * Walk on the PJL and look if jobs with pending reason
- * PEND_HOST_JOB_LIMIT belong to a preemptive queue.
- * If so search in SJL jobs that can be preempted and
- * from the shortest running job find a slot candidate
- * then requeue it.
- *
- */
-static void
-tryPreempt(void)
-{
-    struct qData *qPtr;
-    link_t *l;
-    struct jData *jPtr;
-    struct jData *jPtr2;
-
-    l = make_link();
-    for (qPtr = qDataList->forw; qPtr != qDataList; qPtr = qPtr->forw) {
-
-        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
-            enqueue_link(l, qPtr);
-        }
-    }
-
-    while ((qPtr = pop_link(l))) {
-
-        /* Gut nicht jobs
-         */
-        jPtr = qPtr->lastJob;
-        if (jPtr == NULL)
-            continue;
-
-        while (jPtr) {
-
-            jPtr2 = jPtr->forw;
-
-            /* Fine della coda
-             */
-            if (jPtr2 == (void *)jDataList[PJL]
-                || jPtr->qPtr->priority != jPtr2->qPtr->priority)
-                break;
-            jPtr = jPtr2;
-        }
-    }
-
-    fin_link(l);
 }

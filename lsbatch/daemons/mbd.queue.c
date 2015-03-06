@@ -429,11 +429,11 @@ checkQueues(struct infoReq *queueInfoReqPtr,
              */
             qRep->numAccts = 0;
             qRep->saccts = NULL;
-            if (qp->scheduler) {
+            if (qp->fsSched) {
 
-                (*qp->scheduler->fs_get_saccts)(qp,
-                                                &qRep->numAccts,
-                                                &qRep->saccts);
+                (*qp->fsSched->fs_get_saccts)(qp,
+                                              &qRep->numAccts,
+                                              &qRep->saccts);
             }
             qRep->numFairSlots = qp->numFairSlots;
 

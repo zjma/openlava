@@ -52,13 +52,13 @@ typedef gid_t GETGROUPS_T;
 #  else
 #    define _LS_VERSION_ ("LSF 2.2c \nCopyright 1992-1996 Platform Computing Corporation\n")
 #  endif
-#endif 
+#endif
 
 #include <stdlib.h>
 #include "resout.h"
 
 
-extern int rexecPriority;	
+extern int rexecPriority;
 extern struct client  *clients[];
 extern int client_cnt;
 extern struct child  **children;
@@ -66,16 +66,16 @@ extern int  child_cnt;
 extern char *Myhost;
 extern char *myHostType;
 
-extern int lastChildExitStatus; 
+extern int lastChildExitStatus;
 
-extern int sbdMode; 
-extern int sbdFlags; 
-#define SBD_FLAG_STDIN  0x1 
-#define SBD_FLAG_STDOUT 0x2 
-#define SBD_FLAG_STDERR 0x4 
-#define SBD_FLAG_TERM   0x8 
+extern int sbdMode;
+extern int sbdFlags;
+#define SBD_FLAG_STDIN  0x1
+#define SBD_FLAG_STDOUT 0x2
+#define SBD_FLAG_STDERR 0x4
+#define SBD_FLAG_TERM   0x8
 
-extern int accept_sock; 
+extern int accept_sock;
 extern char child_res;
 extern char child_go;
 extern char res_interrupted;
@@ -102,7 +102,7 @@ extern int restart_argc;
 extern char ** restart_argv;
 extern char *env_dir;
 
-#define MAXCLIENTS_HIGHWATER_MARK	100	
+#define MAXCLIENTS_HIGHWATER_MARK	100
 #define MAXCLIENTS_LOWWATER_MARK	1
 
 
@@ -120,7 +120,7 @@ extern char *env_dir;
 #define PTY_FIRST_ALPHA		'p'
 # define PTY_LAST_ALPHA		'v'
 
-#define   BUFSTART(x)    ((char *) ((x)->buf) + sizeof(struct LSFHeader)) 
+#define   BUFSTART(x)    ((char *) ((x)->buf) + sizeof(struct LSFHeader))
 
 #define CLOSE_IT(fd)     if (fd>=0) {close(fd); fd = INVALID_FD;}
 
@@ -130,7 +130,7 @@ typedef struct ttystruct  {
         struct winsize  ws;
 #    if defined(hpux) || defined(__hpux)
         struct ltchars hp_ltchars;
-#    endif 
+#    endif
 } ttyStruct;
 
 
@@ -143,44 +143,44 @@ struct client   {
 	char            *homedir;
         ttyStruct       tty;
         char            **env;
-        int             ngroups;         
+        int             ngroups;
         GETGROUPS_T	groups[NGROUPS_MAX];
-	struct           hostent hostent;   
+	struct           hostent hostent;
 	struct lenData   eexec;
 };
 
 struct child  {
-        struct client   *backClnPtr; 
-	int             rpid;        
+        struct client   *backClnPtr;
+	int             rpid;
         int             pid;
-	
-        int             refcnt;
-	int             info;        
-	int             stdio;       
-        outputChannel   std_out;     
-        outputChannel   std_err;     
 
-	niosChannel     remsock;     
+        int             refcnt;
+	int             info;
+	int             stdio;
+        outputChannel   std_out;
+        outputChannel   std_err;
+
+	niosChannel     remsock;
 	int             rexflag;
         char            server;
         char            c_eof;
-        char            running;     
-	char            sigchild;    
-        LS_WAIT_T	wait;        
-	struct sigStatusUsage *sigStatRu; 
-	int             endstdin;    
+        char            running;
+	char            sigchild;
+        LS_WAIT_T	wait;
+	struct sigStatusUsage *sigStatRu;
+	int             endstdin;
 	RelayBuf        i_buf;
-	int             stdin_up;    
+	int             stdin_up;
 
         char            slavepty[sizeof(PTY_TEMPLATE)];
-                                        
+
 	char 		**cmdln;
 	time_t		dpTime;
 	char            *cwd;
 	char            username[MAXLSFNAMELEN];
 	char            fromhost[MAXHOSTNAMELEN];
-	int    	        sent_eof;     
-	int    	        sent_status;  
+	int    	        sent_eof;
+	int    	        sent_status;
 };
 
 struct resChildInfo {
@@ -193,25 +193,23 @@ struct resChildInfo {
     int res_status;
 };
 
-
-
 typedef struct taggedConn {
-	niosChannel  sock;          
-	int          rtag;           
-	int          wtag;           
+	niosChannel  sock;
+	int          rtag;
+	int          wtag;
 
-	
-        int          *task_duped;   
-	int          num_duped;     
+
+        int          *task_duped;
+	int          num_duped;
 } taggedConn_t;
 
 typedef struct resNotice {
     struct resNotice *forw, *back;
-    int rpid;                         
-    int retsock;                      
-    int opCode;                       
-    resAck ack;                       
-    struct sigStatusUsage sigStatRu;  
+    int rpid;
+    int retsock;
+    int opCode;
+    resAck ack;
+    struct sigStatusUsage sigStatRu;
 } resNotice_t;
 
 extern taggedConn_t conn2NIOS;
@@ -243,7 +241,7 @@ extern int currentRESSN;
 #define LSF_RES_NO_LINEBUF 21
 #define LSF_MLS_LOG   	   22
 
-#define LSB_UTMP           0 
+#define LSB_UTMP           0
 
 #define SIG_NT_CTRLC        2000
 #define SIG_NT_CTRLBREAK    2001
@@ -253,7 +251,7 @@ extern struct config_param resConfParams[];
 
 #define RES_REPLYBUF_LEN   4096
 
-#define RESS_LOGBIT         0x00000001       
+#define RESS_LOGBIT         0x00000001
 
 extern void init_res(void);
 extern void resExit_(int exitCode);
@@ -295,7 +293,7 @@ extern int  resParent(int, struct passwd *, struct lsfAuth *,
 			    struct resConnect *, struct hostent *);
 extern bool_t isLSFAdmin(const char *);
 
-extern bool_t xdr_resChildInfo(XDR  *, struct resChildInfo *, 
+extern bool_t xdr_resChildInfo(XDR  *, struct resChildInfo *,
 			       struct LSFHeader *);
 
 extern void rfServ_(int);
@@ -312,16 +310,16 @@ extern void initRU(struct rusage *);
 extern void resParentWriteAcct(struct LSFHeader *, XDR *, int);
 
 extern int findRmiDest(int *, int *);
- 
+
 extern void delete_child(struct child *);
 extern void destroy_child(struct child *);
 extern int resSignal(struct child *chld, struct resSignal sig);
 
 extern void dumpClient(struct client *, char * );
-extern void dumpChild(struct child *, int, char *); 
+extern void dumpChild(struct child *, int, char *);
 
 
 
-#define UTMP_CHECK_CODE "sbdRes" 
+#define UTMP_CHECK_CODE "sbdRes"
 
-#endif 
+#endif

@@ -356,8 +356,8 @@ updQaccount(struct jData *jp, int numJobs, int numPEND,
 
     /* update fairshare counters
      */
-    if (qp->scheduler) {
-        (*qp->scheduler->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN);
+    if (qp->fsSched) {
+        (*qp->fsSched->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN);
         ls_syslog(LOG_DEBUG, "\
 %s: fs_update_sacct %s %d %d", __func__, jp->userName, numPEND, numRUN);
     }
@@ -906,14 +906,14 @@ updUserData1 (struct jData *jData, struct uData *up, int numJobs,
 }
 
 static void
-updHostData (char updHPart, struct jData *jData, int numJobs, int numRUN,
-             int numSSUSP, int numUSUSP, int numRESERVE)
+updHostData(char updHPart, struct jData *jData, int numJobs, int numRUN,
+            int numSSUSP, int numUSUSP, int numRESERVE)
 {
-    static char fname[] = "updHostData";
     int i;
 
     for (i = 0; i < jData->numHostPtr; i++) {
         struct hData *hp = jData->hPtr[i];
+
         if (hp == NULL)
             break;
 
@@ -923,53 +923,84 @@ updHostData (char updHPart, struct jData *jData, int numJobs, int numRUN,
         if (hp->uJobLimit < INFINIT_INT
             && (numRUN != 0 || numSSUSP != 0 || numUSUSP != 0
                 || numRESERVE != 0)) {
-            updUAcct (jData, jData->uPtr, &(hp->uAcct), numRUN, numSSUSP,
-                      numUSUSP, numRESERVE, 0, jData->hPtr[i],
-                      (void (*)(struct userAcct *, void *)) NULL, NULL);
+            updUAcct(jData, jData->uPtr, &(hp->uAcct), numRUN, numSSUSP,
+                     numUSUSP, numRESERVE, 0, jData->hPtr[i],
+                     (void (*)(struct userAcct *, void *)) NULL, NULL);
         }
-        addValue (&hp->numJobs, numJobs, jData, fname, "numJobs");
-        addValue (&hp->numRUN, numRUN, jData, fname, "numRUN");
-        addValue (&hp->numSSUSP, numSSUSP, jData, fname, "numSSUSP");
-        addValue (&hp->numUSUSP, numUSUSP, jData, fname, "numUSUSP");
-        addValue (&hp->numRESERVE, numRESERVE, jData, fname, "numRESERVE");
+
+        addValue(&hp->numJobs,
+                 numJobs,
+                 jData,
+                 (char *)__func__,
+                 "numJobs");
+        addValue(&hp->numRUN,
+                 numRUN,
+                 jData,
+                 (char *)__func__,
+                 "numRUN");
+        addValue(&hp->numSSUSP,
+                 numSSUSP,
+                 jData,
+                 (char *)__func__,
+                 "numSSUSP");
+        addValue(&hp->numUSUSP,
+                 numUSUSP,
+                 jData,
+                 (char *)__func__,
+                 "numUSUSP");
+        addValue(&hp->numRESERVE,
+                 numRESERVE,
+                 jData,
+                 (char *)__func__,
+                 "numRESERVE");
+
         if (logclass & LC_JLIMIT)
-            ls_syslog(LOG_DEBUG3, "%s: job=%s host=%s RUN=%d SSUSP=%d USUSP=%d RESERVE=%d", fname, lsb_jobid2str(jData->jobId), hp->host, hp->numRUN, hp->numSSUSP, hp->numUSUSP, hp->numRESERVE);
+            ls_syslog(LOG_DEBUG3, "%s: job=%s host=%s RUN=%d SSUSP=%d USUSP=%d RESERVE=%d", __func__, lsb_jobid2str(jData->jobId), hp->host, hp->numRUN, hp->numSSUSP, hp->numUSUSP, hp->numRESERVE);
 
 
         if (hp->numJobs >= hp->maxJobs) {
+
             hp->hStatus |= HOST_STAT_FULL;
             hReasonTb[1][hp->hostId] = PEND_HOST_JOB_LIMIT;
             if (logclass & (LC_PEND | LC_JLIMIT)) {
-                ls_syslog(LOG_DEBUG2, "%s: Set reason <%d> job=%s host=%s numJobs=%d maxJobs=%d", fname, hReasonTb[1][hp->hostId], lsb_jobid2str(jData->jobId), hp->host, hp->numJobs, hp->maxJobs);
+                ls_syslog(LOG_DEBUG2, "\
+%s: Set reason <%d> job=%s host=%s numJobs=%d maxJobs=%d",
+                          __func__, hReasonTb[1][hp->hostId],
+                          lsb_jobid2str(jData->jobId), hp->host,
+                          hp->numJobs, hp->maxJobs);
             }
+
         } else {
             struct qData *qp;
 
             hp->hStatus &= ~HOST_STAT_FULL;
+
             if ((logclass & (LC_PEND | LC_JLIMIT))
                 && hReasonTb[1][hp->hostId] == PEND_HOST_JOB_LIMIT) {
-                ls_syslog(LOG_DEBUG2, "%s: Clear reason <%d>; job=%s host=%s numJobs=%d maxJobs=%d", fname, hReasonTb[1][hp->hostId], lsb_jobid2str(jData->jobId), hp->host, hp->numJobs, hp->maxJobs);
+                ls_syslog(LOG_DEBUG2, "\
+%s: Clear reason <%d>; job=%s host=%s numJobs=%d maxJobs=%d",
+                          __func__, hReasonTb[1][hp->hostId],
+                          lsb_jobid2str(jData->jobId), hp->host,
+                          hp->numJobs, hp->maxJobs);
             }
+
             CLEAR_REASON(hReasonTb[1][hp->hostId], PEND_HOST_JOB_LIMIT);
-
             for (qp = qDataList->forw; qp != qDataList; qp = qp->forw)
-                CLEAR_REASON(qp->reasonTb[1][hp->hostId], PEND_HOST_JOB_LIMIT);
+                CLEAR_REASON(qp->reasonTb[1][hp->hostId],
+                             PEND_HOST_JOB_LIMIT);
         }
-
 
         if (hp->numJobs <= 0)
             hp->hStatus &= ~HOST_STAT_EXCLUSIVE;
 
-
         if (!updHPart)
             continue;
-
     }
 }
 
 static void
-addValue (int *currentValue, int num, struct jData *jp, char *fname,
-          char *counter)
+addValue(int *currentValue, int num, struct jData *jp, char *fname,
+         char *counter)
 {
     *currentValue += num;
     if (*currentValue >= 0)

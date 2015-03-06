@@ -37,3 +37,5 @@ config/openlava.sh
 config.guess
 config.sub
 ltmain.sh
+stest
+treetest

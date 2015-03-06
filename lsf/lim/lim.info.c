@@ -290,7 +290,10 @@ masterInfoReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr)
     }
 
     if (limReplyCode == LIME_NO_ERR) {
-        masterPtr = myClusterPtr->masterKnown ? myClusterPtr->masterPtr : myClusterPtr->prevMasterPtr;
+        masterPtr
+            = myClusterPtr->masterKnown
+            ? myClusterPtr->masterPtr : myClusterPtr->prevMasterPtr;
+
         strcpy(masterInfo.hostName, masterPtr->hostName);
         masterInfo.addr   =  masterPtr->addr[0];
         masterInfo.portno =  masterPtr->statInfo.portno;

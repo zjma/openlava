@@ -13,11 +13,13 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  *
  */
 
 #include "mbd.h"
+#include "preempt.h"
 
 #define MBD_THREAD_MIN_STACKSIZE  512
 #define POLL_INTERVAL MAX(msleeptime/10, 1)
@@ -148,31 +150,28 @@ static time_t nextSchedTime = 0;
 
 void setJobPriUpdIntvl(void);
 static void updateJobPriorityInPJL(void);
-static void houseKeeping (int *);
-static void periodicCheck (void);
+static void houseKeeping(int *);
+static void periodicCheck(void);
 static int authRequest(struct lsfAuth *, XDR *, struct LSFHeader *,
                        struct sockaddr_in *, struct sockaddr_in *,
                        char *, int);
 static int processClient(struct clientNode *, int *);
-
 static void clientIO(struct Masks *);
 static int forkOnRequest(mbdReqType);
 static void shutdownSbdConnections(void);
 static void processSbdNode(struct sbdNode *, int);
 static void setNextSchedTimeWhenJobFinish(void);
 static void acceptConnection(int);
-
 extern void chanInactivate_(int);
 extern void chanActivate_(int);
 extern int do_chunkStatusReq(XDR *, int, struct sockaddr_in *, int *,
                              struct LSFHeader *);
 extern int do_setJobAttr(XDR *, int, struct sockaddr_in *, char *,
                          struct LSFHeader *, struct lsfAuth *);
-extern void chanCloseAllBut_(int);
-extern int initLimSock_(void);
+static void preempt(void);
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     fd_set readmask;
     struct Masks sockmask;
@@ -539,7 +538,6 @@ clientIO(struct Masks *chanmask)
         }
     }
 
-
     for (cliPtr = clientList->forw;
          cliPtr != clientList;
          cliPtr = nextClient) {
@@ -842,7 +840,7 @@ shutDownClient(struct clientNode *client)
 }
 
 static void
-houseKeeping (int *hsKeeping)
+houseKeeping(int *hsKeeping)
 {
 #define SCHED  1
 #define DISPT  2
@@ -860,7 +858,7 @@ houseKeeping (int *hsKeeping)
     if (lastAcctSched == 0){
         lastAcctSched = now;
     } else{
-        if ((now - lastAcctSched) > T15MIN){
+        if ((now - lastAcctSched) > T15MIN) {
             lastAcctSched = now;
             checkAcctLog();
         }
@@ -872,7 +870,7 @@ houseKeeping (int *hsKeeping)
         if (eventPending) {
             resignal = TRUE;
         }
-        now = time(0);
+        now = time(NULL);
         if (schedule) {
             lastSchedTime = now;
             nextSchedTime = now + msleeptime;
@@ -883,6 +881,7 @@ houseKeeping (int *hsKeeping)
             } else {
                 schedule = TRUE;
             }
+            preempt();
             return;
         }
     }
@@ -1283,5 +1282,68 @@ updateJobPriorityInPJL(void)
          jp != jDataList[PJL]; jp = jp->forw) {
         unsigned int newVal = jp->jobPriority + priority;
         jp->jobPriority = MIN(newVal, (unsigned int)MAX_JOB_PRIORITY);
+    }
+}
+
+/* preempt()
+ *
+ * Run the preemption algorithm
+ *
+ */
+static void
+preempt(void)
+{
+    link_t *rl;
+    struct jData *jPtr;
+    struct qData *qPtr;
+
+    /* Select preemptive queues and for each
+     * invoke the preemption plugin which will
+     * return the set of candidate jobs for preemption
+     */
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
+
+        rl = make_link();
+
+        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+            (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, 0);
+        }
+
+        if (LINK_NUM_ENTRIES(rl) == 0) {
+            ls_syslog(LOG_DEBUG, "%s: no jobs to preempt...", __func__);
+            fin_link(rl);
+            continue;
+        }
+
+        while ((jPtr = pop_link(rl))) {
+            struct signalReq s;
+            struct lsfAuth auth;
+            int cc;
+
+
+            ls_syslog(LOG_DEBUG, "\
+%s: job %s queue %s preemption candidate", __func__,
+                      lsb_jobid2str(jPtr->jobId), jPtr->qPtr->queue);
+            /* requeue me darling
+             */
+            s.sigValue = SIG_ARRAY_REQUEUE;
+            s.jobId = jPtr->jobId;
+            s.actFlags = REQUEUE_RUN;
+            s.chkPeriod = JOB_STAT_PEND;
+
+            memset(&auth, 0, sizeof(struct lsfAuth));
+            strcpy(auth.lsfUserName, lsbManager);
+            auth.gid = auth.uid = managerId;
+
+            cc = signalJob(&s, &auth);
+            if (cc != LSBE_NO_ERROR) {
+                ls_syslog(LOG_ERR, "\
+%s: error while requeue job %s state %d", __func__,
+                          lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+            }
+        }
+        fin_link(rl);
     }
 }

@@ -21,7 +21,7 @@
 #include "mbd.h"
 #include "../../lsf/lib/lsi18n.h"
 #include "fairshare.h"
-#include <dlfcn.h>
+#include "preempt.h"
 
 extern void resetStaticSchedVariables(void);
 extern void cleanSbdNode(struct jData *);
@@ -143,6 +143,8 @@ static int parse_preemption(struct qData *);
 static int sort_queues(void);
 static int queue_cmp(const void *, const void *);
 static void check_same_priority_queues(void);
+static int init_preemption_scheduler(void);
+static int load_preempt_plugin(struct qData *);
 
 int
 minit(int mbdInitFlags)
@@ -352,6 +354,7 @@ minit(int mbdInitFlags)
      * the lsb.events.
      */
     init_fairshare_scheduler();
+    init_preemption_scheduler();
 
     if (!lsb_CheckMode) {
         TIMEIT(0, init_log(), "init_log()");
@@ -3407,7 +3410,7 @@ init_fairshare_scheduler(void)
             continue;
         }
         qPtr->numFairSlots = getQueueSlots(qPtr);
-        (*qPtr->scheduler->fs_init_sched_session)(qPtr);
+        (*qPtr->fsSched->fs_init_sched_session)(qPtr);
     }
 
     return 0;
@@ -3421,8 +3424,8 @@ load_fair_plugin(struct qData *qPtr)
     char buf[PATH_MAX];
     struct fair_sched *f;
 
-    f = qPtr->scheduler = calloc(1, sizeof(struct fair_sched));
-    assert(qPtr->scheduler);
+    f = qPtr->fsSched = calloc(1, sizeof(struct fair_sched));
+    assert(qPtr->fsSched);
 
     sprintf(buf, "\
 %s/../lib/libfairshare.so", daemonParams[LSB_CONFDIR].paramValue);
@@ -3441,7 +3444,7 @@ load_fair_plugin(struct qData *qPtr)
         ls_syslog(LOG_ERR, "%s: ohmygosh missing fs_init() symbol in %s: %s",
                   __func__, buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3451,7 +3454,7 @@ load_fair_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_update_sacct() symbol in %s: %s", __func__,
                   buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3461,7 +3464,7 @@ load_fair_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_init_sched_session() symbol in %s: %s", __func__,
                   buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3471,7 +3474,7 @@ load_fair_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_elect_job() symbol in %s: %s", __func__,
                   buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3481,7 +3484,7 @@ load_fair_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_fin_sched_session() symbol in %s: %s", __func__,
                   buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3491,7 +3494,7 @@ load_fair_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_get_saccts() symbol in %s: %s", __func__,
                   buf, dlerror());
         dlclose(f->handle);
-        free(qPtr->scheduler);
+        free(qPtr->fsSched);
         return -1;
     }
 
@@ -3693,4 +3696,70 @@ check_same_priority_queues(void)
             }
         }
     }
+}
+
+/* init_preemption_scheduler()
+ */
+static int
+init_preemption_scheduler(void)
+{
+    struct qData *qPtr;
+
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
+
+        if (! (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE))
+            continue;
+
+        load_preempt_plugin(qPtr);
+    }
+
+    return 0;
+}
+
+/* load_preempt_plugin()
+ */
+static int
+load_preempt_plugin(struct qData *qPtr)
+{
+    char buf[PATH_MAX];
+    struct prm_sched *p;
+
+    p = qPtr->prmSched = calloc(1, sizeof(struct fair_sched));
+    qPtr->prmSched->name = strdup(qPtr->queue);
+
+    sprintf(buf, "\
+%s/../lib/libpreempt.so", daemonParams[LSB_CONFDIR].paramValue);
+
+    p->handle = dlopen(buf, RTLD_NOW);
+    if (p->handle == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: gudness cannot open %s: %s", __func__, buf, dlerror());
+        _free_(qPtr->prmSched->name);
+        _free_(qPtr->prmSched);
+        return -1;
+    }
+
+    p->prm_init = dlsym(p->handle, "prm_init");
+    if (p->prm_init == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_init() symbol in %s: %s",
+                  __func__, buf, dlerror());
+        dlclose(p->handle);
+        free(qPtr->prmSched);
+        return -1;
+    }
+
+    p->prm_elect_preempt = dlsym(p->handle, "prm_elect_preempt");
+    if (p->prm_elect_preempt == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_init() symbol in %s: %s",
+                  __func__, buf, dlerror());
+        dlclose(p->handle);
+        free(qPtr->prmSched);
+        return -1;
+    }
+
+    return 0;
 }

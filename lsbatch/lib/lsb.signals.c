@@ -1,4 +1,4 @@
-/* $Id: lsb.signals.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -12,14 +12,12 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
- *
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA  02110-1301, USA
  */
 
-#include <unistd.h>
-#include <string.h>
-#include <pwd.h>
-#include "lsb.h"
+#include "lsb.sig.h"
+#include "../../lsf/lib/lib.h"
 
 static int lsbSig_map[] =     {
                        SIG_NULL,
@@ -111,23 +109,23 @@ static int defaultSigValue [] = {
 
 
 int
-sigNameToValue_ (char *sigString)
+sigNameToValue_(char *sigString)
 {
     int i, sigValue;
 
     if ((sigString == NULL) || (sigString[0] == '\0'))
         return (INFINIT_INT);
 
-    
+
     if ((sigValue = getSigVal(sigString)) > 0)
         return (sigValue);
 
-    
+
     for (i=0; i<LSB_SIG_NUM; i++)
         if (strcmp(lsbSigSymbol[i], sigString) == 0)
             return (lsbSig_map[i]);
 
-    return (INFINIT_INT);      
+    return (INFINIT_INT);
 
 }
 
@@ -140,11 +138,11 @@ getLsbSigSymbol ( int sigValue)
     symbol[0] = '\0';
 
     if (sigValue >=0) {
-        return ( (char *) getSigSymbol(sigValue));     
-    } else {                                            
+        return ( (char *) getSigSymbol(sigValue));
+    } else {
         if ( -sigValue <  LSB_SIG_NUM )
             strcpy(symbol, lsbSigSymbol[-sigValue]);
-        else 
+        else
             strcpy(symbol, "UNKNOWN");
         return (symbol);
     }
@@ -164,7 +162,7 @@ getDefSigValue_( int sigValue, char *actCmd)
         case SIG_DELETE_JOB:
             return (sigValue);
 
-        case SIG_SUSP_USER:   
+        case SIG_SUSP_USER:
         case SIG_SUSP_LOAD:
         case SIG_SUSP_WINDOW:
         case SIG_SUSP_OTHER:
@@ -185,22 +183,22 @@ getDefSigValue_( int sigValue, char *actCmd)
         case SIG_TERM_MEMLIMIT:
         case SIG_TERM_FORCE:
             if ((actCmd == NULL) || ( actCmd[0] == '\0'))
-                
+
                 return (defaultSigValue [-sigValue]);
-            else 
+            else
                 if ((defSigValue = sigNameToValue_ (actCmd)) == INFINIT_INT)
-                    return (sigValue);   
+                    return (sigValue);
                 else {
                     if ((defSigValue == SIG_CHKPNT)
-                       || (defSigValue == SIG_CHKPNT_COPY))  
-                        return (sigValue);   
-                    else  
-                        return (defSigValue); 
+                       || (defSigValue == SIG_CHKPNT_COPY))
+                        return (sigValue);
+                    else
+                        return (defSigValue);
                 }
     }
     return (sigValue);
 
-} 
+}
 
 int
 isSigTerm (int sigValue)
@@ -217,12 +215,12 @@ isSigTerm (int sigValue)
         case SIG_TERM_CPULIMIT:
         case SIG_TERM_MEMLIMIT:
         case SIG_TERM_FORCE:
-        case SIG_KILL_REQUEUE: 
+        case SIG_KILL_REQUEUE:
             return(TRUE);
         default:
             return (FALSE);
     }
-} 
+}
 
 int
 isSigSusp (int sigValue)
@@ -236,7 +234,7 @@ isSigSusp (int sigValue)
         default:
             return (FALSE);
     }
-} 
+}
 
 int
 terminateWhen_(int *sigMap, char *name)
@@ -259,4 +257,4 @@ terminateWhen_(int *sigMap, char *name)
     } else
         return (FALSE);
 
-} 
+}

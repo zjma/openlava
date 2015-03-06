@@ -317,7 +317,7 @@ addHost2Tab(const char *hname,
         hp->h_length = 4;
         e->hData = hp;
     } else {
-        hp = (struct hostent*)e->hData;
+        hp = (struct hostent *)e->hData;
     }
 
     cc = 0;

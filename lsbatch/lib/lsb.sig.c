@@ -1,5 +1,6 @@
-/* $Id: lsb.sig.c 397 2007-11-26 19:04:00Z mblack $
+/*
  * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -12,15 +13,14 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA
  *
  */
 
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <pwd.h>
 #include "lsb.h"
+#include "lsb.sig.h"
+#include "../daemons/daemonout.h"
 
 static int signalJob_(int, LS_LONG_INT, time_t, int);
 
@@ -44,8 +44,6 @@ lsb_chkpntjob(LS_LONG_INT jobId, time_t period, int options)
         return (-1);
     }
 
-
-
     if (options & LSB_CHKPNT_KILL)
         lsbOptions |= LSB_CHKPNT_KILL;
     if (options & LSB_CHKPNT_FORCE)
@@ -53,7 +51,7 @@ lsb_chkpntjob(LS_LONG_INT jobId, time_t period, int options)
     if (options & LSB_CHKPNT_STOP)
         lsbOptions |= LSB_CHKPNT_STOP;
 
-    return (signalJob_(SIG_CHKPNT, jobId, period, lsbOptions));
+    return signalJob_(SIG_CHKPNT, jobId, period, lsbOptions);
 }
 
 int
@@ -61,12 +59,12 @@ lsb_deletejob(LS_LONG_INT jobId, int times, int options)
 {
     if (times < 0) {
         lsberrno = LSBE_BAD_ARG;
-        return (-1);
+        return -1;
     }
     if (options & LSB_KILL_REQUEUE) {
-        return (signalJob_(SIG_KILL_REQUEUE, jobId, 0, 0));
+        return signalJob_(SIG_KILL_REQUEUE, jobId, 0, 0);
     }
-    return (signalJob_(SIG_DELETE_JOB, jobId, times, options));
+    return signalJob_(SIG_DELETE_JOB, jobId, times, options);
 
 }
 
@@ -74,7 +72,7 @@ lsb_deletejob(LS_LONG_INT jobId, int times, int options)
 int
 lsb_forcekilljob(LS_LONG_INT jobId)
 {
-    return (signalJob_(SIG_TERM_FORCE, jobId, 0, 0));
+    return signalJob_(SIG_TERM_FORCE, jobId, 0, 0);
 }
 
 
@@ -93,7 +91,7 @@ signalJob_(int sigValue, LS_LONG_INT jobId, time_t period, int options)
     signalReq.jobId = jobId;
 
     if (authTicketTokens_(&auth, NULL) == -1)
-        return (-1);
+        return -1;
 
     signalReq.sigValue = sigValue;
     signalReq.chkPeriod = period;
@@ -140,6 +138,7 @@ signalJob_(int sigValue, LS_LONG_INT jobId, time_t period, int options)
 
     return -1 ;
 }
+
 int
 lsb_requeuejob(struct jobrequeue *reqPtr)
 {
@@ -148,7 +147,7 @@ lsb_requeuejob(struct jobrequeue *reqPtr)
     if (reqPtr == NULL
         || (*reqPtr).jobId <= 0) {
         lsberrno = LSBE_BAD_ARG;
-        return(-1);
+        return -1;
     }
 
     if ((*reqPtr).status != JOB_STAT_PEND

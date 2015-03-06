@@ -41,6 +41,7 @@
 #include <time.h>
 #include <termios.h>
 #include <pwd.h>
+#include <dlfcn.h>
 #include <limits.h>
 #include <sys/param.h>
 #include <sys/time.h>

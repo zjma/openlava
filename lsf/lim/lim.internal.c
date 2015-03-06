@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -13,7 +13,8 @@
 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA
  *
  */
 
@@ -233,8 +234,11 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
     masterReg.checkSum = myClusterPtr->checkSum;
     masterReg.portno   = myClusterPtr->masterPtr->statInfo.portno;
 
+    /* Set the port later on as it is
+     * host dependent if we have virtual
+     * hosts.
+     */
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = lim_port;
 
     initLSFHeader_(&reqHdr);
     reqHdr.opCode  = (short) limReqCode;
@@ -335,6 +339,11 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
 
         if (hPtr == myHostPtr)
             continue;
+
+        /* If this is a virtual host get
+         * the port where lim is listening
+         */
+        toAddr.sin_port = htons(getLIMPort(hPtr));
 
         memcpy(&toAddr.sin_addr, &hPtr->addr[0], sizeof(u_int));
 
@@ -690,7 +699,7 @@ announceMasterToHost(struct hostNode *hPtr, int infoType )
     masterReg.portno   = myClusterPtr->masterPtr->statInfo.portno;
 
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = lim_port;
+    toAddr.sin_port = htons(getLIMPort(hPtr));
 
     xdrmem_create(&xdrs, buf, MSGSIZE/4, XDR_ENCODE);
     initLSFHeader_(&reqHdr);
@@ -782,3 +791,23 @@ probeMasterTcp(struct clusterNode *clPtr)
     return rc;
 }
 
+/* getLIMPort()
+ */
+uint16_t
+getLIMPort(struct hostNode *hPtr)
+{
+    char name[MAXHOSTNAMELEN];
+    char *p;
+    uint16_t port;
+
+    p = strchr(hPtr->hostName, '@');
+    if (p == NULL)
+        return lim_port;
+
+    strcpy(name, hPtr->hostName);
+    p = strchr(name, '@');
+    ++p;
+    port = atoi(p);
+
+    return port;
+}

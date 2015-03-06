@@ -26,6 +26,7 @@
 #include "../../lsf/intlib/bitset.h"
 #include "../../lsf/intlib/link.h"
 #include "jgrp.h"
+#include "../lib/lsb.sig.h"
 
 #define  DEF_CLEAN_PERIOD     3600
 #define  DEF_MAX_RETRY        5
@@ -217,7 +218,6 @@ struct askedHost {
         if (condition) v = reason; else CLEAR_REASON(v, reason)
 
 #define NON_PRMPT_Q(qAttrib)    TRUE
-
 
 struct rqHistory{
     struct hData *host;
@@ -584,10 +584,11 @@ struct qData {
     int    defProcLimit;
     char   *fairshare;
     uint32_t numFairSlots;
-    struct fair_sched *scheduler;
+    struct fair_sched *fsSched;
     struct jData *lastJob;
     char *preemption;
     link_t *preemptable;
+    struct prm_sched *prmSched;
 };
 
 #define HOST_STAT_REMOTE       0x80000000

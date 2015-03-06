@@ -342,7 +342,7 @@ getname_(enum limReqCode limReqCode, char *name, int namesize)
     int options;
 
     if (initenv_(NULL, NULL) < 0)
-        return (-1);
+        return -1;
 
     if (limReqCode == LIM_GET_CLUSNAME) {
         struct stringLen str;
@@ -377,7 +377,7 @@ getname_(enum limReqCode limReqCode, char *name, int namesize)
                  NULL,  /* host LSF_SERVER_HOSTS */
                  options,
                  NULL) < 0)
-        return(-1);
+        return -1;
 
     if (memcmp(&sockIds_[MASTER].sin_addr,
                &masterInfo_.addr,

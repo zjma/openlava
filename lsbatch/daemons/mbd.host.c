@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,9 +18,6 @@
  */
 
 #include "mbd.h"
-
-#include "../../lsf/lib/lsi18n.h"
-#define NL_SETN         10
 
 extern void addHost(struct hostInfo *lsf,
                     struct hData *thPtr,

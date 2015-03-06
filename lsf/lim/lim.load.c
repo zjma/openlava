@@ -167,7 +167,7 @@ sendLoad(void)
                 if (probeMasterTcp(myClusterPtr) < 0) {
                     /* Let's do a TCP connect towards the
                      * last known master. This is kinda half
-                     * baked because of the master is hanging
+                     * baked because if the master is hanging
                      * the TCP connect is going to succeed
                      * fooling me into believing the master
                      * is all right, the cluster is going
@@ -260,7 +260,11 @@ sendLoad(void)
         }
 
         toAddr.sin_family = AF_INET;
-        toAddr.sin_port   = lim_port;
+        /* Sending load to the master so use
+         * the port defined in lsf.conf
+         * even if virtual host.
+         */
+        toAddr.sin_port   = htons(lim_port);
         memcpy(&toAddr.sin_addr.s_addr,
                &myClusterPtr->masterPtr->addr[0],
                sizeof(in_addr_t));
@@ -269,7 +273,7 @@ sendLoad(void)
             ls_syslog(LOG_DEBUG, "\
 sendLoad: sending to %s (len=%d,port=%d)",
                       sockAdd2Str_(&toAddr), XDR_GETPOS(&xdrs),
-                      ntohs(lim_port));
+                      lim_port);
 
         if (chanSendDgram_(limSock, repBuf, XDR_GETPOS(&xdrs), &toAddr) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, __func__, "chanSendDgram_",
@@ -318,7 +322,7 @@ rcvLoad(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *hdr)
 {
     enum   loadstruct loadType;
 
-    if (from->sin_port != lim_port) {
+    if (0 && from->sin_port != lim_port) {
         ls_syslog(LOG_ERR, "\
 %s: Update not from LIM: %s, expected %d",
                   __func__, sockAdd2Str_(from), ntohs(lim_port));

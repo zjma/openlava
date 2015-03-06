@@ -217,6 +217,10 @@ znovu:
     fin_link(stack);
 
     free = harvest_leafs(t);
+    /* avail can be > 0 if user all
+     * has not users
+     */
+    free = free + avail;
 
     if (free > 0) {
         sort_tree_by_deviate(t);
@@ -409,12 +413,18 @@ set_leaf_slots(struct tree_ *t, uint32_t free)
     struct share_acct *s;
     int32_t x;
     int32_t d;
+    int32_t morePEND;
 
     traverse_init(t->leafs, &iter);
     while ((n = traverse_link(&iter))) {
 
         s = n->data;
 
+        /* Distance between the number of
+         * pending and how far this node
+         * is from historical deserve.
+         */
+        s->wPEND = s->numPEND;
         x = MIN(s->numPEND, abs(s->dsrv2));
         d = x - free;
         if (d >= 0) {
@@ -428,6 +438,32 @@ set_leaf_slots(struct tree_ *t, uint32_t free)
         if (free == 0)
             break;
     }
+
+    if (free == 0)
+        return 0;
+
+    /* One more pass for those that
+     * still have pending jobs
+     */
+znovu:
+    traverse_init(t->leafs, &iter);
+    morePEND = 0;
+    while ((n = traverse_link(&iter))) {
+
+        s = n->data;
+        if (s->wPEND > 0
+            && free > 0) {
+            s->wPEND--;
+            --free;
+            s->sent++;
+            if (s->wPEND > 0)
+                ++morePEND;
+        }
+    }
+
+    if (free > 0
+        && morePEND > 0)
+        goto znovu;
 
     return free;
 }
