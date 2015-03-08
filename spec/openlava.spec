@@ -73,6 +73,7 @@ mkdir -p $RPM_BUILD_ROOT
 #
 %build
 ./bootstrap.sh
+./configure
 make
 
 #
