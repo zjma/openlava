@@ -246,6 +246,26 @@ If Y, specifies an exclusive queue.
 .PP
 Jobs submitted to an exclusive queue with \fBbsub -x\fR will only be
 dispatched to a host that has no other openlava jobs running.
+.SH FAIRSHARE
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBFAIRSHARE = USER_SHARES\fR\fI[[G1,n] [G2,k] ... [Gx, m]]\fR
+.BR
+.PP
+FAIRSHARE specifies that the fairshare policy is used to schedule jobs
+in the queue. By default, jobs are scheduled on a FIFO basis.
+The fairshare scheduler allocates a certain portion of the queue
+slot to each participant group. The groups are just like Unix groups.
+The keyword, USER_SHARES, is used to specify the shares for each user group. The value of USER_SHARES consists of one or more [group, share] pairs; e.g.,
+FAIRSHARE = USER_SHARES[[group_a, 3] [group_b , 1]].
+The individual shares are summed up and then normalized. In this case
+3 + 1 = 4 and group_a will have 3/4 of the queue slots and group_b
+ 1/4 of the queue slots. The shares must be further subdivided to users
+in lsb.users otherwise the fairshare policy for the queue is disabled.
 .SH FILELIMIT
 .BR
 .PP
@@ -962,14 +982,14 @@ and post-execution commands.
 .PP
 No pre-execution commands
 
-.SH PREEMPT_BY_SLOT
+.SH PREEMPTION
 .BR
 .PP
 .SS Syntax
 .BR
 .PP
 .PP
-\fBPREEMPT_BY_SLOT = \fR [\fIlist of queues\fR]
+\fBPREEMPTION = PREEMPTIVE\fR\fI[list of queues]\fR
 .PP
 .SS Description
 .BR
