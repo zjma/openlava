@@ -1,13 +1,13 @@
 # User groups can be referenced by the lsb.hosts and lsb.queues files.
 
-# Define the fairshare hierarchy for group a and b. These groups are
-# defined in some queue in lsb.queues. Here the hierarchy is further
-# subdivided for the individual members.
+# Define the fairshare hierarchy for groups G1 and G2. These groups are
+# defined in queue in lsb.queues as FAIRSHARE = USER_SHARES[[G1,1] [G2,1]].
+# Here the hierarchy is further  subdivided for the individual members.
 #
 Begin UserGroup
 GROUP_NAME       GROUP_MEMBER         USER_SHARES            
-group_a         (david john zebra)   ([david, 1] [john,1] [zebra, 1]) 
-group_b         (crock wlu kluk)     ([crock, 2] [wlu,1] [kluk,1])
+#G1         (david john zebra)   ([david, 1] [john,1] [zebra, 1])
+#G2         (crock wlu kluk)     ([crock, 2] [wlu,1] [kluk,1])
 End UserGroup
 
 # MAX_JOBS is the maximum number of jobs that can be run concurrently for

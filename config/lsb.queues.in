@@ -208,7 +208,7 @@ NICE         = 20
 #POST_EXEC    = /usr/local/lsf/misc/testq_post |grep -v "Hey"
 #REQUEUE_EXIT_VALUES = 55 34 78
 #ROUND_ROBIN_POLICY = y
-FAIRSHARE = USER_SHARES[[G1,1] [G2,1]]
+#FAIRSHARE = USER_SHARES[[G1,1] [G2,1]]
 DESCRIPTION  = For normal low priority jobs, running only if hosts are \
 lightly loaded.
 End Queue
