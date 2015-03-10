@@ -102,6 +102,7 @@ main(int argc, char **argv)
     static char lsfUserName[MAXLINELEN];
     int cc;
 
+    projectName = NULL;
     options = 0;
     if (lsb_init(argv[0]) < 0) {
         lsb_perror("lsb_init");
@@ -243,16 +244,16 @@ main(int argc, char **argv)
 }
 
 static void
-do_options (int argc,
-            char **argv,
-            int *options,
-            char **user,
-            char **queue,
-            char **host,
-            char **jobName,
-            float *cpuFactor,
-            int *format,
-            char **projectName)
+do_options(int argc,
+           char **argv,
+           int *options,
+           char **user,
+           char **queue,
+           char **host,
+           char **jobName,
+           float *cpuFactor,
+           int *format,
+           char **projectName)
 {
     int cc, Nflag = 0;
     char *norOp = NULL;
