@@ -1274,7 +1274,6 @@ extern void                 announce_master(void);
 extern void                 shutDownClient(struct clientNode *);
 extern void                 setNextSchedTimeUponNewJob(struct jData *);
 extern void                 setJobPriUpdIntvl(void);
-extern int                  isAuthManagerExt(struct lsfAuth *);
 extern void                 updCounters(struct jData *jData, int newStatus,
                                         time_t);
 extern void                 updSwitchJob (struct jData *, struct qData *,

@@ -1363,34 +1363,13 @@ isManager (char *lsfUserName)
 
 
 int
-isAuthManagerExt(struct lsfAuth *auth)
-{
-
-    int crossPlatforms;
-
-
-    if (auth->options >= 0) {
-        if (auth->options & AUTH_HOST_UX)
-            crossPlatforms = FALSE;
-        else
-            crossPlatforms = TRUE;
-        if (crossPlatforms)
-            return FALSE;
-    }
-
-
-    return (isManager(auth->lsfUserName));
-
-}
-
-int
 isAuthManager(struct lsfAuth *auth)
 {
 
     if (mSchedStage == M_STAGE_REPLAY)
         return(TRUE);
 
-    return (isAuthManagerExt(auth));
+    return (isManager(auth->lsfUserName));
 }
 
 char *

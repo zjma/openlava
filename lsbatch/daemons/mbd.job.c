@@ -1409,7 +1409,8 @@ signalJob(struct signalReq *signalReq, struct lsfAuth *auth)
         signalReq->sigValue = SIG_RESUME_USER;
 
     if (auth) {
-        if (auth->uid != 0 && !jgrpPermitOk(auth, jpbw->jgrpNode)
+        if (auth->uid != 0
+            && !jgrpPermitOk(auth, jpbw->jgrpNode)
             && !isAuthQueAd (jpbw->qPtr, auth)) {
             return LSBE_PERMISSION;
         }
@@ -4214,7 +4215,7 @@ moveJobArray(struct jobMoveReq *moveReq,
 
 
     if (auth->uid == 0 ||
-        isAuthManagerExt(auth) ||
+        isAuthManager(auth) ||
         isAuthQueAd (jArrayPtr->qPtr, auth)) {
     } else {
         if (!jgrpPermitOk(auth, jArrayPtr->jgrpNode)) {
@@ -4327,7 +4328,7 @@ moveAJob (struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
                     continue;
                 }
             }
-            if (auth->uid != 0 && !isAuthManagerExt(auth) &&
+            if (auth->uid != 0 && !isAuthManager(auth) &&
                 !isAuthQueAd (job->qPtr, auth)) {
                 if (jp->uPtr != job->uPtr) {
 
@@ -4352,7 +4353,7 @@ moveAJob (struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
                 return (LSBE_MBATCHD);
             if (moveReq->position < moveJobNum)
                 backword = TRUE;
-            if (auth->uid == 0 || isAuthManagerExt(auth) ||
+            if (auth->uid == 0 || isAuthManager(auth) ||
                 isAuthQueAd (job->qPtr, auth))
                 insertAndShift(froJob, toJob, backword, FALSE);
             else
@@ -4374,7 +4375,7 @@ moveAJob (struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
                     continue;
                 }
             }
-            if (auth->uid != 0 && !isAuthManagerExt(auth) &&
+            if (auth->uid != 0 && !isAuthManager(auth) &&
                 !isAuthQueAd (job->qPtr, auth))
                 if (jp->uPtr != job->uPtr)
                     continue;
@@ -4397,7 +4398,7 @@ moveAJob (struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
                 return (LSBE_MBATCHD);
             if (moveReq->position > moveJobNum)
                 backword = TRUE;
-            if (auth->uid == 0 || isAuthManagerExt(auth) ||
+            if (auth->uid == 0 || isAuthManager(auth) ||
                 isAuthQueAd (job->qPtr, auth))
                 insertAndShift(froJob, toJob, backword, FALSE);
             else
