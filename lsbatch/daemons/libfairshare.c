@@ -205,7 +205,7 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
 
     s = calloc(nents, sizeof(struct share_acct *));
     assert(s);
-    /* Nwo simply address the array elemens
+    /* Now simply address the array elemens
      * to the nodes. Don't dup memory
      */
     i = 0;

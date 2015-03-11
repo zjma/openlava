@@ -39,8 +39,6 @@ static char *get_next_word(char **);
 static int node_cmp(const void *, const void *);
 static int node_cmp2(const void *, const void *);
 static int print_node(struct tree_node_ *, struct tree_ *);
-static uint32_t harvest_leafs(struct tree_ *);
-static uint32_t set_leaf_slots(struct tree_ *, uint32_t);
 static void sort_tree_by_deviate(struct tree_ *);
 static void sort_tree_by_shares(struct tree_ *);
 static void zero_out_sent(struct tree_ *);
@@ -138,18 +136,12 @@ z:
      * slots from now on.
      */
     tree_walk2(t, print_node);
+    sort_tree_by_shares(t);
 
     return t;
 }
 
 /* sshare_distribute_slots()
- *
- * Tree fundamental steps.
- * 1) Distribute all slots on the tree.
- * 2) Harvest unused slots
- * 3) Compute the deviation from historical use
- *    as base for next slot distribution.
- *
  */
 int
 sshare_distribute_slots(struct tree_ *t,
@@ -159,7 +151,6 @@ sshare_distribute_slots(struct tree_ *t,
     link_t *stack;
     struct share_acct *sacct;
     uint32_t avail;
-    uint32_t free;
     int tried;
 
     stack = make_link();
@@ -196,8 +187,7 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-        sacct->dsrv = compute_slots(n, slots, avail);
-        avail = avail - sacct->dsrv;
+        avail = avail - compute_slots(n, slots, avail);
 
         assert(avail >= 0);
         /* As we traverse in priority order
@@ -214,29 +204,19 @@ znovu:
         /* tokens come from the parent
          */
         sacct = n->data;
-        avail = slots = sacct->dsrv;
+        avail = slots = sacct->sent;
         n = n->child;
         goto znovu;
     }
 
     if (avail > 0
         && tried == 0) {
-        tried = 1;
+        ++tried;
         n = t->root->child;
         goto znovu;
     }
 
     fin_link(stack);
-    if (0) {
-        /* avail can be > 0 if user all
-         * has not users
-         */
-        free = free + avail;
-        if (free > 0) {
-            set_leaf_slots(t, free);
-            sort_tree_by_shares(t);
-        }
-    }
 
     return 0;
 }
@@ -354,45 +334,6 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
     return s->sent;
 }
 
-/* harvest_leafs()
- */
-static uint32_t
-harvest_leafs(struct tree_ *t)
-{
-    struct share_acct *s;
-    uint32_t free;
-    int32_t z;
-    int32_t d;
-    linkiter_t iter;
-    struct tree_node_ *n;
-
-    free = 0;
-    traverse_init(t->leafs, &iter);
-    while ((n = traverse_link(&iter))) {
-
-        s = n->data;
-        /* if allocated or over
-         * skip
-         */
-        d = s->dsrv - s->numRUN;
-        if (d <= 0)
-            continue;
-
-        /* if pend more or equal
-         * than d skip
-         */
-        z = d - s->numPEND;
-        if (z <= 0) {
-            s->sent = d;
-            continue;
-        }
-        s->sent = s->numPEND;
-        free = free + z;
-    }
-
-    return free;
-}
-
 /* sort_tree_by_deviate()
  *
  */
@@ -449,70 +390,6 @@ znovu:
     make_leafs(t);
 }
 
-/* set_leaf_slots()
- */
-static uint32_t
-set_leaf_slots(struct tree_ *t, uint32_t free)
-{
-    linkiter_t iter;
-    struct tree_node_ *n;
-    struct share_acct *s;
-    int32_t x;
-    int32_t d;
-    int32_t morePEND;
-
-    traverse_init(t->leafs, &iter);
-    while ((n = traverse_link(&iter))) {
-
-        s = n->data;
-
-        /* Distance between the number of
-         * pending and how far this node
-         * is from historical deserve.
-         */
-        s->wPEND = s->numPEND;
-        x = MIN(s->numPEND, abs(s->dsrv2));
-        d = x - free;
-        if (d >= 0) {
-            s->sent = s->sent + free;
-            free = 0;
-        } else {
-            s->sent = s->sent + x;
-            free = free - x;
-        }
-        assert(free >= 0);
-        if (free == 0)
-            break;
-    }
-
-    if (free == 0)
-        return 0;
-
-    /* One more pass for those that
-     * still have pending jobs
-     */
-znovu:
-    traverse_init(t->leafs, &iter);
-    morePEND = 0;
-    while ((n = traverse_link(&iter))) {
-
-        s = n->data;
-        if (s->wPEND > 0
-            && free > 0) {
-            s->wPEND--;
-            --free;
-            s->sent++;
-            if (s->wPEND > 0)
-                ++morePEND;
-        }
-    }
-
-    if (free > 0
-        && morePEND > 0)
-        goto znovu;
-
-    return free;
-}
 
 /* compute_distance()
  */

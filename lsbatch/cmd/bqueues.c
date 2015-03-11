@@ -535,8 +535,8 @@ print_slot_shares(struct queueInfoEnt *qp)
            qp->numFairSlots - numRUN);
 
     printf("\
-%9s   %6s   %8s   %6s   %6s   %6s\n",
-           "USER/GROUP", "SHARES", "PRIORITY", "DSRV", "PEND", "RUN");
+%9s   %6s   %8s   %6s   %6s\n",
+           "USER/GROUP", "SHARES", "PRIORITY", "PEND", "RUN");
     for (i = 0; i < qp->numAccts; i++) {
         char buf[MAXLSFNAMELEN];
 
@@ -549,8 +549,7 @@ print_slot_shares(struct queueInfoEnt *qp)
                buf,
                qp->saccts[i]->shares,
                qp->saccts[i]->dshares);
-        printf("   %6d   %6d   %6d\n",
-               qp->saccts[i]->dsrv,
+        printf("   %6d   %6d\n",
                qp->saccts[i]->numPEND,
                qp->saccts[i]->numRUN);
     }
