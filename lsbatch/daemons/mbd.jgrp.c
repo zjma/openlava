@@ -1034,7 +1034,6 @@ jgrpPermitOk(struct lsfAuth *auth, struct jgTreeNode *jgrp)
         return(TRUE);
 
     if (auth->uid == 0 || isAuthManager(auth)) {
-
         return TRUE;
     }
 
