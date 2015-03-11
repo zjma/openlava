@@ -333,8 +333,8 @@ badminDebug(int nargc, char *nargv[], int opCode)
                     if (strcmp(word, "LC_SIGNAL") == 0)
                         debug.logClass |= LC_SIGNAL;
 
-                    if (strcmp(word, "LC_PIM") == 0)
-                        debug.logClass |= LC_PIM;
+                    if (strcmp(word, "LC_PREEMPT") == 0)
+                        debug.logClass |= LC_PREEMPT;
 
                     if (strcmp(word, "LC_SYS") == 0)
                         debug.logClass |= LC_SYS;
@@ -356,24 +356,19 @@ badminDebug(int nargc, char *nargv[], int opCode)
                         debug.logClass |= LC_PERFM;
                     }
 
-                    if (strcmp(word, "LC_MPI") == 0) {
-                        debug.logClass |= LC_MPI;
-                    }
-
                     if (strcmp(word, "LC_JGRP") == 0) {
                         debug.logClass |= LC_JGRP;
                     }
 
                 }
-                if (debug.logClass == 0)
-                {
+                if (debug.logClass == 0) {
                     fprintf(stderr,I18N(2572,"Command denied.Invalid class name\n")); /* catgets 2572 */
                     return -1;
                 }
                 break;
 
             case 'l':
-                for (i=0;i<strlen(optarg);i++) {
+                for (i = 0; i < strlen(optarg); i++) {
                     if (!isdigit(optarg[i])) {
                         fprintf(stderr,I18N(2573,"Command denied. Invalid level value\n")); /* catgets 2573 */
                         return -1;;

@@ -758,7 +758,7 @@ struct hostEntryLog {
 #define LC_LOADINDX 0x00200000
 #define LC_JGRP     0x00400000
 #define LC_JARRAY   0x00800000
-#define LC_MPI      0x01000000
+#define LC_PREEMPT  0x01000000
 #define LC_ELIM     0x02000000
 #define LC_M_LOG    0x04000000
 #define LC_PERFM    0x08000000

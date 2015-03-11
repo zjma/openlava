@@ -762,9 +762,7 @@ mykillpg(struct jobCard *jp, int sig)
 
 
     sprintf(jobFileName, "/tmp/.sbd/%s.rusage", jp->jobSpecs.jobFile);
-    if (logclass & LC_MPI)
-        ls_syslog(LOG_DEBUG3, "\
-mykillpg: job file name = %s\n", jobFileName);
+    ls_syslog(LOG_DEBUG3, "mykillpg: job file name = %s\n", jobFileName);
 
     if (jru) {
 
@@ -792,14 +790,13 @@ mykillpg: job file name = %s\n", jobFileName);
         if (fileStatus == 0) {
             status = updateJRru(jru, jobFileName);
             if (status == 0) {
-		if (logclass & LC_MPI) {
-	            ls_syslog(LOG_DEBUG3, "mykillpg: mem  = <%d>", jru->mem);
-                    ls_syslog(LOG_DEBUG3, "mykillpg: swap = <%d>", jru->swap);
-	            ls_syslog(LOG_DEBUG3, "mykillpg: utime  = <%d>",jru->utime);
-	            ls_syslog(LOG_DEBUG3, "mykillpg: stime  = <%d>",jru->stime);
-		}
+                ls_syslog(LOG_DEBUG3, "mykillpg: mem  = <%d>", jru->mem);
+                ls_syslog(LOG_DEBUG3, "mykillpg: swap = <%d>", jru->swap);
+                ls_syslog(LOG_DEBUG3, "mykillpg: utime  = <%d>",jru->utime);
+                ls_syslog(LOG_DEBUG3, "mykillpg: stime  = <%d>",jru->stime);
             }
-	}
+        }
+
 
 
         if (jru->mem > jp->maxRusage.mem)

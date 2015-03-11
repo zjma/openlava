@@ -435,7 +435,7 @@ getLogClass_(char *lsp, char *tsp)
         if (strcmp (word, "LC_SIGNAL") == 0)
             class |= LC_SIGNAL;
         if (strcmp (word, "LC_PIM") == 0)
-            class |= LC_PIM;
+            class |= LC_PREEMPT;
         if (strcmp (word, "LC_SYS") == 0)
             class |= LC_SYS;
         if (strcmp (word, "LC_LOADINDX") == 0)
@@ -444,8 +444,8 @@ getLogClass_(char *lsp, char *tsp)
             class |= LC_JGRP;
         if (strcmp (word, "LC_JARRAY") == 0)
             class |= LC_JARRAY;
-        if (strcmp (word, "LC_MPI") == 0)
-            class |= LC_MPI;
+        if (strcmp (word, "LC_PREEMPT") == 0)
+            class |= LC_PREEMPT;
         if (strcmp (word, "LC_ELIM") == 0)
             class |= LC_ELIM;
         if (strcmp (word, "LC_M_LOG") == 0)

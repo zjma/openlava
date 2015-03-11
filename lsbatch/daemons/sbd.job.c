@@ -2652,10 +2652,9 @@ deallocJobCard(struct jobCard *jobCard)
 
 
     sprintf(fileBuf, "/tmp/.sbd/%s.rusage", jobCard->jobSpecs.jobFile);
-    if (logclass & LC_MPI) {
-        ls_syslog(LOG_DEBUG3, "deallocJobCard: unlink(%s) for MPI job <%s>: %m",
-                  fileBuf, lsb_jobid2str(jobCard->jobSpecs.jobId));
-    }
+    ls_syslog(LOG_DEBUG, "deallocJobCard: unlink(%s) for MPI job <%s>: %m",
+              fileBuf, lsb_jobid2str(jobCard->jobSpecs.jobId));
+
     if (unlink(fileBuf) < 0 && errno != ENOENT)
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
                   lsb_jobid2str(jobCard->jobSpecs.jobId),
