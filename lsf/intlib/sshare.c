@@ -349,7 +349,7 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
     q = s->dshares * (double)total;
     u = (uint32_t)ceil(q);
     x = MIN(u, avail);
-    s->sent = MIN(s->numPEND, x);
+    s->sent = s->sent + MIN(s->numPEND, x);
 
     return s->sent;
 }
