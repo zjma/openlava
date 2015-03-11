@@ -43,6 +43,7 @@ static uint32_t harvest_leafs(struct tree_ *);
 static uint32_t set_leaf_slots(struct tree_ *, uint32_t);
 static void sort_tree_by_deviate(struct tree_ *);
 static void sort_tree_by_shares(struct tree_ *);
+static void zero_out_sent(struct tree_ *);
 static uint32_t compute_deviate(struct tree_node_ *, uint32_t, uint32_t);
 static void make_leafs(struct tree_ *);
 
@@ -159,6 +160,7 @@ sshare_distribute_slots(struct tree_ *t,
     struct share_acct *sacct;
     uint32_t avail;
     uint32_t free;
+    int tried;
 
     stack = make_link();
     n = t->root->child;
@@ -169,6 +171,10 @@ sshare_distribute_slots(struct tree_ *t,
     while (pop_link(t->leafs))
         ;
     avail = slots;
+
+    sort_tree_by_deviate(t);
+    zero_out_sent(t);
+    tried = 0;
 
 znovu:
 
@@ -190,7 +196,6 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-        sacct->sent = 0;
         sacct->dsrv = compute_slots(n, slots, avail);
         avail = avail - sacct->dsrv;
 
@@ -214,18 +219,23 @@ znovu:
         goto znovu;
     }
 
+    if (avail > 0
+        && tried == 0) {
+        tried = 1;
+        n = t->root->child;
+        goto znovu;
+    }
+
     fin_link(stack);
-
-    free = harvest_leafs(t);
-    /* avail can be > 0 if user all
-     * has not users
-     */
-    free = free + avail;
-
-    if (free > 0) {
-        sort_tree_by_deviate(t);
-        set_leaf_slots(t, free);
-        sort_tree_by_shares(t);
+    if (0) {
+        /* avail can be > 0 if user all
+         * has not users
+         */
+        free = free + avail;
+        if (free > 0) {
+            set_leaf_slots(t, free);
+            sort_tree_by_shares(t);
+        }
     }
 
     return 0;
@@ -266,6 +276,41 @@ znovu:
     make_leafs(t);
 }
 
+/* zero_out_sent()
+ */
+static void
+zero_out_sent(struct tree_ *t)
+{
+    link_t *stack;
+    struct tree_node_ *root;
+    struct tree_node_ *n;
+    struct share_acct *s;
+
+    stack = make_link();
+    root = t->root;
+    n = root->child;
+
+znovu:
+    while (n) {
+
+        if (n->child)
+            enqueue_link(stack, n);
+
+        s = n->data;
+        s->sent = 0;
+        n = n->right;
+    }
+
+    n = pop_link(stack);
+    if (n) {
+        root = n;
+        n = root->child;
+        goto znovu;
+    }
+
+    fin_link(stack);
+}
+
 /* make_sacct()
  */
 struct share_acct *
@@ -297,15 +342,16 @@ compute_slots(struct tree_node_ *n, uint32_t total, uint32_t avail)
     struct share_acct *s;
     double q;
     uint32_t u;
-    uint32_t dsrv;
+    uint32_t x;
 
     s = n->data;
 
     q = s->dshares * (double)total;
     u = (uint32_t)ceil(q);
-    dsrv = MIN(u, avail);
+    x = MIN(u, avail);
+    s->sent = MIN(s->numPEND, x);
 
-    return dsrv;
+    return s->sent;
 }
 
 /* harvest_leafs()
@@ -478,19 +524,17 @@ compute_deviate(struct tree_node_ *n,
     double q;
     struct share_acct *s;
     uint32_t u;
-    uint32_t suse;
 
     s = n->data;
 
     q = s->dshares * (double)sum;
     u = (int32_t)ceil(q);
-    suse = MIN(u, avail);
     /* How much you deviate from what
-     * you should use.
+     * you should have used.
      */
-    s->dsrv2 = suse - s->numRAN;
+    s->dsrv2 = u - s->numRAN;
 
-    return suse;
+    return s->dsrv2;
 }
 
 /* sort_siblings()
@@ -819,6 +863,7 @@ node_cmp2(const void *x, const void *y)
     struct tree_node_ *n2;
     struct share_acct *s1;
     struct share_acct *s2;
+    int cc;
 
     n1 = *(struct tree_node_ **)x;
     n2 = *(struct tree_node_ **)y;
@@ -834,12 +879,21 @@ node_cmp2(const void *x, const void *y)
      * -4 -1 2 5
      * once on the tree
      */
-    if (s1->dsrv2 > s2->dsrv2)
-        return -1;
-    if (s1->dsrv2 < s2->dsrv2)
-        return 1;
+    cc = 0;
+    if (s1->dsrv2 > 0
+        && s2->dsrv2 < 0) {
+        cc = 1;
+    } else if (s1->dsrv2 < 0
+               && s2->dsrv2 > 0) {
+        cc = -1;
+    } else {
+        if (s1->dsrv2 > s2->dsrv2)
+            cc = 1;
+        if (s1->dsrv2 < s2->dsrv2)
+            cc = -1;
+    }
 
-    return 0;
+    return cc;
 }
 
 /* print_node()
