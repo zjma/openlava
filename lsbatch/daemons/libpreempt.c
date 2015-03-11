@@ -31,7 +31,6 @@ prm_init(LIST_T *qList)
 int
 prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
 {
-    link_t *l;
     link_t *jl;
     struct jData *jPtr;
     struct jData *jPtr2;
@@ -39,8 +38,10 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
     uint32_t numSLOTS;
     linkiter_t iter;
 
+    /* Job in the preemptable candidate list
+     * that will other jobs to be requeued.
+     */
     jl = make_link();
-    l = make_link();
 
     /* Gut nicht jobs
      */
@@ -58,6 +59,8 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
         if (jPtr->jStatus & JOB_STAT_PEND
             && jPtr->newReason == 0) {
             ++numPEND;
+            /* Save the candidate pn jl
+             */
             push_link(jl, jPtr);
         }
 
@@ -70,7 +73,6 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
     }
 
     if (numPEND == 0) {
-        fin_link(l);
         fin_link(jl);
         return 0;
     }
@@ -78,16 +80,27 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
     if (numjobs == 0)
         numjobs = UINT32_MAX;
 
+    /* Traverse candidate list
+     */
     while ((jPtr = dequeue_link(jl))) {
         struct qData *qPtr2;
         int num;
 
+        /* Initialiaze the iterator on the list
+         * of preemptable queue, the list is
+         * traverse in the order in which it
+         * was configured.
+         */
         traverse_init(jPtr->qPtr->preemptable, &iter);
         numSLOTS = jPtr->shared->jobBill.numProcessors;
         num = 0;
 
         while ((qPtr2 = traverse_link(&iter))) {
-
+            /* Search on SJL jobs belonging to the
+             * preemptable queue and harvest slots.
+             * later we want to eventually break out
+             * of this loop somehow.
+             */
             for (jPtr2 = jDataList[SJL]->forw;
                  jPtr2 != jDataList[SJL];
                  jPtr2 = jPtr2->forw) {
@@ -97,18 +110,22 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
                 if (jPtr2->hPtr[0]->hStatus != HOST_STAT_FULL)
                     continue;
                 num = num + jPtr2->shared->jobBill.numProcessors;
+                push_link(rl, jPtr2);
                 if (num < numSLOTS)
                     continue;
-                push_link(rl, jPtr2);
-                goto nextJob;
+                break;
+            }
+            /* Check if you got enough slots
+             */
+            if (num < numSLOTS) {
+                while (pop_link(rl))
+                    ;
             }
         }
-    nextJob:;
         if (LINK_NUM_ENTRIES(rl) >= numjobs)
             break;
     }
 
-    fin_link(l);
     fin_link(jl);
 
     return LINK_NUM_ENTRIES(rl);

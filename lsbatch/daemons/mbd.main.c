@@ -1307,6 +1307,10 @@ preempt(void)
 
         rl = make_link();
 
+        /* The current queue is preemptable
+         * the rl link will have the preemption
+         * candidates.
+         */
         if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
             (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, 0);
         }
@@ -1322,6 +1326,8 @@ preempt(void)
             struct lsfAuth auth;
             int cc;
 
+            jPtr->shared->jobBill.beginTime = time(NULL) + 300;
+            jPtr->newReason = PEND_JOB_START_TIME;
 
             ls_syslog(LOG_DEBUG, "\
 %s: job %s queue %s preemption candidate", __func__,
