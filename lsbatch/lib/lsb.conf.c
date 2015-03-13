@@ -1198,9 +1198,9 @@ do_Users(struct lsConf *conf, char *fname, int *lineNum, int options)
                         }
                     }
                 } else {
-                    ls_syslog(LOG_WARNING, I18N(5092,
-                                                "%s: File %s at line %d: Unknown user <%s>; Maybe a windows user or of another domain."),
-                              __func__, fname, *lineNum, keylist[0].val); /* catgets 5092 */
+                    ls_syslog(LOG_WARNING, "\
+%s: File %s at line %d: Unknown user <%s>", __func__, fname,
+                              *lineNum, keylist[0].val);
                     lsberrno = LSBE_CONF_WARNING;
                 }
             }
@@ -1771,10 +1771,10 @@ addMember (struct groupInfoEnt *gp, char *word, int grouptype,
                     }
                 }
             } else {
-                ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5137,
-                                                     "%s: File %s%s at line %d: Unknown user <%s> in group <%s>; Maybe a windows user or of another domain."), __func__, fname, section, lineNum, myWord, gp->group); /* catgets 5137 */
-                lsberrno = LSBE_CONF_WARNING;
-
+                ls_syslog(LOG_WARNING, "\
+%s: File %s%s at line %d: Unknown user <%s> in group <%s>",__func__,
+                          fname, section, lineNum, myWord, gp->group);
+                    lsberrno = LSBE_CONF_WARNING;
 
                 if (!addMembStr(&unknownUsers, myWord)) {
                     FREEUP(myWord);
@@ -3268,8 +3268,9 @@ parseGroups (char *linep, char *fname, int *lineNum, char *section,
                     return NULL;
                 }
             } else {
-                ls_syslog(LOG_WARNING, I18N(5248,
-                                            "%s: File %s%s at line %d: Unknown user or user group <%s>; Maybe a windows user or of another domain"), __func__, fname, section, *lineNum, myWord); /* catgets 5248 */
+                ls_syslog(LOG_WARNING, "\
+%s: File %s%s at line %d: Unknown user or user group <%s>",
+                          section, *lineNum, myWord);
                 lsberrno = LSBE_CONF_WARNING;
                 if (!addMember(mygp, myWord, USER_GRP, fname,
                                *lineNum, section, options, checkAll)
