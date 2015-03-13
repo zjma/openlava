@@ -438,7 +438,7 @@ badminDebug(int nargc, char *nargv[], int opCode)
                 & (HOST_STAT_UNAVAIL | HOST_STAT_UNREACH)) {
                 if (hostInfo[i].hStatus & HOST_STAT_UNAVAIL)
                     fprintf(stderr, "\
-failed : LSF daemon (LIM) is unavailable on host %s\n",
+failed : OpenLava daemon (LIM) is unavailable on host %s\n",
                             hostInfo[i].host);
                 else
                     fprintf(stderr, "\

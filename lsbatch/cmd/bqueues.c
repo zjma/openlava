@@ -348,7 +348,7 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
         }
 
         if (strcmp(qp->hostList, " ") == 0) {
-            printf("HOSTS:  all hosts used by the LSF Batch system\n");
+            printf("HOSTS:  all hosts used by the OpenLava system\n");
         } else {
             if (strcmp(qp->hostList, " ") != 0 && qp->hostList[0])
                 printf("HOSTS:  %s\n", qp->hostList);

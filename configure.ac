@@ -6,7 +6,7 @@
 AC_INIT(openlava, 3.0)
 AC_CONFIG_HEADERS(config.h)
 AC_PREFIX_DEFAULT([/opt/openlava-3.0])
-AC_DEFINE(_OPENLAVA_PROJECT_, "openlava project 3.0", "Set project string in binaries.")
+AC_DEFINE(_OPENLAVA_PROJECT_, "OpenLava 3.0", "Set project string in binaries.")
 AC_DEFINE(OPENLAVA_VERSION, 30, "Current openlava version.")
 #AC_DEFINE(REL_DATE, "Nov 11 2013", "Set the release date.")
 

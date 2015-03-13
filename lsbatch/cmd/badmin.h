@@ -129,11 +129,11 @@ static char *cmdSyntax[] =
 static char *cmdInfo[] = { 
 	"Reconfigure the system", 	/* catgets 3101 */
         "Check configuration files",	/* catgets 3102 */
-        "Open LSF queues",		/* catgets 3103 */
-        "Close LSF queues",		/* catgets 3104 */
-        "Activate LSF queues",	        /* catgets 3105 */
-        "Inactivate LSF queues",	/* catgets 3106 */
-        "Display the history of LSF queues",	/* catgets 3107 */
+        "Open OpenLava queues",		/* catgets 3103 */
+        "Close OpenLava queues",		/* catgets 3104 */
+        "Activate OpenLava queues",	        /* catgets 3105 */
+        "Inactivate OpenLava queues",	/* catgets 3106 */
+        "Display the history of OpenLava queues",	/* catgets 3107 */
         "Open hosts",				/* catgets 3108 */
         "Close hosts",				/* catgets 3109 */
         "Restart slave batch daemon on hosts",	/* catgets 3110 */

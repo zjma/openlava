@@ -1,5 +1,10 @@
 Release notes for openlava versions
 
+3.0
+=======
+-- Preemption by queues
+-- Queue level fairshare
+
 2.3-0rc
 ========
 -- Fix the problem of host going periodically -ok.
