@@ -8897,8 +8897,9 @@ set_queue_last_job(LIST_T *list, struct jData *jPtr)
         return 0;
     }
 
-    /* The only job in this priority group with
-     * the list in front, dont try to derefrence list->priority
+    /* I am the first job in front of the list
+     * and the job behind me has different priority
+     * so I am the last in my priority group.
      */
     if (jPtr->forw == (void *)list
         && jPtr->back->qPtr->priority != jPtr->qPtr->priority) {
@@ -8906,12 +8907,30 @@ set_queue_last_job(LIST_T *list, struct jData *jPtr)
         return 0;
     }
 
-    /* The only job in this priority group with
-     * the list at the back, dont try to derefrence list->priority
+    /* I am the head of the list and the job behind me
+     * has the same priority as I do means I am not the last.
+     */
+    if (jPtr->forw == (void *)list
+        && jPtr->back->qPtr->priority == jPtr->qPtr->priority) {
+        return 0;
+    }
+
+    /* I am at the end of the joblist and the job in front
+     * of me has a different priority then I do then
+     * he is the last
      */
     if (jPtr->back == (void *)list
         && jPtr->forw->qPtr->priority != jPtr->qPtr->priority) {
         qPtr->lastJob = NULL;
+        return 0;
+    }
+
+    /* I am the last of the jobs and the job in front
+     * of me has my same priority then he is last.
+     */
+    if (jPtr->back == (void *)list
+        && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
+        qPtr->lastJob = jPtr->forw;
         return 0;
     }
 
@@ -8929,6 +8948,11 @@ set_queue_last_job(LIST_T *list, struct jData *jPtr)
         && jPtr->forw->qPtr->priority == jPtr->qPtr->priority) {
         qPtr->lastJob = jPtr->forw;
     }
+
+    /* We skip the case in which the job in front of me has
+     * different priority and the job back has the same priority
+     * as this test would be redundant.
+     */
 
     return 0;
 }

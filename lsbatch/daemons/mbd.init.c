@@ -3668,9 +3668,8 @@ check_same_priority_queues(void)
     struct qData *qPtr;
     struct qData *qPtr2;
 
-    for (qPtr = qDataList->forw;
-         qPtr != qDataList;
-         qPtr = qPtr2) {
+    qPtr = qDataList->forw;
+    while (qPtr != qDataList->forw) {
 
         qPtr2 = qPtr->forw;
 
@@ -3695,6 +3694,7 @@ check_same_priority_queues(void)
                           qPtr2->queue, qPtr2->priority);
             }
         }
+        qPtr = qPtr2;
     }
 }
 
