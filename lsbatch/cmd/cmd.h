@@ -108,28 +108,26 @@ extern void prtBETime_(struct submit *);
 
 extern int supportJobNamePattern(char *);
 
-
 extern int  repeatedName(char *, char **, int);
 extern void jobInfoErr (LS_LONG_INT, char *, char *, char *, char *, int);
-extern int printThresholds (float *, float *, int *, int *, int, struct lsInfo *);
+extern int printThresholds (float *, float *, int *,
+                            int *, int, struct lsInfo *);
 extern void prtResourceLimit (int *, char *, float, int *);
 extern int  getNames (int, char **, int, char ***, int *, char *);
-extern int  getJobIds (int, char **, char *, char *, char *, char *, LS_LONG_INT **, int);
+extern int  getJobIds (int, char **, char *, char *,
+                       char *, char *, LS_LONG_INT **, int);
 extern int  getSpecJobIds (int, char **, LS_LONG_INT **, int *);
 extern int  getSpecIdxs (char *, int **);
 extern int  getOneJobId (char *, LS_LONG_INT *, int);
 extern int  gettimefor (char *toptarg, time_t *tTime);
 extern int  skipJob(int, int *, int);
-
 extern void prtWord(int, const char *, int);
 extern void prtWordL(int, const char *);
 extern char *prtValue(int, int);
 extern char *prtDash(int);
-
-
 extern int searchEventFile(struct histReq *, int *);
 extern int bmsg(int, char **);
-
 extern void bmove (int, char **, int);
+extern int bsignal(int, char **);
 
 #endif

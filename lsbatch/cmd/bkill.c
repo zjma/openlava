@@ -1,4 +1,5 @@
-/* $Id: bkill.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,28 +17,15 @@
  *
  */
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "lsbatch.h"
+#include "cmd.h"
 
-#include "../../lsf/lib/lsi18n.h"
-
-#define NL_SETN 8 	
-
-extern int bsignal (int, char **);
-extern int _lsb_recvtimeout;
-
-int 
-main (int argc, char **argv)
+int
+main(int argc, char **argv)
 {
-    int rc;
-    
-    _lsb_recvtimeout = 30;
-    rc = _i18n_init ( I18N_CAT_MIN );	
-
     if (bsignal(argc, argv) == 0) {
 	exit(-1);
     }
-    _i18n_end ( ls_catd );			
+
     exit(0);
 }

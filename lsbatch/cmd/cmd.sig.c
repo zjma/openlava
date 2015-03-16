@@ -261,7 +261,7 @@ do_options (int argc, char **argv, LS_LONG_INT **jobIds, int signalValue)
 }
 
 int
-bsignal (int argc, char **argv)
+bsignal(int argc, char **argv)
 {
     int numJobs;
     LS_LONG_INT *jobIds;
