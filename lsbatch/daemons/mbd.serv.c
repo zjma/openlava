@@ -230,7 +230,7 @@ do_jobInfoReq(XDR *xdrs,
         + jobInfoHead.numHosts * (sizeof(char *) + MAXHOSTNAMELEN)
         + 100;
 
-    reply_buf = my_malloc (len, __func__);
+    reply_buf = calloc(len, sizeof(char));
     xdrmem_create(&xdrs2, reply_buf, len, XDR_ENCODE);
     replyHdr.opCode = reply;
 
