@@ -408,7 +408,6 @@ initTcl(struct tclLsInfo *tclLsInfo)
     int          isSet;
     static int   ar3[5];
     attribFunc   *funcPtr;
-
     static attribFunc attrFuncTable[] = {
         {"cpu"   , R1M},
         {"login" , LS},
@@ -697,7 +696,7 @@ copyTclLsInfo(struct tclLsInfo *tclLsInfo)
         myTclLsInfo->numericResBitMaps[i] = tclLsInfo->numericResBitMaps[i];
     }
 
-    return(0);
+    return 0;
 
 }
 
@@ -711,11 +710,11 @@ freeTclLsInfo(struct tclLsInfo *tclLsInfo, int mode)
     if (tclLsInfo) {
         if (mode == 1) {
             for (i = 0; i < tclLsInfo->numIndx; i++) {
-                FREEUP(tclLsInfo->indexNames[i])
-                    }
+                FREEUP(tclLsInfo->indexNames[i]);
+            }
             for (i = 0; i < tclLsInfo->nRes; i++) {
-                FREEUP(tclLsInfo->resName[i])
-                    }
+                FREEUP(tclLsInfo->resName[i]);
+            }
         }
         FREEUP(tclLsInfo->indexNames);
         FREEUP(tclLsInfo->resName);
@@ -724,4 +723,15 @@ freeTclLsInfo(struct tclLsInfo *tclLsInfo, int mode)
         FREEUP(tclLsInfo);
     }
 
+}
+
+/* freeTclInterp()
+ */
+void
+freeTclInterp(void)
+{
+    if (globinterp == NULL)
+        return;
+
+    Tcl_DeleteInterp(globinterp);
 }

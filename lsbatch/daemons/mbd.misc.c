@@ -1307,16 +1307,14 @@ mbdDie (int sig)
     struct jData *jpbw;
     int list;
     sigset_t newmask;
-    char myhostname[MAXHOSTNAMELEN], *myhostp = myhostname;
+    char myhostname[MAXHOSTNAMELEN];
+    char *myhostp = myhostname;
 
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigaddset(&newmask, SIGTERM);
     sigaddset(&newmask, SIGINT);
     sigprocmask(SIG_BLOCK, &newmask, NULL);
-
-
-
 
 
     for (list = 0; list < NJLIST; list++) {
@@ -1330,21 +1328,22 @@ mbdDie (int sig)
                     continue;
                 if (IS_FINISH(jpbw->jStatus) && (getZombieJob(jpbw->jobId)) == NULL)
                     continue;
-                log_unfulfill (jpbw);
+                log_unfulfill(jpbw);
             }
         }
     }
+
     log_mbdDie(sig);
 
+    freeTclLsInfo(tclLsInfo, 0);
+    freeTclInterp();
 
     if (gethostname(myhostp, MAXHOSTNAMELEN) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "mbdDie", "gethostname");
         strcpy(myhostp, "localhost");
     }
 
-
-
-    die (sig);
+    die(sig);
 
 }
 

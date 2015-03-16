@@ -4479,6 +4479,7 @@ removeJob(LS_LONG_INT jobId)
     struct jgTreeNode *node;
 
     if ((jp = getJobData(jobId)) && jp->nodeType != JGRP_NODE_ARRAY) {
+
         while ((zp = getZombieJob(jp->jobId)) != NULL) {
             closeSbdConnect4ZombieJob(zp);
             offList((struct listEntry *) zp);
@@ -4489,7 +4490,6 @@ removeJob(LS_LONG_INT jobId)
         offJobList (jp, FJL);
         numRemoveJobs ++;
         if (mSchedStage != M_STAGE_REPLAY) {
-
             log_jobclean(jp);
         }
 

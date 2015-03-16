@@ -262,6 +262,7 @@ znovu:
         goto znovu;
     }
 
+    fin_link(link);
     return (*f)(NULL, NULL);
 }
 

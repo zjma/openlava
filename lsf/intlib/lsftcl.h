@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014 David Bigagli
  *
@@ -80,3 +80,4 @@ struct tclLsInfo {
 extern int initTcl(struct tclLsInfo *);
 extern void freeTclLsInfo(struct tclLsInfo *, int);
 extern int evalResReq(char *, struct tclHostData *, char);
+extern void freeTclInterp(void);

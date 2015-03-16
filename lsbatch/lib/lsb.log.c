@@ -510,14 +510,14 @@ freeLogRec(struct eventRec *logRec)
         case EVENT_JOB_START:
         case EVENT_PRE_EXEC_START:
             if (logRec->eventLog.jobStartLog.numExHosts) {
-                for (i=0; i<logRec->eventLog.jobStartLog.numExHosts; i++)
+                for (i = 0; i < logRec->eventLog.jobStartLog.numExHosts; i++)
                     free(logRec->eventLog.jobStartLog.execHosts[i]);
             }
             if (logRec->eventLog.jobStartLog.execHosts)
                 free(logRec->eventLog.jobStartLog.execHosts);
-            FREEUP (logRec->eventLog.jobStartLog.queuePreCmd);
-            FREEUP (logRec->eventLog.jobStartLog.queuePostCmd);
-
+            FREEUP(logRec->eventLog.jobStartLog.queuePreCmd);
+            FREEUP(logRec->eventLog.jobStartLog.queuePostCmd);
+            _free_(logRec->eventLog.jobStartLog.userGroup);
             return;
 
         case EVENT_JOB_START_ACCEPT:

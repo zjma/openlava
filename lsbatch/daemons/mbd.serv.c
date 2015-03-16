@@ -1173,7 +1173,7 @@ do_restartReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
     buflen = sbatchdJobs(&sbdPackage, hData);
     reply = LSBE_NO_ERROR;
 
-    reply_buf = (char *) my_malloc(buflen, "do_restartReq");
+    reply_buf = calloc(buflen, sizeof(char));
     xdrmem_create(&xdrs2, reply_buf, buflen, XDR_ENCODE);
     replyHdr.opCode = reply;
     if (!xdr_encodeMsg(&xdrs2, (char *) &sbdPackage, &replyHdr,

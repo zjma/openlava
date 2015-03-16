@@ -257,7 +257,7 @@ minit(int mbdInitFlags)
             mbdDie(MASTER_FATAL);
     }
 
-    initParse (allLsInfo);
+    initParse(allLsInfo);
     tclLsInfo = getTclLsInfo();
     initTcl(tclLsInfo);
 
@@ -3556,7 +3556,8 @@ parse_preemption(struct qData *qPtr)
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh keyword PREEMPTIVE missing in %s queue %s", __func__,
                   qPtr->preemption, qPtr->queue);
-        FREEUP(qPtr->preemption);
+        _free_(qPtr->preemption);
+        _free_(p0);
         qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
     }
@@ -3592,6 +3593,7 @@ parse_preemption(struct qData *qPtr)
         enqueue_link(qPtr->preemptable, qPtr2);
     }
 
+    _free_(p0);
     ls_syslog(LOG_DEBUG, "\
 %s: preeption for queue %s built %s", __func__,
               qPtr->queue, qPtr->preemption);
@@ -3635,6 +3637,8 @@ sort_queues(void)
     for (i = 0; i < n; i++) {
         listInsertEntryAtFront((LIST_T *)qDataList, (LIST_ENTRY_T *)v[i]);
     }
+
+    _free_(v);
 
     return 0;
 }

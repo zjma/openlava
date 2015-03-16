@@ -535,11 +535,11 @@ getTclLsInfo(void)
     tclLsInfo->resName = (char **)my_malloc(allLsInfo->nRes *sizeof(char*),
                                 fname);
     tclLsInfo->stringResBitMaps =
-         (int *) my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
+        (int *) my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
     tclLsInfo->numericResBitMaps =
          (int *) my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
 
-    for (i =0; i< GET_INTNUM(allLsInfo->nRes); i++) {
+    for (i = 0; i< GET_INTNUM(allLsInfo->nRes); i++) {
         tclLsInfo->stringResBitMaps[i] = 0;
         tclLsInfo->numericResBitMaps[i] = 0;
     }
