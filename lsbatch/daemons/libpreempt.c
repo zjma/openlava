@@ -46,8 +46,10 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
     /* Gut nicht jobs
      */
     jPtr = qPtr->lastJob;
-    if (jPtr == NULL)
+    if (jPtr == NULL) {
+        fin_link(jl);
         return 0;
+    }
 
     numPEND = 0;
     while (jPtr) {
@@ -109,19 +111,14 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
                     continue;
                 if (jPtr2->hPtr[0]->hStatus != HOST_STAT_FULL)
                     continue;
+
                 num = num + jPtr2->shared->jobBill.numProcessors;
                 push_link(rl, jPtr2);
-                if (num < numSLOTS)
-                    continue;
-                break;
-            }
-            /* Check if you got enough slots
-             */
-            if (num < numSLOTS) {
-                while (pop_link(rl))
-                    ;
+                if (num >= numSLOTS)
+                    goto pryc;
             }
         }
+    pryc:;
         if (LINK_NUM_ENTRIES(rl) >= numjobs)
             break;
     }
