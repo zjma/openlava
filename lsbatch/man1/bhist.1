@@ -1,0 +1,353 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH bhist 1 "OpenLava Version 3.0 - Mar 2015"
+.br
+.SH NAME
+.PP
+\f[B]bhist\f[] \- displays the history of OpenLava jobs
+.PP
+.SH SYNOPSIS
+.PP
+\f[B]bhist\f[] [\f[B]\-h\f[]] [\f[B]\-V\f[]] [\f[B]\-l\f[]]
+[\f[B]\-b\f[]] [\f[B]\-w\f[]] [\f[B]\-a\f[]] [\f[B]\-d\f[]]
+[\f[B]\-e\f[]] [\f[B]\-p\f[]] [\f[B]\-s\f[]] [\f[B]\-r\f[]]
+.PD 0
+.P
+.PD
+[\f[B]\-f\f[] \f[I]logfile\f[]_\f[I]name\f[] | \f[B]\-n\f[]
+\f[I]num_logfiles\f[] | \f[B]\-n\f[] \f[I]min_logfile\f[],
+\f[I]max_logfile\f[]]
+.PD 0
+.P
+.PD
+[\f[B]\-C\f[] \f[I]time0\f[], \f[I]time1\f[]] [\f[B]\-S\f[]
+\f[I]time0\f[], \f[I]time1\f[]] [\f[B]\-D\f[] \f[I]time0\f[],
+\f[I]time1\f[]] [\f[B]\-N\f[] \f[I]host\f[]_\f[I]spec\f[]] [\f[B]\-P\f[]
+\f[I]project_name\f[]]
+.PD 0
+.P
+.PD
+[\f[B]\-q\f[] \f[I]queue\f[]_\f[I]name\f[]] [ \f[B]\-m\f[]
+\f[I]host\f[]_\f[I]name\f[]] [\f[B]\-J\f[] \f[I]job\f[]_\f[I]name\f[]]
+[\f[B]\-u\f[] \f[I]user\f[]_\f[I]name\f[] | \f[B]\-u\f[]
+\f[I]all\f[]]
+.PD 0
+.P
+.PD
+[\f[I]jobId\f[] | \f[I]“jobId[index]”\f[] ...]
+.PP
+\f[B]bhist\f[] [\f[B]\-h\f[]] [\f[B]\-V\f[]] \f[B]\[en]t\f[]
+[\f[B]\-f\f[] \f[I]logfile_name\f[]] [\f[B]\-T\f[] \f[I]time0\f[],
+\f[I]time1\f[]]
+.PP
+.SH DESCRIPTION
+.PP
+Displays the history of jobs.
+Without option, by default, it displays history for all pending,
+suspended, and running jobs that are owned by the user who invoked this
+command.
+.PP
+.SH OPTIONS
+.PP
+\f[B]\-h\f[] Prints command usage to stderr and exits.
+.PP
+\f[B]\-V\f[] Prints OpenLava release version to stderr and exits.
+.PP
+\f[B]\-b\f[] Displays the job history in a brief format.
+For the default, see \f[B]\-l\f[].
+.PP
+\f[B]\-l\f[] Displays the job history in a long format.
+For each job, the detailed information is provided in with multiple
+lines.
+If neither \f[B]\-l\f[] nor \f[B]\-b\f[] is present, it displays the
+fields in \f[B]SUMMARY\f[] only (see below).
+.PP
+\-w Displays the job history in a wide format.
+.PP
+\f[B]\-a\f[] Displays both finished and unfinished jobs.
+This option overrides \f[B]\-d\f[], \f[B]\-p\f[], \f[B]\-s\f[], and
+\f[B]\-r\f[].
+If neither \f[B]\-a\f[] nor \f[B]\-d\f[] is present, then finished jobs
+are not displayed.
+.PP
+\f[B]\-d\f[] Displays only the finished jobs.
+.PP
+\f[B]\-e\f[] Displays only the existed jobs.
+.PP
+\f[B]\-p\f[] Displays only the pending jobs.
+.PP
+\f[B]\-s\f[] Displays only the suspended jobs, and shows the reason why
+each job was suspended (if option \f[B]\-l\f[] or \f[B]\-b\f[]
+specified).
+.PP
+\f[B]\-r\f[] Displays only the running jobs.
+.PP
+\f[B]\-f\f[] \f[I]logfile\f[]_\f[I]name\f[]
+.PD 0
+.P
+.PD
+Displays job history information from a specified event log file.
+Either an absolute or a relative path name may be specified.
+The default is to use the event log file currently used by the OpenLava
+system:
+\f[B]$(LSB_SHAREDIR)/\f[]<\f[I]clustername\f[]>\f[B]/logdir/lsb.events\f[]
+(see \f[I]lsb.events(5)\f[]).
+Option \f[B]\-f\f[] is often used for off\-line analysis.
+.PP
+\f[B]\-n\f[] \f[I]num\f[]_\f[I]logfiles\f[]
+.PD 0
+.P
+.PD
+Specifies the number of event log files that \f[B]bhist\f[] searches.
+The most recent \f[I]num\f[]_\f[I]logfiles\f[] log files are searched.
+The default is 1; i.e., the current event log file,
+\f[B]$(LSB_SHAREDIR)/\f[]<\f[I]clustername\f[]>\f[B]/logdir/lsb.events\f[]
+\f[B](see\f[]
+\f[I]lsb.events(5)\f[]) is searched.
+If \f[I]num\f[]_\f[I]logfiles\f[] is 2, \f[B]bhist\f[] searches event
+log files \f[B]lsb.events\f[] and \f[B]lsb.events.1\f[]; If
+\f[I]num\f[]_\f[I]logfiles\f[] is 3, \f[B]bhist\f[] searches
+\f[B]lsb.events\f[], \f[B]lsb.events.1\f[], and \f[B]lsb.events.2\f[];
+and so on.
+If \f[I]num\f[]_\f[I]logfiles\f[] is 0, all the event log files in
+\f[B]$(LSB_SHAREDIR)/\f[]<\f[I]clustername\f[]>\f[B]/logdir\f[] are
+searched.
+.PP
+\f[B]\-n\f[] \f[I]min_logfile, max_logfinle\f[]
+.PD 0
+.P
+.PD
+Specifies a range of event log files that \f[B]bhist\f[] searches.
+The value of min_logfile and max_logfile represents the event log file
+index.
+For example, 2 represents \f[B]lsb.events.2\f[].
+.PP
+\f[B]\-C\f[] \f[I]time0\f[], \f[I]time1\f[]
+.PD 0
+.P
+.PD
+Displays only those jobs whose completion or exit time were within the
+time interval between \f[I]time0\f[] and \f[I]time1\f[] (see
+\f[B]TIME\f[] \f[B]FORMAT\f[] below).
+.PP
+\f[B]\-S\f[] \f[I]time0\f[], \f[I]time1\f[]
+.PD 0
+.P
+.PD
+Displays only those jobs whose submission time were within the time
+interval between \f[I]time0\f[] and \f[I]time1\f[] (see \f[B]TIME\f[]
+\f[B]FORMAT\f[] below).
+.PP
+\f[B]\-D\f[] \f[I]time0\f[], \f[I]time1\f[]
+.PD 0
+.P
+.PD
+Displays only those jobs whose dispatch time were within the time
+interval between \f[I]time0\f[] and \f[I]time1\f[] (see \f[B]TIME\f[]
+\f[B]FORMAT\f[] below).
+.PP
+\f[B]\-N\f[] \f[I]host\f[]_\f[I]spec\f[]
+.PD 0
+.P
+.PD
+Displays the CPU time by a normalized value.
+\f[I]host\f[]_\f[I]spec\f[] is either a host name, or a host model name
+defined in OpenLava, or a CPU factor (use
+\f[I]lsinfo(1)\f[] to
+get host model and CPU factor information).
+If \f[B]bhist\f[] is used off line, i.e., without LIM, the only valid
+usage for \f[I]host\f[]_\f[I]spec\f[] is a CPU factor.
+The appropriate CPU scaling factor for the specified
+\f[I]host\f[]_\f[I]spec\f[] is used to normalize the actual CPU time
+consumed by the job.
+.PP
+\f[B]\-P\f[] \f[I]project_name\f[]
+.PD 0
+.P
+.PD
+Displays jobs belonging to the specified project \f[I]project_name\f[]
+only.
+.PP
+\f[B]\-q\f[] \f[I]queue\f[]_\f[I]name\f[]
+.PD 0
+.P
+.PD
+Displays jobs submitted to the specified queue
+\f[I]queue\f[]_\f[I]name\f[] only.
+.PP
+\f[B]\-m\f[] \f[I]host\f[]_\f[I]name\f[]
+.PD 0
+.P
+.PD
+Displays jobs dispatched to the specified host
+\f[I]host\f[]_\f[I]name\f[] only.
+.PP
+\f[B]\-u\f[] \f[I]user\f[]_\f[I]name\f[] \f[B]|\f[] \f[B]\-u\f[]
+\f[B]all\f[]
+.PD 0
+.P
+.PD
+Displays jobs that have been submitted by the user specified by
+\f[I]user\f[]_\f[I]name\f[], or by all users (if the reserved user name
+\f[B]all\f[] is specified).
+The default is to display the jobs submitted by the user who invoked
+this command.
+.PP
+\f[B]\-t\f[]
+.PD 0
+.P
+.PD
+Displays job events chronologically.
+By default only displays records from the last week.
+For different time periods use \[en]t with the \[en]T option.
+.PP
+\f[B]\-J\f[] \f[I]job\f[]_\f[I]name\f[]
+.PD 0
+.P
+.PD
+Displays the jobs that have the specified \f[I]job\f[]_\f[I]name\f[].
+.PP
+\f[I]jobId\f[] ...
+.PD 0
+.P
+.PD
+Displays the specified job(s) only.
+This option overrides all other options except \f[B]\-N\f[],
+\f[B]\-h\f[] and \f[B]\-V\f[].
+When it is used with \f[B]\-J\f[], only those jobs listed here that have
+the specified \f[I]job\f[]_\f[I]name\f[] are displayed.
+.PP
+.SH SUMMARY
+.PP
+Statistics of the amounts of time that job has spent in various states:
+.PP
+\f[B]PEND\f[]
+.PD 0
+.P
+.PD
+The total waiting time excluding user suspended time
+before the job is dispatched
+.PP
+\f[B]PSUSP\f[]
+.PD 0
+.P
+.PD
+The total user suspended time of a pending job
+.PP
+\f[B]RUN\f[] The total run time of the job
+.PP
+\f[B]USUSP\f[]
+.PD 0
+.P
+.PD
+The total user suspended time after the job is dispatched
+.PP
+\f[B]SSUSP\f[]
+.PD 0
+.P
+.PD
+The total system suspended time after the job is dispatched
+.PP
+\f[B]UNKWN\f[]
+.PD 0
+.P
+.PD
+The total unknown time of the job (job status becomes unknown if slave
+batch daemon (sbatchd) on the execution host is temporarily
+unreachable).
+.PP
+\f[B]TOTAL\f[]
+.PD 0
+.P
+.PD
+The total time that the job has spent in all states; for a finished job,
+it is the turnaround time (that is, the time interval from job
+submission to job completion).
+.PP
+.SH TIME FORMAT
+.PP
+The «\f[I]time0\f[], \f[I]time1\f[]» in options of \f[B]\-C\f[],
+\f[B]\-S\f[] and \f[B]\-D\f[] must conform to the following:
+.PP
+time_form = ptime,ptime | ptime, | ,ptime | itime
+.PP
+ptime = day | /day | month/ | year/month/day | year/month/day/ | hour: |
+month/day | year/month/day/hour: | year/month/day/hour:minute |
+day/hour: | month/day/hour: | day/hour:minute | hour:minute |
+month/day/hour:minute | . | .\-itime
+.PP
+itime = ptime day, month, hour, minute = two digits
+.PP
+where `ptime\[aq] stands for a specific point of time, `itime\[aq]
+stands for a specific interval of time, and `.\[aq] stands for the
+current month/day/hour:minute.
+.PP
+Keeping the following rules in mind will help you to specify the time
+freely:
+.PP
+\- \f[I]year\f[] must be 4 digits and followed by a /
+.PP
+\- \f[I]month\f[] must be followed by a / \- \f[I]day\f[] must be
+preceded by a / \- \f[I]hour\f[] must be followed by a : \-
+\f[I]minute\f[] must be preceded by a : \- The / before \f[I]day\f[] can
+be omitted when \f[I]day\f[] stands alone or when \f[I]day\f[] is
+followed by /\f[I]hour\f[]: \- No spaces are allowed in time format,
+that is, the time must be a single string.
+.PP
+The above time format is designed for easy and flexible time
+specification.
+.PP
+See the following examples:
+.PP
+Suppose the current time is Mar 9 17:06:30 2015.
+.PP
+1,8
+.RS
+from Mar 1 00:00:00 2015 to Mar 8 23:59:00 2015; ,4 or ,/4 from the time
+when first job was logged to Mar 4 23:59:00 2015;
+.RE
+6 or /6
+.RS
+from Mar 6 00:00:00 2015 to Mar 6 23:59:00 2015;
+.RE
+2/
+.RS
+from Feb 1 00:00:00 2015 to Feb 28 23:59:00 2015;
+.RE
+12:
+.RS
+from Mar 9 12:00:00 2015 to Mar 9 12:59:00 2015;
+.RE
+2/1
+.RS
+from Feb 1 00:00:00 2015 to Feb 1 23:59:00 2015;
+.RE
+2/1,
+.RS
+from Feb 1 00:00:00 to the current time;
+.RE
+,. or ,
+.RS
+from the time when first job was logged to the current time;
+.RE
+,.\-2
+.RS
+from the time when first job was logged to Mar 7 17:06:30 2015;
+.RE
+,.\-2/
+.RS
+from the time when first job was logged to Jan 9 17:06:30 2015;
+.RE
+,2/10:
+.RS
+from the time when first job was logged to Mar 2 10:59:00 2015;
+.RE
+2014/11/25,2015/1/25
+.RS
+from Nov 25 00:00:00 2014 to Jan 25 23:59:00 2015;
+.RE
+.PP
+.SH SEE ALSO
+.PP
+lsb.events(5), bsub(1), bjobs(1), lsinfo(1)
