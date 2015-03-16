@@ -372,7 +372,6 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
 
         line = getNextLine_(log_fp, FALSE);
         if (line == NULL) {
-            fclose(log_fp);
             lsberrno = LSBE_EOF;
             return NULL;
         }
@@ -757,9 +756,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
 
-    /* Version >= 3 deamon reading version < 3 events file.
-     */
-    if (version >= 3) {
+    if (version >= OPENLAVA_XDR_VERSION) {
         saveQStr(line, jobNewLog->userGroup);
     } else {
         jobNewLog->userGroup = strdup("");
@@ -981,7 +978,7 @@ readJobStart(char *line, struct jobStartLog *jobStartLog)
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
 
-    if (version >= 3) {
+    if (version >= OPENLAVA_XDR_VERSION) {
         saveQStr(line, jobStartLog->userGroup);
     } else {
         jobStartLog->userGroup = strdup("");
