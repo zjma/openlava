@@ -5808,17 +5808,19 @@ clearJobReason(void)
     struct jData *jp;
     int i;
 
-    for (i = MJL; i <= PJL; i++) {
-        for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
+    if (0) {
+        for (i = MJL; i <= PJL; i++) {
+            for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
 
-            if (jp->jFlags & JFLAG_READY2) {
-                if (jp->qPtr->reasonTb[1][0]) {
+                if (jp->jFlags & JFLAG_READY2) {
+                    if (jp->qPtr->reasonTb[1][0]) {
 
-                    jp->newReason = jp->qPtr->reasonTb[1][0];
-                } else {
-                    jp->newReason = 0;
+                        jp->newReason = jp->qPtr->reasonTb[1][0];
+                    } else {
+                        jp->newReason = 0;
+                    }
+                    jp->oldReason = jp->newReason;
                 }
-                jp->oldReason = jp->newReason;
             }
         }
     }
