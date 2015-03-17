@@ -1326,8 +1326,9 @@ preempt(void)
             struct lsfAuth auth;
             int cc;
 
-            jPtr->shared->jobBill.beginTime = time(NULL) + 300;
-            jPtr->newReason = PEND_JOB_START_TIME;
+            jPtr->shared->jobBill.beginTime = time(NULL) + 120;
+            jPtr->newReason = PEND_JOB_PREEMPTED;
+            jPtr->jFlags |= JFLAG_JOB_PREEMPTED;
 
             ls_syslog(LOG_DEBUG, "\
 %s: job %s queue %s preemption candidate", __func__,

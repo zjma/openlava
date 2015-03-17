@@ -83,25 +83,22 @@ typedef enum {
 #define JFLAG_LASTRUN_SUCC     0x002
 #define JFLAG_DEPCOND_INVALID  0x004
 
-#define JFLAG_READY            0x008
-#define JFLAG_EXACT            0x200
-#define JFLAG_UPTO             0x400
-#define JFLAG_DEPCOND_REJECT   0x8000
-#define JFLAG_SEND_SIG         0x10000
-#define JFLAG_BTOP             0x20000
-#define JFLAG_ADM_BTOP         0x40000
-#define JFLAG_READY1           0x100000
-#define JFLAG_READY2           0x200000
-#define JFLAG_URGENT           0x400000
-#define JFLAG_URGENT_NOSTOP    0x800000
-#define JFLAG_REQUEUE          0x1000000
+#define JFLAG_READY             0x008
+#define JFLAG_EXACT             0x200
+#define JFLAG_UPTO              0x400
+#define JFLAG_DEPCOND_REJECT    0x8000
+#define JFLAG_SEND_SIG          0x10000
+#define JFLAG_BTOP              0x20000
+#define JFLAG_ADM_BTOP          0x40000
+#define JFLAG_READY1            0x100000
+#define JFLAG_READY2            0x200000
+#define JFLAG_URGENT            0x400000
+#define JFLAG_URGENT_NOSTOP     0x800000
+#define JFLAG_REQUEUE           0x1000000
 #define JFLAG_HAS_BEEN_REQUEUED 0x2000000
-
-#define JFLAG_JOB_ANALYZER  0x20000000
-
-#define JFLAG_WILL_BE_PREEMPTED  0x40000000
-
-#define JFLAG_WAIT_SWITCH  0x80000000
+#define JFLAG_JOB_PREEMPTED     0x20000000
+#define JFLAG_WILL_BE_PREEMPTED 0x40000000
+#define JFLAG_WAIT_SWITCH       0x80000000
 
 
 #define M_STAGE_GOT_LOAD    0x0001

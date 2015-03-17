@@ -325,6 +325,10 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
  */
         { PEND_HOST_LOAD,
           "Load threshold reached"},
+        { PEND_JOB_PREEMPTED,
+          "Preempted job is waiting to be resumed"},
+        { PEND_JOB_REQUEUED,
+          "The job has been requeued"},
         { 0, NULL}
     };
 

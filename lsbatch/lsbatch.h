@@ -180,6 +180,7 @@
 #define PEND_SYS_UNABLE        35
 #define PEND_JOB_ARRAY_JLIMIT  38
 #define PEND_CHKPNT_DIR        39
+#define PEND_JOB_PREEMPTED     40
 
 /* Queue and sys reasons
  */

@@ -472,7 +472,10 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         }
         jReason = PEND_QUE_WINDOW_WILL_CLOSE;
     } else if (now_disp < jpbw->shared->jobBill.beginTime) {
-        jReason = PEND_JOB_START_TIME;
+        if (jpbw->jFlags & JFLAG_JOB_PREEMPTED)
+            jReason = PEND_JOB_PREEMPTED;
+        else
+            jReason = PEND_JOB_START_TIME;
     } else if (jpbw->jFlags & JFLAG_DEPCOND_INVALID) {
         jReason = PEND_JOB_DEP_INVALID;
     } else if (now_disp < jpbw->dispTime) {
@@ -544,6 +547,7 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
     }
 
     jpbw->newReason = 0;
+    jpbw->jFlags &= ~JFLAG_JOB_PREEMPTED;
 
     if (logclass & (LC_PEND))
         ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__, lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
