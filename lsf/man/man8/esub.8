@@ -23,7 +23,7 @@ is set to \fBSTART\fR, \fBEND\fR, and \fBCHKPNT\fR, respectively,
 to indicate when the eexec is invoked.
 If esub needs to pass some data to eexec,
 esub can simply write the data to stdout; eexec can get the data via its stdin.
-Thus, LSF is effectively implementing the pipe in "esub | eexec".
+Thus, OpenLava is effectively implementing the pipe in "esub | eexec".
 
 eexec is executed as the user after the job's environment variables have been
 set.  The parent job process waits for the eexec to complete before

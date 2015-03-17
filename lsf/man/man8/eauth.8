@@ -7,18 +7,18 @@ eauth \- External authentication
 .SH SYNOPSIS
 \fBLSF_SERVERDIR/eauth
 .SH DESCRIPTION
-When LSF_AUTH = eauth is set in lsf.conf, LSF uses eauth as the authentication
-mechanism instead of setuid to root.  LSF bundles a default eauth and installs
+When LSF_AUTH = eauth is set in lsf.conf, OpenLava uses eauth as the authentication
+mechanism instead of setuid to root.  OpenLava bundles a default eauth and installs
 it in LSF_SERVERDIR. 
 
-When a LSF client program is invoked, the client program
+When an OpenLava client program is invoked, the client program
 automatically executes eauth -c hostname to get the external authentication 
-data. hostname is the name of the host running the LSF daemon (for example, 
+data. hostname is the name of the host running the OpenLava daemon (for example,
 RES) on which the operation will take place.  The external user authentication 
-data can be passsed to LSF via eauth's standard output.
+data can be passsed to OpenLava via eauth's standard output.
 
-When the LSF daemon receives the request, it executes eauth -s under the 
-primary LSF administrator user ID.  eauth -s is executed to process the 
+When the OpenLava daemon receives the request, it executes eauth -s under the
+primary OpenLava administrator user ID.  eauth -s is executed to process the
 user authentication data. The data is passed to eauth -s via its standard 
 input.  The standard input stream has the following
 format:
@@ -43,12 +43,12 @@ Where:
     user_auth_data is the external user authentication encrypted data passed
     from the client.
 
-The LSF daemon expects eauth -s to write 1 to its standard output if 
+The OpenLava daemon expects eauth -s to write 1 to its standard output if
 authentication succeeds, 0r 0 if authentication fails.
 
 The user also can write and configure his site-specific eauth if they like.  
 A example of supporting Kerberos authentication's eauth can be found in 
-the examples/krb in the standard LSF distribution. 
+the examples/krb in the standard OpenLava distribution.
 
 .SH "SEE ALSO"
 .BR lsf.conf(5),

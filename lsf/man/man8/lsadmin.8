@@ -1,10 +1,10 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsadmin 8 "LSF Version 4.2 - June 2001"
+.TH lsadmin 8 "OpenLava Version 3.0 - Mar 2015"
 .br
 .SH NAME
-\fBlsadmin\fR - administrative tool for LSF
+\fBlsadmin\fR - administrative tool for OpenLava
 .SH SYNOPSIS
 .BR
 .PP
@@ -57,10 +57,10 @@
 .BR
 .PP
 .PP
-This command can only be used by LSF administrators. 
+This command can only be used by OpenLava administrators.
 .PP
 lsadmin is a tool that executes privileged commands to control LIM 
-and RES operations in an LSF cluster. 
+and RES operations in an OpenLava cluster.
 .PP
 If no subcommands are supplied for lsadmin, lsadmin prompts for 
 subcommands from the standard input.
@@ -91,7 +91,7 @@ Prints command usage to stderr and exits.
 \fB-V\fR 	 
 
 .IP
-Prints LSF release version and exits. 
+Prints OpenLava release version and exits.
 
 
 .SH USAGE
@@ -101,7 +101,7 @@ Prints LSF release version and exits.
 \fBckconfig \fR[\fB-v\fR]
 
 .IP
-Checks LSF configuration files.
+Checks OpenLava configuration files.
 
 
 .IP
@@ -377,7 +377,7 @@ cluster if all is specified.
 
 .IP
 Sets the message log level for LIM to include additional information in 
-log files. You must be root or the LSF administrator to use this 
+log files. You must be root or the OpenLava administrator to use this
 command. 
 
 .IP
@@ -391,7 +391,7 @@ values are used:
 \fIdebug_level\fR = 0 (LOG_DEBUG level in parameter LSF_LOG_MASK)
 
 .IP
-\fIlogfile_name\fR = current LSF system log file in the directory specified by 
+\fIlogfile_name\fR = current OpenLava system log file in the directory specified by
 LSF_LOGDIR in the format \fIdaemon_name.\fRlog\fI.host_name
 \fR
 .IP
@@ -520,7 +520,7 @@ If LSF_LOGDIR is not defined, daemons log to the syslog
 facility.
 
 .IP
-Default: current LSF system log file in the directory specified by 
+Default: current OpenLava system log file in the directory specified by
 LSF_LOGDIR in the format \fIdaemon_name\fR.log.\fIhost_name\fR.
 
 .RE
@@ -558,7 +558,7 @@ Default: local host (host from which command was submitted)
 
 .IP
 Sets the message log level for RES to include additional information in 
-log files. You must be the LSF administrator to use this command, not 
+log files. You must be the OpenLava administrator to use this command, not
 root.
 
 .IP
@@ -570,7 +570,7 @@ See description of limdebug for an explanation of options.
 
 .IP
 Sets timing level for LIM to include additional timing information in log 
-files. You must be root or the LSF administrator to use this command. 
+files. You must be root or the OpenLava administrator to use this command.
 
 .IP
 If the command is used without any options, the following default 
@@ -580,7 +580,7 @@ values are used:
 \fItiming_level\fR = no timing information is recorded
 
 .IP
-\fIlogfile_name\fR = current LSF system log file in the directory specified by 
+\fIlogfile_name\fR = current OpenLava system log file in the directory specified by
 LSF_LOGDIR in the format \fIdaemon_name\fR.log.\fIhost_name
 \fR
 .IP
@@ -644,7 +644,7 @@ facility.
 files.
 
 .IP
-Default: current LSF system log file in the directory specified by 
+Default: current OpenLava system log file in the directory specified by
 LSF_LOGDIR in the format \fIdaemon_name\fR.log.\fIhost_name\fR.
 
 .RE
@@ -681,7 +681,7 @@ Default: local host (host from which command was submitted)
 
 .IP
 Sets timing level for RES to include additional timing information in log 
-files. You must be the LSF administrator can use this command, not 
+files. You must be the OpenLava administrator can use this command, not
 root.
 
 .IP
