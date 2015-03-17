@@ -8,7 +8,7 @@ nios \- network I/O server for the OpenLava system
 .B LSF_SERVDIR/nios
 .SH DESCRIPTION
 .B nios
-is an application server process that is started by the \s-1LSF\s0 library 
+is an application server process that is started by the OpenLava library
 \s-1LSLIB\s0 when
 remote execution is first initiated. \fBnios\fR runs concurrently with the
 client application, transparently handling all I/O and signals to/from
@@ -74,7 +74,7 @@ client is stopped due to a SIGTSTP signal, it has to make sure that
 is stopped first by calling
 .BR ls_stoprex (3).
 In most cases, this is already
-handled by the \s-1LSF\s0 library automatically in the default SIGTSTP handler.
+handled by the OpenLava library automatically in the default SIGTSTP handler.
 If you define this signal handler explicitly in your program, you must
 call
 .BR ls_stoprex (3)

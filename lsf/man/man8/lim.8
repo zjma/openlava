@@ -22,7 +22,7 @@ the description of the \fBSERVER\fR keyword in the
 .BR lsf.cluster (5)
 for more information on server hosts and client hosts.
 .PP
-A master \s-1LIM\s0 is elected for each \s-1LSF\s0 cluster. The master
+A master \s-1LIM\s0 is elected for each OpenLava cluster. The master
 \s-1LIM\s0 receives load information from all slave \fBLIM\fRs
 and provides services to all hosts. 
 The slave \fBLIM\fRs periodically check their own load conditions and
@@ -48,7 +48,7 @@ elect a new master if the original one becomes unavailable.
 file to get the following parameters: \fBLSF_LIM_DEBUG\fR,
 \fBLSF_CONFDIR\fR, \fBLSF_SERVERDIR\fR, \fBLSF_LIM_PORT\fR, \fBLSF_LOG_MASK\fR and \fBLSF_LOGDIR\fR.
 If \fBLSF_LIM_DEBUG\fR is defined, \s-1LIM\s0 runs at the specified debug
-level. \fBLSF_CONFDIR\fR tells \s-1LIM\s0 where to find the \s-1LSF\s0 configuration
+level. \fBLSF_CONFDIR\fR tells \s-1LIM\s0 where to find the OpenLava configuration
 files. \fBLSF_SERVERDIR\fR is used by \s-1LIM\s0 during reconfiguration in
 order to locate the directory where the \s-1LIM\s0 binary is stored. 
 \fBLSF_LIM_PORT\fR is used to define the UDP port number that \s-1LIM\s0 uses for
@@ -108,7 +108,7 @@ The amount of currently available swap space, in MBytes.
 .B mem
 The amount of currently available memory, in MBytes.
 .PP
-In addition, an \s-1LSF\s0 installation can configure arbitrary 
+In addition, an OpenLava installation can configure arbitrary
 external load indices as explained below.
 .SH EXTERNAL LOAD INFORMATION MANAGER
 The load indices monitored at a site can be extended by directing the
@@ -199,7 +199,7 @@ You can customize \s-1LIM\s0 by changing the configuration files in the
 .BR lsf.conf (5)).
 The configuration file
 .BR lsf.cluster (5)
-located in that directory define \s-1LSF\s0 clusters, the resources on
+located in that directory define OpenLava clusters, the resources on
 individual hosts, the \s-1CPU\s0 speeds of individual hosts, whether a
 host is a server host or client host, the load threshold values beyond
 which a host is considered to be overloaded, the run windows during
@@ -210,7 +210,7 @@ which a host is available for load sharing, and so on.
 Print command usage to stderr and exit.
 .TP 5
 .B -V
-Print \s-1LSF\s0 release version to stderr and exit.
+Print OpenLava release version to stderr and exit.
 .TP 5
 .B -C
 Check the configuration file content with verbose error reporting
