@@ -1028,7 +1028,7 @@ xdr_queueInfoEnt(XDR *xdrs,
             xdr_int (xdrs, &qInfo->chkpntPeriod)))
         return false;
 
-    for(i = 0; i < LSF_RLIM_NLIMITS; i++) {
+    for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
         if (!(xdr_int(xdrs, &qInfo->defLimits[i])))
             return false;
     }
@@ -1097,7 +1097,10 @@ xdr_numShareAccts(XDR *xdrs,
     if (xdrs->x_op == XDR_DECODE
         && hdr->version >= 3) {
 
-        s2 = calloc(*num, sizeof(struct share_acct *));
+        if (*num == 0)
+            s2 = NULL;
+        else
+            s2 = calloc(*num, sizeof(struct share_acct *));
 
         for (i = 0; i < *num; i++) {
             s2[i] = calloc(1, sizeof(struct share_acct));
