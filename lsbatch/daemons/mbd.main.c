@@ -1296,6 +1296,10 @@ preempt(void)
     link_t *rl;
     struct jData *jPtr;
     struct qData *qPtr;
+    uint32_t numjobs;
+
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_INFO, "%s: entering ...", __func__);
 
     /* Select preemptive queues and for each
      * invoke the preemption plugin which will
@@ -1312,11 +1316,14 @@ preempt(void)
          * candidates.
          */
         if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
-            (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, 0);
+            numjobs = 0;
+            (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, &numjobs);
         }
 
         if (LINK_NUM_ENTRIES(rl) == 0) {
-            ls_syslog(LOG_DEBUG, "%s: no jobs to preempt...", __func__);
+            if (logclass & LC_PREEMPT)
+                ls_syslog(LOG_INFO, "\
+%s: leaving no jobs to preempt...", __func__);
             fin_link(rl);
             continue;
         }
@@ -1330,9 +1337,12 @@ preempt(void)
             jPtr->newReason = PEND_JOB_PREEMPTED;
             jPtr->jFlags |= JFLAG_JOB_PREEMPTED;
 
-            ls_syslog(LOG_DEBUG, "\
-%s: job %s queue %s preemption candidate", __func__,
-                      lsb_jobid2str(jPtr->jobId), jPtr->qPtr->queue);
+            if (logclass & LC_PREEMPT)
+                ls_syslog(LOG_DEBUG, "\
+%s: requeueing job %s will try to restart later", __func__,
+                          lsb_jobid2str(jPtr->jobId),
+                          jPtr->qPtr->queue);
+
             /* requeue me darling
              */
             s.sigValue = SIG_ARRAY_REQUEUE;
@@ -1353,4 +1363,7 @@ preempt(void)
         }
         fin_link(rl);
     }
+
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_INFO, "%s: leaving ...", __func__);
 }

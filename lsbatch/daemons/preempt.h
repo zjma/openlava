@@ -28,7 +28,7 @@ struct prm_sched {
     char *name;
     void *handle;
     int (*prm_init)(LIST_T *);
-    int (*prm_elect_preempt)(struct qData *, link_t *, uint32_t);
+    int (*prm_elect_preempt)(struct qData *, link_t *, uint32_t *);
 };
 
 #endif

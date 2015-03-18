@@ -23,13 +23,16 @@
 int
 prm_init(LIST_T *qList)
 {
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_INFO, "%s: plugin initialized", __func__);
+
     return 0;
 }
 
 /* Elect jobs to be preempted
  */
 int
-prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
+prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
 {
     link_t *jl;
     struct jData *jPtr;
@@ -37,6 +40,10 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
     uint32_t numPEND;
     uint32_t numSLOTS;
     linkiter_t iter;
+
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_INFO, "%s: entering queue %s",
+                  __func__, qPtr->queue);
 
     /* Job in the preemptable candidate list
      * that will other jobs to be requeued.
@@ -47,7 +54,13 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
      */
     jPtr = qPtr->lastJob;
     if (jPtr == NULL) {
+
         fin_link(jl);
+
+        if (logclass & LC_PREEMPT)
+            ls_syslog(LOG_INFO, "\
+%s: No jobs to trigger preemption in queue %s",
+                      __func__, qPtr->queue);
         return 0;
     }
 
@@ -64,6 +77,10 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
             /* Save the candidate pn jl
              */
             push_link(jl, jPtr);
+            if (logclass & LC_PREEMPT)
+                ls_syslog(LOG_INFO, "\
+%s: job %s queue %s can trigger preemption", __func__,
+                          lsb_jobid2str(jPtr->jobId), qPtr->queue);
         }
 
         /* Fine della coda
@@ -76,11 +93,17 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
 
     if (numPEND == 0) {
         fin_link(jl);
+
+        if (logclass & LC_PREEMPT)
+            ls_syslog(LOG_INFO, "\
+%s: No pending jobs to trigger preemption in queue %s",
+                      __func__, qPtr->queue);
+
         return 0;
     }
 
-    if (numjobs == 0)
-        numjobs = UINT32_MAX;
+    if (*numjobs == 0)
+        *numjobs = UINT32_MAX;
 
     /* Traverse candidate list
      */
@@ -98,6 +121,13 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
         num = 0;
 
         while ((qPtr2 = traverse_link(&iter))) {
+
+            if (logclass & LC_PREEMPT)
+                ls_syslog(LOG_INFO, "\
+%s: job %s queue %s trying to canibalize %d slots in queue %s",
+                          __func__, lsb_jobid2str(jPtr->jobId),
+                          numSLOTS, qPtr->queue, qPtr2->queue);
+
             /* Search on SJL jobs belonging to the
              * preemptable queue and harvest slots.
              * later we want to eventually break out
@@ -114,16 +144,28 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t numjobs)
 
                 num = num + jPtr2->shared->jobBill.numProcessors;
                 push_link(rl, jPtr2);
+
+                if (logclass & LC_PREEMPT)
+                    ls_syslog(LOG_INFO, "\
+%s: job %s gives %d slots got %d want %d", __func__,
+                              lsb_jobid2str(jPtr2->jobId),
+                              jPtr2->shared->jobBill.numProcessors,
+                              num, numSLOTS);
+
                 if (num >= numSLOTS)
                     goto pryc;
             }
         }
     pryc:;
-        if (LINK_NUM_ENTRIES(rl) >= numjobs)
+        if (LINK_NUM_ENTRIES(rl) >= *numjobs)
             break;
     }
 
     fin_link(jl);
+
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_INFO, "%s: leaving queue %s",
+                  __func__, qPtr->queue);
 
     return LINK_NUM_ENTRIES(rl);
 }
