@@ -1309,21 +1309,19 @@ preempt(void)
          qPtr != qDataList;
          qPtr = qPtr->forw) {
 
+        numjobs = 0;
+        if (! (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE))
+            continue;
+
         rl = make_link();
 
         /* The current queue is preemptable
          * the rl link will have the preemption
          * candidates.
          */
-        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
-            numjobs = 0;
-            (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, &numjobs);
-        }
+        (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, &numjobs);
 
         if (LINK_NUM_ENTRIES(rl) == 0) {
-            if (logclass & LC_PREEMPT)
-                ls_syslog(LOG_INFO, "\
-%s: leaving no jobs to preempt...", __func__);
             fin_link(rl);
             continue;
         }
