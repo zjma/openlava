@@ -725,26 +725,27 @@ freeQueueInfoReply (struct queueInfoReply *reply, char *freeAll)
         return;
     }
     for (i = 0; i < reply->numQueues; i++) {
-        FREEUP (reply->queues[i].windows);
-        FREEUP (reply->queues[i].windowsD);
-        FREEUP (reply->queues[i].defaultHostSpec);
-
-        FREEUP (reply->queues[i].userList);
-        FREEUP (reply->queues[i].hostList);
-        FREEUP (reply->queues[i].hostSpec);
-        FREEUP (reply->queues[i].admins);
-        FREEUP (reply->queues[i].preCmd);
-        FREEUP (reply->queues[i].postCmd);
-        FREEUP (reply->queues[i].prepostUsername);
-        FREEUP (reply->queues[i].requeueEValues);
-        FREEUP (reply->queues[i].resReq);
-        FREEUP (reply->queues[i].resumeCond);
-        FREEUP (reply->queues[i].stopCond);
-        FREEUP (reply->queues[i].jobStarter);
-        FREEUP (reply->queues[i].suspendActCmd);
-        FREEUP (reply->queues[i].resumeActCmd);
-        FREEUP (reply->queues[i].terminateActCmd);
-        FREEUP (reply->queues[i].chkpntDir);
+        FREEUP(reply->queues[i].windows);
+        FREEUP(reply->queues[i].windowsD);
+        FREEUP(reply->queues[i].defaultHostSpec);
+        FREEUP(reply->queues[i].userList);
+        FREEUP(reply->queues[i].hostList);
+        FREEUP(reply->queues[i].hostSpec);
+        FREEUP(reply->queues[i].admins);
+        FREEUP(reply->queues[i].preCmd);
+        FREEUP(reply->queues[i].postCmd);
+        FREEUP(reply->queues[i].prepostUsername);
+        FREEUP(reply->queues[i].requeueEValues);
+        FREEUP(reply->queues[i].resReq);
+        FREEUP(reply->queues[i].resumeCond);
+        FREEUP(reply->queues[i].stopCond);
+        FREEUP(reply->queues[i].jobStarter);
+        FREEUP(reply->queues[i].suspendActCmd);
+        FREEUP(reply->queues[i].resumeActCmd);
+        FREEUP(reply->queues[i].terminateActCmd);
+        FREEUP(reply->queues[i].chkpntDir);
+        _free_(reply->queues[i].saccts);
+        _free_(reply->queues[i].preemption);
     }
     FREEUP (reply->queues);
 }
