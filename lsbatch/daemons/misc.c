@@ -854,17 +854,16 @@ lsbFreeResVal (struct resVal **resVal)
 }
 
 void
-doDaemonHang(char *caller)
+doDaemonHang(const char *caller)
 {
-    char fname[] = "doDaemonHang()";
     struct timeval timeval;
-    bool_t hanging = TRUE;
+    bool_t hang;
 
-    while(hanging) {
-        timeval.tv_sec = 20;
+    hang = true;
+    while (hang) {
+        timeval.tv_sec = 2;
         timeval.tv_usec = 0;
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8271,
-            "%s hanging in %s"), fname , caller); /* catgets 8271 */
+        ls_syslog(LOG_ERR, "%s hanging in %s", __func__ , caller);
         select(0, NULL, NULL, NULL, &timeval);
     }
 }

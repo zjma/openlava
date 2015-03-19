@@ -562,8 +562,8 @@ extern float normalizeRq_(float rawql, float cpuFactor, int nprocs);
 extern void daemon_doinit(void);
 
 extern void scaleByFactor(int *, int *, float);
-extern int execNqsi (u_long, int, int, int *, char *, int, char *);
-extern void doDaemonHang(char *);
+extern int execNqsi(u_long, int, int, int *, char *, int, char *);
+extern void doDaemonHang(const char *);
 
 
 #endif
