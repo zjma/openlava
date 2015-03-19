@@ -52,11 +52,12 @@ checkHosts(struct infoReq *hostsReqPtr,
            struct hostDataReply *hostsReplyPtr)
 {
     struct hData *hData;
-    struct hData **hDList = NULL;
+    struct hData **hDList;
     struct gData *gp;
     int i;
     int k;
     int numHosts = 0;
+    int cc;
 
     ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
@@ -74,12 +75,13 @@ checkHosts(struct infoReq *hostsReqPtr,
         }
     }
 
-    if (hDList == NULL)
-        hDList = my_calloc(numofhosts(),
-                           sizeof (struct hData *), "checkHosts");
+    hDList = my_calloc(numofhosts(),
+                       sizeof (struct hData *), "checkHosts");
 
-    if (hostsReqPtr->numNames == 0)
-        return (getAllHostInfoEnt (hostsReplyPtr, hDList, hostsReqPtr));
+    if (hostsReqPtr->numNames == 0) {
+        cc = getAllHostInfoEnt(hostsReplyPtr, hDList, hostsReqPtr);
+        goto via;
+    }
 
     for (i = 0; i < hostsReqPtr->numNames; i++) {
 
@@ -107,11 +109,11 @@ checkHosts(struct infoReq *hostsReqPtr,
 
 
         if (gp->memberTab.numEnts != 0 || gp->numGroups != 0) {
-
             char *members;
             char *rest, *host;
             char found = TRUE;
-            members = getGroupMembers (gp, TRUE);
+
+            members = getGroupMembers(gp, TRUE);
             rest = members;
             host = rest;
             while (found) {
@@ -144,17 +146,21 @@ checkHosts(struct infoReq *hostsReqPtr,
             free (members);
         } else {
 
-            return (getAllHostInfoEnt (hostsReplyPtr, hDList, hostsReqPtr));
+            cc = getAllHostInfoEnt(hostsReplyPtr, hDList, hostsReqPtr);
+            goto via;
         }
     }
 
     if (numHosts == 0) {
         FREEUP(hDList);
-        return (LSBE_BAD_HOST);
+        return LSBE_BAD_HOST;
     }
 
-    return (returnHostInfo(hostsReplyPtr, numHosts, hDList, hostsReqPtr));
+    cc = returnHostInfo(hostsReplyPtr, numHosts, hDList, hostsReqPtr);
 
+via:
+    _free_(hDList);
+    return cc;
 }
 
 static int
