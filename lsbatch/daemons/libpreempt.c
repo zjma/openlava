@@ -122,11 +122,14 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
 
         while ((qPtr2 = traverse_link(&iter))) {
 
+            if (qPtr2->numPEND == 0)
+                continue;
+
             if (logclass & LC_PREEMPT)
                 ls_syslog(LOG_INFO, "\
 %s: job %s queue %s trying to canibalize %d slots in queue %s",
                           __func__, lsb_jobid2str(jPtr->jobId),
-                          numSLOTS, qPtr->queue, qPtr2->queue);
+                          qPtr2->queue, numSLOTS, qPtr->queue, qPtr2->queue);
 
             /* Search on SJL jobs belonging to the
              * preemptable queue and harvest slots.
@@ -147,7 +150,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
 
                 if (logclass & LC_PREEMPT)
                     ls_syslog(LOG_INFO, "\
-%s: job %s gives %d slots got %d want %d", __func__,
+%s: job %s gives up %d slots got %d want %d", __func__,
                               lsb_jobid2str(jPtr2->jobId),
                               jPtr2->shared->jobBill.numProcessors,
                               num, numSLOTS);
