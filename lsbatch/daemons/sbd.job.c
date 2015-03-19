@@ -206,7 +206,7 @@ sendNotification(struct jobCard *jobCardPtr)
         STRNCPY(myhostnm, "localhost", sizeof(myhostnm));
     }
     fprintf(mail, _i18n_msg_get(ls_catd , NL_SETN, 400,
-                                "Sender: LSF System <%s@%s>\n"), /* catgets 400 */
+                                "Sender: OpenLava System <%s@%s>\n"), /* catgets 400 */
             lsbManager, myhostnm);
     fprintf(mail, _i18n_msg_get(ls_catd , NL_SETN, 401,
                                 "Subject: Job %s: <%s> started.\n"), /* catgets 401 */
@@ -1644,7 +1644,7 @@ send_results (struct jobCard *jp)
     }
 
     fprintf(notif, _i18n_msg_get(ls_catd , NL_SETN, 416,
-                                 "Sender: LSF System <%s@%s>\n"), /* catgets 416 */
+                                 "Sender: OpenLava System <%s@%s>\n"), /* catgets 416 */
             lsbManager,
             myhostnm);
 
