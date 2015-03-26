@@ -55,7 +55,7 @@ main(int argc, char **argv)
     /* This is the image docker will use to create
      * a container in which to run the job
      */
-    container = getenv("LSB_DOCKER_IMAGE");
+    container = getenv("LSB_DOCKER_CONTAINER");
 
     /* The jobId is used as the name of the container
      * so job control action can use jobId and use
