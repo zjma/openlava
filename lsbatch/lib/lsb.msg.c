@@ -1,4 +1,5 @@
-/* $Id: lsb.msg.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -25,63 +26,66 @@ int
 lsb_msgjob(LS_LONG_INT jobId, char *msg)
 {
     struct lsbMsg jmsg;
-    char src[LSB_MAX_SD_LENGTH];
-    char dest[LSB_MAX_SD_LENGTH];
-    struct lsbMsgHdr header;
-    char request_buf[MSGSIZE];
+    char *request_buf;
     char *reply_buf;
     XDR xdrs;
     mbdReqType mbdReqtype;
     int cc;
+    int len;
     struct LSFHeader hdr;
+    struct lsfAuth auth;
 
-    struct passwd *pw;
+    if (authTicketTokens_(&auth, NULL) == -1)
+        return -1;
 
-    header.src = src;
-    header.dest = dest;
-    jmsg.header = &header;
+    jmsg.jobId = jobId;
+    jmsg.msg = msg;
 
-    TIMEIT(0, (pw = getpwuid(getuid())), "getpwuid");
-    if (pw == NULL) {
-	lsberrno = LSBE_BAD_USER;
-	return(-1);
+    len = sizeof(struct lsbMsg) + ALIGNWORD_(strlen(jmsg.msg) + 1);
+    len = len * sizeof(int);
+
+    request_buf = calloc(len, sizeof(char));
+    if (request_buf == NULL) {
+        return -1;
+
     }
 
-    jmsg.header->usrId = pw->pw_uid;
-    jmsg.header->jobId = jobId;
-    jmsg.msg = msg;
-    strcpy(jmsg.header->src, "lsbatch");
-    strcpy(jmsg.header->dest, "user job");
-    jmsg.header->msgId = 999;
-    jmsg.header->type = -1;
-     
     mbdReqtype = BATCH_JOB_MSG;
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
 
     hdr.opCode = mbdReqtype;
-    if (!xdr_encodeMsg(&xdrs, (char *)&jmsg, &hdr, xdr_lsbMsg, 0,
-		       NULL)) {
+    if (!xdr_encodeMsg(&xdrs,
+                       (char *)&jmsg,
+                       &hdr,
+                       xdr_lsbMsg, 0,
+		       &auth)) {
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
-    cc = callmbd(NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
-		 &hdr, NULL, NULL, NULL);
-    
+    cc = callmbd(NULL,
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 &reply_buf,
+		 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
+
     if (cc < 0) {
 	xdr_destroy(&xdrs);
-	return(-1);
+	return -1;
     }
 
     xdr_destroy(&xdrs);
-    if (cc != 0)
+    if (cc)
         free(reply_buf);
 
     lsberrno = hdr.opCode;
     if (lsberrno == LSBE_NO_ERROR)
-        return(0);
-    else 
-        return(-1);
-} 
+        return 0;
+
+    return -1;
+}
 

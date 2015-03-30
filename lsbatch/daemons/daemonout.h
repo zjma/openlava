@@ -1,4 +1,5 @@
-/* $Id: daemonout.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,7 +34,6 @@
 #define  GET_LOW(s, word)  (s = word & 0x0000ffff)
 #define  GET_HIGH(s, word) (s = (word >> 16) & 0x0000ffff)
 
-
 #define PREPARE_FOR_OP          1024
 #define READY_FOR_OP            1023
 
@@ -67,15 +67,10 @@ typedef enum {
     BATCH_RESOURCE_INFO = 30,
     BATCH_RUSAGE_JOB    = 32,
     BATCH_JOB_FORCE      = 37,
-
     BATCH_UNUSED_38      = 38,
     BATCH_UNUSED_39      = 39,
-
     BATCH_STATUS_CHUNK   = 40,
-
-
     BATCH_SET_JOB_ATTR    = 90,
-
 } mbdReqType;
 
 #define SUB_RLIMIT_UNIT_IS_KB 0x80000000
@@ -275,30 +270,20 @@ struct migReq {
 };
 
 typedef enum {
-
     MBD_NEW_JOB_KEEP_CHAN = 0,
-
-
-        MBD_NEW_JOB     = 1,
-        MBD_SIG_JOB     = 2,
-        MBD_SWIT_JOB    = 3,
-        MBD_PROBE       = 4,
-        MBD_REBOOT      = 5,
-        MBD_SHUTDOWN    = 6,
-	CMD_SBD_DEBUG   = 7,
-        UNUSED_8        = 8,
-	MBD_MODIFY_JOB  = 9,
-
-        SBD_JOB_SETUP   = 100,
-        SBD_SYSLOG      = 101,
-        SBD_DONE_MSG_JOB = 102,
-
-        RM_JOB_MSG      = 200,
-        RM_CONNECT      = 201,
-
-
-    CMD_SBD_REBOOT      = 300,
-    CMD_SBD_SHUTDOWN    = 301
+    MBD_NEW_JOB     = 1,
+    MBD_SIG_JOB     = 2,
+    MBD_SWIT_JOB    = 3,
+    MBD_PROBE       = 4,
+    MBD_REBOOT      = 5,
+    MBD_SHUTDOWN    = 6,
+    CMD_SBD_DEBUG   = 7,
+    UNUSED_8        = 8,
+    MBD_MODIFY_JOB  = 9,
+    SBD_JOB_SETUP   = 100,
+    SBD_SYSLOG      = 101,
+    CMD_SBD_REBOOT   = 300,
+    CMD_SBD_SHUTDOWN = 301
 } sbdReqType;
 
 
@@ -307,37 +292,42 @@ struct lenDataList {
     struct lenData *jf;
 };
 
-
-extern void initTab (struct hTab *tabPtr);
-extern hEnt *addMemb (struct hTab *tabPtr, LS_LONG_INT member);
-extern char remvMemb (struct hTab *tabPtr, LS_LONG_INT member);
-extern hEnt *chekMemb (struct hTab *tabPtr, LS_LONG_INT member);
-extern hEnt *addMembStr (struct hTab *tabPtr, char *member);
-extern char remvMembStr (struct hTab *tabPtr, char *member);
-extern hEnt *chekMembStr (struct hTab *tabPtr, char *member);
-extern void convertRLimit(int *pRLimits, int toKb);
-extern int limitIsOk_(int *rLimits);
-
-extern int handShake_(int , char, int);
+extern void initTab(struct hTab *);
+extern hEnt *addMemb(struct hTab *, LS_LONG_INT);
+extern char remvMemb(struct hTab *, LS_LONG_INT);
+extern hEnt *chekMemb(struct hTab *, LS_LONG_INT);
+extern hEnt *addMembStr(struct hTab *, char *);
+extern char remvMembStr(struct hTab *, char *);
+extern hEnt *chekMembStr(struct hTab *, char *);
+extern void convertRLimit(int *, int);
+extern int limitIsOk_(int *);
+extern int handShake_(int ,char, int);
 
 #define CALL_SERVER_NO_WAIT_REPLY 0x1
 #define CALL_SERVER_USE_SOCKET    0x2
 #define CALL_SERVER_NO_HANDSHAKE  0x4
 #define CALL_SERVER_ENQUEUE_ONLY  0x8
-extern int call_server(char *, ushort, char *, int, char **,
-               struct LSFHeader *, int, int, int *, int (*)(),
-               int *, int);
-
-extern int sndJobFile_(int, struct lenData *);
-
+extern int call_server(char *,
+                       ushort,
+                       char *,
+                       int,
+                       char **,
+                       struct LSFHeader *,
+                       int,
+                       int,
+                       int *,
+                       int (*)(),
+                       int *,
+                       int);
+/* To do: find out why this header file is included
+ * in here.
+ */
 #include "../lib/lsb.xdr.h"
-
+extern int sndJobFile_(int, struct lenData *);
 extern struct group *mygetgrnam(const char *);
 extern void freeUnixGrp(struct group *);
 extern struct group *copyUnixGrp(struct group *);
-
-extern void freeGroupInfoReply(struct groupInfoReply *reply);
-
-extern void appendEData(struct lenData *jf, struct lenData *ed);
+extern void freeGroupInfoReply(struct groupInfoReply *);
+extern void appendEData(struct lenData *, struct lenData *);
 
 #endif

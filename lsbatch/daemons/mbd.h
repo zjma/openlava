@@ -1013,7 +1013,6 @@ extern int                  signalJob(struct signalReq *, struct lsfAuth *);
 extern int                  statusJob(struct statusReq *, struct hostent *,
                                       int *);
 extern int                  rusageJob(struct statusReq *, struct hostent *);
-extern int                  statusMsgAck(struct statusReq *);
 extern int                  switchJobArray(struct jobSwitchReq *,
                                            struct lsfAuth *);
 extern int                  sbatchdJobs(struct sbdPackage *, struct hData *);
@@ -1330,6 +1329,7 @@ extern void                 log_jobclean(struct jData *);
 extern void                 log_jobforward(struct jData *);
 extern void                 log_statusack(struct jData *);
 extern void                 log_logSwitch(int);
+extern void                 log_jobmsg(struct jData *, struct lsbMsg *);
 extern void                 replay_requeuejob(struct jData *);
 extern int                  init_log(void);
 extern void                 switchELog(void);
@@ -1343,8 +1343,6 @@ extern int                  readLogJobInfo(struct jobSpecs *, struct jData *,
                                            struct lenData *, struct lenData *);
 extern void                 log_signaljob(struct jData *, struct signalReq *,
                                           int, char *);
-extern void                 log_jobmsg(struct jData *, struct lsbMsg *, int);
-extern void                 log_jobmsgack(struct bucket *);
 extern char *               readJobInfoFile(struct jData *, int *);
 extern void                 writeJobInfoFile(struct jData * , char *, int);
 extern int                  replaceJobInfoFile(char *, char *, char *, int);

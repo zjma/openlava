@@ -972,7 +972,6 @@ struct jobNewLog {
 };
 
 struct jobModLog {
-
     char    *jobIdStr;
     int     options;
     int     options2;
@@ -1364,19 +1363,12 @@ struct sortIntList {
     struct sortIntList *back;
 };
 
-#define LSB_MAX_SD_LENGTH 128
-struct lsbMsgHdr {
-    int                usrId;
-    LS_LONG_INT        jobId;
-    int                msgId;
-    int                type;
-    char               *src;
-    char               *dest;
-};
-
+/* lsb_postmsg()/lsb_readmsg()
+ */
+#define LSB_MAX_MSGSIZE (1024 * 8)
 struct lsbMsg {
-    struct lsbMsgHdr * header;
-    char *             msg;
+    LS_LONG_INT jobId;
+    char *msg;
 };
 
 

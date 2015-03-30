@@ -191,7 +191,7 @@ call_server (char * host,
                       replyBufPtr,
                       replyHdr,
 		      recv_timeout * 1000);
-	if ( cc < 0 ) {
+	if (cc < 0) {
 	    lsberrno = LSBE_LSLIB;
 	    CLOSECD(serverSock);
 	    return(-1);

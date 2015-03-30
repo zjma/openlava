@@ -59,8 +59,6 @@ static int              replay_modifyjob2(char *, int);
 
 static struct jData    *replay_jobdata(char *, int, char *);
 static int              replay_signaljob(char *, int);
-static int              replay_jobmsg(char *, int);
-static int              replay_jobmsgack(char *, int);
 static int              replay_jobsigact(char *, int);
 static int              replay_jobrequeue(char *, int);
 static int              replay_cleanjob(char *, int);
@@ -371,10 +369,6 @@ replay_event(char *filename, int lineNum)
             return (replay_executejob(filename, lineNum));
         case EVENT_JOB_START_ACCEPT:
             return (replay_startjobaccept(filename, lineNum));
-        case EVENT_JOB_MSG:
-            return (replay_jobmsg(filename, lineNum));
-        case EVENT_JOB_MSG_ACK:
-            return (replay_jobmsgack(filename, lineNum));
         case EVENT_JOB_SIGACT:
             return (replay_jobsigact(filename, lineNum));
         case EVENT_JOB_REQUEUE:
@@ -386,13 +380,13 @@ replay_event(char *filename, int lineNum)
         case EVENT_LOG_SWITCH:
             return (replay_logSwitch(filename, lineNum));
         default:
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6708,
-                                             "%s: File %s at line %d: Invalid event_type <%c>"), /* catgets 6708 */
+            ls_syslog(LOG_ERR, "\
+%s: File %s at line %d: Invalid event_type <%c>",
                       fname,
                       filename,
                       lineNum,
                       logPtr->type);
-            return (FALSE);
+            return FALSE;
     }
 }
 
@@ -3876,76 +3870,8 @@ getSignalSymbol(const struct signalReq *sigPtr)
 }
 
 void
-log_jobmsg(struct jData * jp, struct lsbMsg * jmsg, int userId)
+log_jobmsg(struct jData * jp, struct lsbMsg * jmsg)
 {
-    static char             fname[] = "log_jobmsg";
-
-    if (openEventFile("log_jobmsg") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jp->jobId), "openEventFile");
-            mbdDie(MASTER_FATAL);
-    }
-    logPtr->type = EVENT_JOB_MSG;
-    logPtr->eventLog.jobMsgLog.usrId = userId;
-    logPtr->eventLog.jobMsgLog.jobId = LSB_ARRAY_JOBID(jp->jobId);
-    logPtr->eventLog.jobMsgLog.idx = LSB_ARRAY_IDX(jp->jobId);
-    logPtr->eventLog.jobMsgLog.msgId = jmsg->header->msgId;
-    logPtr->eventLog.jobMsgLog.type = jmsg->header->type;
-    logPtr->eventLog.jobMsgLog.src = safeSave(jmsg->header->src);
-    logPtr->eventLog.jobMsgLog.dest = safeSave(jmsg->header->dest);
-    logPtr->eventLog.jobMsgLog.msg = safeSave(jmsg->msg);
-
-    if (putEventRec("log_jobmsg") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jp->jobId), "putEventRec");
-        mbdDie(MASTER_FATAL);
-    }
-}
-
-void
-log_jobmsgack(struct bucket * bucket)
-{
-    static char             fname[] = "log_jobmsgack";
-    struct jData           *jp;
-
-    LSBMSG_DECL(header, jmsg);
-
-    LSBMSG_INIT(header, jmsg);
-    jp = getJobData(bucket->proto.jobId);
-    if (jp == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6715,
-                                         "%s: Job <%d> not found in job list "),
-                  fname,
-                  logPtr->eventLog.jobMsgAckLog.jobId);
-    }
-    if (openEventFile("log_donemsgjob") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jp->jobId), "openEventFile");
-            mbdDie(MASTER_FATAL);
-    }
-    xdr_setpos(&bucket->xdrs, LSF_HEADER_LEN);
-    if (!xdr_lsbMsg(&bucket->xdrs, &jmsg, NULL)) {
-
-        return;
-    }
-    logPtr->type = EVENT_JOB_MSG_ACK;
-    logPtr->eventLog.jobMsgAckLog.usrId = jmsg.header->usrId;
-    logPtr->eventLog.jobMsgAckLog.jobId = LSB_ARRAY_JOBID(jmsg.header->jobId);
-    logPtr->eventLog.jobMsgAckLog.idx = LSB_ARRAY_IDX(jmsg.header->jobId);
-    logPtr->eventLog.jobMsgAckLog.msgId = jmsg.header->msgId;
-    logPtr->eventLog.jobMsgAckLog.type = jmsg.header->type;
-    logPtr->eventLog.jobMsgAckLog.src = safeSave(jmsg.header->src);
-    logPtr->eventLog.jobMsgAckLog.dest = safeSave(jmsg.header->dest);
-    logPtr->eventLog.jobMsgAckLog.msg = safeSave(jmsg.msg);
-    if (bucket->xdrs.x_op == XDR_DECODE && jmsg.msg)
-        FREEUP (jmsg.msg);
-
-    if (putEventRec("log_donemsgjob") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jp->jobId), "putEventRec");
-        mbdDie(MASTER_FATAL);
-    }
-
 }
 
 static int
@@ -4047,133 +3973,6 @@ replay_arrayrequeue(struct jData *jPtr,
 
     return(0);
 
-}
-
-static int
-replay_jobmsg(char *filename, int lineNum)
-{
-    static char             fname[] = "replay_jobmsg";
-    int                     len;
-    struct jData           *jp;
-    struct bucket          *bucket;
-    struct Buffer          *buf;
-    struct lsbMsgHdr        jmHdr;
-    struct lsbMsg           jmsg;
-    struct LSFHeader        lsfHdr;
-    LS_LONG_INT             jobId;
-
-    jobId = LSB_JOBID(logPtr->eventLog.jobMsgLog.jobId,
-                      logPtr->eventLog.jobMsgLog.idx);
-    if ((jp = getJobData(jobId)) == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6709,
-                                         "%s: File %s at line %d: Job <%d> not found in job list "),
-                  fname,
-                  filename,
-                  lineNum,
-                  logPtr->eventLog.jobMsgLog.jobId);
-
-        return (FALSE);
-    }
-
-
-    len = LSF_HEADER_LEN + 4 * sizeof(int) +
-        strlen(logPtr->eventLog.jobMsgLog.src) + 1 +
-        strlen(logPtr->eventLog.jobMsgLog.dest) + 1 +
-        strlen(logPtr->eventLog.jobMsgLog.msg) + 1;
-
-    while (len % sizeof(char *)) len++;
-    len += sizeof(char *);
-
-    if (chanAllocBuf_(&buf, len) < 0) return FALSE;
-    NEW_BUCKET(bucket, buf);
-    if (! bucket) return FALSE;
-
-    buf->len = len;
-    bucket->proto.usrId = logPtr->eventLog.jobMsgLog.usrId;
-    bucket->proto.jobId = LSB_JOBID(logPtr->eventLog.jobMsgLog.jobId,
-                                    logPtr->eventLog.jobMsgLog.idx);
-    bucket->proto.msgId = logPtr->eventLog.jobMsgLog.msgId;
-    bucket->bufstat = MSG_STAT_QUEUED;
-
-    lsfHdr.opCode = BATCH_JOB_MSG;
-    xdrmem_create(&bucket->xdrs, buf->data, buf->len, XDR_ENCODE);
-
-    jmHdr.usrId = logPtr->eventLog.jobMsgLog.usrId;
-    jmHdr.msgId = logPtr->eventLog.jobMsgLog.msgId;
-    jmHdr.jobId = LSB_JOBID(logPtr->eventLog.jobMsgLog.jobId,
-                            logPtr->eventLog.jobMsgLog.idx);
-    jmHdr.type = logPtr->eventLog.jobMsgLog.type;
-    jmHdr.src = logPtr->eventLog.jobMsgLog.src;
-    jmHdr.dest = logPtr->eventLog.jobMsgLog.dest;
-    jmsg.header = &jmHdr;
-    jmsg.msg = logPtr->eventLog.jobMsgLog.msg;
-
-    if (!xdr_encodeMsg(&bucket->xdrs, (char *)&jmsg,
-                       &lsfHdr, xdr_lsbMsg, 0, NULL)) {
-
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
-        chanFreeBuf_(buf);
-        return (-1);
-    }
-
-
-    QUEUE_APPEND(bucket, jp->hPtr[0]->msgq[MSG_STAT_QUEUED]);
-    buf->stashed = TRUE;
-
-    return (TRUE);
-
-}
-
-static int
-replay_jobmsgack(char *filename, int lineNum)
-{
-    static char             fname[] = "replay_jobmsgack";
-    struct jData           *jp;
-    struct bucket          *bucket;
-    int                     found;
-    LS_LONG_INT             jobId;
-
-    jobId = LSB_JOBID(logPtr->eventLog.jobMsgAckLog.jobId,
-                      logPtr->eventLog.jobMsgAckLog.idx);
-    if ((jp = getJobData(jobId)) == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6709,
-                                         "%s: File %s at line %d: Job <%d> not found in job list "),
-                  fname,
-                  filename,
-                  lineNum,
-                  logPtr->eventLog.jobMsgAckLog.jobId);
-
-        return (FALSE);
-    }
-
-
-    bucket = jp->hPtr[0]->msgq[MSG_STAT_QUEUED];
-
-    found = FALSE;
-    while (1) {
-        if (bucket->forw == bucket)
-            break;
-
-        if (bucket->proto.jobId == jobId &&
-            bucket->proto.msgId == logPtr->eventLog.jobMsgAckLog.msgId) {
-
-            found = TRUE;
-            break;
-        }
-        bucket = bucket->forw;
-    }
-
-    if (found) {
-
-        bucket->bufstat = MSG_STAT_RCVD;
-        QUEUE_REMOVE(bucket);
-        chanFreeStashedBuf_(bucket->storage);
-        FREE_BUCKET(bucket);
-    } else {
-        return(FALSE);
-    }
-
-    return (TRUE);
 }
 
 static void

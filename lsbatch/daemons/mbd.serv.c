@@ -21,7 +21,6 @@
 #include "mbd.h"
 #include "fairshare.h"
 
-static unsigned int     msgcnt = 0;
 extern int numLsbUsable;
 extern char *env_dir;
 extern int lsb_CheckMode;
@@ -829,6 +828,10 @@ Reply:
 
 }
 
+/* do_jobMsg()
+ *
+ * Append a message to a job.
+ */
 int
 do_jobMsg(struct bucket *bucket,
           XDR *xdrs,
@@ -841,17 +844,14 @@ do_jobMsg(struct bucket *bucket,
     char reply_buf[MSGSIZE];
     XDR xdrs2;
     int reply;
-    struct LSFHeader sndhdr;
     struct LSFHeader replyHdr;
     struct jData *jpbw;
-    struct bucket *msgq;
-    struct Buffer *buf = bucket->storage;
-
-    LSBMSG_DECL(header, jmsg);
-    LSBMSG_INIT(header, jmsg);
+    struct lsbMsg jmsg;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
         ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
+
+    jmsg.msg = calloc(LSB_MAX_MSGSIZE, sizeof(char));
 
     if (!xdr_lsbMsg(xdrs, &jmsg, reqHdr)) {
         reply = LSBE_XDR;
@@ -859,74 +859,48 @@ do_jobMsg(struct bucket *bucket,
         goto Reply;
     }
 
-
-    jmsg.header->msgId = msgcnt;
-    msgcnt++;
-
-
-    LSBMSG_CACHE_BUFFER(bucket, jmsg);
-
-    sndhdr.opCode = BATCH_JOB_MSG;
-    xdrmem_create(&bucket->xdrs, buf->data, buf->len, XDR_ENCODE);
-
-    if (! xdr_encodeMsg(&bucket->xdrs, (char *)&jmsg,
-                        &sndhdr, xdr_lsbMsg, 0, NULL)) {
-
-        reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
-        goto Reply;
-    }
-    xdr_destroy(&bucket->xdrs);
-    xdrmem_create(&bucket->xdrs, buf->data, buf->len, XDR_DECODE);
-
-
-    if ((jpbw = getJobData(jmsg.header->jobId)) == NULL) {
+    if ((jpbw = getJobData(jmsg.jobId)) == NULL) {
         reply = LSBE_NO_JOB;
+        _free_(jmsg.msg);
         goto Reply;
     }
 
-    if (IS_PEND (jpbw->jStatus)) {
-        reply = LSBE_NOT_STARTED;
-        goto Reply;
-    }
+    log_jobmsg(jpbw, &jmsg);
+    _free_(jmsg.msg);
 
-    log_jobmsg(jpbw, &jmsg, jmsg.header->usrId);
-
-
-    msgq = jpbw->hPtr[0]->msgq[MSG_STAT_QUEUED];
-    eventPending = TRUE;
-
-    if (logclass & (LC_SIGNAL))
-        ls_syslog(LOG_DEBUG2, "%s: A message for job %s; eP=%d",
-                  __func__, lsb_jobid2str(jpbw->jobId), eventPending);
-
-    QUEUE_APPEND(bucket, msgq);
-    bucket->storage->stashed = TRUE;
     reply = LSBE_NO_ERROR;
 
 Reply:
+
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
     replyHdr.opCode = reply;
 
-    if (!xdr_encodeMsg(&xdrs2, (char *) NULL, &replyHdr, xdr_int, 0, NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_encodeMsg");
+    if (!xdr_encodeMsg(&xdrs2,
+                       NULL,
+                       &replyHdr,
+                       NULL,
+                       0,
+                       NULL)) {
+        ls_syslog(LOG_ERR, "%s: xdr encode failed", __func__);
         xdr_destroy(&xdrs2);
         return -1;
     }
+
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, __func__, "b_write_fix");
+        ls_syslog(LOG_ERR, "%s: chanWrite %dbytes failed",
+                  __func__, XDR_GETPOS(&xdrs2));
         xdr_destroy(&xdrs2);
         return -1;
     }
+
     xdr_destroy(&xdrs2);
     return 0;
-
 }
 
 
 int
 do_migReq(XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
-           struct LSFHeader *reqHdr, struct lsfAuth *auth)
+          struct LSFHeader *reqHdr, struct lsfAuth *auth)
 {
     char reply_buf[MSGSIZE];
     XDR xdrs2;
@@ -1000,7 +974,7 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
                   sockAdd2Str_(from));
         if (reqHdr->opCode != BATCH_RUSAGE_JOB)
             errorBack(chfd, LSBE_BAD_HOST, from);
-        return (-1);
+        return -1;
     }
 
     if (!xdr_statusReq(xdrs, &statusReq, reqHdr)) {
@@ -1008,9 +982,6 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_statusReq");
     } else {
         switch(reqHdr->opCode) {
-            case BATCH_STATUS_MSG_ACK:
-                reply = statusMsgAck(&statusReq);
-                break;
             case BATCH_STATUS_JOB:
                 reply = statusJob(&statusReq, hp, schedule);
                 break;
@@ -1018,10 +989,8 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
                 reply = rusageJob(&statusReq, hp);
                 break;
             default:
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7827,
-                                                 "%s: Unknown request %d"),  /* catgets 7827 */
-                          __func__,
-                          reqHdr->opCode);
+                ls_syslog(LOG_ERR, "\
+%s: Unknown request %d", __func__, reqHdr->opCode);
                 reply = LSBE_PROTOCOL;
         }
     }
@@ -1031,7 +1000,7 @@ do_statusReq(XDR * xdrs, int chfd, struct sockaddr_in * from, int *schedule,
     if (reqHdr->opCode == BATCH_RUSAGE_JOB) {
         if (reply == LSBE_NO_ERROR)
             return 0;
-        return (-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);

@@ -800,7 +800,7 @@ getNTSpoolDir( char *spoolDir )
 }
 
 void
-jobId64To32 (LS_LONG_INT interJobId, int* jobId, int* jobArrElemId)
+jobId64To32(LS_LONG_INT interJobId, int *jobId, int *jobArrElemId)
 {
     *jobArrElemId = LSB_ARRAY_IDX(interJobId);
     *jobId = LSB_ARRAY_JOBID(interJobId);

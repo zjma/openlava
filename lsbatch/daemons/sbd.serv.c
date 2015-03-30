@@ -22,18 +22,13 @@
 #define NL_SETN		11
 
 extern int urgentJob;
-static int                replyHdrWithRC(int rc, int s, int jobId);
-static void do_syslogMsg(int s, char *buf);
-static void do_rusageMsg(int, struct jobCard *, struct lsbMsg *, char *);
-static void do_regOpMsg(int, struct jobCard *, struct lsbMsg *, char *);
-static void do_chkpntEndMsg(int, struct jobCard *, struct lsbMsg *, char *);
-static void do_getPid(int, struct jobCard *, struct lsbMsg *, char *);
 extern int jRusageUpdatePeriod;
 extern int  rusageUpdateRate;
 extern int  rusageUpdatePercent;
-extern int sbdlog_newstatus (struct jobCard *jp);
+extern int sbdlog_newstatus(struct jobCard *jp);
 extern int lsbJobCpuLimit;
 extern int lsbJobMemLimit;
+static int replyHdrWithRC(int rc, int chfd, int jobId);
 
 void
 do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
@@ -657,7 +652,11 @@ do_sigjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
     if (jp->jobSpecs.actPid || (jp->jobSpecs.jStatus & JOB_STAT_MIG)) {
 
-        if ((cc = jobSigStart (jp, sigValue, jobSig.actFlags, jobSig.chkPeriod, NO_SIGLOG)) < 0)
+        if ((cc = jobSigStart(jp,
+                              sigValue,
+                              jobSig.actFlags,
+                              jobSig.chkPeriod,
+                              NO_SIGLOG)) < 0)
             reply = ERR_SIG_RETRY;
         else {
             jp->jobSpecs.jStatus &= ~JOB_STAT_MIG;
@@ -666,11 +665,11 @@ do_sigjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
         goto Reply;
     }
 
-    if ((cc = jobSigStart (jp,
-                           sigValue,
-                           jobSig.actFlags,
-                           jobSig.chkPeriod,
-                           NO_SIGLOG)) < 0)
+    if ((cc = jobSigStart(jp,
+                          sigValue,
+                          jobSig.actFlags,
+                          jobSig.chkPeriod,
+                          NO_SIGLOG)) < 0)
         reply = ERR_SIG_RETRY;
     else
         reply = ERR_NO_ERROR;
@@ -720,159 +719,6 @@ Reply1:
     return;
 }
 
-
-void
-do_jobMsg(struct bucket * bucket, XDR *xdrs, int s, struct LSFHeader * reqHdr)
-{
-    static char      fname[] = "do_jobMsg()";
-    struct Buffer    *buf;
-    sbdReplyType     reply;
-    struct jobCard   *jp = NULL;
-    char             found = FALSE;
-
-    LSBMSG_DECL(header, jmsg);
-
-    if (logclass & LC_TRACE)
-	ls_syslog(LOG_DEBUG, "%s: Entering this routine ...", fname);
-
-    buf = bucket->storage;
-
-    LSBMSG_INIT(header, jmsg);
-    if (!xdr_lsbMsg(xdrs, &jmsg, reqHdr)) {
-        reply = ERR_BAD_REQ;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_lsbMsg");
-        goto Reply1;
-    }
-
-    if (logclass & LC_EXEC)
-        ls_syslog(LOG_DEBUG, "%s: jmsg len %d jobId %s msg <%s>",
-                  fname, buf->len, lsb_jobid2str(jmsg.header->jobId),
-                  jmsg.msg);
-
-    xdrmem_create(&bucket->xdrs, buf->data, buf->len, XDR_DECODE);
-
-    for (jp = jobQueHead->forw; (jp != jobQueHead); jp = jp->forw) {
-        if (jp->jobSpecs.jobId != jmsg.header->jobId)
-            continue;
-        found = TRUE;
-        break;
-    }
-    if (found == FALSE) {
-        reply = ERR_NO_JOB;
-
-        goto Reply1;
-    }
-
-    reply = ERR_NO_ERROR;
-Reply1:
-    if ( reply != ERR_BAD_REQ)
-        LSBMSG_FINALIZE(xdrs, jmsg);
-    if (replyHdrWithRC(reply, s, jmsg.header->jobId) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(jmsg.header->jobId), "replyHdrWithRC");
-
-        return;
-    }
-
-    LSBMSG_CACHE_BUFFER(bucket, jmsg);
-
-    QUEUE_APPEND(bucket, jmQueue);
-    bucket->bufstat = MSG_STAT_QUEUED;
-    bucket->storage->stashed = TRUE;
-
-    deliverMsg(bucket);
-}
-
-void
-deliverMsg(struct bucket * bucket)
-{
-    static char         fname[] = "deliverMsg()";
-    struct clientNode   *cliPtr;
-    struct clientNode   *nextClient;
-    int                 nbytes;
-    int                 found;
-    struct jobCard      *jp;
-    struct Buffer       *mbuf;
-
-    if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine ...", fname);
-
-    mbuf = bucket->storage;
-
-    found = FALSE;
-    for (jp = jobQueHead->forw; (jp != jobQueHead); jp = jp->forw) {
-        if (jp->jobSpecs.jobId == bucket->proto.jobId) {
-            found = TRUE;
-            break;
-        }
-    }
-
-    if (!found) {
-        chanFreeStashedBuf_(mbuf);
-        QUEUE_REMOVE(bucket);
-        FREE_BUCKET(bucket);
-        return;
-    }
-
-    found = FALSE;
-    for (cliPtr = clientList->forw; cliPtr != clientList;
-         cliPtr = nextClient) {
-        nextClient = cliPtr->forw;
-
-        if (cliPtr->jobId == bucket->proto.jobId) {
-            found = TRUE;
-            break;
-        }
-    }
-
-    if (found == FALSE) {
-        return;
-    }
-
-    if (jp->jobSpecs.jStatus & JOB_STAT_RUN) {
-        if (logclass & LC_EXEC)
-            ls_syslog(LOG_DEBUG, "\
-%s: jobId <%s> len %d chanfd %d",
-                      fname, lsb_jobid2str(bucket->proto.jobId),
-                      mbuf->len, cliPtr->chanfd);
-
-        nbytes = b_write_fix(chanSock_(cliPtr->chanfd),
-                             mbuf->data,
-                             mbuf->len);
-
-        if (nbytes <= 0) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-                      lsb_jobid2str(jp->jobSpecs.jobId), "b_write_fix");
-            return;
-        }
-    } else if (IS_SUSP(jp->jobSpecs.jStatus)) {
-        return;
-    }
-
-    jp->delieveredMsgId = bucket->proto.msgId;
-
-    if (status_job(BATCH_STATUS_MSG_ACK, jp, 0, 0) < 0)
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-                  lsb_jobid2str(jp->jobSpecs.jobId), "status_job");
-
-    if (mbuf->stashed) {
-        QUEUE_REMOVE(bucket);
-        chanFreeStashedBuf_(mbuf);
-    } else {
-        chanFreeBuf_(mbuf);
-    }
-
-    FREE_BUCKET(bucket);
-
-    return;
-
-    if (! mbuf->stashed)
-        QUEUE_APPEND(bucket, jmQueue);
-    bucket->bufstat = MSG_STAT_QUEUED;
-    mbuf->stashed = TRUE;
-
-}
-
 void
 do_reboot(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 {
@@ -918,7 +764,7 @@ do_reboot(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
 
 int
-ctrlSbdDebug( struct debugReq  *pdebug )
+ctrlSbdDebug(struct debugReq  *pdebug)
 {
     static char   fname[]="ctrlSbdDebug()";
     int           opCode;
@@ -1233,345 +1079,33 @@ do_jobSyslog(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
     ls_syslog(sysMsg.logLevel, sysMsg.msg);
 }
 
-void
-do_rmConn(XDR * xdrs, int s, struct LSFHeader * reqHdr, struct clientNode * cln)
-{
-    static char        fname[] = "do_rmConn()";
-    char               src[LSB_MAX_SD_LENGTH];
-    char               dest[LSB_MAX_SD_LENGTH];
-    struct lsbMsgHdr   header;
-    struct lsbMsg      m;
-    int                found = FALSE;
-    struct jobCard     *jp;
-    int                freeMsg = FALSE;
-
-    if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering ... s=%d chanfd=%d", fname, s,
-                  cln->chanfd);
-
-    header.src = src;
-    header.dest = dest;
-    m.header = &header;
-    m.msg = "";
-
-    if (xdrs->x_op == XDR_DECODE)
-        freeMsg = TRUE;
-    if (!xdr_lsbMsg(xdrs, &m, reqHdr)) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_lsMsg");
-	replyHdrWithRC(LSBE_XDR, s, m.header->jobId);
-	return;
-    }
-
-
-    for (jp = jobQueHead->forw; (jp != jobQueHead); jp = jp->forw) {
-	if (jp->jobSpecs.jobId == m.header->jobId){
-	    found = TRUE;
-	    break;
-        }
-    }
-
-    if (!found) {
-	replyHdrWithRC(LSBE_NO_JOB, s, m.header->jobId);
-	shutDownClient(cln);
-        if (freeMsg && m.msg)
-            FREEUP (m.msg);
-	return;
-    }
-
-    jp->client = cln;
-    if (jp->client == NULL) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5843,
-                                         "%s: jp->client == NULL for parallel job <%s>"), /* catgets 5843 */
-                  fname, lsb_jobid2str(m.header->jobId));
-    }
-
-
-    jp->newPam = TRUE;
-
-    cln->jp = jp;
-    cln->jobId = m.header->jobId;
-    if (replyHdrWithRC(LSBE_NO_ERROR, s, m.header->jobId) < 0)
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(m.header->jobId),
-                  "replyHdrWithRC");
-
-    if (freeMsg && m.msg)
-        FREEUP(m.msg);
-}
-
-void
-do_lsbMsg(XDR *xdrs, int s, struct LSFHeader * reqHdr)
-{
-    static char             fname[] = "do_lsbMsg";
-    char                    src[LSB_MAX_SD_LENGTH];
-    char                    dest[LSB_MAX_SD_LENGTH];
-    struct lsbMsgHdr        header;
-
-    struct lsbMsg           m;
-    char                    opString[MSGSIZE];
-    char                    *buf;
-    int found = FALSE;
-    struct jobCard *jp = NULL;
-    int ret, cnt;
-    LS_LONG_INT jobId;
-    int freeMsg = FALSE;
-
-    if (logclass & LC_TRACE)
-	ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
-
-    header.src = src;
-    header.dest = dest;
-    m.header = &header;
-    m.msg = "";
-
-    if (xdrs->x_op == XDR_DECODE)
-        freeMsg = TRUE;
-    if (!xdr_lsbMsg(xdrs, &m, reqHdr)) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_lsMsg");
-	replyHdrWithRC(LSBE_XDR, s, m.header->jobId);
-	return;
-    }
-
-    buf = m.msg;
-
-    if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: received a user msg <%s>.", fname, buf);
-    if (strcmp(header.dest, "sbatchd")) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5846,
-                                         "%s: Ignore message not intended for sbatchd"), /* catgets 5846 */
-                  fname);
-	replyHdrWithRC(LSBE_PROTOCOL, s, m.header->jobId);
-        if (freeMsg && m.msg)
-            FREEUP(m.msg);
-	return;
-    }
-
-    ret = sscanf(buf, "%s%lld%n", opString, &jobId, &cnt);
-    if (ret != 2) {
-	ls_syslog(LOG_DEBUG, "%s: sscanf opString/jobId failed ret=%d: %m",
-		  fname, ret);
-	replyHdrWithRC(LSBE_PROTOCOL, s, m.header->jobId);
-        if (freeMsg && m.msg)
-            FREEUP(m.msg);
-	return;
-    }
-
-    buf += cnt + 1;
-
-    if (m.header->jobId && m.header->jobId != jobId) {
-	ls_syslog(LOG_ERR, "%s: mjobId=%s != jobId=%s", fname,
-                  lsb_jobid2str(m.header->jobId), lsb_jobid2str(jobId));
-	replyHdrWithRC(LSBE_PERMISSION, s, m.header->jobId);
-        if (freeMsg && m.msg)
-            FREEUP(m.msg);
-	return;
-    }
-
-    if (logclass & LC_COMM)
-	ls_syslog(LOG_DEBUG, "%s: Got opString <%s> from job <%s>",
-		  fname, opString, lsb_jobid2str(jobId));
-
-    for (jp = jobQueHead->forw; (jp != jobQueHead); jp = jp->forw) {
-	if (jp->jobSpecs.jobId != jobId)
-	    continue;
-	found = TRUE;
-	break;
-    }
-
-    if (!found) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5848,
-                                         "%s: JobId <%s> not found"), fname, lsb_jobid2str(jobId)); /* catgets 5848 */
-	replyHdrWithRC(LSBE_NO_JOB, s, m.header->jobId);
-        if (freeMsg && m.msg)
-            FREEUP(m.msg);
-	return;
-    }
-
-    if (!strcmp(opString, "REG_OP"))
-	do_regOpMsg(s, jp, &m, buf);
-    else if (!strcmp(opString, "GET_PID"))
-	do_getPid(s, jp, &m, buf);
-    else if (!strcmp(opString, "CHKPNT_END"))
-	do_chkpntEndMsg(s, jp, &m, buf);
-    else if (!strcmp(opString, "RUSAGE"))
-	do_rusageMsg(s, jp, &m, buf);
-    else if (!strcmp(opString, "SYSLOG"))
-	do_syslogMsg(s, buf);
-    else {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5849,
-                                         "%s: Got bad opstring <%s>"), fname, opString); /* catgets 5849 */
-	replyHdrWithRC(LSBE_PROTOCOL, s, m.header->jobId);
-    }
-    if (freeMsg && m.msg)
-        FREEUP(m.msg);
-
-}
-
-
 static int
 replyHdrWithRC(int rc, int chfd, int jobId)
 {
-    static char fname[] = "replyHdrWithRC()";
     XDR                     xdrs2;
     char                    reply_buf[MSGSIZE];
+    static char             fname[] = "replyHdrWithRC";
     struct LSFHeader        replyHdr;
-    LS_LONG_INT tmpJobId;
 
-    initLSFHeader_(&replyHdr);
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
     replyHdr.opCode = rc;
     replyHdr.length = 0;
-    tmpJobId = jobId;
 
     if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname, lsb_jobid2str(tmpJobId),
-		  "xdr_LSFHeader");
+	ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed for job <%d>", fname,
+		  jobId);
 	xdr_destroy(&xdrs2);
 	return (-1);
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname, lsb_jobid2str(tmpJobId), "chanWrite_");
+        ls_syslog(LOG_ERR, "%s: chanWrite_(%d) failed for job <%d>: %m",
+		  fname, XDR_GETPOS(&xdrs2), jobId);
 	xdr_destroy(&xdrs2);
 	return (-1);
     }
     xdr_destroy(&xdrs2);
     return (0);
-}
+}				/* replyHdrWithRC */
 
 
-static void
-do_syslogMsg(int s, char *buf)
-{
-    static char fname[] = "do_syslog";
-    char *level;
-
-    if (logclass & LC_TRACE)
-	ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
-
-    if (replyHdrWithRC(LSBE_NO_ERROR, s, -1) < 0)
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "replyHdrWithRC");
-
-    if ((level = getNextWord_(&buf)) == NULL) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5853,
-                                         "%s: got garbage for level"), fname); /* catgets 5853 */
-	return;
-    }
-
-    ls_syslog(atoi(level), buf);
-}
-
-
-
-static void
-do_rusageMsg(int s, struct jobCard *jp, struct lsbMsg *m, char *workMsgBuf)
-{
-    static char fname[] = "do_rusageMsg()";
-    int rc;
-
-    if (!(jp->regOpFlag & REG_RUSAGE)) {
-	rc = LSBE_PERMISSION;
-    } else {
-	rc = updateRUsageFromSuper(jp, workMsgBuf);
-    }
-
-    if (replyHdrWithRC(rc, s, m->header->jobId) < 0)
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(m->header->jobId), "replyHdrWithRC");
-}
-
-static void
-do_regOpMsg(int s, struct jobCard *jp, struct lsbMsg *m, char *workMsgBuf)
-{
-    static char fname[] = "do_regOpMsg()";
-    char *op;
-
-    ls_syslog(LOG_INFO,"\
-%s: registering supervisor for job=%d", fname, jp->jobSpecs.jobId);
-
-    if (jp) {
-	while ((op = getNextWord_(&workMsgBuf))) {
-	    ls_syslog(LOG_INFO,"%s: operation=(%s)", fname, op);
-	    if (!strcmp(op, "CHKPNT"))
-		jp->regOpFlag |= REG_CHKPNT;
-	    else if (!strcmp(op, "RUSAGE"))
-		jp->regOpFlag |= REG_RUSAGE;
-	    else if (!strcmp(op, "SIGNAL"))
-		jp->regOpFlag |= REG_SIGNAL;
-	    else if (!strcmp(op, "NICE"))
-		jp->regOpFlag |= REG_NICE;
-	    else
-		ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5855,
-                                                 "%s: Unknown reg op <%s> for job <%s>"), /* catgets 5855 */
-                          fname, op, lsb_jobid2str(jp->jobSpecs.jobId));
-	}
-    }
-
-    if (replyHdrWithRC(LSBE_NO_ERROR, s, m->header->jobId) < 0)
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(m->header->jobId), "replyHdrWithRC");
-
-    if (jp->regOpFlag & REG_RUSAGE) {
-	struct lsbMsgHdr pmMsgHdr;
-	struct lsbMsg pmMsg;
-	char regParam[128];
-	int msgStat;
-
-	pmMsgHdr.usrId = jp->jobSpecs.userId;
-	pmMsgHdr.msgId = 0;
-	pmMsgHdr.jobId = jp->jobSpecs.jobId;
-	pmMsgHdr.src = "sbatchd";
-	pmMsgHdr.dest = "pm";
-	pmMsg.header = &pmMsgHdr;
-	pmMsg.msg = regParam;
-
-	sprintf(regParam, "PM_CONFIG RUSAGE_UPDATE_INTERVAL %d",
-		rusageUpdateRate * sbdSleepTime);
-
-	if ( (msgStat = msgSupervisor(&pmMsg, jp->client)) < 0 ) {
-	    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5857,
-                                             "%s: sending signal message to pm failed for job <%s>: %m"), fname, lsb_jobid2str(jp->jobSpecs.jobId)); /* catgets 5857 */
-	}
-    }
-}
-
-static void
-do_chkpntEndMsg(int s, struct jobCard *jp, struct lsbMsg *m, char *workMsgBuf)
-{
-    static char fname[] = "do_chkpntEndMsg";
-
-    if (replyHdrWithRC(LSBE_NO_ERROR, s, m->header->jobId) < 0)
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(m->header->jobId), "replyHdrWithRc");
-    if (killpg(-jp->jobSpecs.actPid, SIGURG) < 0) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-                  lsb_jobid2str(m->header->jobId), "fork");
-    }
-}
-
-static void
-do_getPid(int s, struct jobCard *jp, struct lsbMsg *m, char *workMsgBuf)
-{
-    static char fname[] = "do_getPid/sbd.serv.c";
-    struct lsbMsgHdr pmMsgHdr;
-    struct lsbMsg pmMsg;
-    char regParam[128];
-    int msgStat;
-
-    if (replyHdrWithRC(LSBE_NO_ERROR, s, m->header->jobId) < 0)
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
-                  lsb_jobid2str(m->header->jobId), "replyHdrWithRc");
-    pmMsgHdr.usrId = jp->jobSpecs.userId;
-    pmMsgHdr.msgId = 0;
-    pmMsgHdr.jobId = jp->jobSpecs.jobId;
-    pmMsgHdr.src = "sbatchd";
-    pmMsgHdr.dest = "pm";
-    pmMsg.header = &pmMsgHdr;
-    pmMsg.msg = regParam;
-    sprintf(regParam, "PID %d", jp->jobSpecs.jobPid);
-    if ( (msgStat = msgSupervisor(&pmMsg, jp->client)) < 0 ) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5857,
-                                         "%s: sending signal message to pm failed for job <%s>: %m"), /* catgets 5857 */
-                  fname, lsb_jobid2str(jp->jobSpecs.jobId));
-    }
-}

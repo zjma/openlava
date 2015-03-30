@@ -44,7 +44,6 @@ static int           acceptJob(struct qData *, struct jData *,
 static int           getCpuLimit(struct jData *, struct submitReq *);
 static void          insertAndShift(struct jData *, struct jData *, int, int);
 static int           resigJobs1(struct jData *, int *);
-static void          sndJobMsgs(struct hData *, int *);
 static sbdReplyType  sigStartedJob(struct jData *, int, time_t, int);
 static void          reorderSJL1(struct jData *);
 static int           matchJobStatus(int, struct jData *);
@@ -5033,41 +5032,6 @@ resigJobs(int *resignal)
         }
     }
 
-    for (hPtr = (struct hData *)hostList->back;
-         hPtr != (void *)hostList && sigcnt < mxsigcnt;
-         hPtr = hPtr->back) {
-
-        INC_CNT(PROF_CNT_hostLoopresigJobs);
-
-        if (logclass & (LC_SIGNAL))
-            ls_syslog (LOG_DEBUG2, "%s: host=%s", fname, hPtr->host);
-
-        if (hPtr->hStatus & HOST_STAT_REMOTE)
-            continue;
-
-        if (UNREACHABLE (hPtr->hStatus)) {
-            continue;
-        }
-
-        if (setIsMember(processedHosts, (void *)&hPtr->hostId))
-            continue;
-
-        TIMEIT(1, sndJobMsgs (hPtr, &sigcnt), "sndJobMsgs");
-    }
-
-    for (list = 0; list <= NJLIST && sigcnt < mxsigcnt; list++) {
-
-        if (list != SJL && list != FJL && list != ZJL)
-            continue;
-        for (jpbw = jDataList[list]->back;
-             jpbw != jDataList[list] && sigcnt < mxsigcnt;
-             jpbw = next) {
-
-            INC_CNT(PROF_CNT_nqsLoopresigJobs);
-
-            next = jpbw->back;
-        }
-    }
 
     retVal = FALSE;
     *resignal = FALSE;
@@ -7172,40 +7136,6 @@ msgStartedJob (struct jData *jData, struct bucket *bucket)
 }
 
 static void
-sndJobMsgs (struct hData *hData, int *sigcnt)
-{
-    static char fname[] = "sndJobMsgs";
-    int sndrc;
-    int num = 0, maxSent = 1;
-    struct bucket *bucket, *next, *head = hData->msgq[MSG_STAT_QUEUED];
-
-    for (bucket = head->forw; bucket != head
-             && num < maxSent; bucket = next) {
-        next = bucket->forw;
-        if (logclass & (LC_TRACE | LC_SIGNAL))
-            ls_syslog (LOG_DEBUG2, "%s: Send message to host %s",
-                       fname, hData->host);
-        sndrc = msgJob(bucket, NULL);
-        if (sndrc == LSBE_NO_ERROR) {
-            (*sigcnt)++;
-            bucket->bufstat = MSG_STAT_SENT;
-            QUEUE_REMOVE(bucket);
-            QUEUE_APPEND(bucket, hData->msgq[MSG_STAT_SENT]);
-        } else if (sndrc == LSBE_NO_JOB ||
-                   sndrc == LSBE_JOB_FINISH) {
-            QUEUE_REMOVE(bucket);
-            log_jobmsgack(bucket);
-            chanFreeStashedBuf_(bucket->storage);
-            FREE_BUCKET(bucket);
-        } else {
-
-
-            break;
-        }
-    }
-}
-
-static void
 breakCallback(struct jData *jData, bool_t termWhiPendStatus)
 {
     int pid, s;
@@ -7259,80 +7189,6 @@ breakCallback(struct jData *jData, bool_t termWhiPendStatus)
     }
 
     exit(0);
-}
-
-
-int
-statusMsgAck(struct statusReq *statusReq)
-{
-    static char             fname[] = "statusMsgAck";
-    struct jData           *jp;
-    struct bucket          *bucket;
-    struct bucket          *msgQHead;
-    int                     found;
-
-    LSBMSG_DECL(header, jmsg);
-    LSBMSG_INIT(header, jmsg);
-
-    if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
-
-
-
-    if ((jp = getJobData(statusReq->jobId)) == NULL) {
-        return LSBE_NO_JOB;
-    }
-
-    bucket = msgQHead = jp->hPtr[0]->msgq[MSG_STAT_QUEUED];
-    found = FALSE;
-    if (bucket->forw == bucket)
-        goto QueueSent;
-    else
-        bucket = bucket->forw;
-
-    do {
-        if (bucket->proto.jobId == statusReq->jobId &&
-            bucket->proto.msgId == statusReq->msgId) {
-
-            found = TRUE;
-            break;
-        }
-        bucket = bucket->forw;
-    } while (bucket != msgQHead);
-
-QueueSent:
-    if (! found) {
-
-        bucket = msgQHead = jp->hPtr[0]->msgq[MSG_STAT_SENT];
-        if (bucket->forw == bucket)
-            goto EndSearch;
-        else
-            bucket = bucket->forw;
-
-        do {
-            if (bucket->proto.jobId == statusReq->jobId &&
-                bucket->proto.msgId == statusReq->msgId) {
-
-                found = TRUE;
-                break;
-            }
-            bucket = bucket->forw;
-        } while (bucket != msgQHead);
-    }
-
-EndSearch:
-    if (!found) {
-        return LSBE_NO_JOBMSG;
-    }
-
-    if (found) {
-        log_jobmsgack(bucket);
-        QUEUE_REMOVE(bucket);
-        chanFreeStashedBuf_(bucket->storage);
-        FREE_BUCKET(bucket);
-    }
-
-    return (LSBE_NO_ERROR);
 }
 
 static int
