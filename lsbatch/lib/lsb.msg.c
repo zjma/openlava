@@ -29,7 +29,6 @@ lsb_msgjob(LS_LONG_INT jobId, char *msg)
     char *request_buf;
     char *reply_buf;
     XDR xdrs;
-    mbdReqType mbdReqtype;
     int cc;
     int len;
     struct LSFHeader hdr;
@@ -50,10 +49,11 @@ lsb_msgjob(LS_LONG_INT jobId, char *msg)
 
     }
 
-    mbdReqtype = BATCH_JOB_MSG;
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
 
-    hdr.opCode = mbdReqtype;
+    initLSFHeader_(&hdr);
+    hdr.opCode = BATCH_JOB_MSG;;
+
     if (!xdr_encodeMsg(&xdrs,
                        (char *)&jmsg,
                        &hdr,

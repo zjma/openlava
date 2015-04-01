@@ -31,13 +31,13 @@ time_t eventTime;
 
 extern bool_t          logMapFileEnable;
 
-extern int              sigNameToValue_ (char *sigString);
-extern char            *getLsbSigSymbol ( int );
+extern int              sigNameToValue_(char *sigString);
+extern char            *getLsbSigSymbol(int);
 extern char            *getSigSymbol(int);
 extern void             chanFreeStashedBuf(struct Buffer *);
 extern int              chanAllocBuf_(struct Buffer **, int);
 static int              replay_event(char *, int);
-static struct jData *   checkJobInCore(LS_LONG_INT jobId);
+static struct jData *   checkJobInCore(LS_LONG_INT);
 
 static int              replay_newjob(char *, int);
 static int              replay_startjob(char *, int, int);
@@ -65,6 +65,7 @@ static int              replay_cleanjob(char *, int);
 static bool_t           replay_jobforce(char *, int);
 static int              replay_logSwitch(char *, int);
 static int              replay_jobattrset(char *, int );
+static int              replay_jobmsg(char *, int);
 
 static int replay_logSwitch(char *, int);
 extern bool_t memberOfVacateList(struct lsQueueEntry *, struct lsQueue *);
@@ -138,6 +139,8 @@ static char    *getSignalSymbol(const struct signalReq *);
 static int     replay_arrayrequeue(struct jData *,
                                    const struct signalLog *);
 static int renameAcctLogFiles(int);
+static void jobMsgInit(void);
+static int checkDirAccess(const char *);
 
 /* init_log()
  */
@@ -320,6 +323,8 @@ init_log(void)
 
     checkAcctLog();
 
+    jobMsgInit();
+
     return ConfigError;
 }
 
@@ -379,6 +384,8 @@ replay_event(char *filename, int lineNum)
             return (replay_jobforce(filename, lineNum));
         case EVENT_LOG_SWITCH:
             return (replay_logSwitch(filename, lineNum));
+        case EVENT_JOB_MSG:
+            return replay_jobmsg(filename, lineNum);
         default:
             ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Invalid event_type <%c>",
@@ -1195,6 +1202,46 @@ replay_loadIndex(char *filename, int lineNum)
     return (TRUE);
 }
 
+static int
+replay_logSwitch(char *filename, int lineNum)
+{
+    nextJobId_t = logPtr->eventLog.logSwitchLog.lastJobId;
+    return (TRUE);
+
+}
+
+/* replay_jobmsg()
+ */
+static int
+replay_jobmsg(char *file, int num)
+{
+    struct jData *jPtr;
+    LS_LONG_INT jobID;
+    struct jobMsgLog *log;
+
+    log = &logPtr->eventLog.jobMsgLog;
+    jobID = LSB_JOBID(log->jobId, log->idx);
+
+    jPtr = getJobData(jobID);
+    if (jPtr == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh job %s not found?", __func__, lsb_jobid2str(jobID));
+        return -1;
+    }
+
+    if (jPtr->numMsg == 0)
+        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(char *));
+
+    if (jPtr->numMsg > MAX_JOB_MSG - 1)
+        jPtr->numMsg = 0;
+
+    jPtr->msgs[jPtr->numMsg] = strdup(log->msg);
+    jPtr->numMsg++;
+
+    return 0;
+}
+
+
 int
 log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
 {
@@ -1279,14 +1326,6 @@ log_newjob(struct jData * job)
     static char             fname[] = "log_newjob";
 
     return (log_jobdata(job, fname, EVENT_JOB_NEW));
-}
-
-static int
-replay_logSwitch(char *filename, int lineNum)
-{
-    nextJobId_t = logPtr->eventLog.logSwitchLog.lastJobId;
-    return (TRUE);
-
 }
 
 static int
@@ -2095,7 +2134,7 @@ putEventRec1(const char *fname)
 
     ret = 0;
 
-    pos1 =  ftell(log_fp);
+    pos1 = ftell(log_fp);
 
     if (lsb_puteventrec(log_fp, logPtr) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_EMSG_S,
@@ -3870,8 +3909,31 @@ getSignalSymbol(const struct signalReq *sigPtr)
 }
 
 void
-log_jobmsg(struct jData * jp, struct lsbMsg * jmsg)
+log_jobmsg(struct jData *jPtr, struct lsbMsg *jmsg)
 {
+    char file[PATH_MAX];
+
+    sprintf(file, "%s/logdir/messages/%s",
+            daemonParams[LSB_SHAREDIR].paramValue,
+            lsb_jobid2str2(jPtr->jobId));
+
+    if (openEventFile(file) < 0) {
+        ls_syslog(LOG_ERR, "%s: failed in openEventFile() job %s",
+                  __func__, lsb_jobid2str(jPtr->jobId));
+        mbdDie(MASTER_FATAL);
+    }
+
+    logPtr->type = EVENT_JOB_MSG;
+    logPtr->eventLog.jobMsgLog.jobId = LSB_ARRAY_JOBID(jPtr->jobId);
+    logPtr->eventLog.jobMsgLog.idx = LSB_ARRAY_IDX(jPtr->jobId);
+    logPtr->eventLog.jobMsgLog.msg = jmsg->msg;
+
+    if (putEventRec(__func__) < 0) {
+        ls_syslog(LOG_ERR, "%s: failed in putEventRec() job %s",
+                  __func__, lsb_jobid2str(jPtr->jobId));
+        mbdDie(MASTER_FATAL);
+    }
+
 }
 
 static int
@@ -4644,4 +4706,87 @@ renameAcctLogFiles(int fileLimit)
     }
     chuser(batchId);
     return (max);
+}
+
+static void
+jobMsgInit(void)
+{
+    char dirbuf[PATH_MAX];
+    DIR *dir;
+    struct dirent *ent;
+    FILE *fp;
+    int num;
+    int cc;
+
+    sprintf(dirbuf, "%s/logdir/messages",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    cc = checkDirAccess(dirbuf);
+    if (cc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: gudness problem accessing message directory", __func__);
+        return;
+    }
+
+    dir = opendir(dirbuf);
+    if (dir == NULL) {
+        ls_syslog(LOG_ERR, "%s: cannot open %s? we just checked it: %m",
+                  __func__, dirbuf);
+        return;
+    }
+
+    while ((ent = readdir(dir))) {
+
+        if (strcmp(ent->d_name, ".") == 0
+            || strcmp(ent->d_name, "..") == 0)
+            continue;
+
+        fp = fopen(ent->d_name, "r");
+        if (fp == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: failed to open %s %m", __func__, ent->d_name);
+            continue;
+        }
+
+        while (lsberrno != LSBE_EOF) {
+
+            logPtr = lsb_geteventrec(fp, &num);
+            if (logPtr == NULL) {
+                fclose(fp);
+                continue;
+            }
+            if (! replay_event(ent->d_name, num)) {
+                ls_syslog(LOG_ERR, "\
+%s: file %s line %d replay_event() failed, ignoring line", __func__,
+                          ent->d_name, num);
+                continue;
+            }
+        }
+
+        fclose(fp);
+    }
+
+    closedir(dir);
+
+}
+
+static int
+checkDirAccess(const char *dir)
+{
+    struct stat sbuf;
+
+    chuser(managerId);
+
+    if (stat(dir, &sbuf) < 0) {
+        if (mkdir(dir, 0700) == -1
+            && errno != EEXIST) {
+            chuser(batchId);
+            ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, dir);
+            return -1;
+        }
+    }
+
+    chuser(batchId);
+
+    return 0;
 }

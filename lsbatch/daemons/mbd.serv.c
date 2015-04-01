@@ -833,8 +833,7 @@ Reply:
  * Append a message to a job.
  */
 int
-do_jobMsg(struct bucket *bucket,
-          XDR *xdrs,
+do_jobMsg(XDR *xdrs,
           int chfd,
           struct sockaddr_in *from,
           char *hostName,
@@ -845,7 +844,7 @@ do_jobMsg(struct bucket *bucket,
     XDR xdrs2;
     int reply;
     struct LSFHeader replyHdr;
-    struct jData *jpbw;
+    struct jData *jPtr;
     struct lsbMsg jmsg;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
@@ -859,13 +858,22 @@ do_jobMsg(struct bucket *bucket,
         goto Reply;
     }
 
-    if ((jpbw = getJobData(jmsg.jobId)) == NULL) {
+    if ((jPtr = getJobData(jmsg.jobId)) == NULL) {
         reply = LSBE_NO_JOB;
         _free_(jmsg.msg);
         goto Reply;
     }
 
-    log_jobmsg(jpbw, &jmsg);
+    if (jPtr->numMsg == 0)
+        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(char *));
+
+    if (jPtr->numMsg > MAX_JOB_MSG - 1)
+        jPtr->numMsg = 0;
+
+    jPtr->msgs[jPtr->numMsg] = strdup(jmsg.msg);
+    jPtr->numMsg++;
+
+    log_jobmsg(jPtr, &jmsg);
     _free_(jmsg.msg);
 
     reply = LSBE_NO_ERROR;
@@ -894,6 +902,7 @@ Reply:
     }
 
     xdr_destroy(&xdrs2);
+
     return 0;
 }
 

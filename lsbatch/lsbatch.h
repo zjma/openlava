@@ -1255,14 +1255,9 @@ struct loadIndexLog {
 };
 
 struct jobMsgLog {
-    int usrId;
     int jobId;
-    int msgId;
-    int type;
-    char *src;
-    char *dest;
-    char *msg;
     int    idx;
+    char *msg;
 };
 
 struct jobMsgAckLog {
@@ -1365,7 +1360,7 @@ struct sortIntList {
 
 /* lsb_postmsg()/lsb_readmsg()
  */
-#define LSB_MAX_MSGSIZE (1024 * 8)
+#define LSB_MAX_MSGSIZE (1024)
 struct lsbMsg {
     LS_LONG_INT jobId;
     char *msg;
@@ -1531,6 +1526,7 @@ extern struct lsbSharedResourceInfo *lsb_sharedresourceinfo(char **,
 extern int lsb_runjob(struct runJobRequest*);
 
 extern char *lsb_jobid2str(LS_LONG_INT);
+extern char *lsb_jobid2str2(LS_LONG_INT);
 extern char *lsb_jobidinstr(LS_LONG_INT);
 extern void jobId32To64(LS_LONG_INT*, int, int);
 extern void jobId64To32(LS_LONG_INT, int*, int*);

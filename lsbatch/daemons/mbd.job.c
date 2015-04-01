@@ -349,23 +349,21 @@ getNextJobId (void)
 void
 addJobIdHT(struct jData *job)
 {
-    static char fname[] = "addJobIdHT()";
     hEnt *ent;
 
-    while ((ent=addMemb(&jobIdHT, job->jobId))== NULL)  {
+    while ((ent = addMemb(&jobIdHT, job->jobId)) == NULL) {
 
         if (job == getJobData(job->jobId))
             return;
 
         if (mSchedStage != M_STAGE_REPLAY)
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6505,
-                                             "%s: The jobId <%s> already exist and is overwritten by the new job"), /* catgets 6505 */
-                      fname,
+            ls_syslog(LOG_ERR, "\
+%s: The jobId <%s> already exist and is overwritten by the new job",
+                      __func__,
                       lsb_jobid2str(job->jobId));
         removeJob(job->jobId);
     }
-    ent->hData = (int *) job;
-
+    ent->hData = (int *)job;
 }
 
 void
@@ -4684,7 +4682,7 @@ getJobData (LS_LONG_INT jobId)
 {
     hEnt *ent;
 
-    if (jobId <= 0 || (ent = chekMemb (&jobIdHT, jobId)) == NULL)
+    if (jobId <= 0 || (ent = chekMemb(&jobIdHT, jobId)) == NULL)
         return NULL;
     return (struct jData *) ent->hData;
 

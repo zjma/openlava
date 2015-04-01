@@ -2809,38 +2809,6 @@ printChronicleEventLog(struct eventRec *log, struct bhistReq *req)
             prtLine(";\n");
             break;
 
-        case EVENT_JOB_MSG:
-            jobId = LSB_JOBID(log->eventLog.jobMsgLog.jobId,
-                              log->eventLog.jobMsgLog.idx);
-            sprintf (tBuff, " %s <%s>",
-                     I18N_Job,
-                     lsb_jobid2str(jobId));
-            sprintf(prline,
-                    (_i18n_msg_get(ls_catd,NL_SETN,3329, "%-12.19s:%s, message <%s>  message ID<%d> requested by user or administrator <%s>")),  /* catgets  3329  */
-                    timeStampStr, tBuff,
-                    log->eventLog.jobMsgLog.msg,
-                    log->eventLog.jobMsgLog.msgId,
-                    getUserName(log->eventLog.jobMsgLog.usrId));
-            prtLine(prline);
-            prtLine(";\n");
-            break;
-
-        case EVENT_JOB_MSG_ACK:
-            jobId = LSB_JOBID(log->eventLog.jobMsgAckLog.jobId,
-                              log->eventLog.jobMsgAckLog.idx);
-            sprintf (tBuff, " %s <%s>",
-                     I18N_Job,
-                     lsb_jobid2str(jobId));
-            sprintf(prline,
-                    (_i18n_msg_get(ls_catd,NL_SETN,3331, "%-12.19s:%s, message <%s> message ID<%d>has been dispatchd")),  /* catgets  3331  */
-                    timeStampStr,
-                    tBuff,
-                    log->eventLog.jobMsgAckLog.msg,
-                    log->eventLog.jobMsgAckLog.msgId);
-            prtLine(prline);
-            prtLine(";\n");
-            break;
-
         case EVENT_JOB_REQUEUE:
             jobId = LSB_JOBID(log->eventLog.jobRequeueLog.jobId,
                               log->eventLog.jobRequeueLog.idx);

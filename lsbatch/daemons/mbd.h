@@ -130,6 +130,11 @@ extern int maxSchedStay;
 
 #define CALCULATE_INTERVAL     900
 
+/* Maximum number of messages before
+ * the queue rolls over
+ */
+#define MAX_JOB_MSG 512
+
 struct qPRValues {
     struct qData *qData;
     float usedByRunJob;
@@ -342,6 +347,8 @@ struct jData {
     int*   inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
+    int numMsg;
+    char **msgs;
 };
 
 
@@ -1130,7 +1137,7 @@ extern int                  do_submitReq(XDR *, int, struct sockaddr_in *,
 extern int                  do_signalReq(XDR *, int, struct sockaddr_in *,
                                          char *, struct LSFHeader *,
                                          struct lsfAuth *);
-extern int                  do_jobMsg(struct bucket *, XDR *, int,
+extern int                  do_jobMsg(XDR *, int,
                                       struct sockaddr_in *,
                                       char *, struct LSFHeader *,
                                       struct lsfAuth *);

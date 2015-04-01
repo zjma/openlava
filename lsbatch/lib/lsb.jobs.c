@@ -349,7 +349,7 @@ lsb_readjobinfo(int *more)
     jobInfo.submit.userPriority = jobInfoReply.jobBill->userPriority;
 
 
-    for (i=0; i<LSF_RLIM_NLIMITS; i++) {
+    for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
         jobInfo.submit.rLimits[i] = jobInfoReply.jobBill->rLimits[i];
     }
     jobInfo.submit.hostSpec = jobInfoReply.jobBill->hostSpec;
@@ -487,19 +487,34 @@ lsb_runjob(struct runJobRequest* runJobRequest)
 }
 
 char *
-lsb_jobid2str (LS_LONG_INT jobId)
+lsb_jobid2str(LS_LONG_INT jobId)
 {
     static char string[32];
 
     if (LSB_ARRAY_IDX(jobId) == 0) {
         sprintf(string, "%d",  LSB_ARRAY_JOBID(jobId));
-    }
-    else {
+    } else {
         sprintf(string, "%d[%d]",  LSB_ARRAY_JOBID(jobId),
                 LSB_ARRAY_IDX(jobId));
     }
 
-    return(string);
+    return string;
+
+}
+
+char *
+lsb_jobid2str2(LS_LONG_INT jobId)
+{
+    static char string[32];
+
+    if (LSB_ARRAY_IDX(jobId) == 0) {
+        sprintf(string, "%d",  LSB_ARRAY_JOBID(jobId));
+    } else {
+        sprintf(string, "%d.%d",  LSB_ARRAY_JOBID(jobId),
+                LSB_ARRAY_IDX(jobId));
+    }
+
+    return string;
 
 }
 
@@ -509,5 +524,5 @@ lsb_jobidinstr(LS_LONG_INT jobId)
     static  char string[32];
 
     sprintf(string, LS_LONG_FORMAT, jobId);
-    return(string);
+    return string;
 }
