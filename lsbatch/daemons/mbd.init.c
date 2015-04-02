@@ -3586,6 +3586,8 @@ parse_preemption(struct qData *qPtr)
 %s: queue %s not found preemption for queue %s disbled",
                       __func__, p2, qPtr->queue);
             fin_link(qPtr->preemptable);
+            qPtr->preemptable = NULL;
+            qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
             FREEUP(qPtr->preemption);
             FREEUP(p0);
             return -1;

@@ -4598,10 +4598,15 @@ do_Queues(struct lsConf *conf,
         if (keylist[QKEY_PREEMPTION].val != NULL) {
             if (strcasestr(keylist[QKEY_PREEMPTION].val, "PREEMPTIVE")) {
                 queue.preemption = strdup(keylist[QKEY_PREEMPTION].val);
+            } else if (strcasestr(keylist[QKEY_PREEMPTION].val, "PREEMPTABLE")) {
+                ls_syslog(LOG_ERR, "\
+%s: unsupported legacy PREEMPTABLE key ignored in queue %s", __func__,
+                          keylist[QKEY_NAME].val);
             } else  {
                 ls_syslog(LOG_ERR, "\
-%s: unsupported PREEMPTION %s key, ignored",
-                          __func__,keylist[QKEY_PREEMPTION].val);
+%s: unsupported PREEMPTION %s key, queue %s ignored",
+                          __func__, keylist[QKEY_NAME].val,
+                          keylist[QKEY_PREEMPTION].val);
                 lsberrno = LSBE_CONF_WARNING;
                 freekeyval(keylist);
                 freeQueueInfo(&queue);

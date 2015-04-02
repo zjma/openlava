@@ -45,8 +45,9 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
         ls_syslog(LOG_INFO, "%s: entering queue %s",
                   __func__, qPtr->queue);
 
-    /* Job in the preemptable candidate list
-     * that will other jobs to be requeued.
+    /* Jobs that can eventually trigger
+     * preemption causing other jobs to
+     * be requeued
      */
     jl = make_link();
 
