@@ -575,8 +575,7 @@ freeLogRec(struct eventRec *logRec)
             free(logRec->eventLog.jobExecuteLog.execUsername);
             return;
         case EVENT_JOB_MSG:
-            /* No dynamic memory for this event
-             */
+            _free_(logRec->eventLog.jobMsgLog.msg);
             return;
         case EVENT_JOB_FORCE:
             for (i = 0; i < logRec->eventLog.jobForceRequestLog.numExecHosts; i++) {

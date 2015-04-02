@@ -846,6 +846,7 @@ do_jobMsg(XDR *xdrs,
     struct LSFHeader replyHdr;
     struct jData *jPtr;
     struct lsbMsg jmsg;
+    struct lsbMsg *jmsg2;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
         ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
@@ -864,13 +865,32 @@ do_jobMsg(XDR *xdrs,
         goto Reply;
     }
 
+    if (auth->uid != 0
+        && !jgrpPermitOk(auth, jPtr->jgrpNode)
+        && !isAuthQueAd(jPtr->qPtr, auth)) {
+        reply = LSBE_PERMISSION;
+        goto Reply;
+    }
+
     if (jPtr->numMsg == 0)
-        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(char *));
+        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(struct lsbMsg *));
 
     if (jPtr->numMsg > MAX_JOB_MSG - 1)
         jPtr->numMsg = 0;
 
-    jPtr->msgs[jPtr->numMsg] = strdup(jmsg.msg);
+    jmsg2 = calloc(1, sizeof(struct lsbMsg));
+    jmsg2->jobId = jPtr->jobId;
+    jmsg2->t = time(NULL);
+    jmsg2->msg = strdup(jmsg.msg);
+
+    /* Check if we rolled over
+     */
+    if (jPtr->msgs[jPtr->numMsg]) {
+        _free_(jPtr->msgs[jPtr->numMsg]->msg);
+        _free_(jPtr->msgs[jPtr->numMsg]);
+    }
+
+    jPtr->msgs[jPtr->numMsg] = jmsg2;
     jPtr->numMsg++;
 
     log_jobmsg(jPtr, &jmsg);

@@ -1362,8 +1362,9 @@ struct sortIntList {
  */
 #define LSB_MAX_MSGSIZE (1024)
 struct lsbMsg {
-    LS_LONG_INT jobId;
-    char *msg;
+    LS_LONG_INT jobId;  /* jobID to which send the msg */
+    time_t t;           /* time when it happened */
+    char *msg;          /* the message itself */
 };
 
 

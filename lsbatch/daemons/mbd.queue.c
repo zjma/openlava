@@ -687,7 +687,7 @@ isQueAd (struct qData *qp, char *lsfUserName)
 int
 isAuthQueAd (struct qData *qp, struct lsfAuth *auth)
 {
-    return (isQueAd(qp, auth->lsfUserName));
+    return isQueAd(qp, auth->lsfUserName);
 
 }
 

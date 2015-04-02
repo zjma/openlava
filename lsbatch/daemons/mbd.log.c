@@ -75,9 +75,10 @@ static void             log_loadIndex(void);
 static void             ckSchedHost (void);
 static int              checkJobStarter(char *, char *);
 
-static FILE            *log_fp     = NULL;
-static FILE            *joblog_fp  = NULL;
+static FILE            *log_fp;
+static FILE            *joblog_fp;
 static int              openEventFile(const char *);
+static int              openEventFile2(const char *);
 static int              putEventRec(const char *);
 static int              putEventRecTime(const char *, time_t);
 static int              putEventRec1(const char *);
@@ -1218,6 +1219,7 @@ replay_jobmsg(char *file, int num)
     struct jData *jPtr;
     LS_LONG_INT jobID;
     struct jobMsgLog *log;
+    struct lsbMsg *jmsg;
 
     log = &logPtr->eventLog.jobMsgLog;
     jobID = LSB_JOBID(log->jobId, log->idx);
@@ -1235,7 +1237,19 @@ replay_jobmsg(char *file, int num)
     if (jPtr->numMsg > MAX_JOB_MSG - 1)
         jPtr->numMsg = 0;
 
-    jPtr->msgs[jPtr->numMsg] = strdup(log->msg);
+    jmsg = calloc(1, sizeof(struct lsbMsg));
+    jmsg->jobId = jPtr->jobId;
+    jmsg->t = logPtr->eventTime;
+    jmsg->msg = strdup(log->msg);
+
+    /* Check if we rolled over
+     */
+    if (jPtr->msgs[jPtr->numMsg]) {
+        _free_(jPtr->msgs[jPtr->numMsg]->msg);
+        _free_(jPtr->msgs[jPtr->numMsg]);
+    }
+
+    jPtr->msgs[jPtr->numMsg] = jmsg;
     jPtr->numMsg++;
 
     return 0;
@@ -2063,6 +2077,11 @@ log_jobForce(struct jData* job, int uid, char *userName)
 
 }
 
+/* openEventFile()
+ *
+ * Open the lsb.events file the path is
+ * kept in the elogFname global variable.
+ */
 static int
 openEventFile(const char *fname)
 {
@@ -2076,6 +2095,49 @@ openEventFile(const char *fname)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if ((log_fp = fopen(elogFname, "a+")) == NULL) {
+        sigprocmask(SIG_SETMASK, &oldmask, NULL);
+        chuser(batchId);
+        ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
+        return -1;
+    }
+    sigprocmask(SIG_SETMASK, &oldmask, NULL);
+
+    fseek(log_fp, 0L, SEEK_END);
+
+    if ((pos = ftell(log_fp)) == 0) {
+        fprintf(log_fp,"#80\n");
+    }
+
+    chmod(elogFname, 0644);
+    chuser(batchId);
+    logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
+
+    /* Use the same version as the main protocol.
+     */
+    sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);
+
+    return 0;
+}
+
+/* openEventFile2()
+ *
+ * Open the event file having the
+ * name specified in input
+ */
+static int
+openEventFile2(const char *fname)
+{
+    long pos;
+    sigset_t newmask;
+    sigset_t oldmask;
+
+    chuser(managerId);
+
+    sigemptyset(&newmask);
+    sigaddset(&newmask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+
+    if ((log_fp = fopen(fname, "a+")) == NULL) {
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
         chuser(batchId);
         ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
@@ -3917,7 +3979,7 @@ log_jobmsg(struct jData *jPtr, struct lsbMsg *jmsg)
             daemonParams[LSB_SHAREDIR].paramValue,
             lsb_jobid2str2(jPtr->jobId));
 
-    if (openEventFile(file) < 0) {
+    if (openEventFile2(file) < 0) {
         ls_syslog(LOG_ERR, "%s: failed in openEventFile() job %s",
                   __func__, lsb_jobid2str(jPtr->jobId));
         mbdDie(MASTER_FATAL);
@@ -4712,6 +4774,7 @@ static void
 jobMsgInit(void)
 {
     char dirbuf[PATH_MAX];
+    char fpath[PATH_MAX];
     DIR *dir;
     struct dirent *ent;
     FILE *fp;
@@ -4741,21 +4804,30 @@ jobMsgInit(void)
             || strcmp(ent->d_name, "..") == 0)
             continue;
 
-        fp = fopen(ent->d_name, "r");
+        sprintf(fpath, "%s/%s", dirbuf, ent->d_name);
+
+        fp = fopen(fpath, "r");
         if (fp == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed to open %s %m", __func__, ent->d_name);
             continue;
         }
 
+        lsberrno = LSBE_NO_ERROR;
         while (lsberrno != LSBE_EOF) {
 
             logPtr = lsb_geteventrec(fp, &num);
             if (logPtr == NULL) {
-                fclose(fp);
-                continue;
+                if (lsberrno == LSBE_EOF) {
+                    break;
+                } else {
+                    ls_syslog(LOG_ERR, "\
+%s: Error reading record number %d file %s: %M",
+                              __func__, num, fpath);
+                    continue;
+                }
             }
-            if (! replay_event(ent->d_name, num)) {
+            if (! replay_event(fpath, num)) {
                 ls_syslog(LOG_ERR, "\
 %s: file %s line %d replay_event() failed, ignoring line", __func__,
                           ent->d_name, num);

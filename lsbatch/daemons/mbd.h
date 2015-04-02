@@ -348,7 +348,7 @@ struct jData {
     int numSlotsReserve;
     int numAvailSlotsReserve;
     int numMsg;
-    char **msgs;
+    struct lsbMsg **msgs;
 };
 
 
