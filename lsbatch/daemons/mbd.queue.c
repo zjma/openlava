@@ -473,7 +473,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
 }
 
 static int
-isDefQueue (char *qname)
+isDefQueue(char *qname)
 {
     char *cp, *queue;
 
@@ -487,7 +487,7 @@ isDefQueue (char *qname)
 }
 
 int
-ctrlQueue (struct controlReq *qcReq, struct lsfAuth *auth)
+ctrlQueue(struct controlReq *qcReq, struct lsfAuth *auth)
 {
     struct qData *qp;
 
@@ -541,7 +541,7 @@ ctrlQueue (struct controlReq *qcReq, struct lsfAuth *auth)
 }
 
 char
-hostQMember (char *host, struct qData *qp)
+hostQMember(char *host, struct qData *qp)
 {
     int i;
 
@@ -559,7 +559,7 @@ hostQMember (char *host, struct qData *qp)
 }
 
 char
-userQMember (char *user, struct qData *qp)
+userQMember(char *user, struct qData *qp)
 {
     if (qp->uGPtr == NULL)
         return TRUE;
@@ -569,7 +569,7 @@ userQMember (char *user, struct qData *qp)
 }
 
 static int
-checkHU (char *hostList, char *userList, struct qData *qp)
+checkHU(char *hostList, char *userList, struct qData *qp)
 {
     char *sp;
 
@@ -589,7 +589,7 @@ checkHU (char *hostList, char *userList, struct qData *qp)
 }
 
 static int
-getCheckList (struct infoReq *qInfoReq, char **hostList, char **userList)
+getCheckList(struct infoReq *qInfoReq, char **hostList, char **userList)
 {
     char *sp;
     int numNames;
@@ -666,7 +666,7 @@ getCheckList (struct infoReq *qInfoReq, char **hostList, char **userList)
 }
 
 int
-isQueAd (struct qData *qp, char *lsfUserName)
+isQueAd(struct qData *qp, char *lsfUserName)
 {
     char *admins, *user;
 
@@ -685,14 +685,14 @@ isQueAd (struct qData *qp, char *lsfUserName)
     return (FALSE);
 }
 int
-isAuthQueAd (struct qData *qp, struct lsfAuth *auth)
+isAuthQueAd(struct qData *qp, struct lsfAuth *auth)
 {
     return isQueAd(qp, auth->lsfUserName);
 
 }
 
 int
-isInQueues (char *queue, char **queues, int num)
+isInQueues(char *queue, char **queues, int num)
 {
     int i;
 
@@ -714,7 +714,7 @@ isQInQSet(struct qData *queue, LS_BITSET_T *queueSet)
     return(setIsMember(queueSet, queue));
 }
 void
-freeQueueInfoReply (struct queueInfoReply *reply, char *freeAll)
+freeQueueInfoReply(struct queueInfoReply *reply, char *freeAll)
 {
     int i;
 
@@ -747,7 +747,7 @@ freeQueueInfoReply (struct queueInfoReply *reply, char *freeAll)
         _free_(reply->queues[i].saccts);
         _free_(reply->queues[i].preemption);
     }
-    FREEUP (reply->queues);
+    FREEUP(reply->queues);
 }
 
 int
