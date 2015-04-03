@@ -6424,6 +6424,7 @@ copyJobBill (struct submitReq *subReq,
 void
 freeJData(struct jData *jPtr)
 {
+    int i;
 
     if (!jPtr)
         return;
@@ -6481,7 +6482,7 @@ freeJData(struct jData *jPtr)
     FREEUP(jPtr->jobSpoolDir);
 
     for (i = 0; i < jPtr->numMsg; i++)
-        _free_(msgs[i]->msg);
+        _free_(jPtr->msgs[i]->msg);
     _free_(jPtr->msgs);
 
     FREE_ALL_GRPS_CAND(jPtr);
