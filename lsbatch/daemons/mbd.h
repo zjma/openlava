@@ -1345,12 +1345,12 @@ extern void                 checkAcctLog(void);
 extern int                  switchAcctLog(void);
 extern void                 logJobInfo(struct submitReq *, struct jData *,
                                        struct lenData *);
-extern int                  rmLogJobInfo_(struct jData *, int);
+extern int                  rmLogJobInfo(struct jData *, int);
 extern int                  readLogJobInfo(struct jobSpecs *, struct jData *,
                                            struct lenData *, struct lenData *);
 extern void                 log_signaljob(struct jData *, struct signalReq *,
                                           int, char *);
-extern char *               readJobInfoFile(struct jData *, int *);
+extern char                 *readJobInfoFile(struct jData *, int *);
 extern void                 writeJobInfoFile(struct jData * , char *, int);
 extern int                  replaceJobInfoFile(char *, char *, char *, int);
 extern void                 log_executejob (struct jData *);
@@ -1375,8 +1375,8 @@ extern sbdReplyType         msg_job(struct jData *, struct Buffer *,
 extern sbdReplyType         probe_slave(struct hData *, char sendJobs);
 extern sbdReplyType         rebootSbd(char *host);
 extern sbdReplyType         shutdownSbd(char *host);
-extern struct dptNode *     parseDepCond(char *, struct lsfAuth * ,
-                                         int *, char **,int *, int);
+extern struct dptNode       *parseDepCond(char *, struct lsfAuth * ,
+                                          int *, char **,int *, int);
 extern int                  evalDepCond (struct dptNode *, struct jData *);
 extern void                 freeDepCond (struct dptNode *);
 extern void                 resetDepCond (struct dptNode *);
@@ -1388,7 +1388,7 @@ extern float                getHRValue(char *, struct hData *,
                                        struct resourceInstance **);
 extern int                  checkResources (struct resourceInfoReq *,
                                             struct lsbShareResourceInfoReply *);
-extern struct sharedResource * getResource (char *);
+extern struct sharedResource *getResource (char *);
 extern void                 resetSharedResource(void);
 extern void                 updSharedResourceByRUNJob(const struct jData*);
 extern int                  sharedResourceUpdFactor;

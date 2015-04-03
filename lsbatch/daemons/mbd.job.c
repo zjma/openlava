@@ -4484,12 +4484,11 @@ removeJob(LS_LONG_INT jobId)
         }
 
         remvMemb(&jobIdHT, jp->jobId);
-        offJobList (jp, FJL);
+        offJobList(jp, FJL);
         numRemoveJobs ++;
         if (mSchedStage != M_STAGE_REPLAY) {
             log_jobclean(jp);
         }
-
 
         if ((node = jp->jgrpNode)) {
             if (node->nodeType == JGRP_NODE_ARRAY) {
@@ -4500,16 +4499,16 @@ removeJob(LS_LONG_INT jobId)
                     remvMemb(&jobIdHT, ARRAY_DATA(node)->jobArray->jobId);
                     freeJData(ARRAY_DATA(node)->jobArray);
                     treeFree(treeClip(node));
-                    rmLogJobInfo_(jp, TRUE);
+                    rmLogJobInfo(jp, TRUE);
                 }
             }
             else {
-                rmLogJobInfo_(jp, TRUE);
+                rmLogJobInfo(jp, TRUE);
                 treeFree(treeClip(node));
             }
         }
         else
-            rmLogJobInfo_(jp, TRUE);
+            rmLogJobInfo(jp, TRUE);
         freeJData (jp);
     }
 }

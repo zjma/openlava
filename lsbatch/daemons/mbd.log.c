@@ -142,6 +142,7 @@ static int     replay_arrayrequeue(struct jData *,
 static int renameAcctLogFiles(int);
 static void jobMsgInit(void);
 static int checkDirAccess(const char *);
+static void rmMessageFile(struct jData *);
 
 /* init_log()
  */
@@ -1358,7 +1359,7 @@ log_jobdata(struct jData * job, char *fname1, int type)
                   "openEventFile",
                   fname1);
         if (type == EVENT_JOB_NEW)
-            rmLogJobInfo_(job, FALSE);
+            rmLogJobInfo(job, FALSE);
         mbdDie(MASTER_FATAL);
     }
 
@@ -1503,7 +1504,7 @@ log_jobdata(struct jData * job, char *fname1, int type)
                   lsb_jobid2str(job->jobId),
                   "putEventRec");
         if (type == EVENT_JOB_NEW)
-            rmLogJobInfo_(job, FALSE);
+            rmLogJobInfo(job, FALSE);
         mbdDie(MASTER_FATAL);
     }
     return 0;
@@ -3011,12 +3012,11 @@ error:
 }
 
 int
-rmLogJobInfo_(struct jData *jp, int check)
+rmLogJobInfo(struct jData *jp, int check)
 {
-    static char        fname[] = "rmLogJobInfo_()";
-    char               logFn[MAXFILENAMELEN];
-    struct stat        st;
-    struct submitReq   *req;
+    char logFn[MAXFILENAMELEN];
+    struct stat st;
+    struct submitReq *req;
 
     req = &jp->shared->jobBill;
 
@@ -3051,29 +3051,27 @@ rmLogJobInfo_(struct jData *jp, int check)
     }
 
     if (stat(logFn, &st) == 0) {
+
         if (unlink(logFn) == -1) {
             chuser(batchId);
             if (check == FALSE)
-                ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M,
-                          fname,
-                          lsb_jobid2str(jp->jobId),
-                          "unlink",
-                          logFn);
-            return (-1);
+                ls_syslog(LOG_ERR, "\
+%s: job %s unlink() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
+            return -1;
         }
+
     } else if (errno != ENOENT) {
         chuser(batchId);
         if (check == FALSE)
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M,
-                      fname,
-                      lsb_jobid2str(jp->jobId),
-                      "stat",
-                      logFn);
-        return (-1);
+                ls_syslog(LOG_ERR, "\
+%s: job %s stat() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
+        return -1;
     }
+
+    rmMessageFile(jp);
     chuser(batchId);
 
-    return (0);
+    return 0;
 }
 
 int
@@ -4861,4 +4859,18 @@ checkDirAccess(const char *dir)
     chuser(batchId);
 
     return 0;
+}
+
+/* rmMessageFile()
+ */
+static void
+rmMessageFile(struct jData *jPtr)
+{
+    static char file[PATH_MAX];
+
+    sprintf(file, "%s/logdir/messages/%s",
+            daemonParams[LSB_SHAREDIR].paramValue,
+            lsb_jobid2str2(jPtr->jobId));
+
+    unlink(file);
 }
