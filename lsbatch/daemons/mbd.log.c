@@ -1229,7 +1229,7 @@ replay_jobmsg(char *file, int num)
     if (jPtr == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh job %s not found?", __func__, lsb_jobid2str(jobID));
-        return -1;
+        return false;
     }
 
     if (jPtr->numMsg == 0)
@@ -1239,7 +1239,6 @@ replay_jobmsg(char *file, int num)
         jPtr->numMsg = 0;
 
     jmsg = calloc(1, sizeof(struct lsbMsg));
-    jmsg->jobId = jPtr->jobId;
     jmsg->t = logPtr->eventTime;
     jmsg->msg = strdup(log->msg);
 
@@ -1253,7 +1252,7 @@ replay_jobmsg(char *file, int num)
     jPtr->msgs[jPtr->numMsg] = jmsg;
     jPtr->numMsg++;
 
-    return 0;
+    return true;
 }
 
 

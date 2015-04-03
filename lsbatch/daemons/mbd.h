@@ -331,7 +331,7 @@ struct jData {
     int     numRef;
     struct  jgTreeNode*   jgrpNode;
     int     nodeType;
-    struct  jData*        nextJob;
+    struct  jData *nextJob;
     int     restartPid;
     time_t  chkpntPeriod;
     u_short port;
@@ -1141,6 +1141,10 @@ extern int                  do_jobMsg(XDR *, int,
                                       struct sockaddr_in *,
                                       char *, struct LSFHeader *,
                                       struct lsfAuth *);
+extern int                  do_jobMsgInfo(XDR *, int,
+                                          struct sockaddr_in *,
+                                          char *, struct LSFHeader *,
+                                          struct lsfAuth *);
 extern int                  do_statusReq(XDR *, int, struct sockaddr_in *,
                                          int *,
                                          struct LSFHeader *);
@@ -1510,5 +1514,6 @@ extern struct timeWindow *newTimeWindow (void);
 extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
+extern int postMsg2Job(char **, struct jData *);
 
 #endif /* _MBD_HEADER_ */

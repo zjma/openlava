@@ -23,10 +23,9 @@
 #include "lsb.h"
 
 int
-lsb_msgjob(LS_LONG_INT jobId, char *msg)
+lsb_msgjob(LS_LONG_INT jobID, char *msg)
 {
-    struct lsbMsg jmsg;
-    char *request_buf;
+    char request_buf[MSGSIZE];
     char *reply_buf;
     XDR xdrs;
     int cc;
@@ -34,35 +33,42 @@ lsb_msgjob(LS_LONG_INT jobId, char *msg)
     struct LSFHeader hdr;
     struct lsfAuth auth;
 
+    if (strlen(msg) > LSB_MAX_MSGSIZE) {
+        lsberrno = LSBE_BAD_ARG;
+        return -1;
+    }
+
     if (authTicketTokens_(&auth, NULL) == -1)
         return -1;
-
-    jmsg.jobId = jobId;
-    jmsg.msg = msg;
-
-    len = sizeof(struct lsbMsg) + ALIGNWORD_(strlen(jmsg.msg) + 1);
-    len = len * sizeof(int);
-
-    request_buf = calloc(len, sizeof(char));
-    if (request_buf == NULL) {
-        return -1;
-
-    }
 
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
 
     initLSFHeader_(&hdr);
-    hdr.opCode = BATCH_JOB_MSG;;
+    hdr.opCode = BATCH_JOB_MSG;
 
-    if (!xdr_encodeMsg(&xdrs,
-                       (char *)&jmsg,
-                       &hdr,
-                       xdr_lsbMsg, 0,
-		       &auth)) {
+    XDR_SETPOS(&xdrs, LSF_HEADER_LEN);
+
+    if (!xdr_lsfAuth(&xdrs, &auth, &hdr))
+        return FALSE;
+
+    if (! xdr_jobID(&xdrs, &jobID, &hdr)) {
         lsberrno = LSBE_XDR;
-        xdr_destroy(&xdrs);
         return -1;
     }
+
+    if (! xdr_wrapstring(&xdrs, &msg)) {
+        lsberrno = LSBE_XDR;
+        return false;
+    }
+
+    len = XDR_GETPOS(&xdrs);
+    hdr.length = len - LSF_HEADER_LEN;
+
+    XDR_SETPOS(&xdrs, 0);
+    if (!xdr_LSFHeader(&xdrs, &hdr))
+        return FALSE;
+
+    XDR_SETPOS(&xdrs, len);
 
     cc = callmbd(NULL,
                  request_buf,
@@ -77,10 +83,7 @@ lsb_msgjob(LS_LONG_INT jobId, char *msg)
 	xdr_destroy(&xdrs);
 	return -1;
     }
-
     xdr_destroy(&xdrs);
-    if (cc)
-        free(reply_buf);
 
     lsberrno = hdr.opCode;
     if (lsberrno == LSBE_NO_ERROR)

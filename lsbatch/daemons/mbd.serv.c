@@ -41,6 +41,7 @@ static void freeJobInfoReply(struct jobInfoReply *);
 static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
 extern void closeSession(int);
+static int sendLSFHeader(int, int);
 
 int
 do_submitReq(XDR *xdrs,
@@ -837,7 +838,7 @@ do_jobMsg(XDR *xdrs,
           int chfd,
           struct sockaddr_in *from,
           char *hostName,
-          struct LSFHeader *reqHdr,
+          struct LSFHeader *hdr,
           struct lsfAuth *auth)
 {
     char reply_buf[MSGSIZE];
@@ -845,23 +846,27 @@ do_jobMsg(XDR *xdrs,
     int reply;
     struct LSFHeader replyHdr;
     struct jData *jPtr;
-    struct lsbMsg jmsg;
-    struct lsbMsg *jmsg2;
+    LS_LONG_INT jobID;
+    char *msg;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
         ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
 
-    jmsg.msg = calloc(LSB_MAX_MSGSIZE, sizeof(char));
-
-    if (!xdr_lsbMsg(xdrs, &jmsg, reqHdr)) {
-        reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "xdr_lsbMsg");
+    if (! xdr_jobID(xdrs, &jobID, hdr)) {
+        lsberrno = LSBE_XDR;
         goto Reply;
     }
 
-    if ((jPtr = getJobData(jmsg.jobId)) == NULL) {
+    msg = calloc(LSB_MAX_MSGSIZE, sizeof(char));
+
+    if (! xdr_wrapstring(xdrs, &msg)) {
+        lsberrno = LSBE_XDR;
+        goto Reply;
+    }
+
+    if ((jPtr = getJobData(jobID)) == NULL) {
         reply = LSBE_NO_JOB;
-        _free_(jmsg.msg);
+        _free_(msg);
         goto Reply;
     }
 
@@ -872,35 +877,24 @@ do_jobMsg(XDR *xdrs,
         goto Reply;
     }
 
-    if (jPtr->numMsg == 0)
-        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(struct lsbMsg *));
-
-    if (jPtr->numMsg > MAX_JOB_MSG - 1)
-        jPtr->numMsg = 0;
-
-    jmsg2 = calloc(1, sizeof(struct lsbMsg));
-    jmsg2->jobId = jPtr->jobId;
-    jmsg2->t = time(NULL);
-    jmsg2->msg = strdup(jmsg.msg);
-
-    /* Check if we rolled over
+    /* job array?
      */
-    if (jPtr->msgs[jPtr->numMsg]) {
-        _free_(jPtr->msgs[jPtr->numMsg]->msg);
-        _free_(jPtr->msgs[jPtr->numMsg]);
+    if (jPtr->nextJob) {
+        while ((jPtr = jPtr->nextJob))
+            postMsg2Job(&msg, jPtr);
+    } else {
+        postMsg2Job(&msg, jPtr);
     }
 
-    jPtr->msgs[jPtr->numMsg] = jmsg2;
-    jPtr->numMsg++;
-
-    log_jobmsg(jPtr, &jmsg);
-    _free_(jmsg.msg);
+    /* Free the msg when we free the jData
+     */
 
     reply = LSBE_NO_ERROR;
 
 Reply:
 
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
+    initLSFHeader_(&replyHdr);
     replyHdr.opCode = reply;
 
     if (!xdr_encodeMsg(&xdrs2,
@@ -926,6 +920,95 @@ Reply:
     return 0;
 }
 
+/* do_jobMsgInfo()
+ *
+ * Return the set of messages a job
+ * has to the library.
+ */
+int
+do_jobMsgInfo(XDR *xdrs,
+              int chfd,
+              struct sockaddr_in *from,
+              char *hostName,
+              struct LSFHeader *reqHdr,
+              struct lsfAuth *auth)
+{
+    LS_LONG_INT jobID;
+    XDR xdrs2;
+    int cc;
+    int i;
+    int len;
+    char *replyBuf;
+    struct LSFHeader hdr2;
+    struct jData *jPtr;
+
+    if (! xdr_jobID(xdrs, &jobID, reqHdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_jobID() failed", __func__);
+        sendLSFHeader(chfd, LSBE_XDR);
+        return -1;
+    }
+
+    if ((jPtr = getJobData(jobID)) == NULL) {
+        sendLSFHeader(chfd, LSBE_NO_JOB);
+        return -1;
+    }
+
+    if (auth->uid != 0
+        && !jgrpPermitOk(auth, jPtr->jgrpNode)
+        && !isAuthQueAd(jPtr->qPtr, auth)) {
+        sendLSFHeader(chfd, LSBE_PERMISSION);
+        return -1;
+    }
+
+
+    cc = jPtr->numMsg * sizeof(struct lsbMsg) * LSB_MAX_MSGSIZE;
+    cc = cc * sizeof(int);
+
+    replyBuf = calloc(cc, sizeof(char));
+    xdrmem_create(&xdrs2, replyBuf, cc, XDR_ENCODE);
+
+    initLSFHeader_(&hdr2);
+    hdr2.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (! xdr_int(&xdrs2, &jPtr->numMsg)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(replyBuf);
+        return -1;
+    }
+
+    for (i = 0; i < jPtr->numMsg; i++) {
+        if (! xdr_lsbMsg(&xdrs2, jPtr->msgs[i], &hdr2)) {
+            sendLSFHeader(chfd, LSBE_XDR);
+            _free_(replyBuf);
+            return -1;
+        }
+    }
+
+    len = XDR_GETPOS(&xdrs2);
+    hdr2.length = len - LSF_HEADER_LEN;
+    XDR_SETPOS(&xdrs2, 0);
+
+    if (!xdr_LSFHeader(&xdrs2, &hdr2)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(replyBuf);
+        return -1;
+    }
+    XDR_SETPOS(&xdrs2, len);
+
+    if (chanWrite_(chfd, replyBuf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "%s: chanWrite %dbytes failed",
+                  __func__, XDR_GETPOS(&xdrs2));
+        _free_(replyBuf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    _free_(replyBuf);
+    xdr_destroy(&xdrs2);
+
+    return 0;
+}
 
 int
 do_migReq(XDR *xdrs, int chfd, struct sockaddr_in *from, char *hostName,
@@ -2819,4 +2902,22 @@ do_setJobAttr(XDR * xdrs, int s, struct sockaddr_in * from, char *hostName,
     }
     xdr_destroy(&xdrs2);
     return (0);
+}
+
+/* sendLSFHeader()
+ */
+static int
+sendLSFHeader(int ch, int opcode)
+{
+    char buf[LSF_HEADER_LEN];
+    struct LSFHeader hdr;
+    XDR xdrs;
+
+    initLSFHeader_(&hdr);
+    hdr.opCode = opcode;
+    xdrmem_create(&xdrs, buf, sizeof(buf), XDR_ENCODE);
+    xdr_LSFHeader(&xdrs, &hdr);
+    chanWrite_(ch, buf, sizeof(buf));
+
+    return 0;
 }

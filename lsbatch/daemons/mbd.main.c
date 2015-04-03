@@ -784,6 +784,11 @@ processClient(struct clientNode *client, int *needFree)
                    do_runJobReq(&xdrs, s, &from, &auth, &reqHdr),
                    "do_runJobReq()");
             break;
+        case BATCH_JOBMSG_INFO:
+            TIMEIT(0,
+                   do_jobMsgInfo(&xdrs, s, &from, client->fromHost, &reqHdr, &auth),
+                   "do_jobMsgInfo()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)

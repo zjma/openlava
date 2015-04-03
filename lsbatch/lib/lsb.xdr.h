@@ -156,3 +156,6 @@ extern bool_t xdr_numShareAccts(XDR *,
 extern bool_t xdr_shareAcct(XDR *,
                             struct share_acct *,
                             struct LSFHeader *);
+extern bool_t xdr_jobID(XDR *,
+                        LS_LONG_INT *,
+                        struct LSFHeader *);

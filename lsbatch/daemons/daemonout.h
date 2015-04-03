@@ -41,7 +41,6 @@
 #define RSCHED_LISTSEARCH_BY_EXECLUSNAME   1
 
 typedef enum {
-
     BATCH_JOB_SUB       = 1,
     BATCH_JOB_INFO      = 2,
     BATCH_JOB_PEEK      = 3,
@@ -70,7 +69,8 @@ typedef enum {
     BATCH_UNUSED_38      = 38,
     BATCH_UNUSED_39      = 39,
     BATCH_STATUS_CHUNK   = 40,
-    BATCH_SET_JOB_ATTR    = 90,
+    BATCH_JOBMSG_INFO,
+    BATCH_SET_JOB_ATTR   = 90
 } mbdReqType;
 
 #define SUB_RLIMIT_UNIT_IS_KB 0x80000000

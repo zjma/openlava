@@ -337,41 +337,6 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
     return true;
 }
 
-
-/* xdr_lsbMsg()
- * Encode decode the message data. Caller must allocate
- * m->msg
- */
-bool_t
-xdr_lsbMsg(XDR *xdrs, struct lsbMsg *m, struct LSFHeader *hdr)
-{
-    int array;
-    int element;
-
-    if (xdrs->x_op == XDR_FREE) {
-        _free_(m->msg);
-        return true;
-    }
-
-    if (xdrs->x_op == XDR_ENCODE) {
-        jobId64To32(m->jobId, &array, &element);
-    }
-
-    if (! xdr_int(xdrs, &array)
-        || ! xdr_int(xdrs, &element)) {
-        return false;
-    }
-
-    if (xdrs->x_op == XDR_DECODE) {
-        jobId32To64(&m->jobId, array, element);
-    }
-
-    if (! xdr_wrapstring(xdrs, &m->msg))
-        return false;
-
-    return true;
-}
-
 bool_t
 xdr_submitMbdReply(XDR *xdrs, struct submitMbdReply *reply, struct LSFHeader *hdr)
 {
@@ -1934,3 +1899,35 @@ xdr_jobAttrReq(XDR *xdrs, struct jobAttrInfoEnt *jobAttr, struct LSFHeader *hdr)
     return true;
 }
 
+bool_t xdr_jobID(XDR *xdrs,
+                 LS_LONG_INT *jobID,
+                 struct LSFHeader *hdr)
+{
+    int jobid;
+    int elem;
+
+    if (xdrs->x_op == XDR_ENCODE)
+        jobId64To32(*jobID, &jobid, &elem);
+
+    if (! xdr_int(xdrs, &jobid)
+        || !xdr_int(xdrs, &elem))
+        return false;
+
+    if (xdrs->x_op == XDR_DECODE)
+        jobId32To64(jobID, jobid, elem);
+
+    return true;
+}
+
+bool_t xdr_lsbMsg(XDR *xdrs,
+                  struct lsbMsg *m,
+                  struct LSFHeader *hdr)
+{
+    if (! xdr_time_t(xdrs, &m->t))
+        return false;
+
+    if (! xdr_wrapstring(xdrs, &m->msg))
+        return false;
+
+    return true;
+}

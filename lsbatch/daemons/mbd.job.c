@@ -4509,7 +4509,7 @@ removeJob(LS_LONG_INT jobId)
         }
         else
             rmLogJobInfo(jp, TRUE);
-        freeJData (jp);
+        freeJData(jp);
     }
 }
 
@@ -6422,75 +6422,79 @@ copyJobBill (struct submitReq *subReq,
 }
 
 void
-freeJData(struct jData *jpbw)
+freeJData(struct jData *jPtr)
 {
 
-    if (!jpbw)
+    if (!jPtr)
         return;
 
-    if (IS_PEND(jpbw->jStatus) && jpbw->candPtr) {
-        FREEUP (jpbw->candPtr);
-        if (jpbw->numHostPtr > 0 && (jpbw->jStatus & JOB_STAT_RESERVE)) {
+    if (IS_PEND(jPtr->jStatus) && jPtr->candPtr) {
+        FREEUP (jPtr->candPtr);
+        if (jPtr->numHostPtr > 0 && (jPtr->jStatus & JOB_STAT_RESERVE)) {
 
             if (logclass & (LC_TRACE))
                 ls_syslog(LOG_DEBUG3, "\
 %s: job <%s> updRes - <%d> slots <%s:%d>",
-                          __func__, lsb_jobid2str(jpbw->jobId),
-                          jpbw->numHostPtr,
+                          __func__, lsb_jobid2str(jPtr->jobId),
+                          jPtr->numHostPtr,
                           __FILE__,  __LINE__);
 
-            freeReserveSlots(jpbw);
+            freeReserveSlots(jPtr);
         }
     }
 
-    if (JOB_PREEMPT_WAIT(jpbw))
-        freeReservePreemptResources(jpbw);
+    if (JOB_PREEMPT_WAIT(jPtr))
+        freeReservePreemptResources(jPtr);
 
-    FREEUP(jpbw->userName);
-    FREEUP(jpbw->lsfRusage);
-    FREEUP(jpbw->reasonTb);
-    FREEUP(jpbw->hPtr);
+    FREEUP(jPtr->userName);
+    FREEUP(jPtr->lsfRusage);
+    FREEUP(jPtr->reasonTb);
+    FREEUP(jPtr->hPtr);
 
-    FREEUP(jpbw->execHome);
-    FREEUP(jpbw->execCwd);
-    FREEUP(jpbw->execUsername);
-    FREEUP(jpbw->queuePreCmd);
-    FREEUP(jpbw->queuePostCmd);
-    FREEUP(jpbw->reqHistory);
-    FREEUP(jpbw->schedHost);
+    FREEUP(jPtr->execHome);
+    FREEUP(jPtr->execCwd);
+    FREEUP(jPtr->execUsername);
+    FREEUP(jPtr->queuePreCmd);
+    FREEUP(jPtr->queuePostCmd);
+    FREEUP(jPtr->reqHistory);
+    FREEUP(jPtr->schedHost);
 
-    if (jpbw->runRusage.npids > 0)
-        FREEUP(jpbw->runRusage.pidInfo);
-    if (jpbw->runRusage.npgids > 0)
-        FREEUP(jpbw->runRusage.pgid);
+    if (jPtr->runRusage.npids > 0)
+        FREEUP(jPtr->runRusage.pidInfo);
+    if (jPtr->runRusage.npgids > 0)
+        FREEUP(jPtr->runRusage.pgid);
 
-    if (jpbw->newSub) {
-        freeSubmitReq (jpbw->newSub);
-        FREEUP(jpbw->newSub);
+    if (jPtr->newSub) {
+        freeSubmitReq (jPtr->newSub);
+        FREEUP(jPtr->newSub);
     }
-    if (jpbw->shared->numRef <= 1)
-        freeSubmitReq(&(jpbw->shared->jobBill));
+    if (jPtr->shared->numRef <= 1)
+        freeSubmitReq(&(jPtr->shared->jobBill));
 
-    destroySharedRef(jpbw->shared);
-    FREEUP(jpbw->askedPtr);
+    destroySharedRef(jPtr->shared);
+    FREEUP(jPtr->askedPtr);
 
-    FREEUP(jpbw->reqHistory);
+    FREEUP(jPtr->reqHistory);
 
-    FREEUP(jpbw->execHosts);
-    FREEUP(jpbw->candPtr);
-    FREEUP(jpbw->jobSpoolDir);
+    FREEUP(jPtr->execHosts);
+    FREEUP(jPtr->candPtr);
+    FREEUP(jPtr->jobSpoolDir);
 
-    FREE_ALL_GRPS_CAND(jpbw);
+    for (i = 0; i < jPtr->numMsg; i++)
+        _free_(msgs[i]->msg);
+    _free_(jPtr->msgs);
 
-    if (jpbw->numRef <= 0 ) {
-        FREEUP(jpbw);
+    FREE_ALL_GRPS_CAND(jPtr);
+
+    if (jPtr->numRef <= 0 ) {
+        FREEUP(jPtr);
     } else {
 
-        jpbw->jStatus |= JOB_STAT_VOID;
-        voidJobList = listSetInsert((long)jpbw, voidJobList);
+        jPtr->jStatus |= JOB_STAT_VOID;
+        voidJobList = listSetInsert((long)jPtr, voidJobList);
         ls_syslog(LOG_DEBUG1, "\
 %s: job <%s> can not be freed with numRef = <%d>",
-                  __func__, lsb_jobid2str(jpbw->jobId), jpbw->numRef);
+                  __func__, lsb_jobid2str(jPtr->jobId), jPtr->numRef);
     }
 }
 
@@ -7002,7 +7006,7 @@ getZombieJob (LS_LONG_INT jobId)
 
 
 void
-accumRunTime (struct jData *jData, int newStatus, time_t eventTime)
+accumRunTime(struct jData *jData, int newStatus, time_t eventTime)
 {
     int             diffTime = 0;
     time_t          currentTime;
@@ -8589,6 +8593,37 @@ arrayRequeue(struct jData      *jArray,
     return requeueReply;
 }
 
+/* postMsg2Job()
+ */
+int
+postMsg2Job(char **msg, struct jData *jPtr)
+{
+    struct lsbMsg *jmsg;
+
+    if (jPtr->numMsg == 0)
+        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(struct lsbMsg *));
+
+    if (jPtr->numMsg > MAX_JOB_MSG - 1)
+        jPtr->numMsg = 0;
+
+    jmsg = calloc(1, sizeof(struct lsbMsg));
+    jmsg->t = time(NULL);
+    jmsg->msg = *msg;
+
+    /* Check if we rolled over
+     */
+    if (jPtr->msgs[jPtr->numMsg]) {
+        _free_(jPtr->msgs[jPtr->numMsg]->msg);
+        _free_(jPtr->msgs[jPtr->numMsg]);
+    }
+
+    jPtr->msgs[jPtr->numMsg] = jmsg;
+    jPtr->numMsg++;
+
+    log_jobmsg(jPtr, jmsg);
+
+    return 0;
+}
 
 static
 void closeSbdConnect4ZombieJob(struct jData *jData)
