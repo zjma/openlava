@@ -625,7 +625,7 @@ ls_readeventrec(FILE *fp)
     p = ebuf;
     cc = readEventHeader(ebuf, &ev);
     if (cc < 0) {
-        lserrno = LSE_FILE_CLOSE;
+        lserrno = LSE_BAD_EVENT;
         return NULL;
     }
     /* move ahead since we consumed
@@ -785,7 +785,7 @@ readEventHeader(char *buf, struct lsEventRec *ev)
     else if (strcmp("REMOVE_HOST", event) == 0)
         ev->event = EV_REMOVE_HOST;
     else
-        abort();
+        return -1;
 
     return n;
 }

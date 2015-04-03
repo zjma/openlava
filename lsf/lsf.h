@@ -684,7 +684,7 @@ struct hostEntryLog {
 #define LSE_I18N_CATOPEN        89
 #define LSE_I18N_NOMEM          90
 #define LSE_NO_MEM              91
-#define LSE_FILE_CLOSE          92
+#define LSE_BAD_EVENT           92
 #define LSE_MASTER_LIM_DOWN     93
 #define LSE_MLS_INVALID         94
 #define LSE_MLS_CLEARANCE       95

@@ -119,7 +119,7 @@ char *ls_errmsg[] = {
     /* 89 */  "i18n catopen failed",
     /* 90 */  "i18n malloc failed",
     /* 91 */  "Cannot allocate memory",
-    /* 92 */  "Close a NULL-FILE pointer",
+    /* 92 */  "Bad event in lim.events",
     /* 93 */  "Master LIM is down; try later",
     /* 94 */  "Requested label is not valid",
     /* 95 */  "Requested label is above your allowed range",

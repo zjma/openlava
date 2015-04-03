@@ -445,6 +445,7 @@ loadEvents(void)
     /* Load the events and build the
      * hash table of runtime hosts.
      */
+znovu:
     while ((eRec = ls_readeventrec(logFp))) {
         struct hostEntryLog *hPtr;
 
@@ -482,6 +483,11 @@ loadEvents(void)
             case EV_EVENT_LAST:
                 break;
         }
+    }
+    if (lserrno != LSE_EOF) {
+        ls_syslog(LOG_ERR, "\
+%s: unexpected error while reading lim.events: %M", __func__);
+        goto znovu;
     }
 
     /* heresy...
