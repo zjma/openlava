@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2015 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
@@ -9,7 +9,7 @@ AM_CPPFLAGS += -I$(top_srcdir)/lsf  -I$(top_srcdir)/lsf/lib \
 
 bin_PROGRAMS = badmin bkill bparams brestart btop bbot bmgroup \
 bpeek brun busers bhosts bmig bqueues bsub bjobs bmod \
-brequeue bswitch bpost
+brequeue bswitch bpost bread
 
 badmin_SOURCES = badmin.c cmd.bqc.c cmd.hist.c \
 	cmd.bhc.c cmd.misc.c cmd.job.c cmd.prt.c \
@@ -241,6 +241,15 @@ bpost_LDADD = \
         ../../lsf/intlib/liblsfint.la -lm -lnsl
 if SOLARIS
 bpost_LDADD += -lsocket -lnsl
+endif
+
+bread_SOURCES = bread.c cmd.jobid.c cmd.err.c cmd.h
+bread_LDADD = \
+        ../lib/liblsbatch.la \
+        ../../lsf/lib/liblsf.la \
+        ../../lsf/intlib/liblsfint.la -lm -lnsl
+if SOLARIS
+bread_LDADD += -lsocket -lnsl
 endif
 
 install-data-local:

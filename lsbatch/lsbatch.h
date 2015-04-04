@@ -1459,6 +1459,7 @@ extern struct queueInfoEnt *lsb_queueinfo(char **,
 extern int  lsb_reconfig(int);
 extern int  lsb_signaljob(LS_LONG_INT, int);
 extern int  lsb_msgjob(LS_LONG_INT, char *);
+extern struct lsbMsg *lsb_getmsgjob(LS_LONG_INT, int *);
 extern int  lsb_chkpntjob(LS_LONG_INT, time_t, int);
 extern int  lsb_deletejob(LS_LONG_INT, int, int);
 extern int  lsb_forcekilljob(LS_LONG_INT);

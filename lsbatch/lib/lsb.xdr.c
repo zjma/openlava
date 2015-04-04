@@ -1899,9 +1899,10 @@ xdr_jobAttrReq(XDR *xdrs, struct jobAttrInfoEnt *jobAttr, struct LSFHeader *hdr)
     return true;
 }
 
-bool_t xdr_jobID(XDR *xdrs,
-                 LS_LONG_INT *jobID,
-                 struct LSFHeader *hdr)
+bool_t
+xdr_jobID(XDR *xdrs,
+          LS_LONG_INT *jobID,
+          struct LSFHeader *hdr)
 {
     int jobid;
     int elem;
@@ -1919,9 +1920,10 @@ bool_t xdr_jobID(XDR *xdrs,
     return true;
 }
 
-bool_t xdr_lsbMsg(XDR *xdrs,
-                  struct lsbMsg *m,
-                  struct LSFHeader *hdr)
+bool_t
+xdr_lsbMsg(XDR *xdrs,
+           struct lsbMsg *m,
+           struct LSFHeader *hdr)
 {
     if (! xdr_time_t(xdrs, &m->t))
         return false;

@@ -960,7 +960,6 @@ do_jobMsgInfo(XDR *xdrs,
         return -1;
     }
 
-
     cc = jPtr->numMsg * sizeof(struct lsbMsg) * LSB_MAX_MSGSIZE;
     cc = cc * sizeof(int);
 

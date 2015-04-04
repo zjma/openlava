@@ -1042,7 +1042,8 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_DEBUG
           || reqType == BATCH_JOB_FORCE
           || reqType == BATCH_SET_JOB_ATTR
-          || reqType == BATCH_JOB_MSG))
+          || reqType == BATCH_JOB_MSG
+          || reqType == BATCH_JOBMSG_INFO))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {
