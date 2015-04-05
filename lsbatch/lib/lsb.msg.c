@@ -23,7 +23,7 @@
 #include "lsb.h"
 
 int
-lsb_msgjob(LS_LONG_INT jobID, char *msg)
+lsb_postjobmsg(LS_LONG_INT jobID, char *msg)
 {
     char request_buf[MSGSIZE];
     char *reply_buf;
@@ -93,7 +93,7 @@ lsb_msgjob(LS_LONG_INT jobID, char *msg)
 }
 
 struct lsbMsg *
-lsb_getmsgjob(LS_LONG_INT jobID, int *num)
+lsb_readjobmsg(LS_LONG_INT jobID, int *num)
 {
     XDR xdrs;
     struct LSFHeader hdr;

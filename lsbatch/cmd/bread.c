@@ -62,7 +62,7 @@ main(int argc, char **argv)
                     &jobIDs,
                     0);
 
-    msg = lsb_getmsgjob(jobIDs[0], &num);
+    msg = lsb_readjobmsg(jobIDs[0], &num);
     if (msg == NULL) {
         if (lsberrno == LSBE_NO_ERROR) {
             printf("Job %s has no posted messages\n", lsb_jobid2str(jobIDs[0]));

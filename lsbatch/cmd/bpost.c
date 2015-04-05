@@ -70,7 +70,7 @@ main(int argc, char **argv)
                     &jobIDs,
                     0);
 
-    cc = lsb_msgjob(jobIDs[0], msg);
+    cc = lsb_postjobmsg(jobIDs[0], msg);
     if (cc < 0) {
         lsb_perror("lsb_jobmsg()");
         return -1;

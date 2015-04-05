@@ -9,6 +9,8 @@ Release notes for openlava versions
 -- Implement bpost/bread commands using API
    lsb_msgjob()/lsb_getmsgjob().
 -- Implement docker integration
+-- Rename the lsb_msgjob()/lsb_getmsgjob() to
+   lsb_postjobmsg()/lsb_readjobmsg() for compatibility
 
 2.3-0rc
 ========
