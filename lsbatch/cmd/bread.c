@@ -19,7 +19,7 @@
 
 #include "cmd.h"
 
-static void print_messages(struct lsbMsg *, int);
+static void print_messages(LS_LONG_INT, struct lsbMsg *, int);
 void
 usage(void)
 {
@@ -72,16 +72,23 @@ main(int argc, char **argv)
         return -1;
     }
 
-    print_messages(msg, num);
+    print_messages(jobIDs[0], msg, num);
 
     return 0;
 }
 
 static void
-print_messages(struct lsbMsg *msg, int num)
+print_messages(LS_LONG_INT jobID, struct lsbMsg *msg, int num)
 {
+    int cc;
+
     /* JOBID     POST_TIME
      * 1234567890123456789
      * - jack bubu mortacci tua
      */
+    printf("Messages posted to jobID %s\n", lsb_jobid2str(jobID));
+    for (cc = 0; cc < num; cc++) {
+        printf("POST_TIME: %s MESSAGE: %s\n",
+               ls_time(msg->t), msg[cc].msg);
+    }
 }
