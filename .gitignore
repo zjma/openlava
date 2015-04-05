@@ -39,3 +39,5 @@ config.sub
 ltmain.sh
 stest
 treetest
+compile
+examples/docker/docker_starter
