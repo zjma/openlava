@@ -1,0 +1,57 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH post 1 "OpenLava Version 3.0 - Mar 2015"
+.br
+.SH NAME
+\fBbpost\fR - sends message to a job
+.SH SYNOPSIS
+.BR
+.PP
+.PP
+\fBbpost\fR\fB \fR\f \fR-d "message"\fR   \fR\fIjob_ID\fR
+.PP
+\fBbpost\fR\fB \fR[\fB-h\fR | \fB-V\fR]
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+\fB\f
+
+.SH OPTIONS
+.BR
+.PP
+.TP
+ \fIjob_ID\fR | \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex_list\fR\fB]"
+\fR
+.IP
+Required. Job ID of the job or of the job array on which to operate.
+
+.IP
+For a job array, the index list, the square brackets, and the quotation
+marks are required. An index list is used to operate on a job array. The
+index list is a comma separated list whose elements have the syntax
+\fIstart_index\fR[-\fIend_index\fR[\fB:\fR\fIstep\fR] ] where \fIstart_index\fR, \fIend_index\fR and \fIstep\fR
+are positive integers. If the step is omitted, a step of one is assumed.
+The job array index starts at one. The maximum job array index is 1000.
+All jobs in the array share the same job_ID and parameters. Each
+element of the array is distinguished by its array index.
+.TP
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exit.
+
+
+.TP
+\fB-V
+\fR
+.IP
+Prints openlava release version to stderr and exit.
+
+
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bread(1), bjobs(1)
