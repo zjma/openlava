@@ -1,9 +1,14 @@
 Release notes for openlava versions
 
-3.0
+3.0beta
 =======
--- Preemption by queues
+-- Queue level preemption
 -- Queue level fairshare
+-- Fix LIM core dump when lim.events has bad format
+-- Ignore PREEMPTABLE keyword in lsb.queues
+-- Implement bpost/bread commands using API
+   lsb_msgjob()/lsb_getmsgjob().
+-- Implement docker integration
 
 2.3-0rc
 ========
