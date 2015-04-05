@@ -185,8 +185,6 @@ extern char read_switch(struct eventRec *);
 extern char read_jobmove(struct eventRec *);
 extern char read_signal(struct eventRec *);
 extern char read_jobstartaccept(struct eventRec *);
-extern char read_jobmsg(struct eventRec *);
-extern char read_jobmsgack(struct eventRec *);
 extern char read_jobforce(struct eventRec *);
 extern int addJob(struct jobRecord *);
 extern int addEvent(struct eventRecord *, struct jobRecord *);

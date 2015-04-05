@@ -886,7 +886,7 @@ extern void    ls_remtty(int ind, int enableIntSus);
 extern void    ls_loctty(int ind);
 extern char    *ls_sysmsg(void);
 extern void    ls_perror(char *usrMsg);
-
+extern char    *ls_time(time_t);
 
 extern struct lsConf *ls_getconf(char *);
 extern void ls_freeconf(struct lsConf * );

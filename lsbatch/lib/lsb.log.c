@@ -49,7 +49,6 @@ static int readLoadIndex (char *, struct loadIndexLog *);
 static int readJobRequeue (char *, struct jobRequeueLog *);
 static int readJobSignal (char *, struct signalLog *);
 static int readJobMsg (char *, struct jobMsgLog *);
-static int readJobMsgAck(char *, struct jobMsgAckLog *);
 static int readJobClean(char *, struct jobCleanLog *);
 static int readLogSwitch(char *, struct logSwitchLog *);
 static int writeJobNew(FILE *, struct jobNewLog *);
@@ -73,7 +72,6 @@ static int writeJobFinish (FILE *, struct jobFinishLog *);
 static int writeLoadIndex (FILE *, struct loadIndexLog *);
 static int writeJobSignal(FILE *, struct signalLog *);
 static int writeJobMsg(FILE *, struct jobMsgLog *);
-static int writeJobMsgAck(FILE *, struct jobMsgLog *);
 static int writeJobRqueue(FILE *, struct jobRequeueLog *);
 static int writeJobClean (FILE *, struct jobCleanLog *);
 static int writeLogSwitch(FILE* , struct logSwitchLog*);
@@ -341,7 +339,7 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
     int ccount;
     char *line;
     char etype[MAX_LSB_NAME_LEN];
-    char *namebuf = NULL;
+    char *namebuf;
     static struct eventRec *logRec;
     int eventKind;
     int tempTimeStamp;
@@ -432,7 +430,7 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG2, "%s: log.type=%x", __func__, logRec->type);
 
-    readEventRecord (line, logRec);
+    readEventRecord(line, logRec);
 
     if (lsberrno == LSBE_NO_ERROR)
         return logRec;
@@ -577,9 +575,7 @@ freeLogRec(struct eventRec *logRec)
             free(logRec->eventLog.jobExecuteLog.execUsername);
             return;
         case EVENT_JOB_MSG:
-            free(logRec->eventLog.jobMsgLog.src);
-            free(logRec->eventLog.jobMsgLog.dest);
-            free(logRec->eventLog.jobMsgLog.msg);
+            _free_(logRec->eventLog.jobMsgLog.msg);
             return;
         case EVENT_JOB_FORCE:
             for (i = 0; i < logRec->eventLog.jobForceRequestLog.numExecHosts; i++) {
@@ -1653,7 +1649,7 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
     }
 
     if (fprintf(log_fp, "\"%s\" \"%s\" %d", etype, logPtr->version,
-                (int) logPtr->eventTime) < 0) {
+                (int)logPtr->eventTime) < 0) {
         lsberrno = LSBE_SYS_CALL;
         return -1;
     }
@@ -1742,10 +1738,6 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
         case EVENT_JOB_MSG:
             lsberrno = writeJobMsg(log_fp,
                                    &(logPtr->eventLog.jobMsgLog));
-            break;
-        case EVENT_JOB_MSG_ACK:
-            lsberrno = writeJobMsgAck(log_fp,
-                                      &(logPtr->eventLog.jobMsgLog));
             break;
         case EVENT_JOB_SIGACT:
             lsberrno = writeJobSigAct(log_fp,
@@ -2545,13 +2537,14 @@ writeJobSignal(FILE *log_fp, struct signalLog *signalLog)
                 signalLog->userId,
                 signalLog->runCount) < 0)
         return LSBE_SYS_CALL;
+
     if (addQStr(log_fp, signalLog->signalSymbol) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", signalLog->idx) < 0 )
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, signalLog->userName) < 0)
+    if (addQStr(log_fp, signalLog->userName) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
@@ -2563,21 +2556,12 @@ writeJobSignal(FILE *log_fp, struct signalLog *signalLog)
 static int
 writeJobMsg(FILE *log_fp, struct jobMsgLog *jobMsgLog)
 {
-    if (fprintf(log_fp, " %d %d %d %d",
-                jobMsgLog->usrId,
+    if (fprintf(log_fp, " %d %d",
                 jobMsgLog->jobId,
-                jobMsgLog->msgId,
-                jobMsgLog->type) < 0)
+                jobMsgLog->idx) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr(log_fp, jobMsgLog->src) < 0)
-        return LSBE_SYS_CALL;
-    if (addQStr(log_fp, jobMsgLog->dest) < 0)
-        return LSBE_SYS_CALL;
     if (addQStr(log_fp, jobMsgLog->msg) < 0)
-        return LSBE_SYS_CALL;
-
-    if (fprintf(log_fp, " %d", jobMsgLog->idx) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
@@ -2585,33 +2569,6 @@ writeJobMsg(FILE *log_fp, struct jobMsgLog *jobMsgLog)
 
     return LSBE_NO_ERROR;
 }
-
-static int
-writeJobMsgAck(FILE *log_fp, struct jobMsgLog *jobMsgLog)
-{
-    if (fprintf(log_fp, " %d %d %d %d",
-                jobMsgLog->usrId,
-                jobMsgLog->jobId,
-                jobMsgLog->msgId,
-                jobMsgLog->type) < 0)
-        return LSBE_SYS_CALL;
-
-    if (addQStr(log_fp, jobMsgLog->src) < 0)
-        return LSBE_SYS_CALL;
-    if (addQStr(log_fp, jobMsgLog->dest) < 0)
-        return LSBE_SYS_CALL;
-    if (addQStr(log_fp, jobMsgLog->msg) < 0)
-        return LSBE_SYS_CALL;
-
-    if (fprintf(log_fp, " %d", jobMsgLog->idx) < 0)
-        return LSBE_SYS_CALL;
-
-    if (fprintf(log_fp, "\n") < 0)
-        return LSBE_SYS_CALL;
-
-    return LSBE_NO_ERROR;
-}
-
 
 static int
 readJobSignal (char *line, struct signalLog *signalLog)
@@ -2647,104 +2604,31 @@ readJobSignal (char *line, struct signalLog *signalLog)
 }
 
 static int
-readJobMsg (char *line, struct jobMsgLog *jobMsgLog)
+readJobMsg(char *line, struct jobMsgLog *jobMsgLog)
 {
     int cc, ccount;
     char strBuf[MAXLINELEN];
 
-    cc = sscanf(line, "%d%d%d%d%n",
-                &(jobMsgLog->usrId),
+    cc = sscanf(line, "%d%d%n",
                 &(jobMsgLog->jobId),
-                &(jobMsgLog->msgId),
-                &(jobMsgLog->type),
+                &(jobMsgLog->idx),
                 &ccount);
 
-    if (cc != 4)
+    if (cc != 2)
         return LSBE_EVENT_FORMAT;
-
-    line += ccount + 1;
-    if ((ccount = stripQStr(line, strBuf)) < 0)
-        return LSBE_EVENT_FORMAT;
-
-    jobMsgLog->src = putstr_(strBuf);
-    if (!jobMsgLog->src)
-        return(LSBE_NO_MEM);
 
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, strBuf)) < 0)
         return LSBE_EVENT_FORMAT;
-    jobMsgLog->dest = putstr_(strBuf);
-    if (!jobMsgLog->dest)
-        return(LSBE_NO_MEM);
 
-    line += ccount + 1;
-
-    if ((ccount = stripQStr(line, strBuf)) < 0)
-        return LSBE_EVENT_FORMAT;
     jobMsgLog->msg = putstr_(strBuf);
     if (!jobMsgLog->msg)
-        return(LSBE_NO_MEM);
+        return LSBE_NO_MEM;
 
-    line += ccount + 1;
-    cc = sscanf(line, "%d%n", &(jobMsgLog->idx), &ccount);
-    if (cc != 1)
-        return LSBE_EVENT_FORMAT;
-    line += ccount + 1;
     return LSBE_NO_ERROR;
 
 }
-
-static int
-readJobMsgAck (char *line, struct jobMsgAckLog *jobMsgAckLog)
-{
-    int cc, ccount;
-    char strBuf[MAXLINELEN];
-
-    cc = sscanf(line, "%d%d%d%d%n",
-                &(jobMsgAckLog->usrId),
-                &(jobMsgAckLog->jobId),
-                &(jobMsgAckLog->msgId),
-                &(jobMsgAckLog->type),
-                &ccount);
-
-    if (cc != 4)
-        return LSBE_EVENT_FORMAT;
-
-    line += ccount + 1;
-    if ((ccount = stripQStr(line, strBuf)) < 0)
-        return LSBE_EVENT_FORMAT;
-
-    jobMsgAckLog->src = putstr_(strBuf);
-    if (!jobMsgAckLog->src)
-        return(LSBE_NO_MEM);
-
-    line += ccount + 1;
-
-    if ((ccount = stripQStr(line, strBuf)) < 0)
-        return LSBE_EVENT_FORMAT;
-    jobMsgAckLog->dest = putstr_(strBuf);
-    if (!jobMsgAckLog->dest)
-        return(LSBE_NO_MEM);
-
-    line += ccount + 1;
-
-    if ((ccount = stripQStr(line, strBuf)) < 0)
-        return LSBE_EVENT_FORMAT;
-    jobMsgAckLog->msg = putstr_(strBuf);
-    if (!jobMsgAckLog->msg)
-        return(LSBE_NO_MEM);
-
-    line += ccount + 1;
-
-    cc = sscanf(line, "%d%n", &(jobMsgAckLog->idx), &ccount);
-    if (cc != 1)
-        return LSBE_EVENT_FORMAT;
-    line += ccount + 1;
-    return LSBE_NO_ERROR;
-
-}
-
 
 static int
 writeJobForce(FILE* log_fp, struct jobForceRequestLog* jobForceRequestLog)
@@ -3190,8 +3074,6 @@ getEventTypeAndKind(char *typeStr, int *eventKind)
         eventType = EVENT_JOB_SIGNAL;
     else if (strcmp(typeStr, "JOB_MSG") == 0)
         eventType = EVENT_JOB_MSG;
-    else if (strcmp(typeStr, "JOB_MSG_ACK") == 0)
-        eventType = EVENT_JOB_MSG_ACK;
     else if (strcmp(typeStr, "JOB_REQUEUE") == 0)
         eventType = EVENT_JOB_REQUEUE;
     else if (strcmp(typeStr, "JOB_SIGACT") == 0)
@@ -3307,7 +3189,7 @@ lsb_readeventrecord(char *line, struct eventRec *logRec)
 }
 
 void
-readEventRecord (char *line, struct eventRec *logRec)
+readEventRecord(char *line, struct eventRec *logRec)
 {
 
     switch (logRec->type) {
@@ -3377,9 +3259,6 @@ readEventRecord (char *line, struct eventRec *logRec)
             break;
         case EVENT_JOB_MSG:
             lsberrno = readJobMsg(line, &(logRec->eventLog.jobMsgLog));
-            break;
-        case EVENT_JOB_MSG_ACK:
-            lsberrno = readJobMsgAck(line, &(logRec->eventLog.jobMsgAckLog));
             break;
         case EVENT_JOB_SIGACT:
             lsberrno = readJobSigAct(line, &(logRec->eventLog.sigactLog));

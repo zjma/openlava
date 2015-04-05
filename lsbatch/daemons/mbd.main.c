@@ -572,7 +572,6 @@ processClient(struct clientNode *client, int *needFree)
 {
     static char          fname[]="processClient()";
     struct Buffer        *buf;
-    struct bucket        *bucket;
     mbdReqType           mbdReqtype;
     int                  s;
     int                  pid;
@@ -694,12 +693,7 @@ processClient(struct clientNode *client, int *needFree)
             TIMEIT(0, do_signalReq(&xdrs, s, &from, client->fromHost, &reqHdr, &auth),"do_signalReq()");
             break;
         case BATCH_JOB_MSG:
-            NEW_BUCKET(bucket,buf);
-            if (bucket) {
-                TIMEIT(0, do_jobMsg(bucket, &xdrs, s, &from, client->fromHost, &reqHdr, &auth), "do_jobMsg()");
-            } else {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "NEW_BUCKET");
-            }
+            TIMEIT(0, do_jobMsg(&xdrs, s, &from, client->fromHost, &reqHdr, &auth), "do_jobMsg()");
             break;
         case BATCH_QUE_CTRL:
             TIMEIT(0, do_queueControlReq (&xdrs, s, &from, client->fromHost, &reqHdr, &auth),"do_queueControlReq()");
@@ -789,6 +783,11 @@ processClient(struct clientNode *client, int *needFree)
             TIMEIT(0,
                    do_runJobReq(&xdrs, s, &from, &auth, &reqHdr),
                    "do_runJobReq()");
+            break;
+        case BATCH_JOBMSG_INFO:
+            TIMEIT(0,
+                   do_jobMsgInfo(&xdrs, s, &from, client->fromHost, &reqHdr, &auth),
+                   "do_jobMsgInfo()");
             break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
@@ -1042,7 +1041,9 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_JOB_MODIFY
           || reqType == BATCH_DEBUG
           || reqType == BATCH_JOB_FORCE
-          || reqType == BATCH_SET_JOB_ATTR))
+          || reqType == BATCH_SET_JOB_ATTR
+          || reqType == BATCH_JOB_MSG
+          || reqType == BATCH_JOBMSG_INFO))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {

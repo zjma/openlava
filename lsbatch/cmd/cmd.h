@@ -21,12 +21,6 @@
 #if !defined(_LSB_CMD_)
 #define _LSB_CMD_
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <time.h>
 #include "../../lsf/lsf.h"
 #include "../../lsf/lib/lib.hdr.h"
 #include "../lsbatch.h"

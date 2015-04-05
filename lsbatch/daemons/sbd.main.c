@@ -509,7 +509,6 @@ processMsg(struct clientNode *client)
 {
     static char fname[]="processMsg";
     struct Buffer *buf;
-    struct bucket *bucket;
     int s;
     sbdReqType sbdReqtype;
     struct LSFHeader reqHdr;
@@ -620,17 +619,6 @@ processMsg(struct clientNode *client)
 	TIMEIT(2, do_sbdDebug(&xdrs, client->chanfd, &reqHdr), "do_sbdDebug");
 	break;
 
-
-    case BATCH_JOB_MSG:
-	NEW_BUCKET(bucket,buf);
-	if (bucket) {
-	    do_jobMsg(bucket, &xdrs, client->chanfd, &reqHdr);
-	} else {
-	    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5012,
-		"%s: BATCH_JOB_MSG newBucket failed: %m"), /* catgets 5012 */
-		fname);
-	}
-	break;
     case SBD_JOB_SETUP:
 	TIMEIT(2, do_jobSetup(&xdrs, client->chanfd, &reqHdr), "do_jobSetup");
 	delay_check = TRUE;
@@ -640,23 +628,15 @@ processMsg(struct clientNode *client)
 	TIMEIT(4, do_jobSyslog(&xdrs, client->chanfd, &reqHdr), "do_jobSyslog");;
 	delay_check = TRUE;
 	break;
-    case RM_CONNECT:
-	TIMEIT(2, do_rmConn(&xdrs, client->chanfd, &reqHdr, client), "do_rmConn");
-	break;
-    case RM_JOB_MSG:
-	TIMEIT(2, do_lsbMsg(&xdrs, client->chanfd, &reqHdr), "do_lsbMsg");
-	break;
     default:
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5013,
-	    "%s: Unknown request type <%d>"), /* catgets 5013 */
-	    fname,sbdReqtype);
+        ls_syslog(LOG_ERR, "%s: Unknown request type <%d>",
+                  fname, sbdReqtype);
         break;
     }
 
     xdr_destroy(&xdrs);
     chanFreeBuf_(buf);
-    if (reqHdr.opCode != PREPARE_FOR_OP &&
-	reqHdr.opCode != RM_CONNECT )
+    if (reqHdr.opCode != PREPARE_FOR_OP)
         shutDownClient(client);
 
 }
@@ -931,21 +911,6 @@ init_sstate (void)
 
 
 static void
-drainMsgQueue(void)
-{
-    struct bucket *bucket;
-
-    bucket = jmQueue;
-    if (bucket->forw == bucket)
-        return;
-    else
-        bucket = bucket->forw;
-
-    deliverMsg(bucket);
-
-}
-
-static void
 houseKeeping(void)
 {
     static time_t lastTime = 0;
@@ -983,9 +948,6 @@ houseKeeping(void)
 	    }
          }
     }
-
-    drainMsgQueue();
-
 
     if (now - lastTime >= sbdSleepTime / 2) {
 	if (ls_servavail(2, 1) < 0)

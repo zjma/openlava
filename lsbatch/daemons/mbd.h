@@ -130,6 +130,11 @@ extern int maxSchedStay;
 
 #define CALCULATE_INTERVAL     900
 
+/* Maximum number of messages before
+ * the queue rolls over
+ */
+#define MAX_JOB_MSG 512
+
 struct qPRValues {
     struct qData *qData;
     float usedByRunJob;
@@ -326,7 +331,7 @@ struct jData {
     int     numRef;
     struct  jgTreeNode*   jgrpNode;
     int     nodeType;
-    struct  jData*        nextJob;
+    struct  jData *nextJob;
     int     restartPid;
     time_t  chkpntPeriod;
     u_short port;
@@ -342,6 +347,8 @@ struct jData {
     int*   inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
+    int numMsg;
+    struct lsbMsg **msgs;
 };
 
 
@@ -1013,7 +1020,6 @@ extern int                  signalJob(struct signalReq *, struct lsfAuth *);
 extern int                  statusJob(struct statusReq *, struct hostent *,
                                       int *);
 extern int                  rusageJob(struct statusReq *, struct hostent *);
-extern int                  statusMsgAck(struct statusReq *);
 extern int                  switchJobArray(struct jobSwitchReq *,
                                            struct lsfAuth *);
 extern int                  sbatchdJobs(struct sbdPackage *, struct hData *);
@@ -1131,10 +1137,14 @@ extern int                  do_submitReq(XDR *, int, struct sockaddr_in *,
 extern int                  do_signalReq(XDR *, int, struct sockaddr_in *,
                                          char *, struct LSFHeader *,
                                          struct lsfAuth *);
-extern int                  do_jobMsg(struct bucket *, XDR *, int,
+extern int                  do_jobMsg(XDR *, int,
                                       struct sockaddr_in *,
                                       char *, struct LSFHeader *,
                                       struct lsfAuth *);
+extern int                  do_jobMsgInfo(XDR *, int,
+                                          struct sockaddr_in *,
+                                          char *, struct LSFHeader *,
+                                          struct lsfAuth *);
 extern int                  do_statusReq(XDR *, int, struct sockaddr_in *,
                                          int *,
                                          struct LSFHeader *);
@@ -1330,6 +1340,7 @@ extern void                 log_jobclean(struct jData *);
 extern void                 log_jobforward(struct jData *);
 extern void                 log_statusack(struct jData *);
 extern void                 log_logSwitch(int);
+extern void                 log_jobmsg(struct jData *, struct lsbMsg *);
 extern void                 replay_requeuejob(struct jData *);
 extern int                  init_log(void);
 extern void                 switchELog(void);
@@ -1338,14 +1349,12 @@ extern void                 checkAcctLog(void);
 extern int                  switchAcctLog(void);
 extern void                 logJobInfo(struct submitReq *, struct jData *,
                                        struct lenData *);
-extern int                  rmLogJobInfo_(struct jData *, int);
+extern int                  rmLogJobInfo(struct jData *, int);
 extern int                  readLogJobInfo(struct jobSpecs *, struct jData *,
                                            struct lenData *, struct lenData *);
 extern void                 log_signaljob(struct jData *, struct signalReq *,
                                           int, char *);
-extern void                 log_jobmsg(struct jData *, struct lsbMsg *, int);
-extern void                 log_jobmsgack(struct bucket *);
-extern char *               readJobInfoFile(struct jData *, int *);
+extern char                 *readJobInfoFile(struct jData *, int *);
 extern void                 writeJobInfoFile(struct jData * , char *, int);
 extern int                  replaceJobInfoFile(char *, char *, char *, int);
 extern void                 log_executejob (struct jData *);
@@ -1370,8 +1379,8 @@ extern sbdReplyType         msg_job(struct jData *, struct Buffer *,
 extern sbdReplyType         probe_slave(struct hData *, char sendJobs);
 extern sbdReplyType         rebootSbd(char *host);
 extern sbdReplyType         shutdownSbd(char *host);
-extern struct dptNode *     parseDepCond(char *, struct lsfAuth * ,
-                                         int *, char **,int *, int);
+extern struct dptNode       *parseDepCond(char *, struct lsfAuth * ,
+                                          int *, char **,int *, int);
 extern int                  evalDepCond (struct dptNode *, struct jData *);
 extern void                 freeDepCond (struct dptNode *);
 extern void                 resetDepCond (struct dptNode *);
@@ -1383,7 +1392,7 @@ extern float                getHRValue(char *, struct hData *,
                                        struct resourceInstance **);
 extern int                  checkResources (struct resourceInfoReq *,
                                             struct lsbShareResourceInfoReply *);
-extern struct sharedResource * getResource (char *);
+extern struct sharedResource *getResource (char *);
 extern void                 resetSharedResource(void);
 extern void                 updSharedResourceByRUNJob(const struct jData*);
 extern int                  sharedResourceUpdFactor;
@@ -1505,5 +1514,6 @@ extern struct timeWindow *newTimeWindow (void);
 extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
+extern int postMsg2Job(char **, struct jData *);
 
 #endif /* _MBD_HEADER_ */

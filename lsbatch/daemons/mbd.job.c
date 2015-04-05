@@ -44,7 +44,6 @@ static int           acceptJob(struct qData *, struct jData *,
 static int           getCpuLimit(struct jData *, struct submitReq *);
 static void          insertAndShift(struct jData *, struct jData *, int, int);
 static int           resigJobs1(struct jData *, int *);
-static void          sndJobMsgs(struct hData *, int *);
 static sbdReplyType  sigStartedJob(struct jData *, int, time_t, int);
 static void          reorderSJL1(struct jData *);
 static int           matchJobStatus(int, struct jData *);
@@ -350,23 +349,21 @@ getNextJobId (void)
 void
 addJobIdHT(struct jData *job)
 {
-    static char fname[] = "addJobIdHT()";
     hEnt *ent;
 
-    while ((ent=addMemb(&jobIdHT, job->jobId))== NULL)  {
+    while ((ent = addMemb(&jobIdHT, job->jobId)) == NULL) {
 
         if (job == getJobData(job->jobId))
             return;
 
         if (mSchedStage != M_STAGE_REPLAY)
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6505,
-                                             "%s: The jobId <%s> already exist and is overwritten by the new job"), /* catgets 6505 */
-                      fname,
+            ls_syslog(LOG_ERR, "\
+%s: The jobId <%s> already exist and is overwritten by the new job",
+                      __func__,
                       lsb_jobid2str(job->jobId));
         removeJob(job->jobId);
     }
-    ent->hData = (int *) job;
-
+    ent->hData = (int *)job;
 }
 
 void
@@ -4487,12 +4484,11 @@ removeJob(LS_LONG_INT jobId)
         }
 
         remvMemb(&jobIdHT, jp->jobId);
-        offJobList (jp, FJL);
+        offJobList(jp, FJL);
         numRemoveJobs ++;
         if (mSchedStage != M_STAGE_REPLAY) {
             log_jobclean(jp);
         }
-
 
         if ((node = jp->jgrpNode)) {
             if (node->nodeType == JGRP_NODE_ARRAY) {
@@ -4503,17 +4499,17 @@ removeJob(LS_LONG_INT jobId)
                     remvMemb(&jobIdHT, ARRAY_DATA(node)->jobArray->jobId);
                     freeJData(ARRAY_DATA(node)->jobArray);
                     treeFree(treeClip(node));
-                    rmLogJobInfo_(jp, TRUE);
+                    rmLogJobInfo(jp, TRUE);
                 }
             }
             else {
-                rmLogJobInfo_(jp, TRUE);
+                rmLogJobInfo(jp, TRUE);
                 treeFree(treeClip(node));
             }
         }
         else
-            rmLogJobInfo_(jp, TRUE);
-        freeJData (jp);
+            rmLogJobInfo(jp, TRUE);
+        freeJData(jp);
     }
 }
 
@@ -4685,7 +4681,7 @@ getJobData (LS_LONG_INT jobId)
 {
     hEnt *ent;
 
-    if (jobId <= 0 || (ent = chekMemb (&jobIdHT, jobId)) == NULL)
+    if (jobId <= 0 || (ent = chekMemb(&jobIdHT, jobId)) == NULL)
         return NULL;
     return (struct jData *) ent->hData;
 
@@ -5033,41 +5029,6 @@ resigJobs(int *resignal)
         }
     }
 
-    for (hPtr = (struct hData *)hostList->back;
-         hPtr != (void *)hostList && sigcnt < mxsigcnt;
-         hPtr = hPtr->back) {
-
-        INC_CNT(PROF_CNT_hostLoopresigJobs);
-
-        if (logclass & (LC_SIGNAL))
-            ls_syslog (LOG_DEBUG2, "%s: host=%s", fname, hPtr->host);
-
-        if (hPtr->hStatus & HOST_STAT_REMOTE)
-            continue;
-
-        if (UNREACHABLE (hPtr->hStatus)) {
-            continue;
-        }
-
-        if (setIsMember(processedHosts, (void *)&hPtr->hostId))
-            continue;
-
-        TIMEIT(1, sndJobMsgs (hPtr, &sigcnt), "sndJobMsgs");
-    }
-
-    for (list = 0; list <= NJLIST && sigcnt < mxsigcnt; list++) {
-
-        if (list != SJL && list != FJL && list != ZJL)
-            continue;
-        for (jpbw = jDataList[list]->back;
-             jpbw != jDataList[list] && sigcnt < mxsigcnt;
-             jpbw = next) {
-
-            INC_CNT(PROF_CNT_nqsLoopresigJobs);
-
-            next = jpbw->back;
-        }
-    }
 
     retVal = FALSE;
     *resignal = FALSE;
@@ -6461,75 +6422,80 @@ copyJobBill (struct submitReq *subReq,
 }
 
 void
-freeJData(struct jData *jpbw)
+freeJData(struct jData *jPtr)
 {
+    int i;
 
-    if (!jpbw)
+    if (!jPtr)
         return;
 
-    if (IS_PEND(jpbw->jStatus) && jpbw->candPtr) {
-        FREEUP (jpbw->candPtr);
-        if (jpbw->numHostPtr > 0 && (jpbw->jStatus & JOB_STAT_RESERVE)) {
+    if (IS_PEND(jPtr->jStatus) && jPtr->candPtr) {
+        FREEUP (jPtr->candPtr);
+        if (jPtr->numHostPtr > 0 && (jPtr->jStatus & JOB_STAT_RESERVE)) {
 
             if (logclass & (LC_TRACE))
                 ls_syslog(LOG_DEBUG3, "\
 %s: job <%s> updRes - <%d> slots <%s:%d>",
-                          __func__, lsb_jobid2str(jpbw->jobId),
-                          jpbw->numHostPtr,
+                          __func__, lsb_jobid2str(jPtr->jobId),
+                          jPtr->numHostPtr,
                           __FILE__,  __LINE__);
 
-            freeReserveSlots(jpbw);
+            freeReserveSlots(jPtr);
         }
     }
 
-    if (JOB_PREEMPT_WAIT(jpbw))
-        freeReservePreemptResources(jpbw);
+    if (JOB_PREEMPT_WAIT(jPtr))
+        freeReservePreemptResources(jPtr);
 
-    FREEUP(jpbw->userName);
-    FREEUP(jpbw->lsfRusage);
-    FREEUP(jpbw->reasonTb);
-    FREEUP(jpbw->hPtr);
+    FREEUP(jPtr->userName);
+    FREEUP(jPtr->lsfRusage);
+    FREEUP(jPtr->reasonTb);
+    FREEUP(jPtr->hPtr);
 
-    FREEUP(jpbw->execHome);
-    FREEUP(jpbw->execCwd);
-    FREEUP(jpbw->execUsername);
-    FREEUP(jpbw->queuePreCmd);
-    FREEUP(jpbw->queuePostCmd);
-    FREEUP(jpbw->reqHistory);
-    FREEUP(jpbw->schedHost);
+    FREEUP(jPtr->execHome);
+    FREEUP(jPtr->execCwd);
+    FREEUP(jPtr->execUsername);
+    FREEUP(jPtr->queuePreCmd);
+    FREEUP(jPtr->queuePostCmd);
+    FREEUP(jPtr->reqHistory);
+    FREEUP(jPtr->schedHost);
 
-    if (jpbw->runRusage.npids > 0)
-        FREEUP(jpbw->runRusage.pidInfo);
-    if (jpbw->runRusage.npgids > 0)
-        FREEUP(jpbw->runRusage.pgid);
+    if (jPtr->runRusage.npids > 0)
+        FREEUP(jPtr->runRusage.pidInfo);
+    if (jPtr->runRusage.npgids > 0)
+        FREEUP(jPtr->runRusage.pgid);
 
-    if (jpbw->newSub) {
-        freeSubmitReq (jpbw->newSub);
-        FREEUP(jpbw->newSub);
+    if (jPtr->newSub) {
+        freeSubmitReq (jPtr->newSub);
+        FREEUP(jPtr->newSub);
     }
-    if (jpbw->shared->numRef <= 1)
-        freeSubmitReq(&(jpbw->shared->jobBill));
+    if (jPtr->shared->numRef <= 1)
+        freeSubmitReq(&(jPtr->shared->jobBill));
 
-    destroySharedRef(jpbw->shared);
-    FREEUP(jpbw->askedPtr);
+    destroySharedRef(jPtr->shared);
+    FREEUP(jPtr->askedPtr);
 
-    FREEUP(jpbw->reqHistory);
+    FREEUP(jPtr->reqHistory);
 
-    FREEUP(jpbw->execHosts);
-    FREEUP(jpbw->candPtr);
-    FREEUP(jpbw->jobSpoolDir);
+    FREEUP(jPtr->execHosts);
+    FREEUP(jPtr->candPtr);
+    FREEUP(jPtr->jobSpoolDir);
 
-    FREE_ALL_GRPS_CAND(jpbw);
+    for (i = 0; i < jPtr->numMsg; i++)
+        _free_(jPtr->msgs[i]->msg);
+    _free_(jPtr->msgs);
 
-    if (jpbw->numRef <= 0 ) {
-        FREEUP(jpbw);
+    FREE_ALL_GRPS_CAND(jPtr);
+
+    if (jPtr->numRef <= 0 ) {
+        FREEUP(jPtr);
     } else {
 
-        jpbw->jStatus |= JOB_STAT_VOID;
-        voidJobList = listSetInsert((long)jpbw, voidJobList);
+        jPtr->jStatus |= JOB_STAT_VOID;
+        voidJobList = listSetInsert((long)jPtr, voidJobList);
         ls_syslog(LOG_DEBUG1, "\
 %s: job <%s> can not be freed with numRef = <%d>",
-                  __func__, lsb_jobid2str(jpbw->jobId), jpbw->numRef);
+                  __func__, lsb_jobid2str(jPtr->jobId), jPtr->numRef);
     }
 }
 
@@ -7041,7 +7007,7 @@ getZombieJob (LS_LONG_INT jobId)
 
 
 void
-accumRunTime (struct jData *jData, int newStatus, time_t eventTime)
+accumRunTime(struct jData *jData, int newStatus, time_t eventTime)
 {
     int             diffTime = 0;
     time_t          currentTime;
@@ -7172,40 +7138,6 @@ msgStartedJob (struct jData *jData, struct bucket *bucket)
 }
 
 static void
-sndJobMsgs (struct hData *hData, int *sigcnt)
-{
-    static char fname[] = "sndJobMsgs";
-    int sndrc;
-    int num = 0, maxSent = 1;
-    struct bucket *bucket, *next, *head = hData->msgq[MSG_STAT_QUEUED];
-
-    for (bucket = head->forw; bucket != head
-             && num < maxSent; bucket = next) {
-        next = bucket->forw;
-        if (logclass & (LC_TRACE | LC_SIGNAL))
-            ls_syslog (LOG_DEBUG2, "%s: Send message to host %s",
-                       fname, hData->host);
-        sndrc = msgJob(bucket, NULL);
-        if (sndrc == LSBE_NO_ERROR) {
-            (*sigcnt)++;
-            bucket->bufstat = MSG_STAT_SENT;
-            QUEUE_REMOVE(bucket);
-            QUEUE_APPEND(bucket, hData->msgq[MSG_STAT_SENT]);
-        } else if (sndrc == LSBE_NO_JOB ||
-                   sndrc == LSBE_JOB_FINISH) {
-            QUEUE_REMOVE(bucket);
-            log_jobmsgack(bucket);
-            chanFreeStashedBuf_(bucket->storage);
-            FREE_BUCKET(bucket);
-        } else {
-
-
-            break;
-        }
-    }
-}
-
-static void
 breakCallback(struct jData *jData, bool_t termWhiPendStatus)
 {
     int pid, s;
@@ -7259,80 +7191,6 @@ breakCallback(struct jData *jData, bool_t termWhiPendStatus)
     }
 
     exit(0);
-}
-
-
-int
-statusMsgAck(struct statusReq *statusReq)
-{
-    static char             fname[] = "statusMsgAck";
-    struct jData           *jp;
-    struct bucket          *bucket;
-    struct bucket          *msgQHead;
-    int                     found;
-
-    LSBMSG_DECL(header, jmsg);
-    LSBMSG_INIT(header, jmsg);
-
-    if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
-
-
-
-    if ((jp = getJobData(statusReq->jobId)) == NULL) {
-        return LSBE_NO_JOB;
-    }
-
-    bucket = msgQHead = jp->hPtr[0]->msgq[MSG_STAT_QUEUED];
-    found = FALSE;
-    if (bucket->forw == bucket)
-        goto QueueSent;
-    else
-        bucket = bucket->forw;
-
-    do {
-        if (bucket->proto.jobId == statusReq->jobId &&
-            bucket->proto.msgId == statusReq->msgId) {
-
-            found = TRUE;
-            break;
-        }
-        bucket = bucket->forw;
-    } while (bucket != msgQHead);
-
-QueueSent:
-    if (! found) {
-
-        bucket = msgQHead = jp->hPtr[0]->msgq[MSG_STAT_SENT];
-        if (bucket->forw == bucket)
-            goto EndSearch;
-        else
-            bucket = bucket->forw;
-
-        do {
-            if (bucket->proto.jobId == statusReq->jobId &&
-                bucket->proto.msgId == statusReq->msgId) {
-
-                found = TRUE;
-                break;
-            }
-            bucket = bucket->forw;
-        } while (bucket != msgQHead);
-    }
-
-EndSearch:
-    if (!found) {
-        return LSBE_NO_JOBMSG;
-    }
-
-    if (found) {
-        log_jobmsgack(bucket);
-        QUEUE_REMOVE(bucket);
-        chanFreeStashedBuf_(bucket->storage);
-        FREE_BUCKET(bucket);
-    }
-
-    return (LSBE_NO_ERROR);
 }
 
 static int
@@ -8736,6 +8594,37 @@ arrayRequeue(struct jData      *jArray,
     return requeueReply;
 }
 
+/* postMsg2Job()
+ */
+int
+postMsg2Job(char **msg, struct jData *jPtr)
+{
+    struct lsbMsg *jmsg;
+
+    if (jPtr->numMsg == 0)
+        jPtr->msgs = calloc(MAX_JOB_MSG, sizeof(struct lsbMsg *));
+
+    if (jPtr->numMsg > MAX_JOB_MSG - 1)
+        jPtr->numMsg = 0;
+
+    jmsg = calloc(1, sizeof(struct lsbMsg));
+    jmsg->t = time(NULL);
+    jmsg->msg = *msg;
+
+    /* Check if we rolled over
+     */
+    if (jPtr->msgs[jPtr->numMsg]) {
+        _free_(jPtr->msgs[jPtr->numMsg]->msg);
+        _free_(jPtr->msgs[jPtr->numMsg]);
+    }
+
+    jPtr->msgs[jPtr->numMsg] = jmsg;
+    jPtr->numMsg++;
+
+    log_jobmsg(jPtr, jmsg);
+
+    return 0;
+}
 
 static
 void closeSbdConnect4ZombieJob(struct jData *jData)

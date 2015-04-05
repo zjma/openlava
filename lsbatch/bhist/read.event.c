@@ -925,91 +925,6 @@ read_jobstartaccept(struct eventRec *log)
     return(TRUE);
 }
 
-char
-read_jobmsg(struct eventRec *log)
-{
-    struct eventRecord *event;
-    struct jobRecord *jobRecord;
-    hEnt   *ent;
-    LS_LONG_INT jobId;
-
-    jobId = GET_JOBID (log->eventLog.jobMsgLog.jobId,
-                       log->eventLog.jobMsgLog.idx);
-
-    if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
-
-    jobRecord = (struct jobRecord *) ent->hData;
-    event = calloc(1, sizeof(struct eventRecord));
-
-    event->kind = EVENT_JOB_MSG;
-    event->jStatus = jobRecord->currentStatus;
-    event->reasons = jobRecord->job->reasons;
-    event->timeStamp = log->eventTime;
-
-    event->usrId = log->eventLog.jobMsgLog.usrId;
-    event->idx = log->eventLog.jobMsgLog.idx;
-    event->jmMsgId = log->eventLog.jobMsgLog.msgId;
-    event->jmMsgType = log->eventLog.jobMsgLog.type;
-    event->jmSrc = malloc(strlen(log->eventLog.jobMsgLog.src) + 1);
-    strcpy(event->jmSrc,  log->eventLog.jobMsgLog.src);
-
-    event->jmDest = malloc(strlen(log->eventLog.jobMsgLog.dest) + 1);
-    strcpy(event->jmDest,  log->eventLog.jobMsgLog.dest);
-    event->jmMsg = malloc(strlen(log->eventLog.jobMsgLog.msg) + 1);
-    strcpy(event->jmMsg,  log->eventLog.jobMsgLog.msg);
-    event->idx = log->eventLog.jobMsgLog.idx;
-    if (addEvent(event, jobRecord) == -1) {
-        FREEUP(event);
-        return(FALSE);
-    }
-
-    return(TRUE);
-}
-char
-read_jobmsgack(struct eventRec *log)
-{
-    struct eventRecord *event;
-    struct jobRecord *jobRecord;
-    hEnt   *ent;
-    LS_LONG_INT jobId;
-
-    jobId = GET_JOBID (log->eventLog.jobMsgAckLog.jobId,
-                       log->eventLog.jobMsgAckLog.idx);
-
-    if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
-
-    jobRecord = (struct jobRecord *) ent->hData;
-    event = calloc(1, sizeof(struct eventRecord));
-
-    event->kind = EVENT_JOB_MSG_ACK;
-    event->jStatus = jobRecord->currentStatus;
-    event->reasons = jobRecord->job->reasons;
-    event->timeStamp = log->eventTime;
-
-    event->usrId = log->eventLog.jobMsgAckLog.usrId;
-    event->idx = log->eventLog.jobMsgAckLog.idx;
-    event->jmMsgId = log->eventLog.jobMsgAckLog.msgId;
-    event->jmMsgType = log->eventLog.jobMsgAckLog.type;
-    event->jmSrc = malloc(strlen(log->eventLog.jobMsgAckLog.src) + 1);
-    strcpy(event->jmSrc,  log->eventLog.jobMsgAckLog.src);
-    event->jmDest = malloc(strlen(log->eventLog.jobMsgAckLog.dest) + 1);
-    strcpy(event->jmDest,  log->eventLog.jobMsgAckLog.dest);
-    event->jmMsg = malloc(strlen(log->eventLog.jobMsgAckLog.msg) + 1);
-    strcpy(event->jmMsg,  log->eventLog.jobMsgAckLog.msg);
-    event->idx = log->eventLog.jobMsgAckLog.idx;
-
-    if (addEvent(event, jobRecord) == -1) {
-        FREEUP(event);
-        return(FALSE);
-    }
-
-    return(TRUE);
-}
-
-
-
 
 char
 read_switch(struct eventRec *log)
@@ -1592,12 +1507,6 @@ parse_event(struct eventRec *log, struct bhistReq *Req)
             break;
         case EVENT_JOB_START_ACCEPT:
             read_jobstartaccept(log);
-            break;
-        case EVENT_JOB_MSG:
-            read_jobmsg(log);
-            break;
-        case EVENT_JOB_MSG_ACK:
-            read_jobmsgack(log);
             break;
         case EVENT_JOB_SIGACT:
             read_sigact(log);

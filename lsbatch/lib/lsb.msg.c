@@ -1,4 +1,5 @@
-/* $Id: lsb.msg.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,66 +23,154 @@
 #include "lsb.h"
 
 int
-lsb_msgjob(LS_LONG_INT jobId, char *msg)
+lsb_msgjob(LS_LONG_INT jobID, char *msg)
 {
-    struct lsbMsg jmsg;
-    char src[LSB_MAX_SD_LENGTH];
-    char dest[LSB_MAX_SD_LENGTH];
-    struct lsbMsgHdr header;
     char request_buf[MSGSIZE];
     char *reply_buf;
     XDR xdrs;
-    mbdReqType mbdReqtype;
     int cc;
+    int len;
     struct LSFHeader hdr;
+    struct lsfAuth auth;
 
-    struct passwd *pw;
-
-    header.src = src;
-    header.dest = dest;
-    jmsg.header = &header;
-
-    TIMEIT(0, (pw = getpwuid(getuid())), "getpwuid");
-    if (pw == NULL) {
-	lsberrno = LSBE_BAD_USER;
-	return(-1);
+    if (strlen(msg) > LSB_MAX_MSGSIZE) {
+        lsberrno = LSBE_BAD_ARG;
+        return -1;
     }
 
-    jmsg.header->usrId = pw->pw_uid;
-    jmsg.header->jobId = jobId;
-    jmsg.msg = msg;
-    strcpy(jmsg.header->src, "lsbatch");
-    strcpy(jmsg.header->dest, "user job");
-    jmsg.header->msgId = 999;
-    jmsg.header->type = -1;
-     
-    mbdReqtype = BATCH_JOB_MSG;
+    if (authTicketTokens_(&auth, NULL) == -1)
+        return -1;
+
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
 
-    hdr.opCode = mbdReqtype;
-    if (!xdr_encodeMsg(&xdrs, (char *)&jmsg, &hdr, xdr_lsbMsg, 0,
-		       NULL)) {
+    initLSFHeader_(&hdr);
+    hdr.opCode = BATCH_JOB_MSG;
+
+    XDR_SETPOS(&xdrs, LSF_HEADER_LEN);
+
+    if (!xdr_lsfAuth(&xdrs, &auth, &hdr))
+        return FALSE;
+
+    if (! xdr_jobID(&xdrs, &jobID, &hdr)) {
         lsberrno = LSBE_XDR;
-        xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
-    cc = callmbd(NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
-		 &hdr, NULL, NULL, NULL);
-    
+    if (! xdr_wrapstring(&xdrs, &msg)) {
+        lsberrno = LSBE_XDR;
+        return false;
+    }
+
+    len = XDR_GETPOS(&xdrs);
+    hdr.length = len - LSF_HEADER_LEN;
+
+    XDR_SETPOS(&xdrs, 0);
+    if (!xdr_LSFHeader(&xdrs, &hdr))
+        return FALSE;
+
+    XDR_SETPOS(&xdrs, len);
+
+    cc = callmbd(NULL,
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 &reply_buf,
+		 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
+
     if (cc < 0) {
 	xdr_destroy(&xdrs);
-	return(-1);
+	return -1;
     }
-
     xdr_destroy(&xdrs);
-    if (cc != 0)
-        free(reply_buf);
 
     lsberrno = hdr.opCode;
     if (lsberrno == LSBE_NO_ERROR)
-        return(0);
-    else 
-        return(-1);
-} 
+        return 0;
 
+    return -1;
+}
+
+struct lsbMsg *
+lsb_getmsgjob(LS_LONG_INT jobID, int *num)
+{
+    XDR xdrs;
+    struct LSFHeader hdr;
+    char request_buf[MSGSIZE/8];
+    char *reply_buf;
+    struct lsfAuth auth;
+    int cc;
+    int i;
+    struct lsbMsg *msg;
+
+    if (authTicketTokens_(&auth, NULL) == -1) {
+        lsberrno = LSBE_BAD_USER;
+        return NULL;
+    }
+
+    initLSFHeader_(&hdr);
+    hdr.opCode = BATCH_JOBMSG_INFO;
+
+    xdrmem_create(&xdrs, request_buf, sizeof(request_buf), XDR_ENCODE);
+
+    if (! xdr_encodeMsg(&xdrs,
+                        (char *)&jobID,
+                        &hdr,
+                        xdr_jobID,
+                        0,
+                        &auth)) {
+        xdr_destroy(&xdrs);
+        lsberrno = LSBE_XDR;
+        return NULL;
+    }
+
+    cc = callmbd(NULL,
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 &reply_buf,
+		 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
+    if (cc < 0) {
+	xdr_destroy(&xdrs);
+        lsberrno = LSBE_PROTOCOL;
+	return NULL;
+    }
+    xdr_destroy(&xdrs);
+
+    xdrmem_create(&xdrs, reply_buf, cc, XDR_DECODE);
+
+    if (! xdr_int(&xdrs, num)) {
+        xdr_destroy(&xdrs);
+        _free_(reply_buf);
+        lsberrno = LSBE_XDR;
+        return NULL;
+    }
+
+    if (*num == 0) {
+        lsberrno = LSBE_NO_ERROR;
+        return NULL;
+    }
+
+    msg = calloc(*num, sizeof(struct lsbMsg));
+
+    for (i = 0; i < *num; i++) {
+        if (! xdr_lsbMsg(&xdrs, &msg[i], &hdr))
+            goto via;
+    }
+
+    _free_(reply_buf);
+    xdr_destroy(&xdrs);
+
+    return msg;
+
+via:
+    for (cc = 0; cc < i; cc++)
+        _free_(msg[cc].msg);
+    _free_(msg);
+    lsberrno = LSBE_XDR;
+    *num = 0;
+    return NULL;
+}

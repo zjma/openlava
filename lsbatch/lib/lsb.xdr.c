@@ -337,63 +337,6 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
     return true;
 }
 
-
-bool_t
-xdr_lsbMsg(XDR *xdrs, struct lsbMsg *m, struct LSFHeader *hdr)
-{
-    int xdrrc;
-    int jobArrId, jobArrElemId;
-
-    if (xdrs->x_op == XDR_DECODE) {
-        m->header->src[0]= '\0';
-        m->header->dest[0] = '\0';
-    }
-
-    if (xdrs->x_op == XDR_FREE) {
-        FREEUP(m->header->src);
-        FREEUP(m->header->dest);
-        FREEUP(m->msg);
-        return true;
-    }
-
-    xdrrc = xdr_int(xdrs, &m->header->msgId);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_int(xdrs, &m->header->usrId);
-    if (! xdrrc) goto Failure;
-
-    if (xdrs->x_op == XDR_ENCODE) {
-        jobId64To32(m->header->jobId, &jobArrId, &jobArrElemId);
-    }
-    xdrrc = xdr_int(xdrs, &jobArrId);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_int(xdrs, &m->header->type);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_string(xdrs, &m->header->src, LSB_MAX_SD_LENGTH);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_string(xdrs, &m->header->dest, LSB_MAX_SD_LENGTH);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_var_string(xdrs, &m->msg);
-    if (! xdrrc) goto Failure;
-
-    xdrrc = xdr_int(xdrs, &jobArrElemId);
-    if (! xdrrc) goto Failure;
-
-    if (xdrs->x_op == XDR_DECODE) {
-        jobId32To64(&m->header->jobId,jobArrId,jobArrElemId);
-    }
-
-    return true;
-
-Failure:
-    return false;
-
-}
-
 bool_t
 xdr_submitMbdReply(XDR *xdrs, struct submitMbdReply *reply, struct LSFHeader *hdr)
 {
@@ -1956,3 +1899,37 @@ xdr_jobAttrReq(XDR *xdrs, struct jobAttrInfoEnt *jobAttr, struct LSFHeader *hdr)
     return true;
 }
 
+bool_t
+xdr_jobID(XDR *xdrs,
+          LS_LONG_INT *jobID,
+          struct LSFHeader *hdr)
+{
+    int jobid;
+    int elem;
+
+    if (xdrs->x_op == XDR_ENCODE)
+        jobId64To32(*jobID, &jobid, &elem);
+
+    if (! xdr_int(xdrs, &jobid)
+        || !xdr_int(xdrs, &elem))
+        return false;
+
+    if (xdrs->x_op == XDR_DECODE)
+        jobId32To64(jobID, jobid, elem);
+
+    return true;
+}
+
+bool_t
+xdr_lsbMsg(XDR *xdrs,
+           struct lsbMsg *m,
+           struct LSFHeader *hdr)
+{
+    if (! xdr_time_t(xdrs, &m->t))
+        return false;
+
+    if (! xdr_wrapstring(xdrs, &m->msg))
+        return false;
+
+    return true;
+}

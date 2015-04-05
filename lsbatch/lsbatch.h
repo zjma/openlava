@@ -332,7 +332,6 @@
 #define    LSBE_NO_JOBID       12
 #define    LSBE_ONLY_INTERACTIVE 13
 #define    LSBE_NO_INTERACTIVE   14
-
 #define    LSBE_NO_USER       15
 #define    LSBE_BAD_USER      16
 #define    LSBE_PERMISSION    17
@@ -350,11 +349,9 @@
 #define    LSBE_QUEUE_HOST    29
 #define    LSBE_UJOB_LIMIT    30
 #define    LSBE_NO_HOST       31
-
 #define    LSBE_BAD_CHKLOG    32
 #define    LSBE_PJOB_LIMIT    33
 #define    LSBE_NOLSF_HOST    34
-
 #define    LSBE_BAD_ARG       35
 #define    LSBE_BAD_TIME      36
 #define    LSBE_START_TIME    37
@@ -364,11 +361,9 @@
 #define    LSBE_BAD_SIGNAL    41
 #define    LSBE_BAD_JOB       42
 #define    LSBE_QJOB_LIMIT    43
-
 #define    LSBE_UNKNOWN_EVENT 44
 #define    LSBE_EVENT_FORMAT  45
 #define    LSBE_EOF           46
-
 #define    LSBE_MBATCHD       47
 #define    LSBE_SBATCHD       48
 #define    LSBE_LSBLIB        49
@@ -379,7 +374,6 @@
 #define    LSBE_NO_ENV        54
 #define    LSBE_CHKPNT_CALL   55
 #define    LSBE_NO_FORK       56
-
 #define    LSBE_PROTOCOL      57
 #define    LSBE_XDR           58
 #define    LSBE_PORT          59
@@ -391,27 +385,17 @@
 #define    LSBE_SBD_UNREACH   65
 #define    LSBE_OP_RETRY      66
 #define    LSBE_USER_JLIMIT   67
-
 #define    LSBE_JOB_MODIFY       68
 #define    LSBE_JOB_MODIFY_ONCE  69
-
 #define    LSBE_J_UNREPETITIVE   70
 #define    LSBE_BAD_CLUSTER      71
-
 #define    LSBE_JOB_MODIFY_USED  72
-
 #define    LSBE_HJOB_LIMIT       73
-
 #define    LSBE_NO_JOBMSG        74
-
 #define    LSBE_BAD_RESREQ       75
-
 #define    LSBE_NO_ENOUGH_HOST   76
-
 #define    LSBE_CONF_FATAL       77
 #define    LSBE_CONF_WARNING     78
-
-
 #define    LSBE_NO_RESOURCE        79
 #define    LSBE_BAD_RESOURCE       80
 #define    LSBE_INTERACTIVE_RERUN  81
@@ -437,15 +421,11 @@
 #define    LSBE_JOB_ELEMENT         101
 #define    LSBE_BAD_JOBID           102
 #define    LSBE_MOD_JOB_NAME        103
-
 #define    LSBE_PREMATURE           104
-
 #define    LSBE_BAD_PROJECT_GROUP   105
-
 #define    LSBE_NO_HOST_GROUP       106
 #define    LSBE_NO_USER_GROUP       107
 #define    LSBE_INDEX_FORMAT        108
-
 #define    LSBE_SP_SRC_NOT_SEEN     109
 #define    LSBE_SP_FAILED_HOSTS_LIM 110
 #define    LSBE_SP_COPY_FAILED      111
@@ -455,16 +435,13 @@
 #define    LSBE_SP_FIND_HOST_FAILED 115
 #define    LSBE_SP_SPOOLDIR_FAILED  116
 #define    LSBE_SP_DELETE_FAILED    117
-
 #define    LSBE_BAD_USER_PRIORITY   118
 #define    LSBE_NO_JOB_PRIORITY     119
 #define    LSBE_JOB_REQUEUED        120
-
 #define    LSBE_MULTI_FIRST_HOST    121
 #define    LSBE_HG_FIRST_HOST       122
 #define    LSBE_HP_FIRST_HOST       123
 #define    LSBE_OTHERS_FIRST_HOST   124
-
 #define    LSBE_PROC_LESS           125
 #define    LSBE_MOD_MIX_OPTS        126
 #define    LSBE_MOD_CPULIMIT        127
@@ -474,11 +451,8 @@
 #define    LSBE_DEP_ARRAY_SIZE      131
 #define    LSBE_NUM_ERR             131
 
-
-
 #define PREPARE_FOR_OP          1024
 #define READY_FOR_OP            1023
-
 
 #define  SUB_JOB_NAME       0x01
 #define  SUB_QUEUE          0x02
@@ -972,7 +946,6 @@ struct jobNewLog {
 };
 
 struct jobModLog {
-
     char    *jobIdStr;
     int     options;
     int     options2;
@@ -1256,14 +1229,9 @@ struct loadIndexLog {
 };
 
 struct jobMsgLog {
-    int usrId;
     int jobId;
-    int msgId;
-    int type;
-    char *src;
-    char *dest;
-    char *msg;
     int    idx;
+    char *msg;
 };
 
 struct jobMsgAckLog {
@@ -1364,21 +1332,20 @@ struct sortIntList {
     struct sortIntList *back;
 };
 
-#define LSB_MAX_SD_LENGTH 128
-struct lsbMsgHdr {
-    int                usrId;
-    LS_LONG_INT        jobId;
-    int                msgId;
-    int                type;
-    char               *src;
-    char               *dest;
-};
+/* lsb_msgjob()/lsb_getmsgjob()
+ */
+#define LSB_MAX_MSGSIZE (1024)
 
 struct lsbMsg {
-    struct lsbMsgHdr * header;
-    char *             msg;
+    time_t t;
+    char *msg;
 };
 
+struct lsbMsgReply {
+    LS_LONG_INT jobID;  /* jobID */
+    int numMsg;         /* number of messages */
+    struct lsbMsg *msg; /* array of messages */
+};
 
 #define CONF_NO_CHECK           0x00
 #define CONF_CHECK              0x01
@@ -1492,6 +1459,7 @@ extern struct queueInfoEnt *lsb_queueinfo(char **,
 extern int  lsb_reconfig(int);
 extern int  lsb_signaljob(LS_LONG_INT, int);
 extern int  lsb_msgjob(LS_LONG_INT, char *);
+extern struct lsbMsg *lsb_getmsgjob(LS_LONG_INT, int *);
 extern int  lsb_chkpntjob(LS_LONG_INT, time_t, int);
 extern int  lsb_deletejob(LS_LONG_INT, int, int);
 extern int  lsb_forcekilljob(LS_LONG_INT);
@@ -1539,6 +1507,7 @@ extern struct lsbSharedResourceInfo *lsb_sharedresourceinfo(char **,
 extern int lsb_runjob(struct runJobRequest*);
 
 extern char *lsb_jobid2str(LS_LONG_INT);
+extern char *lsb_jobid2str2(LS_LONG_INT);
 extern char *lsb_jobidinstr(LS_LONG_INT);
 extern void jobId32To64(LS_LONG_INT*, int, int);
 extern void jobId64To32(LS_LONG_INT, int*, int*);
