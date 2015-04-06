@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH post 1 "OpenLava Version 3.0 - Mar 2015"
+.TH post 1 "OpenLava Version 3.0 - Apr 2015"
 .br
 .SH NAME
 \fBbpost\fR - sends message to a job
@@ -16,6 +16,10 @@
 .BR
 .PP
 .PP
+Allow users to post messages to their own jobs. Messages can be posted until
+the job is cleaned from OpenLava. There is no limit to the number of messages
+that can be posted to a job, however the size of each individual message cannot
+exceed 1K.
 \fB\f
 
 .SH OPTIONS
@@ -29,19 +33,17 @@ Required. Job ID of the job or of the job array on which to operate.
 
 .IP
 For a job array, the index list, the square brackets, and the quotation
-marks are required. An index list is used to operate on a job array. The
-index list is a comma separated list whose elements have the syntax
-\fIstart_index\fR[-\fIend_index\fR[\fB:\fR\fIstep\fR] ] where \fIstart_index\fR, \fIend_index\fR and \fIstep\fR
-are positive integers. If the step is omitted, a step of one is assumed.
-The job array index starts at one. The maximum job array index is 1000.
-All jobs in the array share the same job_ID and parameters. Each
-element of the array is distinguished by its array index.
+marks are required. An index list is used to operate on a job array.
+.TP
+\fB-d
+\fR
+.IP
+The message to be posted to a job
 .TP
 \fB-h
 \fR
 .IP
 Prints command usage to stderr and exit.
-
 
 .TP
 \fB-V
@@ -49,6 +51,13 @@ Prints command usage to stderr and exit.
 .IP
 Prints openlava release version to stderr and exit.
 
+.SH EXAMPLE
+.BR
+.PP
+.TP
+$bpost -d "message in a bottle" 7249
+.PP
+Message to job 7249 posted all right.
 
 .SH SEE ALSO
 .BR
