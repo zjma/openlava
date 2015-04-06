@@ -631,6 +631,9 @@ evalResReq: resReq=%s, host = %s", resReq, hPtr->hostName);
     if (runTimeDataQueried && LS_ISUNAVAIL(hPtr->status))
         return 0;
 
+    if (strcmp(Tcl_GetStringResult(globinterp), "0") == 0)
+        return 0;
+
     return 1;
 }
 
