@@ -29,6 +29,20 @@ kill_daemons()
     killall -q lim res sbatchd  mbatchd
 }
 
+check_ret_code()
+{
+   if [ -z "$PID" ]; then
+       err=1
+   fi
+}
+
+do_exit()
+{
+   if [ "$err" == "1" ]; then
+       exit 1
+   fi
+   exit 0
+}
 # Restart is just like start since in both
 # cases previously running daemons are 
 # killed.
@@ -88,15 +102,20 @@ case "$opcode" in
         exit 1
         ;;
   'status')
+        err = 0
         PID=`pidof lim`
+        check_ret_code
         echo "lim pid: <$PID>"
         PID=`pidof res`
+        check_ret_code
         echo "res pid: <$PID>"
         PID=`pidof sbatchd`
+        check_ret_code
         echo "sbatchd pid: <$PID>"
+        check_ret_code
         PID=`pidof mbatchd`
-        echo "lim mbatchd: <$PID>"
-        exit 0
+        echo "mbatchd: <$PID>"
+        do_exit
         ;;
   *)
         echo "Script for starting up and shutting down openlava"
