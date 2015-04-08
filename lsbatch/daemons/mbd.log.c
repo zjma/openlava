@@ -142,7 +142,6 @@ static int     replay_arrayrequeue(struct jData *,
 static int renameAcctLogFiles(int);
 static void jobMsgInit(void);
 static int checkDirAccess(const char *);
-static void rmMessageFile(struct jData *);
 
 /* init_log()
  */
@@ -3067,7 +3066,6 @@ rmLogJobInfo(struct jData *jp, int check)
         return -1;
     }
 
-    rmMessageFile(jp);
     chuser(batchId);
 
     return 0;
@@ -4858,18 +4856,4 @@ checkDirAccess(const char *dir)
     chuser(batchId);
 
     return 0;
-}
-
-/* rmMessageFile()
- */
-static void
-rmMessageFile(struct jData *jPtr)
-{
-    static char file[PATH_MAX];
-
-    sprintf(file, "%s/logdir/messages/%s",
-            daemonParams[LSB_SHAREDIR].paramValue,
-            lsb_jobid2str2(jPtr->jobId));
-
-    unlink(file);
 }

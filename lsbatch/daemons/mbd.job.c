@@ -97,6 +97,7 @@ static int    mbdRcvJobFile(int, struct lenData *);
 
 static void closeSbdConnect4ZombieJob(struct jData *);
 static int set_queue_last_job(LIST_T *, struct jData *);
+static void rmMessageFile(struct jData *);
 
 extern int glMigToPendFlag;
 extern int requeueToBottom;
@@ -4472,7 +4473,9 @@ initJobIdHT(void)
 
 void
 removeJob(LS_LONG_INT jobId)
-{   struct jData *zp, *jp;
+{
+    struct jData *zp;
+    struct jData *jp;
     struct jgTreeNode *node;
 
     if ((jp = getJobData(jobId)) && jp->nodeType != JGRP_NODE_ARRAY) {
@@ -6428,6 +6431,12 @@ freeJData(struct jData *jPtr)
 
     if (!jPtr)
         return;
+
+    /* Remove the message file for jobs and
+     * for single array elements, users my post
+     * messages to single array elements as well.
+     */
+    rmMessageFile(jPtr);
 
     if (IS_PEND(jPtr->jStatus) && jPtr->candPtr) {
         FREEUP (jPtr->candPtr);
@@ -8844,6 +8853,20 @@ set_queue_last_job(LIST_T *list, struct jData *jPtr)
      */
 
     return 0;
+}
+
+/* rmMessageFile()
+ */
+static void
+rmMessageFile(struct jData *jPtr)
+{
+    static char file[PATH_MAX];
+
+    sprintf(file, "%s/logdir/messages/%s",
+            daemonParams[LSB_SHAREDIR].paramValue,
+            lsb_jobid2str2(jPtr->jobId));
+
+    unlink(file);
 }
 
 /* jcompare()
