@@ -11,6 +11,7 @@ Release notes for openlava versions
 -- Implement docker integration
 -- Rename the lsb_msgjob()/lsb_getmsgjob() to
    lsb_postjobmsg()/lsb_readjobmsg() for compatibility
+-- Fix bug in which every user can shutdown LIM.
 
 2.3-0rc
 ========
@@ -19,8 +20,6 @@ Release notes for openlava versions
 -- Fix mbatchd to clean HOST_STAT_EXCLUSIVE when reply lsb.events.
 -- Fix job dependencies by name. The dependencies by name incorrectly
    included all jobs belong to the user submitting the jobs.
--- Fix all compiler warnings using gcc version 4.9.1
--- Restructure header files inclusion and protection.
 -- The daemons are not using privilege ports anymore even if
    running as root.
 -- Reduce the RES_SLEEP_TIME from 30s to 15s to avoid hosts appearing
