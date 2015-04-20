@@ -947,11 +947,8 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                 default:
                     break;
             }
-<<<<<<< HEAD
-=======
         } else {
             return (PARSE_BAD_EXP);
->>>>>>> 2.2
         }
     }
     sp[t] = '\0';
