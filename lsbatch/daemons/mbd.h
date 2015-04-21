@@ -661,6 +661,7 @@ struct sbdNode {
 };
 
 extern struct sbdNode sbdNodeList;
+extern struct parameterInfo *mbdParams;
 
 struct gData {
     char     *group;

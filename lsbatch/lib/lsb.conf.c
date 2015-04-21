@@ -316,7 +316,7 @@ lsb_readparam(struct lsConf *conf)
         lsberrno = LSBE_CONF_FATAL;
         return (NULL);
     }
-    initParameterInfo ( pConf->param );
+    initParameterInfo(pConf->param);
 
 
     conf->confhandle->curNode = conf->confhandle->rootNode;
@@ -405,8 +405,8 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         {"MAX_ACCT_ARCHIVE_FILE", NULL, 0},
         {"ACCT_ARCHIVE_SIZE", NULL, 0},
         {"ACCT_ARCHIVE_AGE", NULL, 0},
+        {"MAX_PREEMPT_JOBS", NULL, 0},
         {NULL, NULL, 0}
-
     };
 
     if (conf == NULL)
@@ -438,21 +438,26 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         return FALSE;
     }
 
-    if (readHvalues_conf (keylist, linep, conf, fname, lineNum, FALSE,
-                          "parameters") < 0) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5060,
-                                         "%s: File %s at line %d: Incorrect section; ignored"), __func__, fname, *lineNum); /* catgets 5060 */
+    if (readHvalues_conf(keylist,
+                         linep,
+                         conf,
+                         fname,
+                         lineNum,
+                         FALSE,
+                         "parameters") < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s at line %d: Incorrect section; ignored", __func__, fname, *lineNum);
         lsberrno = LSBE_CONF_WARNING;
         freekeyval (keylist);
         return FALSE;
     }
 
     for (i = 0; keylist[i].key != NULL; i++) {
-        if (keylist[i].val != NULL && strcmp (keylist[i].val, "")) {
 
+        if (keylist[i].val != NULL && strcmp (keylist[i].val, "")) {
             if (i == 0) {
-                ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5061,
-                                                     "%s: Ignore LSB_MANAGER value <%s>; use MANAGERS  defined in cluster file instead"), __func__, keylist[i].val); /* catgets 5061 */
+                ls_syslog(LOG_WARNING, "\
+%s: Ignore LSB_MANAGER value <%s>; use MANAGERS  defined in cluster file instead");
                 lsberrno = LSBE_CONF_WARNING;
             }
 
@@ -647,8 +652,10 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 else
                     value = atoi(keylist[i].val);
                 if (value == INFINIT_INT) {
-                    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5071,
-                                                     "%s: File %s in section Parameters ending at line %d: Value <%s> of %s isn't a positive integer between 1 and %d; ignored"), __func__, fname, *lineNum, keylist[i].val, keylist[i].key, INFINIT_INT - 1); /* catgets 5071 */
+                    ls_syslog(LOG_ERR,"\
+%s: File %s in section Parameters ending at line %d: Value <%s> of %s isn't a positive \
+ integer between 1 and %d; ignored", __func__, fname, *lineNum, keylist[i].val,
+                              keylist[i].key, INFINIT_INT - 1);
                     lsberrno = LSBE_CONF_WARNING;
                 } else
                     switch (i) {
@@ -727,17 +734,31 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             pConf->param->preExecDelay = value;
                             break;
                         default:
-                            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5074,
-                                                             "%s: File%s in section Parameters ending at line %d: Impossible cases <%d>."), __func__, fname, *lineNum, i); /* catgets 5074 */
+                            ls_syslog(LOG_ERR, "\
+%s: File%s in section Parameters ending at line %d: Impossible cases <%d>.",
+                                      __func__, fname, *lineNum, i);
                             lsberrno = LSBE_CONF_WARNING;
                             break;
                     }
+            }
+            if (i == 35) {
+                value = my_atoi(keylist[i].val, INFINIT_INT, 0);
+                if (value == INFINIT_INT) {
+                    ls_syslog(LOG_ERR, "\
+%s: File %s in section Parameters ending at line %d: value <%s> of %s isn't a \
+positive integer between 1 and %d; ignored", __func__, fname, *lineNum,
+                              keylist[i].val, keylist[i].key, INFINIT_INT - 1);
+                    lsberrno = LSBE_CONF_WARNING;
+                    pConf->param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
+                } else {
+                    pConf->param->maxPreemptJobs = value;
+                }
             }
         }
     }
 
 
-    if ( pConf->param->maxUserPriority <= 0
+    if (pConf->param->maxUserPriority <= 0
          && pConf->param->jobPriorityValue > 0
          && pConf->param->jobPriorityTime > 0) {
         ls_syslog(LOG_ERR, I18N(5453,
@@ -781,44 +802,45 @@ my_atof (char *arg, float upBound, float botBound)
 static void
 initParameterInfo(struct parameterInfo *param)
 {
-    if (param != NULL) {
-        param->defaultQueues = NULL;
-        param->defaultHostSpec = NULL;
-        param->mbatchdInterval = INFINIT_INT;
-        param->sbatchdInterval = INFINIT_INT;
-        param->jobAcceptInterval = INFINIT_INT;
-        param->maxDispRetries = INFINIT_INT;
-        param->maxSbdRetries = INFINIT_INT;
-        param->cleanPeriod = INFINIT_INT;
-        param->maxNumJobs = INFINIT_INT;
-        param->pgSuspendIt = INFINIT_INT;
-        param->defaultProject = NULL;
+    if (param == NULL)
+        return ;
 
-        param->retryIntvl = INFINIT_INT;
-        param->rusageUpdateRate = INFINIT_INT;
-        param->rusageUpdatePercent = INFINIT_INT;
-        param->condCheckTime = INFINIT_INT;
-        param->maxSbdConnections = INFINIT_INT;
-        param->maxSchedStay = INFINIT_INT;
-        param->freshPeriod = INFINIT_INT;
-        param->maxJobArraySize = INFINIT_INT;
-        param->jobTerminateInterval = INFINIT_INT;
-        param->disableUAcctMap = FALSE;
-        param->jobRunTimes = INFINIT_INT;
-        param->jobDepLastSub = 0;
-        param->pjobSpoolDir = NULL;
-        param->maxUserPriority=-1;
-        param->jobPriorityValue=-1;
-        param->jobPriorityTime=-1;
-        param->sharedResourceUpdFactor = INFINIT_INT;
-        param->scheRawLoad = 0;
-        param->preExecDelay = INFINIT_INT;
-        param->slotResourceReserve = FALSE;
-        param->maxJobId = INFINIT_INT;
-        param->maxAcctArchiveNum = -1;
-        param->acctArchiveInDays = -1;
-        param->acctArchiveInSize = -1;
-    }
+    param->defaultQueues = NULL;
+    param->defaultHostSpec = NULL;
+    param->mbatchdInterval = INFINIT_INT;
+    param->sbatchdInterval = INFINIT_INT;
+    param->jobAcceptInterval = INFINIT_INT;
+    param->maxDispRetries = INFINIT_INT;
+    param->maxSbdRetries = INFINIT_INT;
+    param->cleanPeriod = INFINIT_INT;
+    param->maxNumJobs = INFINIT_INT;
+    param->pgSuspendIt = INFINIT_INT;
+    param->defaultProject = NULL;
+    param->retryIntvl = INFINIT_INT;
+    param->rusageUpdateRate = INFINIT_INT;
+    param->rusageUpdatePercent = INFINIT_INT;
+    param->condCheckTime = INFINIT_INT;
+    param->maxSbdConnections = INFINIT_INT;
+    param->maxSchedStay = INFINIT_INT;
+    param->freshPeriod = INFINIT_INT;
+    param->maxJobArraySize = INFINIT_INT;
+    param->jobTerminateInterval = INFINIT_INT;
+    param->disableUAcctMap = FALSE;
+    param->jobRunTimes = INFINIT_INT;
+    param->jobDepLastSub = 0;
+    param->pjobSpoolDir = NULL;
+    param->maxUserPriority=-1;
+    param->jobPriorityValue=-1;
+    param->jobPriorityTime=-1;
+    param->sharedResourceUpdFactor = INFINIT_INT;
+    param->scheRawLoad = 0;
+    param->preExecDelay = INFINIT_INT;
+    param->slotResourceReserve = FALSE;
+    param->maxJobId = INFINIT_INT;
+    param->maxAcctArchiveNum = -1;
+    param->acctArchiveInDays = -1;
+    param->acctArchiveInSize = -1;
+    param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
 }
 
 static void

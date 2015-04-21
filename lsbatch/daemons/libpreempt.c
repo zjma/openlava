@@ -32,7 +32,7 @@ prm_init(LIST_T *qList)
 /* Elect jobs to be preempted
  */
 int
-prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
+prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
 {
     link_t *jl;
     struct jData *jPtr;
@@ -103,9 +103,6 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
         return 0;
     }
 
-    if (*numjobs == 0)
-        *numjobs = UINT32_MAX;
-
     /* Traverse candidate list
      */
     while ((jPtr = dequeue_link(jl))) {
@@ -161,7 +158,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, uint32_t *numjobs)
             }
         }
     pryc:;
-        if (LINK_NUM_ENTRIES(rl) >= *numjobs)
+        if (LINK_NUM_ENTRIES(rl) >= numjobs)
             break;
     }
 

@@ -796,43 +796,45 @@ struct hostInfoEnt {
 #define DEF_MAX_JOBID   999999
 #define MAX_JOBID_LOW   999999
 #define MAX_JOBID_HIGH 9999999
+#define DEF_MAX_PREEMPT_JOBS 12
 
 struct parameterInfo {
     char *defaultQueues;
     char *defaultHostSpec;
-    int  mbatchdInterval;
-    int  sbatchdInterval;
-    int  jobAcceptInterval;
-    int  maxDispRetries;
-    int  maxSbdRetries;
-    int  cleanPeriod;
-    int  maxNumJobs;
-    int  pgSuspendIt;
+    int mbatchdInterval;
+    int sbatchdInterval;
+    int jobAcceptInterval;
+    int maxDispRetries;
+    int maxSbdRetries;
+    int cleanPeriod;
+    int maxNumJobs;
+    int pgSuspendIt;
     char *defaultProject;
-    int  retryIntvl;
-    int  rusageUpdateRate;
-    int  rusageUpdatePercent;
-    int  condCheckTime;
-    int  maxSbdConnections;
-    int  maxSchedStay;
-    int  freshPeriod;
-    int     maxJobArraySize;
-    int  jobTerminateInterval;
+    int retryIntvl;
+    int rusageUpdateRate;
+    int rusageUpdatePercent;
+    int condCheckTime;
+    int maxSbdConnections;
+    int maxSchedStay;
+    int freshPeriod;
+    int maxJobArraySize;
+    int jobTerminateInterval;
     int disableUAcctMap;
-    int     jobRunTimes;
-    int     jobDepLastSub;
-    char   *pjobSpoolDir;
-    int     maxUserPriority;
-    int     jobPriorityValue;
-    int     jobPriorityTime;
-    int     sharedResourceUpdFactor;
-    int     scheRawLoad;
-    int     preExecDelay;
-    int     slotResourceReserve;
-    int     maxJobId;
-    int     maxAcctArchiveNum;
-    int     acctArchiveInDays;
-    int     acctArchiveInSize;
+    int jobRunTimes;
+    int jobDepLastSub;
+    char *pjobSpoolDir;
+    int maxUserPriority;
+    int jobPriorityValue;
+    int jobPriorityTime;
+    int sharedResourceUpdFactor;
+    int scheRawLoad;
+    int preExecDelay;
+    int slotResourceReserve;
+    int maxJobId;
+    int maxAcctArchiveNum;
+    int acctArchiveInDays;
+    int acctArchiveInSize;
+    int maxPreemptJobs;
 };
 
 

@@ -1860,14 +1860,15 @@ setManagers (struct clusterInfo clusterInfo)
 static void
 setParams(struct paramConf *paramConf)
 {
-    static char fname[] = "setParams";
     struct parameterInfo *params;
 
     if (paramConf == NULL || paramConf->param == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6185,
-                                         "%s: paramConf or param in paramConf is NULL; default  parameters will be used"), fname); /* catgets 6185 */
+        ls_syslog(LOG_ERR, "\
+%s: paramConf or param in paramConf is NULL; default parameters will be used",
+                  __func__);
         return;
     }
+
     params = paramConf->param;
     setString(defaultQueues, params->defaultQueues);
     setString(defaultHostSpec, params->defaultHostSpec);
@@ -1914,6 +1915,15 @@ setParams(struct paramConf *paramConf)
     setValue(maxAcctArchiveNum, params->maxAcctArchiveNum);
     setValue(acctArchiveInDays, params->acctArchiveInDays);
     setValue(acctArchiveInSize, params->acctArchiveInSize);
+
+    mbdParams = calloc(1, sizeof(struct parameterInfo));
+    memcpy(mbdParams, params, sizeof(struct parameterInfo));
+    if (params->defaultQueues)
+        mbdParams->defaultQueues = strdup(params->defaultQueues);
+    if (params->defaultHostSpec)
+        mbdParams->defaultHostSpec = strdup(params->defaultHostSpec);
+    if (params->pjobSpoolDir)
+        mbdParams->pjobSpoolDir = strdup(params->pjobSpoolDir);
 
 }
 

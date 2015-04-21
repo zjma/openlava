@@ -142,7 +142,7 @@ long   schedSeqNo;
 int    schedule;
 int    scheRawLoad;
 int lsbModifyAllJobs = FALSE;
-
+struct parameterInfo *mbdParams;
 static int schedule1;
 static struct jData *jobData = NULL;
 static time_t lastSchedTime = 0;
@@ -1297,7 +1297,6 @@ preempt(void)
     link_t *rl;
     struct jData *jPtr;
     struct qData *qPtr;
-    uint32_t numjobs;
 
     if (logclass & LC_PREEMPT)
         ls_syslog(LOG_INFO, "%s: entering ...", __func__);
@@ -1310,7 +1309,6 @@ preempt(void)
          qPtr != qDataList;
          qPtr = qPtr->forw) {
 
-        numjobs = 0;
         if (! (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE))
             continue;
 
@@ -1320,7 +1318,9 @@ preempt(void)
          * the rl link will have the preemption
          * candidates.
          */
-        (*qPtr->prmSched->prm_elect_preempt)(qPtr, rl, &numjobs);
+        (*qPtr->prmSched->prm_elect_preempt)(qPtr,
+                                             rl,
+                                             mbdParams->maxPreemptJobs);
 
         if (LINK_NUM_ENTRIES(rl) == 0) {
             fin_link(rl);
