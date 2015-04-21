@@ -733,6 +733,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                         case 29:
                             pConf->param->preExecDelay = value;
                             break;
+                        case 35:
+                            pConf->param->maxPreemptJobs = value;
+                            break;
                         default:
                             ls_syslog(LOG_ERR, "\
 %s: File%s in section Parameters ending at line %d: Impossible cases <%d>.",
@@ -740,19 +743,6 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             lsberrno = LSBE_CONF_WARNING;
                             break;
                     }
-            }
-            if (i == 35) {
-                value = my_atoi(keylist[i].val, INFINIT_INT, 0);
-                if (value == INFINIT_INT) {
-                    ls_syslog(LOG_ERR, "\
-%s: File %s in section Parameters ending at line %d: value <%s> of %s isn't a \
-positive integer between 1 and %d; ignored", __func__, fname, *lineNum,
-                              keylist[i].val, keylist[i].key, INFINIT_INT - 1);
-                    lsberrno = LSBE_CONF_WARNING;
-                    pConf->param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
-                } else {
-                    pConf->param->maxPreemptJobs = value;
-                }
             }
         }
     }
