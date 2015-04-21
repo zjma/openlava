@@ -371,29 +371,30 @@ xdr_submitMbdReply(XDR *xdrs, struct submitMbdReply *reply, struct LSFHeader *hd
 }
 
 bool_t
-xdr_parameterInfo(XDR *xdrs, struct parameterInfo *paramInfo,
+xdr_parameterInfo(XDR *xdrs,
+                  struct parameterInfo *paramInfo,
                   struct LSFHeader *hdr)
 {
 
     if (xdrs->x_op == XDR_DECODE) {
-        FREEUP (paramInfo->defaultQueues);
-        FREEUP (paramInfo->defaultHostSpec);
-        FREEUP (paramInfo->defaultProject);
-        FREEUP (paramInfo->pjobSpoolDir);
+        FREEUP(paramInfo->defaultQueues);
+        FREEUP(paramInfo->defaultHostSpec);
+        FREEUP(paramInfo->defaultProject);
+        FREEUP(paramInfo->pjobSpoolDir);
     }
 
     if (!(xdr_var_string(xdrs, &paramInfo->defaultQueues) &&
           xdr_var_string(xdrs, &paramInfo->defaultHostSpec)))
         return false;
 
-    if (!(xdr_int(xdrs,&(paramInfo->mbatchdInterval)) &&
-          xdr_int(xdrs,&(paramInfo->sbatchdInterval)) &&
-          xdr_int(xdrs,&(paramInfo->jobAcceptInterval)) &&
-          xdr_int(xdrs,&(paramInfo->maxDispRetries)) &&
-          xdr_int(xdrs,&(paramInfo->maxSbdRetries)) &&
-          xdr_int(xdrs,&(paramInfo->cleanPeriod)) &&
-          xdr_int(xdrs,&(paramInfo->maxNumJobs)) &&
-          xdr_int(xdrs,&(paramInfo->pgSuspendIt))))
+    if (!(xdr_int(xdrs, &paramInfo->mbatchdInterval) &&
+          xdr_int(xdrs, &paramInfo->sbatchdInterval) &&
+          xdr_int(xdrs, &paramInfo->jobAcceptInterval) &&
+          xdr_int(xdrs, &paramInfo->maxDispRetries) &&
+          xdr_int(xdrs, &paramInfo->maxSbdRetries) &&
+          xdr_int(xdrs, &paramInfo->cleanPeriod) &&
+          xdr_int(xdrs, &paramInfo->maxNumJobs)) &&
+          xdr_int(xdrs, &paramInfo->pgSuspendIt))
         return false;
 
     if (!(xdr_var_string(xdrs, &paramInfo->defaultProject)))
@@ -410,7 +411,7 @@ xdr_parameterInfo(XDR *xdrs, struct parameterInfo *paramInfo,
     if (! xdr_bool(xdrs, &paramInfo->disableUAcctMap))
         return false;
 
-    if (!(xdr_int(xdrs,&(paramInfo->maxJobArraySize))))
+    if (!(xdr_int(xdrs, &paramInfo->maxJobArraySize)))
         return false;
 
 
@@ -425,23 +426,24 @@ xdr_parameterInfo(XDR *xdrs, struct parameterInfo *paramInfo,
     }
 
 
-    if (!xdr_int(xdrs, &(paramInfo->maxJobId)))
-    {
+    if (!xdr_int(xdrs, &(paramInfo->maxJobId))) {
         return false;
     }
 
-    if (!(xdr_int(xdrs,&(paramInfo->maxAcctArchiveNum)) &&
-          xdr_int(xdrs,&(paramInfo->acctArchiveInDays)) &&
-          xdr_int(xdrs,&(paramInfo->acctArchiveInSize)))){
+    if (!(xdr_int(xdrs, &paramInfo->maxAcctArchiveNum) &&
+          xdr_int(xdrs, &paramInfo->acctArchiveInDays) &&
+          xdr_int(xdrs, &paramInfo->acctArchiveInSize))){
         return false;
     }
 
-
-
-
-    if (!(xdr_int(xdrs,&(paramInfo->jobDepLastSub)) &&
-          xdr_int(xdrs,&(paramInfo->sharedResourceUpdFactor)))) {
+    if (!(xdr_int(xdrs, &paramInfo->jobDepLastSub) &&
+          xdr_int(xdrs, &paramInfo->sharedResourceUpdFactor))) {
         return false;
+    }
+
+    if (hdr->version >= 30) {
+        if (! xdr_int(xdrs, &paramInfo->maxPreemptJobs))
+            return false;
     }
 
     return true;

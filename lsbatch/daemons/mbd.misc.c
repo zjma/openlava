@@ -1256,7 +1256,7 @@ addUserData(char *username, int maxjobs, float pJobLimit,
 }
 
 void
-checkParams (struct infoReq *req, struct parameterInfo *reply)
+checkParams(struct infoReq *req, struct parameterInfo *reply)
 {
     if (defaultQueues)
         reply->defaultQueues = defaultQueues;
@@ -1288,21 +1288,17 @@ checkParams (struct infoReq *req, struct parameterInfo *reply)
     reply->maxUserPriority = maxUserPriority;
     reply->jobPriorityValue = jobPriorityValue;
     reply->jobPriorityTime = jobPriorityTime;
-
-
-
     reply->jobDepLastSub = jobDepLastSub;
     reply->sharedResourceUpdFactor = sharedResourceUpdFactor;
-
     reply->maxJobId = maxJobId;
     reply->maxAcctArchiveNum = maxAcctArchiveNum;
     reply->acctArchiveInDays = acctArchiveInDays;
     reply->acctArchiveInSize = acctArchiveInSize;
-
+    reply->maxPreemptJobs = mbdParams->maxPreemptJobs;
 }
 
 void
-mbdDie (int sig)
+mbdDie(int sig)
 {
     struct jData *jpbw;
     int list;
@@ -1348,16 +1344,16 @@ mbdDie (int sig)
 }
 
 int
-isManager (char *lsfUserName)
+isManager(char *lsfUserName)
 {
 
     int i;
 
     for (i = 0; i < nManagers; i++) {
         if (strcmp(lsfUserName, lsbManagers[i]) == 0)
-            return (TRUE);
+            return TRUE;
     }
-    return (FALSE);
+    return FALSE;
 }
 
 

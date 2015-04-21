@@ -1698,7 +1698,6 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
     }
 
 
-
     count = sizeof(struct parameterInfo) + strlen(paramInfo.defaultQueues)
         + strlen(paramInfo.defaultHostSpec)
         + strlen(paramInfo.defaultProject) + 100 + jobSpoolDirLen;
@@ -1709,8 +1708,13 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = reply;
     replyStruct = (char *) &paramInfo;
-    if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_parameterInfo,
-                       0, NULL)) {
+
+    if (! xdr_encodeMsg(&xdrs2,
+                        replyStruct,
+                        &replyHdr,
+                        xdr_parameterInfo,
+                        0,
+                        NULL)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
         FREEUP(reply_buf);
