@@ -1601,7 +1601,7 @@ getLsfHostInfo(int retry)
     /* openlava 2.0 we don't copy the host information
      * we get from lim anymore for performance reasons.
      * This also means thet we must always call this
-     * functiona sking about all lim hosts since the libray
+     * function asking about all lim hosts since the libray
      * is keeping the memory state for us.
      */
 
