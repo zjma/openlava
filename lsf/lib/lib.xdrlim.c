@@ -139,10 +139,10 @@ xdr_placeReply(XDR *xdrs, struct placeReply *placeRepPtr, struct LSFHeader *hdr)
 
 
     for (i = 0; i < placeRepPtr->numHosts; i++) {
-        status= xdr_arrayElement(xdrs,
-                                 (char *)&placeRepPtr->placeInfo[i],
-                                 hdr,
-                                 xdr_placeInfo);
+        status = xdr_arrayElement(xdrs,
+                                  (char *)&placeRepPtr->placeInfo[i],
+                                  hdr,
+                                  xdr_placeInfo);
         if (!status) {
             if (xdrs->x_op == XDR_DECODE)
                 FREEUP(memp);
