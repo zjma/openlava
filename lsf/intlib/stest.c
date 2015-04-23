@@ -21,6 +21,25 @@
 
 #include "sshare.h"
 
+/* print_node()
+ */
+static int
+print_node(struct tree_node_ *n, struct tree_ *t)
+{
+    struct share_acct *s;
+
+    if (t == NULL
+        || n == NULL)
+        return -1;
+
+    s = n->data;
+
+    printf("%s: node %s shares %d dshares %4.2f\n",
+           __func__, n->name, s->shares, s->dshares);
+
+    return -1;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -36,5 +55,7 @@ main(int argc, char **argv)
     t = sshare_make_tree(user_shares,
                          num,
                          grps);
+    tree_walk2(t, print_node);
+
     return 0;
 }

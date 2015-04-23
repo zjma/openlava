@@ -842,12 +842,15 @@ extern char    **ls_placeoftype(char *resreq, int *numhosts,
 extern struct  hostLoad *ls_load(char *resreq, int *numhosts, int options,
                                  char *fromhost);
 extern struct  hostLoad *ls_loadofhosts(char *resreq, int *numhosts,
-                                        int options, char *fromhost, char **hostlist,
+                                        int options, char *fromhost,
+                                        char **hostlist,
                                         int listsize);
 extern struct  hostLoad *ls_loadoftype(char *resreq, int *numhosts,
-                                       int options, char *fromhost, char *hosttype);
+                                       int options, char *fromhost,
+                                       char *hosttype);
 extern struct  hostLoad *ls_loadinfo(char *resreq, int *numhosts,
-                                     int options, char *fromhost, char **hostlist,
+                                     int options, char *fromhost,
+                                     char **hostlist,
                                      int listsize, char ***indxnamelist);
 extern int     ls_loadadj(char *resreq, struct placeInfo *hostlist,
                           int listsize);
@@ -864,7 +867,8 @@ extern int     ls_isconnected(char *hostName);
 extern int     ls_lostconnection(void);
 extern char    *ls_getclustername(void);
 extern struct clusterInfo *ls_clusterinfo(char *, int *, char **, int, int);
-extern struct lsSharedResourceInfo *ls_sharedresourceinfo(char **, int *, char *, int);
+extern struct lsSharedResourceInfo *ls_sharedresourceinfo(char **,
+                                                          int *, char *, int);
 extern char    *ls_getmastername(void);
 extern char    *ls_getmastername2(void);
 extern char    *ls_getmyhostname(void);
@@ -971,6 +975,13 @@ struct extResInfo {
     char *increasing;
     char *des;
 };
+
+/* Direct and reverse name resolution
+ */
+extern struct hostent *Gethostbyname_(char *);
+extern struct hostent *Gethostbyaddr_(in_addr_t *, socklen_t, int);
+extern void (*Signal_(int, void (*)(int)))(int);
+extern int expSyntax_(char *);
 
 #ifndef __CYGWIN__
 extern int optind;

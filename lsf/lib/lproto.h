@@ -226,7 +226,6 @@ extern int sig_decode(int);
 extern int getSigVal (char *);
 extern char *getSigSymbolList (void);
 extern char *getSigSymbol (int);
-extern void (*Signal_ (int, void (*)(int)))(int);
 extern int blockALL_SIGS_(sigset_t *, sigset_t *);
 
 extern int TcpCreate_(int, int);
@@ -266,9 +265,6 @@ extern LS_LONG_INT atoi64_(char *);
 extern void stripDomain_(char *);
 extern int equalHost_(const char *, const char *);
 extern char *sockAdd2Str_(struct sockaddr_in *);
-
-extern struct hostent *Gethostbyname_ (char *);
-extern struct hostent *Gethostbyaddr_(in_addr_t *, socklen_t, int);
 extern int getAskedHosts_(char *, char ***, int *, int *, int);
 extern int lockHost_(time_t, char *);
 extern int unlockHost_(char *);
@@ -282,9 +278,6 @@ extern int deletetask_(char *, hTab *);
 extern int listtask_(char ***, hTab *, int);
 extern int readtaskfile_(char *, hTab *, hTab *, hTab *, hTab *, char);
 extern int writetaskfile_(char *, hTab *, hTab *, hTab *, hTab *);
-
-extern int expSyntax_(char *);
-
 extern char *getNextLineC_(FILE *, int *, int);
 extern char *getNextLine_(FILE *, int);
 extern char *getNextWord_(char **);

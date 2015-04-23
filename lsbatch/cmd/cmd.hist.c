@@ -168,9 +168,6 @@ displayEvent(struct eventRec *log, struct histReq *req)
 {
     char prline[MSGSIZE];
     char localTimeStr[60];
-    char *fName;
-
-    fName = putstr_ ("displayEvent");
 
     if (req->eventTime[1] != 0
 	&& req->eventTime[0] < req->eventTime[1]) {

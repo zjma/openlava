@@ -1,4 +1,5 @@
-/* $Id: nios.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1805,7 +1806,7 @@ JobExitInfo(void)
     }
 
 
-    for (i=1; i<NSIG; i++) {
+    for (i = 1; i < NSIG; i++) {
         Signal_(i, SIG_DFL);
     }
 
@@ -1842,14 +1843,11 @@ void
 prtJobStateMsg(struct jobInfoEnt *job, struct jobInfoHead *jInfoH)
 {
     char prline[MSGSIZE]="";
-    time_t doneTime;
     static struct loadIndexLog *loadIndex = NULL;
     char *pendReasons=NULL;
 
     if (loadIndex == NULL)
         TIMEIT(1, loadIndex = initLoadIndex(), "initLoadIndex");
-
-    doneTime = job->endTime;
 
     switch (job->status) {
     case JOB_STAT_DONE:

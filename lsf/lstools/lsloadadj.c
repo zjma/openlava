@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,71 +17,52 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <sys/errno.h>
-#include <stdlib.h>
-#include <netdb.h>
-
 #include "../lsf.h"
 
-
-
-#include "../lib/lproto.h"
 #define MAXLISTSIZE 256
 
 static void usage(char *);
 extern int errno;
 
-#define NL_SETN 27
-
-
 int
 main(int argc, char **argv)
 {
-    static char fname[] = "lsloadadj/main";
-    char *resreq = NULL;
+    char *resreq;
     struct placeInfo  placeadvice[MAXLISTSIZE];
     char *p, *hname;
     int cc = 0;
     int	achar;
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
-
 
     if (ls_initdebug(argv[0]) < 0) {
         ls_perror("ls_initdebug");
-        exit(-1);
+        return -1;
     }
-    if (logclass & (LC_TRACE))
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
 
     opterr = 0;
-    while ((achar = getopt(argc, argv, "VhR:")) != EOF)
-    {
-	switch (achar)
-	{
+    while ((achar = getopt(argc, argv, "VhR:")) != EOF) {
+	switch (achar) {
 	case 'R':
 	    resreq = optarg;
 	    break;
 	case 'V':
 	    fputs(_LS_VERSION_, stderr);
-	    exit(0);
+            return 0;
 	case 'h':
+	    usage(argv[0]);
+            return -1;
 	default:
 	    usage(argv[0]);
+            return -1;
 	}
     }
 
-    for ( ; optind < argc ; optind++)
-    {
-        if (cc >= MAXLISTSIZE)
-	{
-	    fprintf(stderr,
-		_i18n_msg_get(ls_catd,NL_SETN,1951, "%s: too many hostnames (maximum %d)\n"), /* catgets  1951  */
-		fname, MAXLISTSIZE);
+    for ( ; optind < argc ; optind++) {
+
+        if (cc >= MAXLISTSIZE) {
+	    fprintf(stderr, "%s: too many hostnames (maximum %d)\n",
+		__func__, MAXLISTSIZE);
 	    usage(argv[0]);
+            return -1;
 	}
 
         p = strchr(argv[optind],':');
@@ -88,10 +70,10 @@ main(int argc, char **argv)
              *p++ = '\0';
              placeadvice[cc].numtask = atoi(p);
              if (errno == ERANGE) {
-                 fprintf(stderr,
-		     _i18n_msg_get(ls_catd,NL_SETN,1952, "%s: invalid format for number of components\n"), /* catgets 1952 */
-		     fname);
+                 fprintf(stderr, "%s: invalid format for number of components\n",
+                         __func__);
                  usage(argv[0]);
+                 return -1;
              }
         } else {
              placeadvice[cc].numtask = 1;
@@ -101,15 +83,15 @@ main(int argc, char **argv)
 	    fprintf(stderr, "\
 %s: invalid hostname %s\n", __func__, argv[optind]);
 	    usage(argv[0]);
+            return -1;
 	}
         strcpy(placeadvice[cc++].hostName, argv[optind]);
     }
 
     if (cc == 0) {
-
 	if ((hname = ls_getmyhostname()) == NULL) {
 	    ls_perror("ls_getmyhostname");
-	    exit(-1);
+            return -1;
         }
         strcpy(placeadvice[0].hostName, hname);
         placeadvice[0].numtask = 1;
@@ -118,17 +100,15 @@ main(int argc, char **argv)
 
     if (ls_loadadj(resreq, placeadvice, cc) < 0) {
         ls_perror("lsloadadj");
-        exit(-1);
-    } else
+        return -1;
+    }
 
-
-    _i18n_end ( ls_catd );
-
-    exit(0);
+    return 0;
 }
 
 static void usage(char *cmd)
 {
-    printf("%s: %s [-h] [-V] [-R res_req] [host_name[:num_task] host_name[:num_task] ...]\n",I18N_Usage, cmd);
-    exit(-1);
+    printf("\
+usage: %s [-h] [-V] [-R res_req] [host_name[:num_task] \
+ host_name[:num_task] ...]\n", cmd);
 }

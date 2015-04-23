@@ -272,7 +272,6 @@ extern struct hostLoad *loadinfo_(char *,
                                   char *,
                                   int *,
                                   char ***);
-extern struct hostent *Gethostbyname_(char *);
 extern short getRefNum_(void);
 extern char isint_(char *);
 extern char islongint_(char *);
@@ -297,7 +296,6 @@ extern int get_nonstd_desc_(int);
 extern int TcpCreate_(int, int);
 extern int opensocks_(int);
 extern int TcpConnect_(char *, u_short, struct timeval *);
-extern int expSyntax_(char *);
 extern int tid_register(int, int, u_short, char *, int);
 extern int tid_remove(int);
 extern struct tid *tid_find(int);

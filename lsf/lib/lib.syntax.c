@@ -35,11 +35,10 @@ expSyntax_(char *resReq)
     str.name = resReq;
     str.len  = MAXLINELEN;
 
-    if (callLim_(LIM_CHK_RESREQ, &str, xdr_stringLen, 
+    if (callLim_(LIM_CHK_RESREQ, &str, xdr_stringLen,
 	NULL, NULL, NULL, 0, NULL) < 0)
-        return(-1);
-    
-   return 0; 
+        return -1;
+   return 0;
 
-} 
+}
 

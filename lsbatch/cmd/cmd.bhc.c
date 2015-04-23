@@ -39,7 +39,7 @@ bhc (int argc, char *argv[], int opCode)
     char **hostPoint ;
     char **hosts=NULL;
     char *optName;
-    int i, numReq;
+    int i;
     int fFlag = FALSE;
     int  all = FALSE, numHosts = 0;
     int  inquerFlag = FALSE;
@@ -73,7 +73,6 @@ bhc (int argc, char *argv[], int opCode)
 
     exitrc = 0;
     numHosts = getNames (argc, argv, optind, &hosts, &all, "hostC");
-    numReq = numHosts;
     hostPoint = NULL;
     if (!numHosts && !all)
         numHosts = 1;
