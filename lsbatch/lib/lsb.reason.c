@@ -431,11 +431,11 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
         }
 
         if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL)
-            sprintf (retMsg, "%s %s: %s;\n", retMsg, sp, hostList);
+            sprintf(retMsg, "%s %s: %s;\n", retMsg, sp, hostList);
         else if (num == 1)
             sprintf(retMsg, "%s %s: 1 host;\n", retMsg, sp);
         else
-            sprintf (retMsg, "%s %s: %d hosts;\n", retMsg, sp, num);
+            sprintf(retMsg, "%s %s: %d hosts;\n", retMsg, sp, num);
     }
 
     return retMsg;

@@ -64,10 +64,8 @@ main(int argc, char** argv)
     int                   c;
     bool_t                fFlag = FALSE;
     bool_t		  bFlag = FALSE;
-    int rc;
 
-    rc = _i18n_init ( I18N_CAT_MIN );
-
+    _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");

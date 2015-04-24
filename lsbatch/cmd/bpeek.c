@@ -1,4 +1,5 @@
-/* $Id: bpeek.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -69,9 +70,8 @@ main (int argc, char **argv, char **environ)
     char   *outFile;
     char   fflag = FALSE;
     int    cc;
-    int    rc;
 
-    rc = _i18n_init ( I18N_CAT_MIN );
+    _i18n_init(I18N_CAT_MIN);
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
@@ -330,9 +330,7 @@ useTmp(char *exHost, char *fname)
     int pid;
     LS_WAIT_T status;
     struct stat st;
-    char *fName;
 
-    fName = "useTmp";
     if ((pid = fork()) == 0) {
 	if (ls_initrex(1, 0) < 0) {
 	    ls_perror("ls_initrex");

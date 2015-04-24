@@ -1,4 +1,5 @@
-/* $Id: btop.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,20 +19,17 @@
 
 #include "cmd.h"
 
-#define NL_SETN 8 	
+#define NL_SETN 8
 
 extern void bmove (int, char **, int);
 
-int 
-main (int argc, char **argv)
+int
+main(int argc, char **argv)
 {
-
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );	
+    _i18n_init ( I18N_CAT_MIN );
 
     bmove(argc, argv, TO_TOP);
 
-    _i18n_end ( ls_catd );			
-    exit(0);
-} 
+    _i18n_end(ls_catd);
+    return 0;
+}

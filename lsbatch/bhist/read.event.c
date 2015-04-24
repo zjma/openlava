@@ -74,11 +74,10 @@ initJobList (void)
 void
 removeJobList (struct jobRecord *jobRecordListHead)
 {
-    struct jobRecord *p, *q;
+    struct jobRecord *p;
 
     p = jobRecordListHead->forw;
-    while(p != jobRecordListHead) {
-        q =p;
+    while (p != jobRecordListHead) {
         p = p->forw;
     }
     FREEUP(jobRecordListHead);

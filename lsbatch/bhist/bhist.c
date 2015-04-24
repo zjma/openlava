@@ -156,9 +156,7 @@ int
 main(int argc, char **argv)
 {
 
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
+    _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init("bhist") < 0)  {
         lsb_perror("lsb_init");
@@ -761,7 +759,7 @@ displayhist(struct bhistReq *bhistReq)
     double stayTime = 0, sysSuspTime, usrSuspTime;
     double pendSuspTime, runTime, pendTime, unknownTime;
     double timeinterval;
-    time_t now, nextTimeStamp, timeStamp, startTime, currentTime;
+    time_t now, nextTimeStamp, timeStamp, currentTime;
     int laststatus;
 
     now = time(0);
@@ -802,17 +800,13 @@ displayhist(struct bhistReq *bhistReq)
                     prtLine(";\n");
             }
 
-
-
             pendTime     = 0.0;
             pendSuspTime = 0.0;
             runTime      = 0.0;
             sysSuspTime  = 0.0;
             usrSuspTime  = 0.0;
             unknownTime  = 0.0;
-
             nextTimeStamp = 0;
-            startTime = 0;
         }
         event = jobRecord->eventhead;
 
@@ -834,12 +828,9 @@ displayhist(struct bhistReq *bhistReq)
                 usrSuspTime = 0.0;
                 unknownTime = 0.0;
                 nextTimeStamp = 0;
-                startTime = 0;
             }
             else
                 nextevent  = event->next;
-
-
 
             if (logclass & LC_TRACE)
                 ls_syslog(LOG_DEBUG2, "%s: (1)event.kind=%x",
@@ -950,7 +941,6 @@ displayhist(struct bhistReq *bhistReq)
                         break;
 
                     case JOB_STAT_RUN:
-                        startTime = timeStamp;
                         runTime += timeinterval;
                         break;
 
@@ -2000,7 +1990,6 @@ printEvent(struct bhistReq *bhistReq, struct jobRecord *jobRecord,
     static char   fname[] = "printEvent()";
     int           i;
     char          tBuff[20];
-    char          *disptime = NULL;
     char          prline[MSGSIZE];
     char          *hostPtr;
     char          *cp;
@@ -2040,8 +2029,7 @@ printEvent(struct bhistReq *bhistReq, struct jobRecord *jobRecord,
             prtFileNames(job, TRUE);
             prtHeader(job, FALSE, TRUE);
             hostPtr = job->submit.hostSpec;
-            if (strcmp (job->submit.hostSpec, "") == 0)
-            {
+            if (strcmp (job->submit.hostSpec, "") == 0) {
                 if (job->numExHosts > 0)
                     hostPtr = job->exHosts[0];
                 else
@@ -2052,13 +2040,7 @@ printEvent(struct bhistReq *bhistReq, struct jobRecord *jobRecord,
         case EVENT_PRE_EXEC_START:
         case EVENT_JOB_START:
             lastChkPeriod = job->submit.chkpntPeriod;
-            if (timeStamp == 0 )
-                disptime = ctime((time_t *)&(job->startTime)) ;
-            else if (timeStamp > 0)
-
-
-                job->startTime = timeStamp;
-
+            job->startTime = timeStamp;
 
             if (job->exHosts && job->numExHosts > 0) {
                 for (i=0; i<job->numExHosts; i++)
@@ -2489,7 +2471,6 @@ printChronicleEventLog(struct eventRec *log, struct bhistReq *req)
 {
     static  char fname[] = "printChronicleEventLog";
     struct  jobInfoEnt *job;
-    struct  submit *submitPtr;
     struct  eventRecord *event;
     char    prline[MAXLINELEN], tBuff[20];
     int     i;
@@ -2505,7 +2486,7 @@ printChronicleEventLog(struct eventRec *log, struct bhistReq *req)
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG2, "%s: log.type=%x", fname, log->type);
 
-    strcpy(timeStampStr, _i18n_ctime(ls_catd,  CTIME_FORMAT_a_b_d_T, (time_t *)&(log->eventTime)));
+    strcpy(timeStampStr, ctime((time_t *)&(log->eventTime)));
 
     foundJob = TRUE;
 
@@ -2517,7 +2498,6 @@ printChronicleEventLog(struct eventRec *log, struct bhistReq *req)
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL,fname, "read_newjob" );
                 break;
             }
-            submitPtr = &job->submit;
             prtJobSubmit(job, TRUE, TRUE);
             prtFileNames(job, TRUE);
             if (job->submit.options & SUB_JOB_NAME)

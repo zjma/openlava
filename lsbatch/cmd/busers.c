@@ -1,4 +1,5 @@
-/* $Id: busers.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,15 +47,14 @@ usage (char *cmd)
 }
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     int cc, numUsers;
     struct userInfoEnt  *usrInfo;
     char **users=NULL, **userPoint;
     int all = FALSE;
-    int rc;
 
-    rc = _i18n_init ( I18N_CAT_MIN );
+    _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");

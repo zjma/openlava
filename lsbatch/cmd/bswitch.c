@@ -1,4 +1,5 @@
-/* $Id: bswitch.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,17 +19,13 @@
 
 #include "cmd.h"
 
-#define NL_SETN 8
-
-
-static int printErrMsg (LS_LONG_INT jobId, char *queue);
+static int printErrMsg(LS_LONG_INT, char *);
 
 void
 usage (char *cmd)
 {
-    fprintf(stderr, I18N_Usage);
-    fprintf(stderr, ": %s [-h] [-V] [-q queue_name] [-u user_name |-u all] [-m host_name]\n               [-J job_name] dest_queue [jobId |  \"jobId[idxList]\" ...]\n", cmd);
-    exit(-1);
+    fprintf(stderr, "\
+usage: %s [-h] [-V] [-q queue_name] [-u user_name |-u all] [-m host_name]\n               [-J job_name] dest_queue [jobId |  \"jobId[idxList]\" ...]\n", cmd);
 }
 
 int
@@ -39,10 +36,6 @@ main (int argc, char **argv)
     int numJobs;
     LS_LONG_INT *jobIds;
     int  i, cc, exitrc = 0;
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
-
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
@@ -52,8 +45,10 @@ main (int argc, char **argv)
     while ((cc = getopt(argc, argv, "VhJ:q:u:m:")) != EOF) {
         switch (cc) {
         case 'u':
-            if (user)
+            if (user) {
                 usage(argv[0]);
+                return -1;
+            }
             if (strcmp(optarg, "all") == 0)
                 user = ALL_USERS;
             else
@@ -72,8 +67,11 @@ main (int argc, char **argv)
             fputs(_LS_VERSION_, stderr);
             exit(0);
         case 'h':
+            usage(argv[0]);
+            return -1;
         default:
             usage(argv[0]);
+            return -1;
        }
     }
 
@@ -82,9 +80,11 @@ main (int argc, char **argv)
         optind++;
     }
     if (destQueue == NULL) {
-        printf((_i18n_msg_get(ls_catd,NL_SETN,2902, "The destination queue name must be specified.\n"))); /* catgets  2902  */
+        printf("The destination queue name must be specified.\n");
         usage(argv[0]);
+        return -1;
     }
+
     numJobs = getJobIds (argc, argv, jobName, user, queue, host, &jobIds, 0);
 
 
@@ -94,41 +94,39 @@ main (int argc, char **argv)
 	    printErrMsg (jobIds[i], destQueue);
         }
         else
-	    printf((_i18n_msg_get(ls_catd,NL_SETN,2903, "Job <%s> is switched to queue <%s>\n")),  /* catgets  2903  */
-		lsb_jobid2str(jobIds[i]), destQueue);
+	    printf("Job <%s> is switched to queue <%s>\n",
+                   lsb_jobid2str(jobIds[i]), destQueue);
     }
 
-    _i18n_end ( ls_catd );
-    exit(exitrc);
-
+    return exitrc;
 }
 
 static int
 printErrMsg (LS_LONG_INT jobId, char *queue)
 {
     char Job[80];
-    sprintf (Job, "%s <%s>", I18N_Job, lsb_jobid2str(jobId));
+
+    sprintf(Job, "Job <%s>", lsb_jobid2str(jobId));
 
     switch (lsberrno) {
-    case LSBE_BAD_USER:
-    case LSBE_PROTOCOL:
-    case LSBE_MBATCHD:
-        lsb_perror ("lsb_switchjob");
-        return (-1);
+        case LSBE_BAD_USER:
+        case LSBE_PROTOCOL:
+        case LSBE_MBATCHD:
+            lsb_perror ("lsb_switchjob");
+            return -1;
 
-   case LSBE_PERMISSION:
-        lsb_perror (Job);
-        return (-1);
+        case LSBE_PERMISSION:
+            lsb_perror (Job);
+            return -1;
 
-    case LSBE_BAD_QUEUE:
-    case LSBE_QUEUE_CLOSED:
-    case LSBE_QUEUE_USE:
-    case LSBE_QUEUE_HOST:
-        lsb_perror (queue);
-        return (-1);
-    default:
-	lsb_perror (Job);
-        return (-1);
+        case LSBE_BAD_QUEUE:
+        case LSBE_QUEUE_CLOSED:
+        case LSBE_QUEUE_USE:
+        case LSBE_QUEUE_HOST:
+            lsb_perror (queue);
+            return -1;
+        default:
+            lsb_perror (Job);
+            return -1;
     }
-
 }

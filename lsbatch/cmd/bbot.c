@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,13 +21,10 @@
 #define NL_SETN 8
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
+     _i18n_init(I18N_CAT_MIN);
 
     bmove(argc, argv, TO_BOTTOM);
-    _i18n_end ( ls_catd );
-    exit(0);
+    return 0;
 }

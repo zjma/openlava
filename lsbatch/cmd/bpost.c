@@ -30,7 +30,6 @@ int
 main(int argc, char **argv)
 {
     int cc;
-    int num;
     char *msg;
     LS_LONG_INT *jobIDs;
 
@@ -61,14 +60,14 @@ main(int argc, char **argv)
         return -1;
     }
 
-    num = getJobIds(argc,
-                    argv,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    &jobIDs,
-                    0);
+    getJobIds(argc,
+              argv,
+              NULL,
+              NULL,
+              NULL,
+              NULL,
+              &jobIDs,
+              0);
 
     cc = lsb_postjobmsg(jobIDs[0], msg);
     if (cc < 0) {

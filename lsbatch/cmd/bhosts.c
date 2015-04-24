@@ -1,4 +1,5 @@
-/* $Id: bhosts.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -121,10 +122,9 @@ main(int argc, char **argv)
     char **hosts=NULL, **hostPoint, *resReq = NULL;
     char lflag = FALSE, sOption = FALSE, otherOption = FALSE;
     int numHosts;
-    int rc;
 
     _lsb_recvtimeout = 30;
-    rc = _i18n_init ( I18N_CAT_MIN );
+    _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
@@ -527,14 +527,12 @@ prtLoad (struct hostInfoEnt  *hPtrs, struct lsInfo *lsInfo)
 
     static char fname[] = "prtLoad";
     char **nlp = NULL;
-    int i, nf;
+    int i;
     char **loadval;
     char **loadval1;
     int start = 0;
     int end;
     int last;
-
-
 
     if (!fmt) {
         if(!(fmt=(struct indexFmt *)
@@ -577,8 +575,8 @@ prtLoad (struct hostInfoEnt  *hPtrs, struct lsInfo *lsInfo)
 	}
     }
 
-    nf = makeFields(hPtrs, loadval, nlp, TRUE);
-    nf = makeFields(hPtrs, loadval1, nlp, FALSE);
+    makeFields(hPtrs, loadval, nlp, TRUE);
+    makeFields(hPtrs, loadval1, nlp, FALSE);
 
     while ((end = getDispLastItem(nlp, start, last)) > start
 	   && start < last) {

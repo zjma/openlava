@@ -37,25 +37,23 @@ usage (char *cmd)
 }
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-    int                    cc;
-    int                    numGroups = 0;
-    int			   enumGrp = 0;
-    char**                 groups=NULL;
-    char**                 groupPoint;
-    struct groupInfoEnt*   grpInfo = NULL;
-    int                    options = GRP_ALL;
-    int                    all;
-    int rc;
+    int cc;
+    int numGroups = 0;
+    int enumGrp = 0;
+    char **groups=NULL;
+    char **groupPoint;
+    struct groupInfoEnt *grpInfo = NULL;
+    int options = GRP_ALL;
+    int all;
 
-    rc = _i18n_init ( I18N_CAT_MIN );
+     _i18n_init(I18N_CAT_MIN);
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
 	exit(-1);
     }
-
 
     while ((cc = getopt(argc, argv, "Vhrlw")) != EOF) {
         switch (cc) {

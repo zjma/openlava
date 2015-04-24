@@ -1,4 +1,5 @@
-/* $Id: brestart.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2012 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,16 +21,9 @@
 
 extern int do_sub (int, char **, int);
 
-#define NL_SETN 8 	 
-
-int 
+int
 main (int argc, char **argv)
 {
-
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );	
-
     exit(do_sub(argc, argv, CMD_BRESTART));
-} 
+}
 

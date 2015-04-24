@@ -313,8 +313,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
         }
         ttyin = isatty(fileno(from));
         if (ttyin){
-            printf(prompt);
-            fflush(stdout);
+            printf("%s", prompt);
         }
     }
 
@@ -364,8 +363,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
 
 
             if (ttyin) {
-                printf(prompt);
-                fflush(stdout);
+                printf("%s", prompt);
             }
         }
         sp = line;

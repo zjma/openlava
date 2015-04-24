@@ -1,4 +1,5 @@
-/* $Id: bmod.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -36,20 +37,15 @@ main (int argc, char **argv)
     LS_LONG_INT jobId = -1, *jobIdList = NULL;
     int numJobIds;
     time_t beginTime, terminTime;
-    int rc;
-
-    rc = _i18n_init ( I18N_CAT_MIN );
 
     if (lsb_init(argv[0]) < 0) {
         sub_perror("lsb_init");
-	fprintf(stderr, ". %s.\n",
-		(_i18n_msg_get(ls_catd,NL_SETN,351, "Job not modified"))); /* catgets  351  */
+        fprintf(stderr, ". Job not modified.\n");
         exit (-1);
     }
 
     if (fillReq (argc, argv, CMD_BMODIFY, &req) < 0) {
-	fprintf(stderr, ". %s.\n",
-		(_i18n_msg_get(ls_catd,NL_SETN,351, "Job not modified")));
+        fprintf(stderr, ". Job not modified.\n");
         exit (-1);
     }
 
@@ -60,26 +56,26 @@ main (int argc, char **argv)
     if ((numJobIds = getJobIdList(job, &jobIdList)) < 0) {
         exit(-1);
     }
+
     jobId = jobIdList[0];
+
     if ((jobId = lsb_modify(&req, &reply, jobId)) < 0) {
-        if (lsberrno == LSBE_JOB_ARRAY) {
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,352, "Options -q and -O cannot be applied on job array"))); /* catgets  352  */
-        }
-        else
+       if (lsberrno == LSBE_JOB_ARRAY) {
+            fprintf(stderr, "Options -q and -O cannot be applied on job array");
+       } else {
             prtErrMsg (&req, &reply);
-	fprintf(stderr, ". %s.\n",
-	    (_i18n_msg_get(ls_catd,NL_SETN,351, "Job not modified")));
+       }
+	fprintf(stderr, ". Job not modified.\n");
         if (req.nxf)
             free(req.xf);
         exit (-1);
     }
 
-    printf((_i18n_msg_get(ls_catd,NL_SETN,353, "Parameters of job <%s> are being changed\n")), job); /* catgets  353 */
+    printf("Parameters of job <%s> are being changed\n", lsb_jobid2str(jobId));
     if (beginTime > 0 || terminTime > 0)
         prtBETime_(&req);
     if (req.nxf)
         free(req.xf);
 
-    _i18n_end ( ls_catd );
-    exit (0);
+    return 0;
 }

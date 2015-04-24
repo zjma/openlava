@@ -1,4 +1,5 @@
-/* $Id: cmd.limcontrol.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,32 +17,18 @@
  *
  */
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
 
 #include "../lsf.h"
 #include "../intlib/intlibout.h"
-#include "../lib/lsi18n.h"
-#define NL_SETN 25
-
 
 extern void millisleep_(int);
-extern char isint_(char *word);
+extern char isint_(char *);
 extern int  getConfirm(char *);
-extern int checkConf(int verbose, int who);
-
-extern char *myGetOpt (int nargc, char **nargv, char *ostr);
-
-static void doHosts (int, char **, int);
-static void doAllHosts (int);
-static void operateHost (char *, int, int);
+extern int checkConf(int, int);
+extern char *myGetOpt(int, char **, char *);
+static void doHosts(int, char **, int);
+static void doAllHosts(int);
+static void operateHost(char *, int, int);
 
 static int  exitrc;
 static int fFlag;
@@ -51,7 +38,6 @@ limCtrl(int argc, char **argv, int opCode)
 {
     char *optName;
     char *localHost;
-    int vFlag = 0;
     int config = 0;
 	int checkReply = 0;
 
@@ -65,7 +51,6 @@ limCtrl(int argc, char **argv, int opCode)
             case 'v':
                 if (opCode == LIM_CMD_SHUTDOWN)
                     return(-2);
-                vFlag = 1;
                 break;
             case 'f':
                 fFlag = 1;
@@ -84,8 +69,8 @@ limCtrl(int argc, char **argv, int opCode)
 	case EXIT_WARNING_ERROR:
             if (fFlag)
                 break;
-            if (!getConfirm(I18N(250, "Do you want to reconfigure? [y/n] "))) /* catgets 250 */ {
-                fprintf(stderr, I18N(251, "Reconfiguration aborted.\n")); /* catgets 251 */
+            if (!getConfirm("Do you want to reconfigure? [y/n] ")) {
+                fprintf(stderr, "Reconfiguration aborted.\n");
                 return(-1);
             }
             break;
@@ -104,18 +89,16 @@ limCtrl(int argc, char **argv, int opCode)
             return -1;
 	}
         operateHost(localHost, opCode, 0);
-    }
-    else
-    {
+    } else {
 	doHosts(argc, argv, opCode);
     }
 
-    return(exitrc);
+    return exitrc;
 
 }
 
 static
-void doHosts (int argc, char **argv, int opCode)
+void doHosts(int argc, char **argv, int opCode)
 {
     if (optind == argc-1 && strcmp(argv[optind], "all") == 0) {
 
@@ -128,36 +111,37 @@ void doHosts (int argc, char **argv, int opCode)
 }
 
 static
-void doAllHosts (int opCode)
+void doAllHosts(int opCode)
 {
     int numhosts = 0, i;
     struct hostInfo *hostinfo;
     int ask = FALSE, try = FALSE;
-    char msg[100];
+    char msg[128];
 
     hostinfo = ls_gethostinfo("-:server", &numhosts, NULL, 0, LOCAL_ONLY);
     if (hostinfo == NULL) {
 	ls_perror("ls_gethostinfo");
-	fprintf(stderr, I18N(252, "Operation aborted\n")); /* catgets 252 */
+	fprintf(stderr, "Operation aborted\n");
         exitrc = -1;
 	return;
     }
 
     if (!fFlag) {
 	if (opCode == LIM_CMD_REBOOT)
-            sprintf(msg, I18N(253, "Do you really want to restart LIMs on all hosts? [y/n] ")); /* catgets 253 */
+            sprintf(msg, "Do you really want to restart LIMs on all hosts? [y/n] ");
         else
-	    sprintf(msg, I18N(254, "Do you really want to shut down LIMs on all hosts? [y/n] ")); /* catgets 254 */
+	    sprintf(msg, "Do you really want to shut down LIMs on all hosts? [y/n] ");
 	ask = (!getConfirm(msg));
     }
-    for (i=0; i<numhosts; i++)
+
+    for (i = 0; i < numhosts; i++)
         if (hostinfo[i].maxCpus > 0)
 	    operateHost (hostinfo[i].hostName, opCode, ask);
         else
 	    try = 1;
     if (try) {
-        fprintf(stderr, "\n%s :\n\n", I18N(255, "Trying unavailable hosts")); /* catgets 255 */
-        for (i=0; i<numhosts; i++)
+        fprintf(stderr, "\n%s :\n\n", "Trying unavailable hosts");
+        for (i = 0; i < numhosts; i++)
             if (hostinfo[i].maxCpus <= 0)
 	        operateHost (hostinfo[i].hostName, opCode, ask);
     }
@@ -165,21 +149,22 @@ void doAllHosts (int opCode)
 }
 
 static void
-operateHost (char *host, int opCode, int confirm)
+operateHost(char *host, int opCode, int confirm)
 {
     char msg1[MAXLINELEN];
     char msg[MAXLINELEN];
 
     if (opCode == LIM_CMD_REBOOT)
-	sprintf(msg1, I18N(256, "Restart LIM on <%s>"), host); /* catgets 256 */
+	sprintf(msg1, "Restart LIM on <%s>", host);
     else
-	sprintf(msg1, I18N(257, "Shut down LIM on <%s>"), host); /* catgets 257 */
+	sprintf(msg1, "Shut down LIM on <%s>", host);
 
     if (confirm) {
 	sprintf(msg, "%s ? [y/n] ", msg1);
         if (!getConfirm(msg))
 	    return;
     }
+
     fprintf(stderr, "%s ...... ", msg1);
     fflush(stderr);
     if (ls_limcontrol(host, opCode) == -1) {
@@ -194,24 +179,24 @@ operateHost (char *host, int opCode, int confirm)
 	    delay_time = atoi(delay) * 1000;
 
 	millisleep_(delay_time);
-	fprintf (stderr, "%s\n", I18N_done);
+	fprintf(stderr, "done\n");
     }
-    fflush(stderr);
-
 }
 
 int
 limLock(int argc, char **argv)
 {
-    u_long duration = 0;
+    int duration;
     char *optName;
 
+    duration = 0;
     while ((optName = myGetOpt(argc, argv, "l:")) != NULL) {
         switch(optName[0]) {
             case 'l':
                 duration = atoi(optarg);
                 if (!isint_(optarg) || atoi(optarg) <= 0) {
-	            fprintf(stderr, I18N(258, "The host locking duration <%s> should be a positive integer\n"), optarg); /* catgets 258 */
+	            fprintf(stderr, "\
+The host locking duration <%s> should be a positive integer\n", optarg);
                     return -2;
 		}
 		break;
@@ -225,17 +210,15 @@ limLock(int argc, char **argv)
 
     if (ls_lockhost(duration) < 0) {
 	ls_perror("failed");
-        return(-1);
+        return -1;
     }
 
     if (duration)
-        printf(I18N(259, "Host is locked for %lu seconds\n") /* catgets 259 */,
-	       (unsigned long)duration);
+        printf("Host is locked for %d seconds\n", duration);
     else
-        printf(I18N(260, "Host is locked\n")); /* catgets 260 */
+        printf("Host is locked\n");
 
-    fflush(stdout);
-    return(0);
+    return 0;
 }
 
 int
@@ -243,17 +226,16 @@ limUnlock(int argc, char **argv)
 {
 
     if (argc > optind) {
-	fprintf(stderr, I18N(261, "Syntax error: too many arguments.\n")); /* catgets 261 */
-	return(-2);
+	fprintf(stderr, "Syntax error: too many arguments.\n");
+	return -2;
     }
 
     if (ls_unlockhost() < 0) {
         ls_perror("ls_unlockhost");
-        return(-1);
+        return -1;
     }
 
-    printf(I18N(262, "Host is unlocked\n")); /* catgets 262 */
-    fflush(stdout);
+    printf("Host is unlocked\n");
 
-    return(0);
+    return 0;
 }

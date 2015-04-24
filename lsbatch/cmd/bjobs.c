@@ -1,7 +1,5 @@
 /*
  * Copyright (C) 2011-2015 David Bigagli
- *
- * $Id: bjobs.c 397 2007-11-26 19:04:00Z mblack $
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -474,7 +472,7 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
                job->counter[JGRP_COUNT_NSSUSP],
                job->counter[JGRP_COUNT_NUSUSP],
                job->counter[JGRP_COUNT_NPSUSP]);
-        goto cleanup;
+        return;
     }
 
     jobName = submitInfo->jobName;
@@ -654,25 +652,19 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
         }
     }
 
-
-
     if ((options & PEND_JOB) &&  IS_PEND(job->status)) {
-        printf(lsb_pendreason(job->numReasons, job->reasonTb, NULL,
-                              loadIndex));
+        printf("%s", lsb_pendreason(job->numReasons, job->reasonTb, NULL,
+                                    loadIndex));
     }
 
 
     if ((options & SUSP_JOB) &&  IS_SUSP(job->status)) {
         if (job->status & JOB_STAT_PSUSP && !(options & PEND_JOB))
-            printf(lsb_pendreason(job->numReasons, job->reasonTb, NULL,
-                                  loadIndex));
+            printf("%s", lsb_pendreason(job->numReasons, job->reasonTb, NULL,
+                                        loadIndex));
         else if (!(job->status & JOB_STAT_PSUSP))
-            printf(lsb_suspreason(job->reasons, job->subreasons, loadIndex));
+            printf("%s", lsb_suspreason(job->reasons, job->subreasons, loadIndex));
     }
-
-cleanup:
-
-    return;
 
 }
 
