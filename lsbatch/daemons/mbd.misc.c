@@ -517,31 +517,29 @@ getUAcct (struct hTab *uAcct, struct uData *up)
 
 
 static void
-updHAcct (struct jData *jData,
-          struct qData *qp,
-          struct uData *up,
-          struct hTab **hAcct,
-          int numRUN,
-          int numSSUSP,
-          int numUSUSP,
-          int numRESERVE,
-          void (*onNewEntry)(struct hostAcct *, void *),
-          void *extra)
+updHAcct(struct jData *jData,
+         struct qData *qp,
+         struct uData *up,
+         struct hTab **hAcct,
+         int numRUN,
+         int numSSUSP,
+         int numUSUSP,
+         int numRESERVE,
+         void (*onNewEntry)(struct hostAcct *, void *),
+         void *extra)
 {
     static char fname[] = "updHAcct";
     struct hostAcct *foundH = NULL;
     struct hData *hp;
     int i, numSlots;
-    float pJobLimit;
 
     if (jData->hPtr == NULL)
         return;
 
     if (*hAcct == NULL) {
-        *hAcct = (struct hTab *) my_malloc(sizeof(struct hTab), "updHAcct");
+        *hAcct = my_malloc(sizeof(struct hTab), "updHAcct");
         h_initTab_(*hAcct, 4);
     }
-
 
     if (qp != NULL)
         qp->flags &= ~QUEUE_UPDATE_USABLE;
@@ -552,19 +550,17 @@ updHAcct (struct jData *jData,
 
         hp = jData->hPtr[i];
         if ((foundH = getHAcct(*hAcct, hp)) != NULL) {
-            addOneAbs (&foundH->numRUN, numRUN, FALSE);
-            addOneAbs (&foundH->numSSUSP, numSSUSP, FALSE);
-            addOneAbs (&foundH->numUSUSP, numUSUSP, FALSE);
-            addOneAbs (&foundH->numRESERVE, numRESERVE, FALSE);
+            addOneAbs(&foundH->numRUN, numRUN, FALSE);
+            addOneAbs(&foundH->numSSUSP, numSSUSP, FALSE);
+            addOneAbs(&foundH->numUSUSP, numUSUSP, FALSE);
+            addOneAbs(&foundH->numRESERVE, numRESERVE, FALSE);
             if (numRESERVE != 0 && !(jData->jStatus & JOB_STAT_PEND)) {
                 addOneAbs (&foundH->numNonPrmptRsv, numRESERVE, FALSE);
             }
             if (logclass & LC_JLIMIT)
                 ls_syslog(LOG_DEBUG3, "%s: job=%s user/queue=%s host=%s RUN=%d SSUSP=%d USUSP=%d RESERVE=%d NonPrmptRsv=%d", fname, lsb_jobid2str(jData->jobId), ((qp != NULL)? qp->queue:up->user), hp->host, foundH->numRUN, foundH->numSSUSP, foundH->numUSUSP, foundH->numRESERVE, foundH->numNonPrmptRsv);
-        }
-
-        else if (numRUN > 0 || numSSUSP > 0 || numUSUSP > 0
-                 || numRESERVE > 0) {
+        } else if (numRUN > 0 || numSSUSP > 0 || numUSUSP > 0
+                   || numRESERVE > 0) {
             foundH = addHAcct(hAcct, hp, numRUN, numSSUSP, numUSUSP,
                               numRESERVE);
 
@@ -608,14 +604,6 @@ updHAcct (struct jData *jData,
                     ls_syslog(LOG_DEBUG2, "%s: Clear reason <%d>; job=%s host=%s queue=%s", fname, svReason, lsb_jobid2str(jData->jobId), hp->host, qp->queue);
             }
 
-            if (qp->hJobLimit == INFINIT_INT
-                && qp->pJobLimit == INFINIT_FLOAT)
-                pJobLimit = INFINIT_FLOAT;
-            else if (qp->hJobLimit == INFINIT_INT)
-                pJobLimit = qp->pJobLimit;
-            else
-                pJobLimit = (qp->pJobLimit < (float)qp->hJobLimit) ?
-                    qp->pJobLimit : (float)qp->hJobLimit;
         } else {
 
             numSlots = pJobLimitOk(hp, foundH, up->pJobLimit);
@@ -671,15 +659,15 @@ updHAcct (struct jData *jData,
             }
         }
     }
-    if (qp != NULL && (qp->flags & QUEUE_UPDATE_USABLE)) {
 
+    if (qp != NULL && (qp->flags & QUEUE_UPDATE_USABLE)) {
         getQUsable (qp);
         qp->flags &= ~QUEUE_UPDATE_USABLE;
     }
 }
 
 struct hostAcct *
-getHAcct (struct hTab *hAcct, struct hData *hp)
+getHAcct(struct hTab *hAcct, struct hData *hp)
 {
     hEnt   *hAcctEnt;
 

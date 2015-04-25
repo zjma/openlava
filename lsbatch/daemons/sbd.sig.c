@@ -464,8 +464,6 @@ static int
 jSuspResumeAct(struct jobCard *jp, int sigValue, int suspendReasons,
                logType logFlag)
 {
-
-    int defSigValue;
     char *actCmd;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
@@ -473,12 +471,9 @@ jSuspResumeAct(struct jobCard *jp, int sigValue, int suspendReasons,
 
     jp->actStatus = ACT_NO;
     actCmd = jp->jobSpecs.resumeActCmd;
-    defSigValue = getDefSigValue_(sigValue, actCmd);
-
-
+    getDefSigValue_(sigValue, actCmd);
 
     if (jp->jobSpecs.reasons & SUSP_MBD_LOCK) {
-
 
         if (sigValue == SIG_RESUME_USER) {
             if (jp->actReasons & ~(SUSP_MBD_LOCK | SUSP_USER_STOP | SUSP_USER_RESUME | SUSP_SBD_STARTUP  )) {
@@ -496,10 +491,8 @@ jSuspResumeAct(struct jobCard *jp, int sigValue, int suspendReasons,
         }
     } else {
 
-
         if (jp->jobSpecs.reasons
             & ~(suspendReasons | SUSP_USER_RESUME | SUSP_MBD_LOCK)) {
-
 
             jp->jobSpecs.reasons &= ~suspendReasons;
             if (sigValue == SIG_RESUME_USER)  {
@@ -515,7 +508,6 @@ jSuspResumeAct(struct jobCard *jp, int sigValue, int suspendReasons,
         }
 
     }
-
 }
 
 int
@@ -1736,7 +1728,7 @@ exeChkpnt(struct jobCard *jp, int chkFlags, char * exitFile)
                                            "%s: job <%s> exited with the exit code %d with <%s>"), /* catgets 922 */
                         fname, lsb_jobid2str(jp->jobSpecs.jobId),
                         WEXITSTATUS(status), errMsg);
-                sprintf(errMsg, msg);
+                sprintf(errMsg, "%s", msg);
                 goto ChildError;
             }
         }

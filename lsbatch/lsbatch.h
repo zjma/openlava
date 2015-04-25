@@ -451,9 +451,6 @@
 #define    LSBE_DEP_ARRAY_SIZE      131
 #define    LSBE_NUM_ERR             131
 
-#define PREPARE_FOR_OP          1024
-#define READY_FOR_OP            1023
-
 #define  SUB_JOB_NAME       0x01
 #define  SUB_QUEUE          0x02
 #define  SUB_HOST           0x04

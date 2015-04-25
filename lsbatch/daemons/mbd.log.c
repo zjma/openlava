@@ -2189,13 +2189,10 @@ putEventRecTime(const char *fname, time_t eventTime)
 static int
 putEventRec1(const char *fname)
 {
-    int    ret;
-    int    cc;
-    long   pos1;
+    int  ret;
+    int  cc;
 
     ret = 0;
-
-    pos1 = ftell(log_fp);
 
     if (lsb_puteventrec(log_fp, logPtr) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_EMSG_S,
@@ -2204,13 +2201,9 @@ putEventRec1(const char *fname)
     }
 
     free(logPtr);
-
     chuser(managerId);
-
     cc = FCLOSEUP(&log_fp);
-
     chuser(batchId);
-
     if (cc < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fclose");
         ret = -1;
@@ -2485,15 +2478,14 @@ int
 switch_log(void)
 {
     static char fname[] = "switch_log";
-    char                    tmpfn[MAXFILENAMELEN];
-    int                     i, lineNum = 0, errnoSv;
-    LS_LONG_INT             jobId = 0;
-    FILE                   *efp, *tmpfp;
-    struct jData           *jp, *jarray;
-    char                   *calName = NULL;
-    long                   pos;
-    int                    preserved = FALSE;
-    int                    totalEventFile;
+    char tmpfn[MAXFILENAMELEN];
+    int i, lineNum = 0, errnoSv;
+    LS_LONG_INT jobId = 0;
+    FILE *efp, *tmpfp;
+    struct jData *jp, *jarray;
+    long pos;
+    int preserved = FALSE;
+    int totalEventFile;
 
     sprintf(tmpfn, "%s/logdir/lsb.events",
             daemonParams[LSB_SHAREDIR].paramValue);
@@ -2686,7 +2678,6 @@ switch_log(void)
             }
         }
         jobId = 0;
-        calName = NULL;
         preserved = FALSE;
     }
     FCLOSEUP(&efp);
@@ -3868,21 +3859,18 @@ replay_jobdata(char *filename, int lineNum, char *fname)
 void
 log_logSwitch(int lastJobId)
 {
-    static char             fname[] = "log_logSwitch";
-
     if (openEventFile("log_logSwitch") < 0) {
         LS_LONG_INT tmpJobId;
         tmpJobId = lastJobId;
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, __func__,
                   lsb_jobid2str(tmpJobId), "openEventFile");
         mbdDie(MASTER_FATAL);
     }
+
     logPtr->type = EVENT_LOG_SWITCH;
     logPtr->eventLog.logSwitchLog.lastJobId = lastJobId;
     if (putEventRec("log_logSwitch") < 0) {
-        LS_LONG_INT tmpJobId;
-        tmpJobId = lastJobId;
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, __func__,
                   lastJobId, "putEventRec");
         return;
     }
@@ -3996,11 +3984,10 @@ log_jobmsg(struct jData *jPtr, struct lsbMsg *jmsg)
 static int
 replay_signaljob(char *filename, int lineNum)
 {
-    static char             fname[] = "replay_signaljob";
-    struct jData           *jp;
-    LS_LONG_INT             jobId;
-    int                     sigValue;
-    int                    cc;
+    static char fname[] = "replay_signaljob";
+    struct jData *jp;
+    LS_LONG_INT jobId;
+    int cc;
 
     jobId = LSB_JOBID(logPtr->eventLog.signalLog.jobId,
                       logPtr->eventLog.signalLog.idx);
@@ -4019,18 +4006,15 @@ replay_signaljob(char *filename, int lineNum)
     }
 
     if (strcmp(logPtr->eventLog.signalLog.signalSymbol, "DELETEJOB") == 0){
-        sigValue = SIG_DELETE_JOB;
         jp->pendEvent.sigDel = TRUE;
 
     }
-
     else if (strcmp(logPtr->eventLog.signalLog.signalSymbol, "KILLREQUEUE")
              == 0) {
-        sigValue = SIG_TERM_USER;
         jp->pendEvent.sigDel |= DEL_ACTION_REQUEUE;
     }
     else
-        sigValue = getSigVal(logPtr->eventLog.signalLog.signalSymbol);
+        getSigVal(logPtr->eventLog.signalLog.signalSymbol);
 
     if (jp->nodeType == JGRP_NODE_ARRAY) {
         return (TRUE);
@@ -4488,20 +4472,19 @@ saveHostCtrlEvent(struct hostCtrlLog *hostCtrlLog,
 static void
 writeHostCtrlEvent(void)
 {
-    struct hostCtrlEvent  *ctrlPtr;
-    hEnt                  *hEntry;
-    char                  *key;
+    struct hostCtrlEvent *ctrlPtr;
+    hEnt *ent;
+    sTab next;
 
-    FOR_EACH_HTAB_ENTRY(key, hEntry, &hostCtrlEvents) {
+    ent = h_firstEnt_(&hostCtrlEvents, &next);
+    while (ent) {
 
-        ctrlPtr = (struct hostCtrlEvent *)hEntry->hData;
-
-
+        ctrlPtr = ent->hData;
         ctrlPtr->hostCtrlLog->opCode = HOST_CLOSE;
 
         log_hostStatusAtSwitch(ctrlPtr);
-
-    } END_FOR_EACH_HTAB_ENTRY;
+        ent = h_nextEnt_(&next);
+    }
 
 }
 
@@ -4651,31 +4634,28 @@ queueTableUpdate(hTab                 *tbPtr,
 static void
 writeQueueCtrlEvent(void)
 {
-    struct queueCtrlEvent    *ctrlPtr;
-    hEnt                     *hEntry;
-    char                     *key;
+    struct queueCtrlEvent *ctrlPtr;
+    hEnt *ent;
+    sTab next;
 
+    ent = h_firstEnt_(&closedQueueEvents, &next);
+    while (ent) {
 
-    FOR_EACH_HTAB_ENTRY(key, hEntry, &closedQueueEvents) {
-
-        ctrlPtr = (struct queueCtrlEvent *)hEntry->hData;
-
-
+        ctrlPtr = ent->hData;
         ctrlPtr->queueCtrlLog->opCode = QUEUE_CLOSED;
         log_queueStatusAtSwitch(ctrlPtr);
 
-    } END_FOR_EACH_HTAB_ENTRY;
+        ent = h_nextEnt_(&next);
+    }
 
-    FOR_EACH_HTAB_ENTRY(key, hEntry, &inactiveQueueEvents) {
+    ent = h_firstEnt_(&inactiveQueueEvents, &next);
+    while (ent) {
 
-        ctrlPtr = (struct queueCtrlEvent *)hEntry->hData;
-
+        ctrlPtr = ent->hData;
         ctrlPtr->queueCtrlLog->opCode = QUEUE_INACTIVATE;
         log_queueStatusAtSwitch(ctrlPtr);
-
-    } END_FOR_EACH_HTAB_ENTRY;
-
-
+        ent = h_nextEnt_(&next);
+    }
 }
 
 static void

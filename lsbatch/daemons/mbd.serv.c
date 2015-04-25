@@ -1580,15 +1580,14 @@ do_groupInfoReq(XDR *xdrs,
                 struct sockaddr_in *from,
                 struct LSFHeader *reqHdr)
 {
-    struct infoReq          groupInfoReq;
-    char *                  reply_buf;
-    XDR                     xdrs2;
-    int                     reply;
-    int                     len;
-    struct gData **         gplist;
-    struct LSFHeader        hdr;
-    char *                  replyStruct;
-    struct groupInfoReply   groupInfoReply;
+    struct infoReq groupInfoReq;
+    char *reply_buf;
+    XDR xdrs2;
+    int reply;
+    int len;
+    struct LSFHeader hdr;
+    char *replyStruct;
+    struct groupInfoReply groupInfoReply;
 
     memset(&groupInfoReply, 0, sizeof(struct groupInfoReply));
 
@@ -1596,11 +1595,9 @@ do_groupInfoReq(XDR *xdrs,
         reply = LSBE_XDR;
         ls_syslog(LOG_ERR, "\
 %s: failed decode data from %s", __func__, sockAdd2Str_(from));
-        gplist  = NULL;
     }
 
     if (groupInfoReq.options & HOST_GRP) {
-        gplist = hostgroups;
 
         if (numofhgroups == 0) {
             reply = LSBE_NO_HOST_GROUP;
@@ -1618,7 +1615,6 @@ do_groupInfoReq(XDR *xdrs,
         if (numofugroups == 0) {
             reply = LSBE_NO_USER_GROUP;
         } else {
-            gplist = usergroups;
 
             reply = checkGroups(&groupInfoReq, &groupInfoReply);
         }

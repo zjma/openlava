@@ -759,14 +759,14 @@ createQueueHostSet(struct qData *qp)
 
     allHosts = qp->numAskedPtr;
     if (allHosts == 0)
-        allHosts = numofhosts;
+        allHosts = numofhosts();
 
     qp->hostInQueue = setCreate(allHosts,
                                 gethIndexByhData,
                                 gethDataByhIndex,
                                 (char *)__func__);
 
-    if (allHosts == numofhosts) {
+    if (allHosts == numofhosts()) {
         for (hPtr = (struct hData *)hostList->back;
              hPtr != (void *)hostList;
              hPtr = hPtr->back)

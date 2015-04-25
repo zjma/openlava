@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1187,14 +1188,16 @@ determineFilebufStdoutDirect(char *filebuf,
 
 
 static int
-openStdFiles(char *lsbDir, char *chkpntDir, struct jobCard *jobCardPtr, struct hostent *hp)
+openStdFiles(char *lsbDir,
+             char *chkpntDir,
+             struct jobCard *jobCardPtr,
+             struct hostent *hp)
 {
     static char fname[] = "openStdFiles()";
     int i;
     char filebuf[MAXFILENAMELEN], filebufLink[MAXFILENAMELEN];
     static char stdinName[MAXFILENAMELEN];
     char xMsg[3*MSGSIZE], rcpMsg[MSGSIZE];
-    char xfile = FALSE;
     char errMsg[MAXLINELEN];
     struct jobSpecs *jobSpecsPtr = &(jobCardPtr->jobSpecs);
     char jobFile[MAXFILENAMELEN], jobFileLink[MAXFILENAMELEN];
@@ -1355,7 +1358,6 @@ openStdFiles(char *lsbDir, char *chkpntDir, struct jobCard *jobCardPtr, struct h
     xMsg[0] = '\0';
     for (i = 0; i < jobSpecsPtr->nxf; i++) {
         if (jobSpecsPtr->xf[i].options & XF_OP_SUB2EXEC) {
-            xfile = TRUE;
 
             if (rcpFile(jobSpecsPtr, jobSpecsPtr->xf+i,
                         jobCardPtr->jobSpecs.fromHost, XF_OP_SUB2EXEC,
@@ -1708,7 +1710,7 @@ appendJobFile(struct jobCard *jobCard, char *header, struct hostent *hp,
         return (-1);
     }
 
-    if ((fprintf(jobFile_fp, header) < 0) ||
+    if ((fprintf(jobFile_fp, "%s", header) < 0) ||
         (fprintf(jobFile_fp, "\n%d\n", jobCard->w_status) < 0)) {
         sprintf(errMsg, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
                 jobCard->jobSpecs.jobFile, "STATUS");

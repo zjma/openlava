@@ -23,9 +23,7 @@ main (int argc, char **argv)
             printf("alias: %s\n", *hp->h_aliases++);
 
         while (*hp->h_addr_list) {
-            char * p;
             memcpy(&a, *hp->h_addr_list++, sizeof(a));
-            p = inet_ntoa(a);
             printf("address: %s\n", inet_ntoa(a));
         }
     }

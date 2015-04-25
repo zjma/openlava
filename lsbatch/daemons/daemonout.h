@@ -34,9 +34,6 @@
 #define  GET_LOW(s, word)  (s = word & 0x0000ffff)
 #define  GET_HIGH(s, word) (s = (word >> 16) & 0x0000ffff)
 
-#define PREPARE_FOR_OP          1024
-#define READY_FOR_OP            1023
-
 #define RSCHED_LISTSEARCH_BY_EXECJID       0
 #define RSCHED_LISTSEARCH_BY_EXECLUSNAME   1
 
@@ -70,7 +67,9 @@ typedef enum {
     BATCH_UNUSED_39      = 39,
     BATCH_STATUS_CHUNK   = 40,
     BATCH_JOBMSG_INFO,
-    BATCH_SET_JOB_ATTR   = 90
+    BATCH_SET_JOB_ATTR   = 90,
+    READY_FOR_OP         = 1023,
+    PREPARE_FOR_OP       = 1024
 } mbdReqType;
 
 #define SUB_RLIMIT_UNIT_IS_KB 0x80000000
@@ -283,7 +282,7 @@ typedef enum {
     SBD_JOB_SETUP   = 100,
     SBD_SYSLOG      = 101,
     CMD_SBD_REBOOT   = 300,
-    CMD_SBD_SHUTDOWN = 301
+    CMD_SBD_SHUTDOWN = 301,
 } sbdReqType;
 
 

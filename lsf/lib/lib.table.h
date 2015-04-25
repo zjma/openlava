@@ -65,28 +65,6 @@ typedef struct sTab {
 
 #define HTAB_NUM_ELEMENTS(HashTab) (HashTab)->numEnts
 
-#define FOR_EACH_HTAB_ENTRY(Key, Entry, HashTab) \
-{ \
-    sTab __searchPtr__; \
-    (Entry) = h_firstEnt_((HashTab), &__searchPtr__); \
-    for ((Entry) = h_firstEnt_((HashTab), &__searchPtr__); \
-         (Entry); (Entry) = h_nextEnt_(&__searchPtr__)) { \
-	 (Key)   = (char *) (Entry)->keyname;
-
-#define END_FOR_EACH_HTAB_ENTRY  }}
-
-#define FOR_EACH_HTAB_DATA(Type, Key, Data, HashTab) \
-{ \
-    sTab __searchPtr__; \
-    hEnt *__hashEnt__; \
-    __hashEnt__ = h_firstEnt_((HashTab), &__searchPtr__); \
-    for (__hashEnt__ = h_firstEnt_((HashTab), &__searchPtr__); \
-         __hashEnt__; __hashEnt__ = h_nextEnt_(&__searchPtr__)) { \
-        (Data) = (Type *) __hashEnt__->hData; \
-	(Key)   = (char *) __hashEnt__->keyname;
-
-#define END_FOR_EACH_HTAB_DATA  }}
-
 typedef void       (*HTAB_DATA_DESTROY_FUNC_T)(void *);
 
 extern void   insList_(struct hLinks *, struct hLinks *);

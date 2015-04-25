@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -288,7 +288,6 @@ getJobsState(struct sbdPackage *sbdPackage)
     int cc;
     int numJobs;
     struct jobSpecs jobSpecs;
-    struct jobCard *job = NULL;
 
     if ((myhostnm = ls_getmyhostname()) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -398,7 +397,7 @@ znovu:
                         free(reply_buf);
                     return;
                 }
-                job = addJob(&jobSpecs, hdr.version);
+                addJob(&jobSpecs, hdr.version);
                 xdr_lsffree(xdr_jobSpecs, (char *)&jobSpecs, &hdr);
             }
 

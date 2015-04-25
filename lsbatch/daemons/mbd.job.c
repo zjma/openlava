@@ -82,7 +82,6 @@ static void              replaceString (char *, char *, char *);
 static void initJobSig(struct jData *, struct jobSig *, int, time_t, int);
 static int modifyAJob(struct modifyReq *, struct submitMbdReply *,
                       struct lsfAuth *, struct jData *);
-static bool_t isSignificantChange(struct jRusage *, struct jRusage *, float );
 static bool_t clusterAdminFlag;
 static void setClusterAdmin(bool_t);
 static bool_t requestByClusterAdmin(void);
@@ -2321,8 +2320,8 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
             *sp = '/';
         }
         else
-            sprintf(jobSpecs->chkpntDir, jDataPtr->shared->jobBill.chkpntDir);
-
+            sprintf(jobSpecs->chkpntDir, "\%s",
+                    jDataPtr->shared->jobBill.chkpntDir);
     }
     else
         if (jDataPtr->shared->jobBill.chkpntDir)
@@ -2495,15 +2494,13 @@ int
 statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
 {
     static char       fname[] = "statusJob";
-    struct jData      *jpbw,
-        *jData;
-    struct hData      *hData;
-    char              stopit = FALSE;
-    int               oldStatus,
-        lockJob = FALSE;
-    char              *host;
-    int               diffSTime;
-    int               diffUTime;
+    struct jData *jpbw;
+    struct jData *jData;
+    struct hData *hData;
+    char stopit = FALSE;
+    int oldStatus;
+    int lockJob = FALSE;
+    char *host;
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
@@ -2514,8 +2511,6 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
         return(LSBE_NO_JOB);
     }
 
-
-
     if (IS_PEND(jpbw->jStatus) &&
         jpbw->jFlags & JFLAG_WAIT_SWITCH ) {
         if (IS_FINISH(statusReq->newStatus)) {
@@ -2525,23 +2520,21 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
         return (LSBE_NO_ERROR);
     }
 
-
     if (hp == NULL) {
-        ls_syslog(LOG_ERR, I18N(6540,
-                                "%s: Received job status has no host information."), /* catgets 6540 */
-                  fname);
+        ls_syslog(LOG_ERR, "%s: Received job %s status has no host information.",
+                  __func__, lsb_jobid2str(statusReq->jobId));
         return (LSBE_NO_JOB);
     }
 
     hData = getHostData (hp->h_name);
     if (hData == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6513,
-                                         "%s: Received job status update from host <%s> that is not configured as a batch server"), fname, hp->h_name); /* catgets 6513 */
+        ls_syslog(LOG_ERR, "\
+%s: Received job %s status update from host <%s> that is not configured as a batch server", __func__, lsb_jobid2str(statusReq->jobId), hp->h_name);
         return (LSBE_SBATCHD);
     }
-    hStatChange (hData, 0);
-    host=hData->host;
 
+    hStatChange (hData, 0);
+    host = hData->host;
 
     if ( IS_POST_DONE(statusReq->newStatus)
          || IS_POST_ERR(statusReq->newStatus) ) {
@@ -2551,8 +2544,9 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
             log_newstatus(jpbw);
         } else {
             if (logclass & (LC_TRACE)) {
-                ls_syslog(LOG_DEBUG,
-                          "Wrong job status migration from %d to %d, ignore it",
+                ls_syslog(LOG_DEBUG, "\
+%s: Wrong job %s status migration from %d to %d, ignore it", __func__,
+                          lsb_jobid2str(statusReq->jobId),
                           jpbw->jStatus, statusReq->newStatus);
             }
         }
@@ -2560,29 +2554,13 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
     }
 
     oldStatus = jpbw->jStatus;
-
-    if (jpbw->runRusage.stime < 0)
-        diffSTime = statusReq->runRusage.stime;
-    else
-        diffSTime = statusReq->runRusage.stime - jpbw->runRusage.stime;
-
-    if (jpbw->runRusage.utime < 0)
-        diffUTime = statusReq->runRusage.utime;
-    else
-        diffUTime = statusReq->runRusage.utime - jpbw->runRusage.utime;
-
-
     jpbw->jRusageUpdateTime = now;
-
-
-
     copyJUsage(&(jpbw->runRusage), &(statusReq->runRusage));
-
 
     if (!IS_START (statusReq->newStatus) && !IS_FINISH (statusReq->newStatus)
         && !(statusReq->newStatus & JOB_STAT_PEND)) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6514,
-                                         "%s: Invalid job status <%d> of job <%s> reported from host/cluster <%s>"), /* catgets 6514 */
+        ls_syslog(LOG_ERR,  "\
+%s: Invalid job status <%d> of job <%s> reported from host/cluster <%s>",
                   fname,
                   statusReq->newStatus,
                   lsb_jobid2str(jpbw->jobId),
@@ -2591,15 +2569,13 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
     }
 
     if ((statusReq->newStatus & JOB_STAT_MIG) && (statusReq->actPid == 0)) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6515,
-                                         "%s: Job <%s> is in migration status, but chkpid is 0; illegal status reported from host/cluster <%s>"), /* catgets 6515 */
+        ls_syslog(LOG_ERR, "\
+%s: Job <%s> is in migration status, but chkpid is 0; illegal status reported from host/cluster <%s>",
                   fname,
                   lsb_jobid2str(jpbw->jobId),
                   host);
         return (LSBE_SBATCHD);
     }
-
-
 
     if ((statusReq->newStatus & JOB_STAT_PEND)
         && (statusReq->reason == PEND_JOB_START_FAIL
@@ -3139,60 +3115,38 @@ terminatePendingEvent(struct jData *jpbw)
             return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
-
-
-
 int
-rusageJob (struct statusReq *statusReq, struct hostent *hp)
+rusageJob(struct statusReq *statusReq, struct hostent *hp)
 {
-    static char       fname[] = "rusageJob";
-    struct jData      *jpbw;
-    struct hData      *hData;
-    int               diffSTime;
-    int               diffUTime;
-    bool_t            significantChange = FALSE;
+    struct jData *jpbw;
+    struct hData *hData;
 
     if (logclass & (LC_TRACE | LC_SIGNAL))
-        ls_syslog(LOG_DEBUG, "%s: Entering ... jobId %s", fname,
+        ls_syslog(LOG_DEBUG, "%s: Entering ... jobId %s", __func__,
                   lsb_jobid2str(statusReq->jobId));
 
-
     if ((jpbw = getJobData (statusReq->jobId)) == NULL) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname, lsb_jobid2str(statusReq->jobId), "getJobData");
-        return(LSBE_NO_JOB);
+        ls_syslog(LOG_ERR, "%s: job %s not found", __func__,
+                  lsb_jobid2str(statusReq->jobId));
+        return LSBE_NO_JOB;
     }
 
     hData = getHostData (hp->h_name);
     if (hData == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6521,
-                                         "%s: Received job rusage update from host <%s> that is not configured as a batch server"), fname, hp->h_name); /* catgets 6521 */
-        return (LSBE_SBATCHD);
+        ls_syslog(LOG_ERR, "\
+%s: job %s rusage update from host <%s> not configured as a batch server",
+                  __func__, hp->h_name);
+        return LSBE_SBATCHD;
     }
     hStatChange (hData, 0);
 
-    if (jpbw->runRusage.stime < 0)
-        diffSTime = statusReq->runRusage.stime;
-    else
-        diffSTime = statusReq->runRusage.stime - jpbw->runRusage.stime;
-
-    if (jpbw->runRusage.utime < 0)
-        diffUTime = statusReq->runRusage.utime;
-    else
-        diffUTime = statusReq->runRusage.utime - jpbw->runRusage.utime;
-
-
     jpbw->jRusageUpdateTime = now;
-
-    significantChange = isSignificantChange(&(jpbw->runRusage), &(statusReq->runRusage),
-                                            0.1);
-
     copyJUsage(&(jpbw->runRusage), &(statusReq->runRusage));
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 }
 
 
@@ -7149,24 +7103,20 @@ msgStartedJob (struct jData *jData, struct bucket *bucket)
 static void
 breakCallback(struct jData *jData, bool_t termWhiPendStatus)
 {
-    int pid, s;
+    int pid;
+    int s;
     struct hostent *hp;
     struct sockaddr_in from;
-    int len;
-    static char fname[] = "breakCallback";
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Enter ...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Enter ...", __func__);
 
     if ((pid = fork())) {
         if (pid < 0)
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fork",
-                      lsb_jobid2str(jData->jobId));
+            ls_syslog(LOG_ERR, "%s: job %s fork() failed: %m",
+                      __func__, lsb_jobid2str(jData->jobId));
         return;
     }
-
-
-    len = sizeof(from);
 
     if ((hp = Gethostbyname_(jData->shared->jobBill.fromHost)) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -7176,12 +7126,12 @@ breakCallback(struct jData *jData, bool_t termWhiPendStatus)
         exit(-1);
     }
 
-    memcpy((char *) &from.sin_addr, (char *) hp->h_addr, (int) hp->h_length);
+    memcpy(&from.sin_addr, hp->h_addr, hp->h_length);
     from.sin_family = AF_INET;
 
     if (logclass & LC_TRACE) {
         ls_syslog(LOG_DEBUG, "\
-%s: Nios on %s port %d jobId %s exitStatus %x %d", fname,
+%s: Nios on %s port %d jobId %s exitStatus %x %d", __func__,
                   jData->shared->jobBill.fromHost,
                   jData->shared->jobBill.niosPort,
                   lsb_jobid2str(jData->jobId),
@@ -7195,7 +7145,7 @@ breakCallback(struct jData *jData, bool_t termWhiPendStatus)
                            termWhiPendStatus)) == -1) {
         if (logclass & LC_EXEC)
             ls_syslog(LOG_DEBUG, "\
-%s: Job %s niosCallback_ failed: %M", fname, lsb_jobid2str(jData->jobId));
+%s: Job %s niosCallback_ failed: %M", __func__, lsb_jobid2str(jData->jobId));
         exit(-1);
     }
 
@@ -7818,66 +7768,50 @@ destroyjDataRef(struct jData *jp)
 
 
 bool_t
-runJob(struct runJobRequest*  request, struct lsfAuth *auth)
+runJob(struct runJobRequest *request, struct lsfAuth *auth)
 {
-    static char       fname[] = "runJob";
-    struct jData*     job;
-    int               cc;
-    struct candHost   candHost;
-    struct candHost*  candidateHostPtr;
+    struct jData *job;
+    int cc;
 
     ls_syslog(LOG_DEBUG, "%s: Received request to run a job <%s>",
-              fname, lsb_jobid2str(request->jobId));
-
-
-    memset((struct candHost *)&candHost, 0, sizeof(struct candHost));
-    candidateHostPtr = &candHost;
-
+              __func__, lsb_jobid2str(request->jobId));
 
     job = getJobData(request->jobId);
     if (job == NULL ) {
         ls_syslog(LOG_DEBUG, "%s: No matching job found %s",
-                  fname, lsb_jobid2str(request->jobId));
-        return(LSBE_NO_JOB);
+                  __func__, lsb_jobid2str(request->jobId));
+        return LSBE_NO_JOB;
     }
 
-
-    if (auth)
-    {
-        if (   auth->uid != 0
-               && isAuthManager(auth) == FALSE
-               && isAuthQueAd(job->qPtr, auth) == FALSE)
-        {
+    if (auth) {
+        if (auth->uid != 0
+            && isAuthManager(auth) == FALSE
+            && isAuthQueAd(job->qPtr, auth) == FALSE) {
             ls_syslog(LOG_DEBUG, "\
 %s: user <%d> is not permitted to issue brun command for job <%s>",
-                      fname, auth->uid, lsb_jobid2str(job->jobId));
-            return(LSBE_PERMISSION);
+                      __func__, auth->uid, lsb_jobid2str(job->jobId));
+            return LSBE_PERMISSION;
         }
     }
 
-
     if (job->nodeType != JGRP_NODE_JOB)
-        return(LSBE_JOB_ARRAY);
-
+        return LSBE_JOB_ARRAY;
 
     if (job->jStatus & JOB_STAT_SSUSP || job->jStatus & JOB_STAT_USUSP)
-        return(LSBE_JOB_SUSP);
-
+        return LSBE_JOB_SUSP;
 
     if (IS_START(job->jStatus))
-        return(LSBE_JOB_STARTED);
-
+        return LSBE_JOB_STARTED;
 
     if ((request->options & RUNJOB_OPT_FROM_BEGIN)
         && (!(job->shared->jobBill.options & SUB_CHKPNTABLE))) {
-        return(LSBE_J_UNCHKPNTABLE);
+        return LSBE_J_UNCHKPNTABLE;
     }
 
     if (IS_FINISH(job->jStatus)) {
         if (request->options &  RUNJOB_OPT_PENDONLY) {
-            return (LSBE_JOB_FINISH);
+            return LSBE_JOB_FINISH;
         }
-
 
         handleRequeueJob(job, time(0));
         log_jobrequeue(job);
@@ -7889,26 +7823,21 @@ runJob(struct runJobRequest*  request, struct lsfAuth *auth)
     if (JOB_PREEMPT_WAIT(job))
         freeReservePreemptResources(job);
 
-
     cc = setUrgentJobExecHosts(request, job);
     if (cc != LSBE_NO_ERROR) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "setUrgentJobExecHosts");
-        return(cc);
+        ls_syslog(LOG_ERR, "%s: setUrgentJobExecHosts failed", __func__);
+        return cc;
     }
-
 
     job->jFlags |= (request->options & RUNJOB_OPT_NOSTOP) ?
         JFLAG_URGENT_NOSTOP : JFLAG_URGENT;
-
 
     if (request->options & RUNJOB_OPT_FROM_BEGIN) {
         job->jStatus &= ~JOB_STAT_CHKPNTED_ONCE;
         job->shared->jobBill.options &= ~(SUB_RESTART | SUB_RESTART_FORCE);
     }
 
-
     log_jobForce(job, auth->uid, auth->lsfUserName);
-
 
     lsberrno = LSBE_NO_ERROR;
     job->newReason = 0;
@@ -7916,7 +7845,7 @@ runJob(struct runJobRequest*  request, struct lsfAuth *auth)
     cc = dispatch_it(job);
     if (cc == TRUE) {
         ls_syslog(LOG_DEBUG, "%s: job <%s> dispatched succesfully to host %s",
-                  fname, lsb_jobid2str(request->jobId), request->hostname[0]);
+                  __func__, lsb_jobid2str(request->jobId), request->hostname[0]);
         cc = LSBE_NO_ERROR;
         if (job->qPtr->acceptIntvl > 0) {
             int hostId = job->hPtr[0]->hostId;
@@ -7924,43 +7853,38 @@ runJob(struct runJobRequest*  request, struct lsfAuth *auth)
         }
     } else {
         ls_syslog(LOG_DEBUG, "%s: job <%s> failed to be dispatched to host %s",
-                  fname, lsb_jobid2str(request->jobId), request->hostname[0]);
+                  __func__, lsb_jobid2str(request->jobId), request->hostname[0]);
         cc = lsberrno;
-
 
         FREEUP(job->hPtr);
         job->numHostPtr = 0;
     }
 
-    return(cc);
+    return cc;
 }
 
 static int
-setUrgentJobExecHosts(struct runJobRequest*    request,
-                      struct jData*            job)
+setUrgentJobExecHosts(struct runJobRequest *request,
+                      struct jData *job)
 {
-    static char           fname[] = "setUrgentJobExecHosts()";
-    struct hData*         host;
-    int                   i;
-    int                   j;
-    int                   max;
-    int                   min;
-    int                   numUniqueEntries;
-    char                  **reqHosts;
-    int                   numHostSlots;
+    struct hData *host;
+    int i;
+    int j;
+    int max;
+    int min;
+    int numUniqueEntries;
+    char **reqHosts;
+    int numHostSlots;
 
     max = job->shared->jobBill.maxNumProcessors;
     min = job->shared->jobBill.numProcessors;
 
-
-    reqHosts = (char **)my_calloc(request->numHosts,
-                                  sizeof(char *), fname);
-
+    reqHosts = my_calloc(request->numHosts,
+                         sizeof(char *), __func__);
     numUniqueEntries = 0;
     for (i = 0; i < request->numHosts; i++) {
         char        *host = request->hostname[i];
         bool_t      uniqueEntry = TRUE;
-
 
         for (j = 0; j < numUniqueEntries; j++) {
             if (strcmp(host, reqHosts[j]) == 0) {
@@ -7973,56 +7897,49 @@ setUrgentJobExecHosts(struct runJobRequest*    request,
             reqHosts[numUniqueEntries++] = host;
     }
 
-
     numHostSlots = 0;
     for (i = 0; i < numUniqueEntries; i++) {
         struct hData *hPtr;
 
         hPtr = getHostData(reqHosts[i]);
-        if (   hPtr == NULL
-               || (hPtr != NULL && (hPtr->hStatus & HOST_STAT_REMOTE)) )
-        {
+        if (hPtr == NULL
+               || (hPtr != NULL && (hPtr->hStatus & HOST_STAT_REMOTE))) {
             FREEUP(reqHosts);
-            return (LSBE_BAD_HOST);
+            return LSBE_BAD_HOST;
         }
 
         if (hPtr != NULL && (hPtr->hStatus & HOST_STAT_LOCKED_MASTER)) {
             FREEUP(reqHosts);
-            return (LSBE_LOCKED_MASTER);
+            return LSBE_LOCKED_MASTER;
         }
         numHostSlots += hPtr->numCPUs;
     }
-
 
     if (max == min) {
         if (numHostSlots < max) {
             ls_syslog(LOG_DEBUG,"\
 %s: Wrong number of processors <%d> has been requested for the parallel\
- job <%s>", fname, request->numHosts, lsb_jobid2str(job->jobId));
+ job <%s>", __func__, request->numHosts, lsb_jobid2str(job->jobId));
             FREEUP(reqHosts);
-            return(LSBE_PROC_NUM);
+            return LSBE_PROC_NUM;
         }
     } else {
         if (!(numHostSlots >= min && numHostSlots <= max)) {
             ls_syslog(LOG_DEBUG,"\
 %s: Wrong number of processors <%d> has been requested for the parallel\
-job <%s>", fname, request->numHosts, lsb_jobid2str(job->jobId));
+job <%s>", __func__, request->numHosts, lsb_jobid2str(job->jobId));
             FREEUP(reqHosts);
-            return(LSBE_PROC_NUM);
+            return LSBE_PROC_NUM;
         }
     }
-
-
 
     numHostSlots = MIN(numHostSlots, max);
 
     FREEUP(job->hPtr);
-    job->hPtr = (struct hData **)my_calloc(numHostSlots,
-                                           sizeof(struct hData *),
-                                           fname);
+    job->hPtr = my_calloc(numHostSlots,
+                          sizeof(struct hData *),
+                          __func__);
     job->numHostPtr = 0;
-
-
     for (i = 0; i < numUniqueEntries; i++) {
         int numCPUNeeded;
 
@@ -8039,8 +7956,7 @@ job <%s>", fname, request->numHosts, lsb_jobid2str(job->jobId));
     }
 
     FREEUP(reqHosts);
-    return(LSBE_NO_ERROR);
-
+    return LSBE_NO_ERROR;
 }
 
 
@@ -8136,34 +8052,6 @@ initJobSig (struct jData *jData, struct jobSig *jobSig, int sigValue,
     jobSig->subReasons = 0;
     jobSig->newJobId = 0;
 }
-
-static bool_t
-isSignificantChange(struct jRusage *runRusage1, struct jRusage *runRusage2,
-                    float diff)
-{
-    float df;
-
-    df = ((runRusage1->utime + runRusage1->stime) == 0) ?
-        (runRusage2->utime + runRusage2->stime) :
-        ABS(((runRusage1->utime + runRusage1->stime) -
-             (runRusage2->utime + runRusage2->stime)) /
-            (runRusage1->utime + runRusage1->stime));
-
-    if (df >= diff)
-        return(TRUE);
-
-    df = (runRusage1->mem == 0 ) ? runRusage2->mem :
-        ABS((runRusage1->mem - runRusage2->mem)/runRusage1->mem);
-
-    if (df >= diff)
-        return(TRUE);
-    df = (runRusage1->swap  == 0 ) ? runRusage2->swap :
-        ABS((runRusage1->swap - runRusage2->swap)/runRusage1->swap);
-    if (df >= diff)
-        return(TRUE);
-    return(FALSE);
-}
-
 
 void modifyJobPriority(struct jData *jp, int subPriority)
 {
@@ -8363,11 +8251,10 @@ setNewSub(struct jData *jpbw, struct jData *job,
 
 }
 
-#define RECV_JOBFILE_TIMEOUT    5
+#define RECV_JOBFILE_TIMEOUT 5
 int
 mbdRcvJobFile(int chfd, struct lenData *jf)
 {
-    static char fname[]="mbdRcvJobFile";
     int timeout = RECV_JOBFILE_TIMEOUT;
     int cc;
 
@@ -8375,19 +8262,19 @@ mbdRcvJobFile(int chfd, struct lenData *jf)
     jf->len = 0;
     if ((cc = chanReadNonBlock_(chfd, NET_INTADDR_(&jf->len),
                                 NET_INTSIZE_, timeout)) != NET_INTSIZE_) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "chanReadNonBlock_");
-        return (-1);
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, __func__, "chanReadNonBlock_");
+        return -1;
     }
     jf->len = ntohl(jf->len);
     jf->data = my_calloc(1, jf->len, "mbdRcvJobFile");
     if ((cc = chanReadNonBlock_(chfd, jf->data, jf->len,
                                 timeout)) != jf->len) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "chanReadNonBlock_");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, __func__, "chanReadNonBlock_");
         free(jf->data);
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 float

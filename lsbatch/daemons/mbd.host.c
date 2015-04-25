@@ -289,15 +289,15 @@ getAllHostInfoEnt(struct hostDataReply *hostsReplyPtr,
     sTab hashSearchPtr;
     hEnt *hashEntryPtr;
     struct hData *hData;
-    struct hostInfoEnt *hInfo;
-    int numHosts = 0;
+    int numHosts;
 
     hostsReplyPtr->numHosts = 0;
+    numHosts = 0;
 
     hashEntryPtr = h_firstEnt_(&hostTab, &hashSearchPtr);
     while (hashEntryPtr) {
+
         hData = (struct hData *) hashEntryPtr->hData;
-        hInfo = &(hostsReplyPtr->hosts[hostsReplyPtr->numHosts]);
         hashEntryPtr = h_nextEnt_(&hashSearchPtr);
 
         if ((hData->flags & HOST_LOST_FOUND)
@@ -310,10 +310,10 @@ getAllHostInfoEnt(struct hostDataReply *hostsReplyPtr,
         }
     }
     if (numHosts == 0) {
-        return (LSBE_BAD_HOST);
+        return LSBE_BAD_HOST;
     }
 
-    return (returnHostInfo(hostsReplyPtr, numHosts, hDList, hostReq));
+    return returnHostInfo(hostsReplyPtr, numHosts, hDList, hostReq);
 }
 
 struct hData *
@@ -466,14 +466,12 @@ pollSbatchds(int mbdRunFlag)
     }
 
     for (num = 0; num < maxprobes && num < numofhosts(); num++) {
-        int oldStatus;
 
         ent = h_nextEnt_(&stab);
         if (ent == NULL) {
             ent = h_firstEnt_(&hostTab, &stab);
         }
         hPtr = ent->hData;
-        oldStatus = hPtr->hStatus;
 
         if (hPtr->hStatus & HOST_STAT_REMOTE)
             continue;
@@ -793,11 +791,8 @@ checkHWindow(void)
 
     hashEntryPtr = h_firstEnt_(&hostTab, &hashSearchPtr);
     while (hashEntryPtr) {
-        int oldStatus;
 
         hp = (struct hData *) hashEntryPtr->hData;
-        oldStatus = hp->hStatus;
-
         hashEntryPtr = h_nextEnt_(&hashSearchPtr);
         if (hp->hStatus & HOST_STAT_REMOTE)
             goto NextLoop;

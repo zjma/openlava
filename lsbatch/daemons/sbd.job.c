@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
+ * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1395,7 +1395,6 @@ send_results (struct jobCard *jp)
     char rcpMsg[MSGSIZE];
     LS_WAIT_T w_status;
     float cpuTime = jp->cpuTime;
-    char xfile = FALSE;
     int hasError=0;
     char outputIsDirectory = FALSE;
     char errIsDirectory  = FALSE;
@@ -1920,7 +1919,7 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
                             }
                         } else {
 
-                            fprintf(notif, line);
+                            fprintf(notif, "%s", line);
                         }
 
 
@@ -2006,8 +2005,6 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
                     continue;
                 }
             }
-
-            xfile = TRUE;
 
             if (rcpFile(&jp->jobSpecs, jp->jobSpecs.xf+i,
                         jp->jobSpecs.fromHost, XF_OP_EXEC2SUB, rcpMsg) == 0) {

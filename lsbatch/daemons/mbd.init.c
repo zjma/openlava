@@ -1265,7 +1265,7 @@ parseGroups (int groupType, struct gData **group, char *line, char *filename)
     mygp->group = "";
     h_initTab_(&mygp->memberTab, 16);
     mygp->numGroups = 0;
-    for (i = 0; i <MAX_GROUPS; i++)
+    for (i = 0; i < MAX_GROUPS; i++)
         mygp->gPtr[i] = NULL;
 
     if (groupType == USER_GRP)
@@ -1275,8 +1275,8 @@ parseGroups (int groupType, struct gData **group, char *line, char *filename)
 
     while ((word = getNextWord_(&line)) != NULL) {
         if (isInGrp (word, mygp)) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6164,
-                                             "%s/%s: Member <%s> is multiply defined; ignored"), filename, fname, word); /* catgets 6164 */
+            ls_syslog(LOG_ERR, "\
+%s: Member <%s> is multiply defined %s; ignored", __func__, word, groupName);
             lsb_CheckError = WARNING_ERR;
             continue;
         }
@@ -1286,7 +1286,7 @@ parseGroups (int groupType, struct gData **group, char *line, char *filename)
                 h_addEnt_(&mygp->memberTab, word, NULL);
                 continue;
             }
-            FREEUP (grpSl);
+            FREEUP(grpSl);
             lastChar = strlen (word) - 1;
             if (lastChar > 0 && word[lastChar] == '/') {
                 grpSl = safeSave (word);
@@ -3036,33 +3036,32 @@ updQueueList(void)
 static void
 updUserList(int mbdInitFlags)
 {
-    static char    fname[] = "updUserList()";
-    struct uData   *defUser;
-    struct gData   *gPtr;
-    int            i;
-    char           *key;
-    hEnt           *hashTableEnt;
+    struct uData *defUser;
+    struct gData *gPtr;
+    int i;
+    hEnt *ent;
+    sTab next;
 
     defUser = getUserData ("default");
 
     if (defUser && !(defUser->flags & USER_UPDATE))
         defUser = NULL;
 
-    FOR_EACH_HTAB_ENTRY(key, hashTableEnt, &uDataList) {
+    ent = h_firstEnt_(&uDataList, &next);
+    while (ent) {
         struct uData *uData;
 
-        uData = (struct uData *)hashTableEnt->hData;
-
+        uData = (struct uData *)ent->hData;
 
         if (mbdInitFlags == RECONFIG_CONF
             || mbdInitFlags == WINDOW_CONF) {
             int j;
             FREEUP( uData->reasonTb[0]);
             FREEUP( uData->reasonTb[1]);
-            uData->reasonTb[0] = my_calloc(numLIMhosts+2,
-                                           sizeof(int), fname);
-            uData->reasonTb[1] = my_calloc(numLIMhosts+2,
-                                           sizeof(int), fname);
+            uData->reasonTb[0] = my_calloc(numLIMhosts + 2,
+                                           sizeof(int), __func__);
+            uData->reasonTb[1] = my_calloc(numLIMhosts + 2,
+                                           sizeof(int), __func__);
 
             for(j = 0; j < numLIMhosts+2; j++) {
                 uData->reasonTb[0][j] = 0;
@@ -3086,6 +3085,7 @@ updUserList(int mbdInitFlags)
 
             if (uData != defUser)
                 uData->flags &= ~USER_UPDATE;
+            ent = h_nextEnt_(&next);
             continue;
 
         } else if (getpwlsfuser_ (uData->user) != NULL) {
@@ -3119,23 +3119,17 @@ updUserList(int mbdInitFlags)
 
                 if (uData->hAcct)
                     h_delTab_(uData->hAcct);
-                h_delEnt_(&uDataList, hashTableEnt);
+                h_delEnt_(&uDataList, ent);
             }
         }
-
-    } END_FOR_EACH_HTAB_ENTRY;
-
+        ent = h_nextEnt_(&next);
+    }
 
     uDataGroupCreate();
-
-
     setuDataCreate();
-
-
 
     if (mbdInitFlags == RECONFIG_CONF || mbdInitFlags == WINDOW_CONF) {
         struct uData*  uData;
-
 
         for (i = 0; i < numofugroups; i++) {
 
@@ -3150,12 +3144,9 @@ updUserList(int mbdInitFlags)
                     uData->pJobLimit = defUser->pJobLimit;
                 }
 
-
             }
-
         }
     }
-
 }
 
 

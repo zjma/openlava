@@ -3215,17 +3215,14 @@ disp_clean_job(struct jData *jpbw)
 static void
 disp_clean(void)
 {
-    static char     fname[] = "disp_clean";
-    struct jData    *jpbw;
-    int             list;
-    time_t          t;
+    struct jData *jpbw;
+    int list;
 
     if (logclass & (LC_TRACE | LC_SCHED))
-        ls_syslog(LOG_DEBUG2, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG2, "%s: Entering this routine...", __func__);
 
     mSchedStage = 0;
     freedSomeReserveSlot = FALSE;
-    t = time(NULL);
 
     for (list = 0; list < NJLIST; list++) {
         for (jpbw = jDataList[list]->back; jpbw != jDataList[list];
@@ -3234,8 +3231,6 @@ disp_clean(void)
         }
 
     }
-
-    return;
 }
 
 static void
@@ -4123,14 +4118,12 @@ scheduleAndDispatchJobs(void)
     int i;
     int loopCount;
     int tmpVal;
-    enum dispatchAJobReturnCode dispRet;
     int continueSched;
     int scheduleTime;
     sTab hashSearchPtr;
     hEnt *hashEntryPtr;
     struct jRef *jR;
     struct jData *jPtr;
-    int cc;
 
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
@@ -4371,9 +4364,9 @@ scheduleAndDispatchJobs(void)
      */
     while ((jPtr = jiter_next_job(jRefList))) {
 
-        TIMEVAL(0, cc = scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
+        TIMEVAL(0, scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
 
-        dispRet = XORDispatch(jPtr, FALSE, dispatchAJob0);
+        XORDispatch(jPtr, FALSE, dispatchAJob0);
         if (STAY_TOO_LONG) {
             if (logclass & LC_SCHED) {
                 ls_syslog(LOG_DEBUG, "\

@@ -389,12 +389,9 @@ main(int argc, char **argv)
     setJobPriUpdIntvl();
 
     for (;;) {
-        int maxfd;
 
         FD_ZERO(&readmask);
-
-        maxfd = sysconf(_SC_OPEN_MAX);
-        now = time(0);
+        now = time(NULL);
 
         if ( (now - lastSchedTime >= msleeptime)
              || (now >= nextSchedTime) ) {
@@ -576,7 +573,6 @@ processClient(struct clientNode *client, int *needFree)
     int                  s;
     int                  pid;
     int                  cc = LSBE_NO_ERROR;
-    unsigned int         len;
     struct sockaddr_in   from;
     struct sockaddr_in   laddr;
     socklen_t            laddrLen;
@@ -606,10 +602,8 @@ processClient(struct clientNode *client, int *needFree)
         return(-1);
     }
 
-    len = reqHdr.length;
     mbdReqtype = reqHdr.opCode;
     from = client->from;
-
 
     if (logclass & (LC_COMM | LC_TRACE)) {
         ls_syslog(LOG_DEBUG, "\
@@ -618,7 +612,7 @@ processClient(struct clientNode *client, int *needFree)
                   sockAdd2Str_(&from), s);
     }
 
-    if( hostIsLocal(client->fromHost) ) {
+    if (hostIsLocal(client->fromHost)) {
         hostOkFlag = hostOk(client->fromHost, LOCAL_ONLY);
     } else {
         hostOkFlag = hostOk(client->fromHost, 0);
@@ -626,11 +620,8 @@ processClient(struct clientNode *client, int *needFree)
 
     switch (hostOkFlag) {
         case -1:
-
-            ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5014,
-                                                 "%s: Request from non-LSF host <%s>"), /* catgets 5014 */
-                      fname,
-                      sockAdd2Str_(&from));
+            ls_syslog(LOG_WARNING, "\
+%s: Request from non-LSF host <%s>", fname, sockAdd2Str_(&from));
             errorBack(s, LSBE_NOLSF_HOST, &from);
             goto endLoop;
         default:
@@ -901,21 +892,18 @@ static void
 periodicCheck(void)
 {
     char *myhostnm;
-    static time_t last_chk_time = 0;
-    static int winConf = FALSE;
-    static time_t lastPollTime = 0, last_checkConf = 0;
-    static time_t last_hostInfoRefreshTime = 0;
-    static time_t last_checkNqsJobsTime = 0;
-    static time_t last_tryControlJobs = 0;
-    static time_t last_jobPriUpdTime = 0;
-    static time_t first_hostInfoRefreshTime = 0;
+    static time_t last_chk_time;
+    static int winConf;
+    static time_t lastPollTime;
+    static time_t last_checkConf;
+    static time_t last_hostInfoRefreshTime;
+    static time_t last_tryControlJobs;
+    static time_t last_jobPriUpdTime;
 
     ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
     if (last_chk_time == 0) {
         last_hostInfoRefreshTime = now;
-        last_checkNqsJobsTime = now;
-        first_hostInfoRefreshTime = now;
     }
 
     switchELog();

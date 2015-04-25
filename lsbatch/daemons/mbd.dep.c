@@ -1,4 +1,5 @@
-/* $Id: mbd.dep.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -552,9 +553,6 @@ evalDepCond (struct dptNode *node, struct jData *jobRec)
         struct jData *jpbw = node->dptJobRec;
 	struct listSet *ptr = NULL;
 
-        int jobIsFinished  = 0;
-        int jobIsPostFinished  = 0;
-
         if ( jpbw == NULL) {
             node->value = DP_INVALID;
             return(node->value);
@@ -568,16 +566,12 @@ evalDepCond (struct dptNode *node, struct jData *jobRec)
 
 	        jpbw = (struct jData *)ptr->elem;
 
-	    } else if ((*node).dptUnion.job.opFlag == ARRAY_DEP_ONE_TO_ONE)
-		{
+	    } else if ((*node).dptUnion.job.opFlag == ARRAY_DEP_ONE_TO_ONE) {
 		    LS_LONG_INT       arrayIdx;
 
-
 		    arrayIdx = LSB_ARRAY_IDX((*jobRec).jobId);
-
 		    jpbw = getJobData(LSB_JOBID((*jpbw).jobId, arrayIdx));
 		    if (jpbw == NULL) {
-
 			struct listSetIterator      iter;
 			long                        *ptr1;
 
@@ -596,9 +590,7 @@ evalDepCond (struct dptNode *node, struct jData *jobRec)
 			     ptr1 != NULL;
 			     ptr1 = listSetIteratorGetNext(&iter)) {
 
-
 			    jpbw = (struct jData *)*ptr1;
-
 
 			    if (arrayIdx ==  LSB_ARRAY_IDX(jpbw->jobId)) {
 				break;
@@ -622,18 +614,14 @@ evalDepCond (struct dptNode *node, struct jData *jobRec)
 	   switch(node->type) {
 	       case DPT_POST_DONE:
 	       case DPT_POST_ERR:
-		   jobIsPostFinished = ( IS_POST_FINISH(jpbw->jStatus) ? 1 : 0 );
 		   break;
 	       case DPT_DONE:
 	       case DPT_EXIT:
 	       case DPT_ENDED:
 	       case DPT_STARTED:
-		   jobIsFinished = ( IS_FINISH(jpbw->jStatus) ? 1 : 0 );
 		   break;
 	       default:
-		   ls_syslog(LOG_ERR,
-			    I18N(5502, "At line %d of file %s, should never be here"), /*catgets 5502 */
-			     __LINE__, __FILE__);
+		   ls_syslog(LOG_ERR, "%s: should never be here", __func__);
 	   }
 
            if  (evalJobDep(node, jpbw, jobRec))

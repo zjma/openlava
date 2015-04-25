@@ -282,31 +282,31 @@ copyJUsage(struct jRusage *to, struct jRusage *from)
     to->stime = from->stime;
 
     if (from->npids) {
-        newPidInfo = (struct pidInfo *)
-                      calloc(from->npids, sizeof(struct pidInfo));
+        newPidInfo =  calloc(from->npids, sizeof(struct pidInfo));
         if (newPidInfo != NULL) {
             if (to->npids)
                 FREEUP (to->pidInfo);
             to->pidInfo = newPidInfo;
             to->npids = from->npids;
-            memcpy((char *) to->pidInfo, (char *) from->pidInfo,
-                            from->npids * sizeof(struct pidInfo));
+            memcpy(to->pidInfo,
+                   from->pidInfo,
+                   from->npids * sizeof(struct pidInfo));
         }
     } else if (to->npids) {
         FREEUP (to->pidInfo);
         to->npids = 0;
     }
 
-
     if (from->npgids) {
-        newPgid = (int *) calloc(from->npgids, sizeof(int));
+        newPgid = calloc(from->npgids, sizeof(int));
         if (newPgid == NULL) return;
         if (to->npgids)
             FREEUP (to->pgid);
         to->pgid = newPgid;
         to->npgids = from->npgids;
-        memcpy((char *) to->pgid, (char *) from->pgid,
-                        from->npgids * sizeof(int));
+        memcpy(to->pgid,
+               from->pgid,
+               from->npgids * sizeof(int));
     } else if (to->npgids) {
         FREEUP (to->pgid);
         to->npgids = 0;

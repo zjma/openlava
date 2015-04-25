@@ -43,7 +43,7 @@ AC_PROG_LIBTOOL
 
 # Force warnings on for gcc
 if test "x$ac_compiler_gnu" = xyes; then
-    CFLAGS="$CFLAGS -Wall -fPIC"
+    CFLAGS="$CFLAGS -Wall -Wno-switch -fPIC"
 fi
 
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
