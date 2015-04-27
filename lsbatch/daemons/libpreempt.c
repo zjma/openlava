@@ -75,7 +75,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
         if (jPtr->jStatus & JOB_STAT_PEND
             && jPtr->newReason == 0) {
             ++numPEND;
-            /* Save the candidate pn jl
+            /* Save the candidate in jl
              */
             push_link(jl, jPtr);
             if (logclass & LC_PREEMPT)
@@ -105,7 +105,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
 
     /* Traverse candidate list
      */
-    while ((jPtr = dequeue_link(jl))) {
+    while ((jPtr = pop_link(jl))) {
         struct qData *qPtr2;
         int num;
 
@@ -120,7 +120,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
 
         while ((qPtr2 = traverse_link(&iter))) {
 
-            if (qPtr2->numPEND == 0)
+            if (qPtr2->numRUN == 0)
                 continue;
 
             if (logclass & LC_PREEMPT)
