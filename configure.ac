@@ -139,7 +139,8 @@ AC_CONFIG_FILES([
 	config/openlava.setup    \
 	config/openlava.sh       \
 	examples/Makefile        \
-	examples/docker/Makefile],,
+	examples/docker/Makefile \
+	tests/Makefile],,
         [openlavacluster=$openlavacluster]
 )
 

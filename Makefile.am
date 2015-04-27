@@ -4,7 +4,7 @@
 
 include $(top_srcdir)/common.mk
 
-SUBDIRS = lsf lsbatch lsf/res eauth scripts chkpnt config examples
+SUBDIRS = lsf lsbatch lsf/res eauth scripts chkpnt config examples tests
 
 MISSING_FILES = aclocal.m4
 
