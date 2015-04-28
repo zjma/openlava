@@ -24,5 +24,8 @@ extern int test0(int);
 extern int test1(int);
 extern int test2(int);
 extern int test3(int);
+extern int test4(int);
+extern int test5(int);
+extern int test6(int);
 
 #endif

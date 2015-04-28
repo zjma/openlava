@@ -16,7 +16,7 @@
  *
  */
 
-#include "../lsf/lsf.h"
+#include "tests.h"
 
 static inline void
 failed(const char *test)
@@ -136,7 +136,6 @@ test3(int n)
     resreq = "tmp < 0";
     hostinfo = ls_gethostinfo(resreq, &numhosts, NULL, 0, 0);
     if (hostinfo == NULL) {
-        ls_perror(" ls_info");
         done(__func__);
         return 0;
     }
@@ -144,4 +143,117 @@ test3(int n)
     failed(__func__);
     return -1;
 
+}
+
+/* test4()
+ *
+ * Test ls_load()
+ *
+ */
+int
+test4(int n)
+{
+    struct hostLoad *hosts;
+    int num;
+
+    printf("I am %s number %d\n", __func__, n);
+
+    hosts = ls_load(NULL, &num, 0, NULL);
+    if (hosts == NULL) {
+        ls_perror(" ls_load");
+        failed(__func__);
+        return -1;
+    }
+
+    printf(" Got load %d hosts\n", num);
+    done(__func__);
+    return 0;
+
+}
+
+/* test5()
+ *
+ * Test ls_place()
+ */
+int
+test5(int n)
+{
+    char **best;
+    int num;
+    char *res_req;
+
+    printf("I am %s number %d\n", __func__, n);
+
+    best = ls_placereq(NULL, &num, 0, NULL);
+    if (best == NULL) {
+        ls_perror(" ls_placereq() 1");
+        failed(__func__);
+        return -1;
+    }
+
+    res_req = "order[r1m]";
+    best = ls_placereq(res_req, &num, 0, NULL);
+    if (best == NULL) {
+        ls_perror(" ls_placereq() 2");
+        failed(__func__);
+        return -1;
+    }
+
+    res_req = "select[tmp < 0]";
+    best = ls_placereq(res_req, &num, 0, NULL);
+    if (best == NULL) {
+        done(__func__);
+        return 0;
+    }
+
+    failed(__func__);
+    return -1;
+}
+
+/* test6()
+ *
+ * Test basic remote execution()
+ *
+ */
+int
+test6(int n)
+{
+    char **best;
+    char *arg[3];
+    int num;
+    pid_t pid;
+
+    printf("I am %s number %d\n", __func__, n);
+
+    if (ls_initrex(1, 0) < 0) {
+        ls_perror(" ls_initrex");
+        failed(__func__);
+        return -1;
+    }
+
+    best = ls_placereq(NULL, &num, 0, NULL);
+    if (best == NULL) {
+        ls_perror(" ls_placereq()");
+        failed(__func__);
+        return -1;
+    }
+
+    arg[0] = "/bin/echo";
+    arg[1] = " output test 6";
+    arg[2] = NULL;
+
+    pid = fork();
+    if (pid == 0) {
+        printf(" Child pid %d\n", getpid());
+        ls_rexecv(best[0], arg, 0);
+        /* should never get here
+         */
+        ls_perror(" ls_rexecv()");
+        exit(-1);
+    }
+
+    waitpid(pid, NULL, 0);
+    done(__func__);
+
+    return 0;
 }

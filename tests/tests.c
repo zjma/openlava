@@ -22,7 +22,7 @@
  */
 int (*funtest[])(int) =
 {
-    test0, test1, test2, test3, NULL
+    test0, test1, test2, test3, test4, test5, test6, NULL
 };
 
 int
@@ -33,6 +33,12 @@ main(int argc, char **argv)
     int cc;
     int ok;
     int not_ok;
+    struct timeval tv;
+    struct timeval tv2;
+
+    printf("Start pid: %d\n", getpid());
+
+    gettimeofday(&tv, NULL);
 
     ok = not_ok = 0;
     num = -1;
@@ -54,5 +60,11 @@ main(int argc, char **argv)
     }
     printf("Done. %d tests ok, %d tests not ok\n", ok, not_ok);
 via:
+
+    gettimeofday(&tv2, NULL);
+    printf("Testing times: %4.2fms\n",
+           ((tv2.tv_sec - tv.tv_sec) * 1000.0
+            + (tv2.tv_usec - tv.tv_usec) / 1000.0));
+
     return 0;
 }
