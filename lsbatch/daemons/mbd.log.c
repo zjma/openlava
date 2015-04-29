@@ -994,8 +994,8 @@ replay_mig(char *filename, int lineNum)
         struct askedHost *askedHosts;
         int returnErr, badReqIndx, others;
 
-        jp->shared->jobBill.askedHosts = (char **) my_calloc(migLog->numAskedHosts,
-                                                             sizeof(char *), fname);
+        jp->shared->jobBill.askedHosts = my_calloc(migLog->numAskedHosts,
+                                                   sizeof(char *), fname);
         for (i = 0; i < jp->shared->jobBill.numAskedHosts; i++)
             jp->shared->jobBill.askedHosts[i] = safeSave(migLog->askedHosts[i]);
         jp->shared->jobBill.options |= SUB_HOST;
@@ -1006,8 +1006,8 @@ replay_mig(char *filename, int lineNum)
                                   &askedHosts, &badReqIndx, &others, 0);
         if (returnErr == LSBE_NO_ERROR) {
             if (numAskedHosts  > 0) {
-                jp->askedPtr = (struct askedHost *) my_calloc (numAskedHosts,
-                                                               sizeof(struct askedHost), fname);
+                jp->askedPtr = my_calloc (numAskedHosts,
+                                          sizeof(struct askedHost), fname);
                 for (i = 0; i < numAskedHosts; i++) {
                     jp->askedPtr[i].hData = askedHosts[i].hData;
                     jp->askedPtr[i].priority = askedHosts[i].priority;
@@ -1573,6 +1573,7 @@ log_startjob(struct jData * job, int preExecStart)
 %s: openEventFile() failed for job %s", __func__, lsb_jobid2str(job->jobId));
         mbdDie(MASTER_FATAL);
     }
+
     if (preExecStart) {
         logPtr->type = EVENT_PRE_EXEC_START;
     } else

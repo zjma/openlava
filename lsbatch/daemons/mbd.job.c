@@ -580,8 +580,8 @@ chkAskedHosts(int inNumAskedHosts, char **inAskedHosts, int numProcessors,
             if (numAskedHosts >= currentsize) {
                 struct askedHost *temp;
                 currentsize = currentsize * 2;
-                temp = (struct askedHost *)realloc(askedHosts,
-                                                   currentsize * sizeof(struct askedHost));
+                temp = realloc(askedHosts,
+                               currentsize * sizeof(struct askedHost));
                 if (temp == NULL)
                     mbdDie(MASTER_MEM);
                 askedHosts = temp;
@@ -644,7 +644,8 @@ chkAskedHosts(int inNumAskedHosts, char **inAskedHosts, int numProcessors,
 
     if (logclass & LC_SCHED) {
         for (i = 0; i < numAskedHosts; i++)
-            ls_syslog (LOG_DEBUG3, "%s: host <%s>, priority=%d", fname, askedHosts[i].hData->host, askedHosts[i].priority);
+            ls_syslog (LOG_DEBUG3, "%s: host <%s>, priority=%d", fname,
+                       askedHosts[i].hData->host, askedHosts[i].priority);
     }
 
     return (LSBE_NO_ERROR);
@@ -1331,8 +1332,8 @@ migJob (struct migReq *req, struct submitMbdReply *reply, struct lsfAuth *auth)
                 FREEUP (job->shared->jobBill.askedHosts[i]);
             FREEUP (job->shared->jobBill.askedHosts);
         }
-        job->shared->jobBill.askedHosts = (char **) my_calloc (req->numAskedHosts,
-                                                               sizeof (char *), fname);
+        job->shared->jobBill.askedHosts = my_calloc (req->numAskedHosts,
+                                                     sizeof (char *), fname);
         for (i = 0; i < req->numAskedHosts; i++)
             job->shared->jobBill.askedHosts[i] = safeSave (req->askedHosts[i]);
         job->shared->jobBill.numAskedHosts = req->numAskedHosts;
@@ -1343,8 +1344,8 @@ migJob (struct migReq *req, struct submitMbdReply *reply, struct lsfAuth *auth)
             job->numAskedPtr = 0;
         }
         if (realNumHosts) {
-            job->askedPtr = (struct askedHost *) my_calloc (realNumHosts,
-                                                            sizeof(struct askedHost), fname);
+            job->askedPtr = my_calloc (realNumHosts,
+                                       sizeof(struct askedHost), fname);
             job->numAskedPtr = realNumHosts;
             for (i = 0; i < realNumHosts; i++) {
                 job->askedPtr[i].hData = realAskedHosts[i].hData;
@@ -1855,11 +1856,7 @@ jobStatusSignal(sbdReplyType reply, struct jData *jData, int sigValue,
                   "%s: Changing status for job <%s>, signal <%d> flags %x",
                   fname, lsb_jobid2str(jData->jobId), sigValue, actFlags);
 
-
-
     jData->actPid = jobReply->actPid;
-
-
 
     if (jobReply->actPid  > 0 && jobReply->actStatus != ACT_NO) {
 
@@ -2372,14 +2369,13 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
 
         if (jDataPtr->shared->jobBill.rLimits[i] < 0) {
 
-            switch ( i ) {
+            switch (i) {
                 case LSF_RLIMIT_RUN:
                 case LSF_RLIMIT_CPU:
                 case LSF_RLIMIT_RSS:
                 case LSF_RLIMIT_DATA:
                 case LSF_RLIMIT_PROCESS:
-                    if ( qp->defLimits[i] > 0 ) {
-
+                    if (qp->defLimits[i] > 0) {
                         rLimits2lsfLimits(qp->defLimits, jobSpecs->lsfLimits, i, 1);
                     } else {
 
@@ -2398,10 +2394,9 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
                 rLimits2lsfLimits(jDataPtr->shared->jobBill.rLimits, jobSpecs->lsfLimits, i, 1);
             } else {
 
-                if ( logclass & LC_EXEC ) {
-                    ls_syslog(LOG_DEBUG, I18N(6538,
-                                              "packJobSpecs: jobId <%s> user specified soft limit(%d) bigger than queue's hard limit(%d) for rlimit[%d]"), /* catgets 6538 */
-                              lsb_jobid2str(jobSpecs->jobId),
+                if (logclass & LC_EXEC) {
+                    ls_syslog(LOG_DEBUG, "\
+%s: jobId <%s> user specified soft limit(%d) bigger than queue's hard limit(%d) for rlimit[%d]", __func__, lsb_jobid2str(jobSpecs->jobId),
                               jDataPtr->shared->jobBill.rLimits[i],
                               qp->rLimits[i], i);
                 }
@@ -2585,22 +2580,18 @@ statusJob(struct statusReq *statusReq, struct hostent *hp, int *schedule)
         if (IS_START(jpbw->jStatus)) {
 
             if (jpbw->hPtr == NULL)
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6516,
-                                                 "%s: Job <%s> started but hPtr is NULL"), /* catgets 6516 */
-                          fname, lsb_jobid2str(jpbw->jobId));
+                ls_syslog(LOG_ERR, "\
+%s: Job <%s> started but hPtr is NULL", __func__, lsb_jobid2str(jpbw->jobId));
             else {
 
                 if (jpbw->hPtr[0] == hData)
                     jStatusChange(jpbw, JOB_STAT_PEND, LOG_IT, fname);
-
 
             }
         }
 
 
         if ((jData = isInZomJobList (hData, statusReq)) != NULL) {
-
-
             statusReq->newStatus = JOB_STAT_EXIT;
         } else {
             return (LSBE_NO_ERROR);
@@ -3208,7 +3199,7 @@ jStatusChange(struct jData *jData,
             if ((jData->jStatus & JOB_STAT_PRE_EXEC))
                 log_startjob(jData, TRUE);
             else
-                log_startjob (jData, FALSE);
+                log_startjob(jData, FALSE);
         }
         jData->jStatus &= ~JOB_STAT_MIG;
         offJobList(jData, PJLorMJL(jData));
