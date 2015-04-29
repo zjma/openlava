@@ -255,7 +255,7 @@ output(char *fname, char *exHost, int fflag, char *execUsername, char **envp)
 	setuid(getuid());
 
 	disOut[fidx] = fname;
-	lsfExecvp(disOut[0], disOut);
+	execvp(disOut[0], disOut);
 	fprintf(stderr, I18N_FUNC_S_S_FAIL_S, "execvp", disOut[0], strerror(errno));
     }
     exit(-1);
@@ -301,7 +301,7 @@ remoteOutput(int fidx, char **disOut, char *exHost, char *fname,
 	}
 
 
-	lsfExecvp(RSHCMD, args);
+	execvp(RSHCMD, args);
 	fprintf(stderr, I18N_FUNC_S_S_FAIL_S, "execvp", args[0], strerror(errno));
 	return;
     }

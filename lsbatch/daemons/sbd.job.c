@@ -20,16 +20,12 @@
 #include <time.h>
 #include <stdlib.h>
 #include <sys/types.h>
-
 #include <dirent.h>
 #include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
-
 #include "../../lsf/intlib/jidx.h"
 #include "../../lsf/lib/lib.rcp.h"
-#include "../../lsf/lib/mls.h"
-
 #include "../daemons/daemons.h"
 
 #define MAX_PREEXEC_ENVS  ((MAXLINELEN + 1)/3 + 2)
@@ -453,10 +449,10 @@ execJob(struct jobCard *jobCardPtr, int chfd)
                 && (jobSpecsPtr->options & SUB_PTY))  {
                 chuser(batchId);
                 if (!REShasPTYfix(execArgv[0])) {
-                    lsfSetUid(jobSpecsPtr->execUid);
+                    setuid(jobSpecsPtr->execUid);
                 }
             }
-            lsfExecv(execArgv[0], execArgv);
+            execv(execArgv[0], execArgv);
 
             fprintf(stderr, "\
 LSF: Unable to execute jobfile %s job %s: %s\n",
@@ -468,7 +464,7 @@ LSF: Unable to execute jobfile %s job %s: %s\n",
             if ((jobSpecsPtr->options & SUB_INTERACTIVE)
                 && (jobSpecsPtr->options & SUB_PTY)) {
                 chuser(batchId);
-                lsfSetUid(jobSpecsPtr->execUid);
+                setuid(jobSpecsPtr->execUid);
             }
 
             shellPath = "/bin/sh";
@@ -497,7 +493,7 @@ LSF: Unable to execute jobfile %s job %s: %s\n",
                 jobArgv[0] = "-";
 
                 jobArgv[1] = NULL;
-                lsfExecv(shellPath, jobArgv);
+                execv(shellPath, jobArgv);
 
                 fprintf(stderr, "\
 LSF: Unable to execute login shell %s for job %s: %s\n",
@@ -2560,7 +2556,7 @@ setIds(struct jobCard *jobCardPtr)
     if ((jobSpecsPtr->options & SUB_INTERACTIVE) &&
         (jobSpecsPtr->options & SUB_PTY)) {
         chuser(jobSpecsPtr->execUid);
-    } else if (lsfSetUid(jobSpecsPtr->execUid) < 0) {
+    } else if (setuid(jobSpecsPtr->execUid) < 0) {
         ls_syslog(LOG_ERR, "%s: setuid() failed jobid %s user %s %m",
                   __func__, lsb_jobid2str(jobSpecsPtr->jobId),
                   jobCardPtr->execUsername);
@@ -3434,9 +3430,9 @@ chPrePostUser(struct jobCard *jp)
         prepostUid = jp->jobSpecs.execUid;
     }
 
-    if (lsfSetUid(prepostUid) < 0) {
+    if (setuid(prepostUid) < 0) {
         ls_syslog(LOG_ERR, "\
-%s: lsfSetUid() failed for uid %d gid %d %m", __func__,
+%s: setuid() failed for uid %d gid %d %m", __func__,
                   prepostUid, jp->execGid);
         return -1;
     }
@@ -3558,15 +3554,13 @@ runUPre(struct jobCard *jp)
         if (getuid() == batchId) {
 
             chuser(batchId);
-            lsfSetUid(jp->jobSpecs.execUid);
+            setuid(jp->jobSpecs.execUid);
         }
 
         for (i = 1; i < NSIG; i++)
             Signal_(i, SIG_DFL);
 
         Signal_(SIGHUP, SIG_IGN);
-
-        lsfExecLog(jp->jobSpecs.preExecCmd);
 
         execl("/bin/sh", "/bin/sh", "-c", jp->jobSpecs.preExecCmd, NULL);
         sprintf(errMsg, I18N_JOB_FAIL_S_M, fname,

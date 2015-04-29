@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -24,10 +24,8 @@
 #include "../../lsf/lsf.h"
 #include "../../lsf/lib/lib.hdr.h"
 #include "../lsbatch.h"
-
 #include "../../lsf/lib/lproto.h"
 #include "../../lsf/lib/lib.table.h"
-#include "../../lsf/lib/mls.h"
 
 #define MIN_CPU_TIME 0.0001
 

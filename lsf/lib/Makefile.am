@@ -22,5 +22,5 @@ lib.eauth.c lib.initenv.c lib.priority.c lib.rwait.c lib.wconf.c \
 lib.eligible.c lib.lim.c lib.queue.c lib.sig.c lib.words.c \
 lib.channel.h lib.h lib.osal.h lib.pim.h  lib.rcp.h lib.table.h \
 lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \
-lib.rf.h lib.so.h lib.words.h lib.xdrlim.h lproto.h  mls.h
+lib.rf.h lib.so.h lib.words.h lib.xdrlim.h lproto.h
 liblsf_la_LDFLAGS =  -no-undefined -version-info 0:1

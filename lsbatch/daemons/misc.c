@@ -1,4 +1,5 @@
-/* $Id: misc.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,6 @@
 #include "daemonout.h"
 #include "daemons.h"
 #include "../../lsf/lib/lib.osal.h"
-#include "../../lsf/lib/mls.h"
 
 #ifndef strchr
 #include <string.h>
@@ -40,13 +40,13 @@
 
 #define BATCH_SLAVE_PORT        40001
 
-static int chuserId (uid_t);
+static int chuserId(uid_t);
 
 extern struct listEntry * mkListHeader (void);
 extern int shutdown (int, int);
 
 void
-die (int sig)
+die(int sig)
 {
     static char fname[] = "die";
     char myhost[MAXHOSTNAMELEN];
@@ -127,6 +127,7 @@ get_ports(void)
 
     static char fname[] = "get_ports";
     struct servent *sv;
+
     if (daemonParams[LSB_MBD_PORT].paramValue != NULL)
     {
         if (!isint_(daemonParams[LSB_MBD_PORT].paramValue)
@@ -189,56 +190,57 @@ get_ports(void)
     return (0);
 }
 
-uid_t chuser (uid_t uid)
+uid_t chuser(uid_t uid)
 {
     uid_t myuid;
     int errnoSv = errno;
 
     if (debug)
-        return(geteuid());
+        return geteuid();
 
     if ((myuid = geteuid()) == uid)
-        return (myuid);
-
+        return myuid;
 
     if (myuid != 0 && uid != 0)
         chuserId(0);
+
     chuserId(uid);
     errno = errnoSv;
-    return (myuid);
+
+    return myuid;
 }
 
 static int
 chuserId (uid_t uid)
 {
-    static char fname[] = "chuserId";
 
-   if (lsfSetEUid(uid) < 0) {
-       ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "setresuid/seteuid",
-           (int)uid);
-       if (lsb_CheckMode) {
-           lsb_CheckError = FATAL_ERR;
-           return -1;
-       } else
-           die(MASTER_FATAL);
-   }
+  if (seteuid(uid) < 0) {
+      ls_syslog(LOG_ERR, "%s: Failed to change to uid <%d>: %m", __func__, uid);
+      if (lsb_CheckMode) {
+	   lsb_CheckError = FATAL_ERR;
+	   return -1;
+      } else {
+	   die(MASTER_FATAL);
+      }
+  }
 
-   if (uid == 0) {
-       if(lsfSetREUid(0, 0) < 0)
-       {
-           ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "setresuid/setreuid",
-               (int)uid);
-           if (lsb_CheckMode) {
-               lsb_CheckError = FATAL_ERR;
-               return -1;
-           } else
-               if (masterme)
-                   die(MASTER_FATAL);
-               else
-                   die(SLAVE_FATAL);
-       }
-   }
-   return 0;
+  if (uid == 0) {
+      if (setreuid(0, 0) < 0) {
+          ls_syslog(LOG_ERR, "\
+%s: Failed to change to uid <%d>: %m", __func__, uid);
+          if (lsb_CheckMode) {
+              lsb_CheckError = FATAL_ERR;
+              return -1;
+          } else {
+              if (masterme)
+                  die(MASTER_FATAL);
+              else
+                  die(SLAVE_FATAL);
+          }
+      }
+  }
+
+  return 0;
 }
 
 char *
@@ -293,8 +295,8 @@ daemon_doinit(void)
     if (! daemonParams[LSB_CONFDIR].paramValue ||
         ! daemonParams[LSF_SERVERDIR].paramValue ||
         ! daemonParams[LSB_SHAREDIR].paramValue ) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8239,
-            "One or more of the following parameters undefined: %s %s %s"), /* catgets 8239 */
+        ls_syslog(LOG_ERR, "\
+%s: One or more of the following parameters undefined: %s %s %s",
             daemonParams[LSB_CONFDIR].paramName,
             daemonParams[LSF_SERVERDIR].paramName,
             daemonParams[LSB_SHAREDIR].paramName);
@@ -304,17 +306,13 @@ daemon_doinit(void)
             die(SLAVE_FATAL);
     }
 
-
-
     if (daemonParams[LSB_MAILTO].paramValue == NULL)
         daemonParams[LSB_MAILTO].paramValue = safeSave(DEFAULT_MAILTO);
     if (daemonParams[LSB_MAILPROG].paramValue == NULL)
         daemonParams[LSB_MAILPROG].paramValue = safeSave(DEFAULT_MAILPROG);
 
-
     if (daemonParams[LSB_CRDIR].paramValue == NULL)
         daemonParams[LSB_CRDIR].paramValue = safeSave(DEFAULT_CRDIR);
-
 }
 
 
@@ -418,9 +416,9 @@ fileExist (char *file, int uid, struct hostent *hp)
         return answer;
     } else {
         close(fds[0]);
-        if (lsfSetUid (uid) < 0) {
+        if (setuid(uid) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "setuid",
-                uid);
+                      uid);
             answer = TRUE;
             write(fds[1], (char *) &answer, sizeof (int));
             close(fds[1]);

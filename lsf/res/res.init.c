@@ -26,11 +26,8 @@
 #include <sys/time.h>
 #include <string.h>
 #include <unistd.h>
-
-
 #include "res.h"
 #include "../lib/lproto.h"
-#include "../lib/mls.h"
 
 #define RES_TIMEOUT_DEFAULT 	60
 
@@ -417,7 +414,7 @@ resParent(int s, struct passwd *pw, struct lsfAuth *auth,
             exit (-1);
         }
 	close(wrapPipe[1]);
-	lsfExecv(argv[0], argv);
+	execv(argv[0], argv);
 	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "execv");
 	exit(-1);
     }

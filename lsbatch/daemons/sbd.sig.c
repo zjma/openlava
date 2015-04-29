@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include "../../lsf/lib/mls.h"
 #include <unistd.h>
 
 #define NL_SETN		11
@@ -1122,7 +1121,7 @@ exeActCmd(struct jobCard *jp, char *actCmd, char *exitFile)
         char *myargv[6];
 
 	chuser(batchId);
-	if (lsfSetUid(jp->jobSpecs.execUid) < 0) {
+	if (setuid(jp->jobSpecs.execUid) < 0) {
 	    ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
                       lsb_jobid2str(jp->jobSpecs.jobId), "setuid");
 	    exit(-1);
@@ -1150,7 +1149,7 @@ exeActCmd(struct jobCard *jp, char *actCmd, char *exitFile)
         myargv[2] = actCmd;
         myargv[3] = NULL;
 
-        lsfExecvp ("/bin/sh", myargv);
+        execvp ("/bin/sh", myargv);
         goto Error;
     }
 
@@ -1483,7 +1482,7 @@ execRestart(struct jobCard *jobCardPtr, struct hostent *hp)
         exit(-1);
     }
 
-    lsfExecv(erestartPath, rargv);
+    execv(erestartPath, rargv);
     perror("execv(erestart) failed");
     exit(-1);
 
@@ -1685,7 +1684,7 @@ exeChkpnt(struct jobCard *jp, int chkFlags, char * exitFile)
 
         chuser(batchId);
 
-        if (lsfSetUid(jp->jobSpecs.execUid) < 0) {
+        if (setuid(jp->jobSpecs.execUid) < 0) {
             fprintf(stderr, I18N_JOB_FAIL_S_D_M, fname,
                     lsb_jobid2str(jp->jobSpecs.jobId),
                     "setuid",
@@ -1695,7 +1694,7 @@ exeChkpnt(struct jobCard *jp, int chkFlags, char * exitFile)
             exit(-1);
         }
 
-        lsfExecv(echkpntPath,argv);
+        execv(echkpntPath,argv);
         perror( _i18n_printf( I18N_FUNC_S_FAIL_M, fname,
                               "execv", "echkpnt"));
         exit(-1);

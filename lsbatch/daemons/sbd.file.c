@@ -24,9 +24,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
-
-#include "../../lsf/lib/mls.h"
-
 #include "../daemons/daemons.h"
 
 #define NL_SETN         11
@@ -121,7 +118,7 @@ rcpFile(struct jobSpecs *jp, struct xFile *xf, char *host, int op,
         if (getuid() == batchId) {
 
             chuser(batchId);
-            lsfSetUid(jp->execUid);
+            setuid(jp->execUid);
         }
 
         if (daemonParams[LSF_BINDIR].paramValue != NULL)

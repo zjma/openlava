@@ -66,10 +66,6 @@ typedef enum {
     RESE_VCL_SPAWN,
     RESE_EXEC,
     RESE_ERROR_LAST,
-    RESE_MLS_INVALID,
-    RESE_MLS_CLEARANCE,
-    RESE_MLS_DOMINATE,
-    RESE_MLS_RHOST,
 } resAck;
 
 typedef enum {

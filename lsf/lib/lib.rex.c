@@ -22,7 +22,6 @@
 #include <pwd.h>
 #include "lib.h"
 #include "lproto.h"
-#include "mls.h"
 
 extern int currentSN;
 
@@ -155,7 +154,7 @@ ls_rexecve(char *host, char **argv, int options, char **envp)
             (void)close(d);
     }
 
-    (void)lsfExecvp(new_argv[0], new_argv);
+    (void)execvp(new_argv[0], new_argv);
     lserrno = LSE_EXECV_SYS;
     close(retsock);
     close(s);

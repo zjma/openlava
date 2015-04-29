@@ -1737,20 +1737,7 @@ get_status(int indx, struct LSFHeader *msgHdr, LS_WAIT_T *statusp)
             case RESE_EXEC:
                 SETTERMSIG(status, STATUS_REX_EXEC);
                 break;
-            case RESE_MLS_INVALID:
-                SETTERMSIG(status, STATUS_REX_MLS_INVAL);
-                break;
-            case RESE_MLS_CLEARANCE:
-                SETTERMSIG(status, STATUS_REX_MLS_CLEAR);
-                break;
-            case RESE_MLS_RHOST:
-                SETTERMSIG(status, STATUS_REX_MLS_RHOST);
-                break;
-            case RESE_MLS_DOMINATE:
-                SETTERMSIG(status, STATUS_REX_MLS_DOMIN);
-                break;
             default:
-
                 SETTERMSIG(status, STATUS_REX_UNKNOWN);
                 break;
         }

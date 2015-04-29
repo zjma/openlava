@@ -486,34 +486,34 @@ myexecv_(char *filename, char **argv, struct hostent *hp)
     char *mp;
 
     if (!hp || filename[0] != '/' || AM_NEVER) {
-        lsfExecv(usePath(filename), argv);
+        execv(usePath(filename), argv);
 	return;
     }
 
     if (AM_LAST) {
-        lsfExecv(usePath(filename), argv);
+        execv(usePath(filename), argv);
         return;
     }
 
     if (strstr(filename, "/net/") == filename) {
-	lsfExecv(usePath(filename), argv);
+	execv(usePath(filename), argv);
 	return;
     }
 
     if (strstr(filename, "/tmp_mnt/") ==filename) {
-	lsfExecv(usePath(filename), argv);
+	execv(usePath(filename), argv);
 	return;
     }
 
     if ((mp=mountNet_(hp)) == NULL) {
-	lsfExecv(usePath(filename), argv);
+	execv(usePath(filename), argv);
 	return;
     }
 
     sprintf(fnamebuf, "%s%s", mp, filename);
-    lsfExecv(usePath(fnamebuf), argv);
+    execv(usePath(fnamebuf), argv);
 
-    lsfExecv(usePath(filename), argv);
+    execv(usePath(filename), argv);
 
 }
 

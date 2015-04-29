@@ -18,7 +18,6 @@
  */
 
 #include "lim.h"
-#include "../lib/mls.h"
 
 #define NL_SETN 24
 
@@ -153,7 +152,7 @@ reconfig(void)
                 putenv(lsfLimLock);
             }
 
-            lsfExecvp(myargv[0], myargv);
+            execvp(myargv[0], myargv);
             ls_syslog(LOG_ERR, "\
 %s: execvp %s failed %m", myargv[0]);
             lim_Exit(__func__);

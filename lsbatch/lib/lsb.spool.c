@@ -1,4 +1,5 @@
-/* $Id: lsb.spool.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,23 +17,11 @@
  *
  */
 
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <errno.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <dirent.h>
-
 #include "lsb.h"
 #include "lsb.spool.h"
 #include "../../lsf/lib/lproto.h"
 #include "../../lsf/lsf.h"
 #include "../../lsf/lib/lib.rcp.h"
-#include "../../lsf/lib/mls.h"
 
 extern char **environ;
 const char *defaultSpoolDir = NULL;

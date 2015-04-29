@@ -607,23 +607,11 @@ resRC2LSErr_(int resRC)
       case RESE_RES_PARENT:
 	 lserrno = LSE_RES_PARENT;
 	 break;
-      case RESE_MLS_INVALID:
-	 lserrno = LSE_MLS_INVALID;
-	 break;
-      case RESE_MLS_CLEARANCE:
-	 lserrno = LSE_MLS_CLEARANCE;
-	 break;
-      case RESE_MLS_DOMINATE:
-	 lserrno = LSE_MLS_DOMINATE;
-	 break;
-      case RESE_MLS_RHOST:
-	 lserrno = LSE_MLS_RHOST;
-	 break;
       default:
 	 lserrno = NOCODE + resRC;
      }
-    return(lserrno);
 
+    return lserrno;
 }
 
 int

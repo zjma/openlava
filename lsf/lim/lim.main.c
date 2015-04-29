@@ -19,7 +19,6 @@
  */
 
 #include "lim.h"
-#include "../lib/mls.h"
 
 extern char *argvmsg_(int argc, char **argv);
 
@@ -1003,7 +1002,7 @@ startPIM(int argc, char **argv)
 
     pargv[i] = NULL;
     pargv[0] = getDaemonPath_("/pim", limParams[LSF_SERVERDIR].paramValue);
-    lsfExecv(pargv[0], pargv);
+    execv(pargv[0], pargv);
 
     ls_syslog(LOG_ERR, "%s: exec() pim %s failed", __func__, pargv[0]);
 

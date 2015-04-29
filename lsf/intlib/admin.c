@@ -1,4 +1,5 @@
-/* $Id: admin.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,7 @@
 
 #include "intlibout.h"
 #include "../lib/lsi18n.h"
-#include "../lib/mls.h"
+
 #define BADCH   ":"
 #define NL_SETN      22
 
@@ -423,20 +424,15 @@ checkConf(int verbose, int who)
 static int
 changeUserEUId(void)
 {
-    static char fname[] = "changeUserEUId";
     uid_t uid;
 
     uid = getuid();
 
-
-    if(uid == 0) {
+    if (uid == 0)
         return 0;
-    }
 
-    if (lsfSetEUid(uid) < 0) {
-
-        ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "setresuid/seteuid",
-                  (int)uid);
+    if (seteuid(uid) < 0) {
+        ls_syslog(LOG_ERR, "%s: seteuid() to %d failed %m", __func__, uid);
         return -1;
     }
 

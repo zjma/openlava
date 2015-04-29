@@ -39,7 +39,6 @@
 #include "res.h"
 #include "resout.h"
 #include "../lib/lproto.h"
-#include "../lib/mls.h"
 #ifdef __sun__
 #include <sys/ptyvar.h>
 #endif
@@ -1611,7 +1610,7 @@ resControl(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs,
                     while (i < maxfds)
                         close(i++);
                     millisleep_(5000);
-                    lsfExecvp(daemon_path, restart_argv);
+                    execvp(daemon_path, restart_argv);
                     ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp",
                               daemon_path);
                     resExit_(-1);
@@ -2924,7 +2923,7 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
 
 
     uid = setEUid(0);
-    if (lsfSetUid(uid) < 0) {
+    if (setuid(uid) < 0) {
         perror("setuid");
         exit(-1);
     }
@@ -2958,9 +2957,6 @@ lsbExecChild(struct resCmdBill *cmdmsg, int *pty,
 
     if (debug > 1)
         ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
-
-
-    mlsSbdMode = sbdMode;
 
     if (cmdmsg->options & REXF_USEPTY) {
         iofd = pty[1];
@@ -3084,7 +3080,7 @@ execit(char **uargv,
     if (loseRoot) {
 
         uid = setEUid(0);
-        if (lsfSetUid(uid) < 0) {
+        if (setuid(uid) < 0) {
             perror("setuid");
             resExit_(-1);
         }
@@ -3120,7 +3116,7 @@ execit(char **uargv,
             memcpy((void *)(real_argv+1), (void *)uargv, i*sizeof(char *));
             real_argv[i+1] = NULL;
 
-            lsfExecvp(real_argv[0], real_argv);
+            execvp(real_argv[0], real_argv);
             perror(real_argv[0]);
             free (real_argv);
         } else {
@@ -3143,9 +3139,6 @@ execit(char **uargv,
                 strcat(cmd, uargv[i]);
             }
 
-
-            lsfExecLog(cmd);
-
             execl("/bin/sh", "sh", "-c", cmd, NULL);
             perror("/bin/sh");
 
@@ -3153,7 +3146,7 @@ execit(char **uargv,
             cmd = NULL;
         }
     } else {
-        lsfExecvp(uargv[0], uargv);
+        execvp(uargv[0], uargv);
         perror(uargv[0]);
     }
 
@@ -5123,17 +5116,18 @@ uid_t setEUid(uid_t uid)
     int errnoSv = errno;
 
     if (debug)
-        return(geteuid());
+        return geteuid();
 
     if ((myuid = geteuid()) == uid)
-        return (myuid);
+        return myuid;
 
 
     if (myuid != 0 && uid != 0)
         changeEUid(0);
     changeEUid(uid);
     errno = errnoSv;
-    return (myuid);
+
+    return myuid;
 }
 
 static void
@@ -5157,21 +5151,17 @@ options=<%d>, cwd=<%s>",
 }
 
 static int
-changeEUid (uid_t uid)
+changeEUid(uid_t uid)
 {
-    static char fname[] = "changeEUid()";
-    if (lsfSetEUid(uid) < 0) {
-        ls_syslog(LOG_WARNING, I18N_FUNC_D_FAIL_M, fname, "setresuid/seteuid",
-                  (int)uid);
+    if (seteuid(uid) < 0) {
+        ls_syslog(LOG_WARNING, "%s: setreuid) failed %m", __func__, uid);
         return -1;
     }
 
     if (uid == 0) {
-        if(lsfSetREUid(0, 0) < 0)
-        {
-            ls_syslog(LOG_WARNING, I18N_FUNC_D_FAIL_M, fname,
-                      "setresuid/seteuid",
-                      (int)uid);
+        if (setreuid(0, 0) < 0) {
+            ls_syslog(LOG_WARNING, "\
+%s: setreuid) failed %m", __func__, uid);
             return -1;
         }
     }

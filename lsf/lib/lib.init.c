@@ -1,4 +1,5 @@
-/* $Id: lib.init.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,11 +21,9 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <pwd.h>
-
 #include "lib.h"
 #include "lproto.h"
 #include "lib.queue.h"
-#include "mls.h"
 
 #define NL_SETN 23
 
@@ -42,7 +41,7 @@ ls_initrex(int num, int options)
 
     if (initenv_(NULL, NULL)<0) {
         if (rootuid_ && !(options & KEEPUID))
-            lsfSetUid(getuid());
+            setuid(getuid());
         return(-1);
     }
 
@@ -75,7 +74,7 @@ ls_initrex(int num, int options)
 res_init_fail:
             lserrno = LSE_RES_NREG;
             if (rootuid_ && !(options & KEEPUID))
-                lsfSetUid(getuid());
+                setuid(getuid());
             return (-1);
         }
     }
@@ -87,7 +86,7 @@ res_init_fail:
         int i;
         i = opensocks_(num);
         if (!(options & KEEPUID))
-            lsfSetUid(getuid());
+            setuid(getuid());
         return (i);
     } else {
         return (num);
@@ -194,43 +193,4 @@ ls_fdbusy(int fd)
         return TRUE;
 
     return FALSE;
-}
-
-int
-lsfSetXUid(int flag, int ruid, int euid, int suid, int(*func)())
-{
-    int rtrn = -1;
-
-    if ( func == setuid ) {
-        rtrn = setuid(ruid);
-    } else if (func == seteuid) {
-        rtrn = seteuid(euid);
-    } else if ( func == setreuid ) {
-        rtrn = setreuid(ruid, euid);
-    }
-
-    return(rtrn);
-}
-
-void
-lsfExecLog(const char *cmd)
-{
-    static char fname[] = "lsfExecLog";
-    char lsfUserName[MAXLSFNAMELEN];
-
-    if (genParams_[LSF_MLS_LOG].paramValue &&
-                ((genParams_[LSF_MLS_LOG].paramValue[0] == 'y') ||
-                (genParams_[LSF_MLS_LOG].paramValue[0] == 'Y'))) {
-
-        getLSFUser_(lsfUserName, sizeof(lsfUserName));
-        syslog(LOG_INFO,
-            I18N(6259,"%s: user - %s cmd - '%s'"), /* catgets 6259 */
-            fname, lsfUserName, cmd);
-
-    }
-}
-int
-lsfExecX(char *path, char **argv, int(*func)())
-{
-    return(func(path, argv));
 }

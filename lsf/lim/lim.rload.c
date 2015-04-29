@@ -26,7 +26,6 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/utsname.h>
-#include "../lib/mls.h"
 #include <unistd.h>
 #include "../lib/lproto.h"
 
@@ -305,7 +304,7 @@ lim_popen(char **argv, char *mode)
         for (i = 1; i < NSIG; i++)
             Signal_(i, SIG_DFL);
 
-        lsfExecvp(argv[0], argv);
+        execvp(argv[0], argv);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp", argv[0]);
         exit(127);
     }

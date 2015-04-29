@@ -23,7 +23,6 @@
 #include <pwd.h>
 #include "../lsf.h"
 #include "lib.h"
-#include "mls.h"
 #include "../res/nios.h"
 #include "../res/resout.h"
 #include "lproto.h"
@@ -200,7 +199,7 @@ ls_rtaske(char *host, char **argv, int options, char **envp)
 
 
             sigprocmask(SIG_SETMASK, &oldMask, NULL);
-            (void)lsfExecvp(new_argv[0], new_argv);
+            (void)execvp(new_argv[0], new_argv);
             exit(-1);
         }
     }

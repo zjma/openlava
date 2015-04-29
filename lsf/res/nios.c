@@ -32,7 +32,6 @@
 #include "../lsf.h"
 #include "../../lsbatch/lsbatch.h"
 #include <setjmp.h>
-#include "../lib/mls.h"
 #include "res.h"
 #include "nios.h"
 #include "resout.h"
@@ -645,11 +644,9 @@ serv(char **argv, int asock)
                                       fname, tasks->ioTask[i].status);
                         taskStatus[tasks->ioTask[i].tid].got_status = TRUE;
 
-                        if ( REX_FATAL_ERROR(tasks->ioTask[i].status)) {
-
+                        if (REX_FATAL_ERROR(tasks->ioTask[i].status)) {
                             taskStatus[tasks->ioTask[i].tid].got_eof = TRUE;
                         }
-
 
                         {
                             LS_WAIT_T status = *((LS_WAIT_T *)&tasks->ioTask[i].status);
@@ -735,7 +732,7 @@ serv(char **argv, int asock)
 
                                 fprintf(stderr, "\r");
                             }
-                            lsfExecv(argv[0],argv);
+                            execv(argv[0],argv);
 
                             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M,
                                       fname, "execv");
@@ -870,10 +867,8 @@ kill_self(int exit_sig, int exit_stat)
 
     if (usepty && io_fd >= 0 && isatty(io_fd))
         ls_loctty(io_fd);
-    if (exit_sig)
-    {
-        if (exit_sig >= 3 && exit_sig <= 12)
-        {
+    if (exit_sig) {
+        if (exit_sig >= 3 && exit_sig <= 12) {
 
 #ifdef RLIMIT_CORE
             struct rlimit rl = {0, 0};
@@ -922,20 +917,6 @@ kill_self(int exit_sig, int exit_stat)
             exit(exit_stat);
             break;
 #endif
-        case STATUS_REX_MLS_INVAL:
-            lserrno = LSE_MLS_INVALID;
-            break;
-        case STATUS_REX_MLS_CLEAR:
-            lserrno = LSE_MLS_CLEARANCE;
-            break;
-        case STATUS_REX_MLS_RHOST:
-            lserrno = LSE_MLS_RHOST;
-            break;
-        case STATUS_REX_MLS_DOMIN:
-            lserrno = LSE_MLS_DOMINATE;
-            break;
-        default:
-
             Signal_(exit_sig, SIG_DFL);
             kill(getpid(), exit_sig);
             ls_syslog(LOG_ERR, I18N(5809, "\
@@ -1497,16 +1478,12 @@ conin(int signo)
 static void
 reset_uid(void)
 {
-    static char fname[] = "nios/reset_uid()";
     int ruid = getuid();
 
     if (geteuid() == 0) {
-       if (  lsfSetREUid(ruid,ruid) < 0
-
-           || (lsfSetREUid(-1,0) >= 0 && ruid != 0)) {
-
-
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "setreuid");
+        if (setreuid(ruid, ruid) < 0
+            || (setreuid(-1, 0) >= 0 && ruid != 0)) {
+            ls_syslog(LOG_ERR, "%s: setreuid() uid %d failed %m", __func__, ruid);
             exit(ERR_SYSTEM);
        }
     }

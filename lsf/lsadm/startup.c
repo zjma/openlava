@@ -1,4 +1,5 @@
-/* $Id: startup.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,13 +20,10 @@
 #include <netdb.h>
 
 #include "../lsf.h"
-#include <sys/wait.h>
 #include "../lsadm/lsadmin.h"
 #include "../lib/lproto.h"
-#include "../lib/mls.h"
 #include "../intlib/intlibout.h"
 #include "../lib/lsi18n.h"
-#include "../lib/mls.h"
 
 #define RSHCMD "rsh"
 
@@ -138,7 +136,8 @@ getLSFenv(void)
 
     if (logclass & (LC_TRACE)) {
         ls_syslog(LOG_DEBUG, "My lsf.shared file is: %s", lsfSharedFile);
-        ls_syslog(LOG_DEBUG, "Clusters name is: %s\n", mySharedConf->clusterName);
+        ls_syslog(LOG_DEBUG, "\
+Clusters name is: %s\n", mySharedConf->clusterName);
     }
 
     if ((myClusterConf = findMyCluster(mySharedConf->clusterName, mySharedConf))) {
@@ -484,14 +483,12 @@ execDaemon(int uid, char **myargv)
             return -1;
     }
 
-
-
-    if (lsfSetUid(uid) < 0) {
+    if (setuid(uid) < 0) {
 	perror("setuid");
 	exit(-1);
     }
 
-    lsfExecvp(myargv[0], myargv);
+    execvp(myargv[0], myargv);
     perror(myargv[0]);
     exit(-2);
 }

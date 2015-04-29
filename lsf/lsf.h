@@ -183,10 +183,6 @@ typedef enum {
 #define STATUS_REX_VCL_INIT   112
 #define STATUS_REX_VCL_SPAWN  111
 #define STATUS_REX_EXEC       110
-#define STATUS_REX_MLS_INVAL  109
-#define STATUS_REX_MLS_CLEAR  108
-#define STATUS_REX_MLS_RHOST  107
-#define STATUS_REX_MLS_DOMIN  106
 
 #define REX_FATAL_ERROR(s)     (((s) == STATUS_REX_NOVCL)               \
                                 || ((s) == STATUS_REX_NOSYM)            \
@@ -195,11 +191,7 @@ typedef enum {
                                 || ((s) == STATUS_REX_CWD)              \
                                 || ((s) == STATUS_REX_PTY)              \
                                 || ((s) == STATUS_REX_VCL_INIT)         \
-                                || ((s) == STATUS_REX_VCL_SPAWN)        \
-                                || ((s) == STATUS_REX_MLS_INVAL)        \
-                                || ((s) == STATUS_REX_MLS_CLEAR)        \
-                                || ((s) == STATUS_REX_MLS_RHOST)        \
-                                || ((s) == STATUS_REX_MLS_DOMIN))
+                                || ((s) == STATUS_REX_VCL_SPAWN))
 
 #define   REXF_USEPTY   0x00000001
 #define   REXF_CLNTDIR  0x00000002

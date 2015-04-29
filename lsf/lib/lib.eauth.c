@@ -1,4 +1,5 @@
-/* $Id: lib.eauth.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +23,6 @@
 #include <sys/wait.h>
 #include <pwd.h>
 #include "lib.h"
-#include "mls.h"
 #include "../res/nios.h"
 #include "../res/resout.h"
 #include "lproto.h"
@@ -221,7 +221,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
                 exit(-1);
             }
 
-            if (lsfSetUid(pw->pw_uid) < 0) {
+            if (setuid(pw->pw_uid) < 0) {
                 ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "setuid", (int)pw->pw_uid);
                 exit(-1);
             }
@@ -248,7 +248,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
             myargv[1] = "-s";
             myargv[2] = NULL;
 
-            lsfExecvp(myargv[0], myargv);
+            execvp(myargv[0], myargv);
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp", myargv[0]);
             exit(-1);
         }
