@@ -23,7 +23,7 @@
 
 /* Include all Unix and openlava base definition.
  */
-#include <lsf.h>
+#include "../lsf/lsf.h"
 
 #define _PATH_NULL      "/dev/null"
 

@@ -22,13 +22,17 @@
  */
 int (*funtest[])(int) =
 {
-    test0, test1, test2, test3, test4, test5, test6, NULL
+    test0, test1, test2, test3, test4, test5, test6,
+    test7, test8, test9, test10, test11, test12,
+    test13, test14, test15, test16, test17, test18,
+    test19, test20, NULL
 };
 
 int
 main(int argc, char **argv)
 {
     int num;
+    int num2;
     int n;
     int cc;
     int ok;
@@ -36,7 +40,6 @@ main(int argc, char **argv)
     struct timeval tv;
     struct timeval tv2;
 
-    printf("Start pid: %d\n", getpid());
 
     gettimeofday(&tv, NULL);
 
@@ -45,6 +48,15 @@ main(int argc, char **argv)
     if (argv[1]) {
         num = atoi(argv[1]);
     }
+
+    num2 = sizeof(funtest)/sizeof(funtest[0]);
+    num2 = num2 - 2; /* account for NULL and 0 */
+    if (num > num2) {
+        printf("We have only %d tests\n", num2);
+        return -1;
+    }
+
+    printf("Start pid: %d\n", getpid());
 
     if (num > -1) {
         (*funtest[num])(num);

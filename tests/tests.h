@@ -19,6 +19,7 @@
 #define _OL_TESTS_
 
 #include "../lsf/lsf.h"
+#include "../lsbatch/lsbatch.h"
 
 extern int test0(int);
 extern int test1(int);
@@ -27,5 +28,19 @@ extern int test3(int);
 extern int test4(int);
 extern int test5(int);
 extern int test6(int);
+extern int test7(int);
+extern int test8(int);
+extern int test9(int);
+extern int test10(int);
+extern int test11(int);
+extern int test12(int);
+extern int test13(int);
+extern int test14(int);
+extern int test15(int);
+extern int test16(int);
+extern int test17(int);
+extern int test18(int);
+extern int test19(int);
+extern int test20(int);
 
 #endif

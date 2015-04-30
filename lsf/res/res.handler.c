@@ -2487,8 +2487,6 @@ childPty(struct client *cli_ptr, int *pty, int *sv, char *pty_name, int echoOff)
 
 }
 
-
-
 static char *
 stripHomeUnix(const char *curdir, const char *home)
 {
@@ -2499,28 +2497,6 @@ stripHomeUnix(const char *curdir, const char *home)
         if (curdir[hlen] == '\0') {
             curdir += hlen;
         } else if (curdir[hlen] == '/') {
-            curdir += hlen + 1;
-        } else {
-            curdir = NULL;
-        }
-    } else {
-        curdir = NULL;
-    }
-
-    return (char*)curdir;
-}
-
-
-static char *
-stripHomeNT(const char *curdir, const char *home)
-{
-    int hlen = strlen(home);
-
-
-    if (strncasecmp(home, curdir, hlen) == 0) {
-        if (curdir[hlen] == '\0') {
-            curdir += hlen;
-        } else if ((curdir[hlen] == '/') || (curdir[hlen] == '\\')) {
             curdir += hlen + 1;
         } else {
             curdir = NULL;

@@ -2448,22 +2448,23 @@ static void
 postSubMsg(struct submit *req, LS_LONG_INT jobId, struct submitReply *reply)
 {
 
-
-
     if ((req->options & SUB_QUEUE) || (req->options & SUB_RESTART)) {
-        if(getenv("BSUB_STDERR"))
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,400, "Job <%s> is submitted to queue <%s>.\n")),  /* catgets 400 */
-                    lsb_jobid2str(jobId),  reply->queue);
+
+       if (getenv("BSUB_STDERR"))
+            fprintf(stderr, "\
+Job <%s> is submitted to queue <%s>.\n", lsb_jobid2str(jobId),  reply->queue);
         else
-            fprintf(stdout, (_i18n_msg_get(ls_catd,NL_SETN,400, "Job <%s> is submitted to queue <%s>.\n")),  /* catgets 400 */
-                    lsb_jobid2str(jobId),  reply->queue);
+            fprintf(stdout, "\
+Job <%s> is submitted to queue <%s>.\n", lsb_jobid2str(jobId),  reply->queue);
     } else {
         if (getenv("BSUB_STDERR"))
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,401, "Job <%s> is submitted to default queue <%s>.\n")), /* catgets 401 */
-                    lsb_jobid2str(jobId), reply->queue);
+            fprintf(stderr, "\
+Job <%s> is submitted to default queue <%s>.\n", lsb_jobid2str(jobId),
+                    reply->queue);
         else
-            fprintf(stdout, (_i18n_msg_get(ls_catd,NL_SETN,401, "Job <%s> is submitted to default queue <%s>.\n")), /* catgets 401 */
-                    lsb_jobid2str(jobId), reply->queue);
+            fprintf(stdout, "\
+Job <%s> is submitted to default queue <%s>.\n", lsb_jobid2str(jobId),
+                    reply->queue);
     }
 
     fflush(stdout);
@@ -2471,12 +2472,10 @@ postSubMsg(struct submit *req, LS_LONG_INT jobId, struct submitReply *reply)
     prtBETime_(req);
 
     if (req->options2 & SUB2_BSUB_BLOCK)
-        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,402, "<<Waiting for dispatch ...>>\n")));  /* catgets 402 */
+        fprintf(stderr, "<<Waiting for dispatch ...>>\n");
 
     if (req->options & SUB_INTERACTIVE)
-        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,402, "<<Waiting for dispatch ...>>\n")));
-
-
+        fprintf(stderr, "<<Waiting for dispatch ...>>\n");
 }
 
 
@@ -2485,23 +2484,20 @@ prtBETime_(struct submit *req)
 {
     char *sp;
 
-    if (logclass & (LC_TRACE | LC_EXEC | LC_SCHED))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
-
     if (req->beginTime > 0) {
-        sp = _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T_Y, &req->beginTime);
-        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,404, "Job will be scheduled after %s\n")), sp);  /* catgets 404 */
+        sp = ctime(&req->beginTime);
+        sp[24] = '\0';
+        fprintf(stderr, "Job will be scheduled after %s\n", sp);
     }
     if (req->termTime > 0) {
-        sp = _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T_Y, &req->termTime);
-        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,405, "Job will be terminated by %s\n")), sp);  /* catgets 405 */
+        sp = ctime(&req->termTime);
+        sp[24] = '\0';
+        fprintf(stderr, "Job will be terminated by %s\n", sp);
     }
 }
 
-
-
 int
-gettimefor (char *toptarg, time_t *tTime)
+gettimefor(char *toptarg, time_t *tTime)
 {
     struct tm *tmPtr;
     char *cp;
