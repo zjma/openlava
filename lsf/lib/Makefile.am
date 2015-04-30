@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2015 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
@@ -9,7 +9,7 @@ AM_CPPFLAGS += -I../
 lib_LTLIBRARIES = liblsf.la
 
 liblsf_la_SOURCES = \
-lib.channel.c lib.err.c lib.limits.c lib.rcp.c lib.so.c lib.xdr.c \
+lib.channel.c lib.err.c lib.limits.c lib.rcp.c lib.xdr.c \
 lib.comm.c lib.errno.c lib.load.c lib.rdwr.c lib.sock.c lib.xdrlim.c \
 lib.conf.c lib.esub.c lib.lsf.c lib.res.c lib.syntax.c lib.xdrmisc.c \
 lib.confmisc.c lib.misc.c lib.resctrl.c lib.syslog.c lib.xdrnio.c \
@@ -22,5 +22,5 @@ lib.eauth.c lib.initenv.c lib.priority.c lib.rwait.c lib.wconf.c \
 lib.eligible.c lib.lim.c lib.queue.c lib.sig.c lib.words.c \
 lib.channel.h lib.h lib.osal.h lib.pim.h  lib.rcp.h lib.table.h \
 lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \
-lib.rf.h lib.so.h lib.words.h lib.xdrlim.h lproto.h
+lib.rf.h lib.words.h lib.xdrlim.h lproto.h
 liblsf_la_LDFLAGS =  -no-undefined -version-info 0:1

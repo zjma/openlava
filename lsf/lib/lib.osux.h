@@ -126,7 +126,7 @@ procStart_( char* argv[],
             }
             if(startInfo->userName) {
                 
-		if(NULL == (upswd = getpwlsfuser_(startInfo->userName))) {
+		if(NULL == (upswd = getpwnam(startInfo->userName))) {
 		    return ERR_BAD_ARG;
 		}
 		if(-1 == (setuid(upswd->pw_uid))) {

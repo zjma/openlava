@@ -203,8 +203,8 @@ userok(int s, struct sockaddr_in *from, char *hostname,
     if (debug) {
         char lsfUserName[MAXLSFNAMELEN];
 
-        if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
+        if (getUser(lsfUserName, sizeof(lsfUserName)) < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
             return (FALSE);
         }
         if (strcmp(lsfUserName, auth->lsfUserName) != 0) {

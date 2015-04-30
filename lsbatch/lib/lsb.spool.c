@@ -764,7 +764,7 @@ cpRemoteFiles(
     lsXfer.szSourceArg = putstr_(localSrcFileFullPath);
 
 
-    if (getLSFUser_(lsfUserName, MAXLINELEN) != 0) {
+    if (getUser(lsfUserName, MAXLINELEN) != 0) {
 
         ls_donerex();
         goto Error;

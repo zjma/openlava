@@ -274,7 +274,7 @@ remoteOutput(int fidx, char **disOut, char *exHost, char *fname,
 
 #   define RSHCMD "rsh"
 
-    if ((getLSFUser_(lsfUserName, MAXLINELEN) == 0)
+    if ((getUser(lsfUserName, MAXLINELEN) == 0)
 			&& strcmp(lsfUserName, execUsername)) {
 
 

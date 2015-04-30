@@ -139,8 +139,8 @@ static void setdefaults(void)
     n = strlen(logfile);
     strncat(logfile, localHost, MAX_PATH - n);
 
-    if (getLSFUser_(lsfUserName, MAX_LOGIN + 1) != 0) {
-        ls_perror("getLSFUser_");
+    if (getUser(lsfUserName, MAX_LOGIN + 1) != 0) {
+        ls_perror("getUser");
         return;
     }
 

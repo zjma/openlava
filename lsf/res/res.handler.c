@@ -302,7 +302,7 @@ doacceptconn(void)
 
     setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&linstr, sizeof(linstr));
 
-    if ((pw = getpwlsfuser_(auth.lsfUserName)) == NULL) {
+    if ((pw = getpwnam(auth.lsfUserName)) == NULL) {
         char tempBuffer[1024];
         sprintf(tempBuffer, "%s@%s", auth.lsfUserName, sockAdd2Str_(&from));
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "getpwnam", tempBuffer);
@@ -2543,7 +2543,6 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
     char val[MAXPATHLEN];
     int i, maxfds, lastUnusedFd;
     char *curdir = NULL;
-    bool_t fromNT;
     struct passwd  *pwdHome;
     int uid;
 
@@ -2597,72 +2596,40 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
                   "LS_SUBCWD", val);
     }
 
-#ifdef INTER_DAEMON_AUTH
-
-    if (getenv("LSF_EAUTH_AUX_DATA") != NULL) {
-        if (setCliEnv(cli_ptr, "LSF_EAUTH_AUX_DATA",
-                      getenv("LSF_EAUTH_AUX_DATA")) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "setenv",
-                      "LSF_EAUTH_AUX_DATA", getenv("LSF_EAUTH_AUX_DATA"));
-        }
-    }
-#endif
-
-
-
-
-
     environ = cli_ptr->env;
 
+    if (resParams[LSF_BINDIR].paramValue != NULL) {
+        char *tmppath = NULL;
+        int len;
+        char *envpath;
+        int cc = TRUE;
 
-    if ((getenv("WINDIR") != NULL) || (getenv("windir") != NULL)) {
-        char tmppath[MAXPATHLEN];
+        envpath = getenv("PATH");
+        if (envpath != NULL) {
 
-        fromNT = TRUE;
-        sprintf(tmppath,"/bin:/usr/bin:/sbin:/usr/sbin");
-        if (resParams[LSF_BINDIR].paramValue != NULL) {
-            strcat(tmppath,":");
-            strcat(tmppath,resParams[LSF_BINDIR].paramValue);
+            len = strlen(resParams[LSF_BINDIR].paramValue);
+            cc  = strncmp(envpath,resParams[LSF_BINDIR].paramValue, len);
+            if (cc != 0)
+                len += strlen(envpath) + 2;
+        } else {
+            len = strlen(resParams[LSF_BINDIR].paramValue) +2;
         }
 
-        putEnv("PATH",tmppath);
-    } else {
-        fromNT = FALSE;
-        if (resParams[LSF_BINDIR].paramValue != NULL) {
-
-
-
-            char *tmppath = NULL;
-            int len;
-            char *envpath;
-            int cc = TRUE;
-
-            envpath = getenv("PATH");
-            if ( envpath !=NULL) {
-
-                len = strlen(resParams[LSF_BINDIR].paramValue);
-                cc  = strncmp(envpath,resParams[LSF_BINDIR].paramValue,len);
-                if (cc != 0)
-                    len += strlen(envpath) + 2;
-            }else {
-                len = strlen(resParams[LSF_BINDIR].paramValue) +2;
+        if (cc != 0) {
+            tmppath = malloc(len);
+            if (tmppath == NULL) {
+                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
+                exit(-1);
             }
-            if (cc != 0) {
-                tmppath = malloc(len);
-                if (tmppath == NULL) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-                    exit(-1);
-                }
-                strcpy(tmppath, resParams[LSF_BINDIR].paramValue);
-                if (envpath != NULL) {
-                    strcat(tmppath,":");
-                    strcat(tmppath, envpath);
-                }
-                putEnv("PATH", tmppath);
-                FREEUP(tmppath);
-            }else {
-                putEnv("PATH", envpath);
+            strcpy(tmppath, resParams[LSF_BINDIR].paramValue);
+            if (envpath != NULL) {
+                strcat(tmppath,":");
+                strcat(tmppath, envpath);
             }
+            putEnv("PATH", tmppath);
+            FREEUP(tmppath);
+        } else {
+            putEnv("PATH", envpath);
         }
     }
 
@@ -2682,25 +2649,21 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
         putEnv("XLSF_UIDDIR", tmppath);
     }
 
-
     setEUid(0);
     setlimits(cmdmsg->lsfLimits);
 
-
     if (! debug) {
         int newPriority;
-        if ( rexecPriority != 0 ) {
+        if (rexecPriority != 0) {
 
             newPriority = rexecPriority;
             if (cmdmsg->priority > rexecPriority) {
                 newPriority = cmdmsg->priority;
             }
-        }
-        else {
+        } else {
 
             newPriority = cmdmsg->priority;
         }
-
 
         newPriority = newPriority - (-20);
         if (ls_setpriority(newPriority) == FALSE) {
@@ -2747,7 +2710,6 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
         dup2(sv[1], 0);
         dup2(sv[1], 1);
 
-
         if (cmdmsg->options & REXF_STDERR) {
             if (setsockopt(err[1], SOL_SOCKET, SO_LINGER, (char *)&linger,
                            sizeof(struct linger)) < 0) {
@@ -2761,34 +2723,12 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
         close(sv[1]);
     }
 
-
-    if (debug != 2) {
-        if (fromNT) {
-            ls_syslog(LOG_DEBUG, "%s: Submission host is NT", fname);
-        } else {
-            ls_syslog(LOG_DEBUG, "%s: Submission host is UNIX", fname);
-        }
-    }
-
-
-    if (!fromNT) {
-        curdir = getenv("HOME");
-        if ( curdir == NULL ) {
-            pwdHome = getpwdirlsfuser_(cli_ptr->username);
-            if (debug != 2 && pwdHome == NULL ) {
-                ls_syslog(LOG_DEBUG, "%s: getpwnam failed for user %s",
-                          fname,cli_ptr->username);
-            }
-
-            if (pwdHome != NULL && pwdHome->pw_dir && pwdHome->pw_dir[0]) {
-                curdir = pwdHome->pw_dir;
-            }
-        }
-    } else {
-        pwdHome = getpwdirlsfuser_(cli_ptr->username);
+    curdir = getenv("HOME");
+    if (curdir == NULL) {
+        pwdHome = getpwnam(cli_ptr->username);
         if (debug != 2 && pwdHome == NULL ) {
             ls_syslog(LOG_DEBUG, "%s: getpwnam failed for user %s",
-                      fname,cli_ptr->username);
+                      fname, cli_ptr->username);
         }
 
         if (pwdHome != NULL && pwdHome->pw_dir && pwdHome->pw_dir[0]) {
@@ -2806,57 +2746,19 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
     }
 
 
-
     if (cmdmsg->options & REXF_CLNTDIR)
         curdir = cli_ptr->clntdir;
     else {
-        if (!fromNT) {
+        char *home = getenv("HOME");
 
-
-            char *home = getenv("HOME");
-
-            if ( home != NULL){
-                curdir = stripHomeUnix(cmdmsg->cwd, home);
-            }
-        } else {
-
-
-            char home[MAXPATHLEN];
-            char *homeshare = getenv("HOMESHARE");
-            char *homedrive = getenv("HOMEDRIVE");
-            char *homepath = getenv("HOMEPATH");
-
-
-            curdir = NULL;
-
-
-
-            if (homepath != NULL) {
-
-                if (homeshare != NULL) {
-                    sprintf(home, "%s%s", homeshare, homepath);
-                    curdir = stripHomeNT(cmdmsg->cwd, home);
-                }
-
-                if (curdir == NULL) {
-
-                    if (homedrive != NULL) {
-                        sprintf(home, "%s%s", homedrive, homepath);
-                        curdir = stripHomeNT(cmdmsg->cwd, home);
-                    }
-
-
-
-                }
-            }
+        if (home != NULL) {
+            curdir = stripHomeUnix(cmdmsg->cwd, home);
         }
-
 
         if (curdir == NULL || curdir[0] == '\0') {
 
             curdir = cmdmsg->cwd;
         }
-
 
         osConvertPath_(curdir);
     }
@@ -2902,10 +2804,8 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
     for (i = 1; i < NSIG; i++)
         Signal_(i, SIG_DFL);
 
-
     sigemptyset(&sigMask);
     sigprocmask(SIG_SETMASK, &sigMask, NULL);
-
 
     lastUnusedFd = 3;
 
@@ -2921,7 +2821,6 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
     }
 
 
-
     uid = setEUid(0);
     if (setuid(uid) < 0) {
         perror("setuid");
@@ -2930,16 +2829,13 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
 
     ls_closelog();
 
-
     execit(cmdmsg->argv, getenv("LSF_JOB_STARTER"), pid, -1, taskSock, FALSE);
 
     if (info != NULL) {
-
         Signal_(SIGTERM, SIG_DFL);
         kill(getpid(),SIGTERM);
     }
     exit(127);
-
 }
 
 static void
@@ -4784,8 +4680,8 @@ lsbJobStart(char **jargv, u_short retPort, char *host, int usePty)
     if (usePty) {
         uid_t uid;
 
-        if (getOSUid_(cli.username, &uid) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "getOSUid_",
+        if (getUid(cli.username, &uid) < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "getUid",
                       cli.username);
             resExit_(-1);
         }

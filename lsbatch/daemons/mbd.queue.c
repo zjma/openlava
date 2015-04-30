@@ -609,7 +609,7 @@ getCheckList(struct infoReq *qInfoReq, char **hostList, char **userList)
 
         if (strcmp(sp, "all") == 0)
             *userList = safeSave(sp);
-        else if ((pp = getpwlsfuser_(sp)) != NULL) {
+        else if ((pp = getpwnam(sp)) != NULL) {
             if (!isManager(sp) && pp->pw_uid != 0) {
 
                 *userList = safeSave(sp);

@@ -1092,7 +1092,7 @@ checkUsers (struct infoReq *req, struct userInfoReply *reply)
         if (hashEntryPtr != NULL) {
             uData = (struct uData *)hashEntryPtr->hData;
         } else {
-            if (getpwlsfuser_ (req->names[i]) == NULL) {
+            if (getpwnam (req->names[i]) == NULL) {
                 for (j = 0; j < numofugroups; j++) {
                     if (strcmp (req->names[i], usergroups[j]->group))
                         continue;

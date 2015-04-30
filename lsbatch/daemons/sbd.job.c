@@ -585,7 +585,6 @@ setJobEnv(struct jobCard *jp)
     char *eexecT, eexecTStr[100];
     char *eauthAuxData, eauthAuxDataStr[MAXPATHLEN];
     char shellFile[MAXFILENAMELEN];
-    char userName[MAXLINELEN];
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "setJobEnv: Job <%s> numEnv %d ...",
@@ -779,12 +778,7 @@ setJobEnv(struct jobCard *jp)
         putEnv("LSB_RESTART", val);
 
     putEnv("LSFUSER", jp->execUsername);
-
-    if (getOSUserName_(jp->execUsername, userName, MAXLINELEN) == 0) {
-        putEnv("USER", userName);
-    } else {
-        putEnv("USER", jp->execUsername);
-    }
+    putEnv("USER", jp->execUsername);
 
     sprintf(val, "%d", LSB_PRE_ABORT);
     putEnv("LSB_EXIT_PRE_ABORT", val);
@@ -2123,10 +2117,10 @@ addJob (struct jobSpecs *jobSpecs, int mbdVersion)
     } else {
 
 
-        if ((pw = getpwlsfuser_(jobSpecs->execUsername)) == NULL ||
+        if ((pw = getpwnam(jobSpecs->execUsername)) == NULL ||
             pw->pw_name == NULL) {
             ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jobSpecs->jobId), "getpwlsfuser_",
+                      lsb_jobid2str(jobSpecs->jobId), "getpwnam",
                       jobSpecs->execUsername);
             FREEUP (jp);
             return NULL;
@@ -3064,7 +3058,7 @@ acctMapTo(struct jobCard *jobCard)
             continue;
         }
 
-        if ((pw = getpwlsfuser_ (user)) == (struct passwd *)NULL)  {
+        if ((pw = getpwnam (user)) == (struct passwd *)NULL)  {
             if (logclass & LC_EXEC)
                 ls_syslog(LOG_DEBUG2,"%s: Account <%s> non-existent",fname,user);
             continue;
@@ -3426,7 +3420,7 @@ chPrePostUser(struct jobCard *jp)
                   jp->execGid);
     }
 
-    if (getOSUid_(jp->jobSpecs.prepostUsername, &prepostUid) < 0) {
+    if (getUid(jp->jobSpecs.prepostUsername, &prepostUid) < 0) {
         prepostUid = jp->jobSpecs.execUid;
     }
 
@@ -3446,7 +3440,6 @@ postJobSetup(struct jobCard *jp)
 {
     static char fname[] = "postJobSetup";
     struct hostent *hp;
-    char userName[MAXLINELEN];
 
     closeBatchSocket();
     sbdChildCloseChan (-1);
@@ -3477,15 +3470,8 @@ postJobSetup(struct jobCard *jp)
             return (-1);
         }
 
-
         putEnv ("LSFUSER", jp->execUsername);
-
-        if (getOSUserName_(jp->execUsername, userName, MAXLINELEN) == 0) {
-            putEnv("USER", userName);
-        } else {
-            putEnv("USER", jp->execUsername);
-        }
-
+        putEnv("USER", jp->execUsername);
         chuser(jp->jobSpecs.execUid);
 
         if (acctMapOk(jp) < 0) {

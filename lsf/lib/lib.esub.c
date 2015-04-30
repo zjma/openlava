@@ -81,7 +81,7 @@ runEClient_(struct lenData *ed, char **argv)
 {
     char lsfUserName[MAXLSFNAMELEN];
 
-    if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) < 0) {
+    if (getUser(lsfUserName, sizeof(lsfUserName)) < 0) {
         return -1;
     }
     return getEData(ed, argv, lsfUserName);
@@ -99,8 +99,8 @@ getEData(struct lenData *ed, char **argv, const char *lsfUserName)
 
     uid_t uid;
 
-    if (getOSUid_(lsfUserName, &uid) < 0) {
-        ls_syslog(LOG_DEBUG, I18N_FUNC_S_FAIL_MM, fname, "getOSUid_", lsfUserName);
+    if (getUid(lsfUserName, &uid) < 0) {
+        ls_syslog(LOG_DEBUG, I18N_FUNC_S_FAIL_MM, fname, "getUid", lsfUserName);
         return -1;
     }
 
@@ -261,8 +261,8 @@ runEexec_(char *option, int job, struct lenData *eexec, char *path)
             struct passwd *pw;
 
             if ((user = getenv("LSFUSER")) != NULL) {
-                if (getOSUid_(user, &uid) < 0) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "getOSUid_", user);
+                if (getUid(user, &uid) < 0) {
+                    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "getUid", user);
                     exit(-1);
                 }
             } else {
@@ -353,13 +353,13 @@ runEGroup_(char *type, char *gname)
     uid = getuid();
     if (uid == 0 && (managerIdStr = getenv("LSB_MANAGERID")) != NULL) {
 	uid = atoi(managerIdStr);
-        if (getLSFUserByUid_(uid, lsfUserName, sizeof(lsfUserName)) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_MM, fname, "getLSFUserByUid_", uid);
+        if (getUserByUid(uid, lsfUserName, sizeof(lsfUserName)) < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_MM, fname, "getUserByUid", uid);
             return NULL;
         }
     } else {
-        if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
+        if (getUser(lsfUserName, sizeof(lsfUserName)) < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
             return NULL;
         }
     }

@@ -143,7 +143,7 @@ main(int argc, char **argv)
     if (format != LONG_FORMAT && !(options & (HOST_NAME | PEND_JOB)))
         options |= NO_PEND_REASONS;
 
-    TIMEIT(0, (cc = getLSFUser_(lsfUserName, MAXLINELEN)), "getLSFUser_");
+    TIMEIT(0, (cc = getUser(lsfUserName, MAXLINELEN)), "getUser");
     if (cc != 0 ) {
         exit(-1);
     }
@@ -389,21 +389,14 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
     char *jobName, *pos;
     NAMELIST  *hostList = NULL;
     char tmpBuf[MAXLINELEN];
-    char osUserName[MAXLINELEN];
     int i = 0;
-
-    if (getOSUserName_(job->user, osUserName, MAXLINELEN) != 0) {
-        strncpy(osUserName, job->user, MAXLINELEN);
-        osUserName[MAXLINELEN - 1] = '\0';
-    }
 
     if (lsbParams[LSB_SHORT_HOSTLIST].paramValue && job->numExHosts > 1
         && strcmp(lsbParams[LSB_SHORT_HOSTLIST].paramValue, "1") == 0 ) {
         hostList = lsb_compressStrList(job->exHosts, job->numExHosts);
-        if (!hostList) {
 
+        if (!hostList)
             exit(99);
-        }
     }
 
     if (loadIndex == NULL)
@@ -457,7 +450,7 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
     if (job->jType == JGRP_NODE_ARRAY) {
         if (format != WIDE_FORMAT) {
             printf("%-7d  %-8.8s ", LSB_ARRAY_JOBID(job->jobId), job->submit.jobName);
-            printf("%8.8s ", osUserName);
+            printf("%8.8s ", job->user);
         }
         else {
             printf("%-7d  %s ", LSB_ARRAY_JOBID(job->jobId), job->submit.jobName);
@@ -484,13 +477,13 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
 
         TRUNC_STR(jobName, 20);
         printf("%-7d %-7.7s %-5.5s %-11.11s %-14.14s %-18.18s %s\n",
-               LSB_ARRAY_JOBID(job->jobId), osUserName, status,
+               LSB_ARRAY_JOBID(job->jobId), job->user, status,
                submitInfo->queue, job->fromHost,
                jobName, subtime);
     } else if (format != WIDE_FORMAT) {
         TRUNC_STR(jobName, 10);
         printf("%-7d %-7.7s %-5.5s %-10.10s %-11.11s %-11.11s %-10.10s %s\n",
-               LSB_ARRAY_JOBID(job->jobId), osUserName, status,
+               LSB_ARRAY_JOBID(job->jobId), job->user, status,
                submitInfo->queue, job->fromHost,
                exec_host,
                jobName, subtime);
@@ -708,8 +701,8 @@ isLSFAdmin(void)
     }
 
 
-    if (getLSFUser_(lsfUserName, MAXLINELEN) != 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
+    if (getUser(lsfUserName, MAXLINELEN) != 0) {
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
         return false;
     }
 

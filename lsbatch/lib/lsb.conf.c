@@ -1181,7 +1181,7 @@ do_Users(struct lsConf *conf, char *fname, int *lineNum, int options)
             }
             gp= getUGrpData(keylist[0].val);
 
-            pw = getpwlsfuser_(keylist[0].val);
+            pw = getpwnam(keylist[0].val);
 
 
 
@@ -1412,7 +1412,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
             }
 
             if (options != CONF_NO_CHECK && type == USER_GRP) {
-                pw = getpwlsfuser_(keylist[0].val);
+                pw = getpwnam(keylist[0].val);
 
                 if (!initUnknownUsers) {
                     initTab(&unknownUsers);
@@ -1651,7 +1651,7 @@ addUnixGrp (struct group *unixGrp, char *gname,
         return (NULL);
 
     while (unixGrp->gr_mem[++i] != NULL)  {
-        if ((pw = getpwlsfuser_(unixGrp->gr_mem[i]))) {
+        if ((pw = getpwnam(unixGrp->gr_mem[i]))) {
             if  (!addMember (gp, unixGrp->gr_mem[i], USER_GRP, fname, lineNum,
                              section, CONF_EXPAND, TRUE) && lsberrno == LSBE_NO_MEM) {
                 return (NULL);
@@ -1732,7 +1732,7 @@ addMember (struct groupInfoEnt *gp, char *word, int grouptype,
         }
 
         if (!subgrpPtr)
-            pw = getpwlsfuser_(myWord);
+            pw = getpwnam(myWord);
 
         if (!initUnknownUsers) {
             initTab(&unknownUsers);
@@ -3207,7 +3207,7 @@ parseGroups (char *linep, char *fname, int *lineNum, char *section,
                 FREEUP(myWord);
                 continue;
             }
-            pw = getpwlsfuser_(myWord);
+            pw = getpwnam(myWord);
             if (pw != NULL) {
                 if (!addMember(mygp, myWord, USER_GRP, fname,
                                *lineNum, section, options, checkAll) && lsberrno == LSBE_NO_MEM) {
@@ -5523,7 +5523,7 @@ parseAdmins(char *admins, int options, char *fname, int *lineNum)
                     goto Error;
                 continue;
             }
-        } else if ((pw = getpwlsfuser_(word))) {
+        } else if ((pw = getpwnam(word))) {
             if ((putIntoList (&expandAds, &len, pw->pw_name, I18N_IN_QUEUE_ADMIN)) == NULL)
                 goto Error;
             continue;

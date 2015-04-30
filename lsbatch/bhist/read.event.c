@@ -1626,8 +1626,8 @@ int bhistReqInit(struct bhistReq *bhistReq)
     bhistReq->searchTime[1] = -1;
 
     bhistReq->userId = getuid();
-    if (getLSFUser_(bhistReq->userName, MAX_LSB_NAME_LEN) != 0) {
-        fprintf(stderr, I18N_FUNC_FAIL, "bhistReqInit", "getLSFUser_");
+    if (getUser(bhistReq->userName, MAX_LSB_NAME_LEN) != 0) {
+        fprintf(stderr, I18N_FUNC_FAIL, "bhistReqInit", "getUser");
         return (-1);
     }
     return 0;

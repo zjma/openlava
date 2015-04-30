@@ -58,7 +58,7 @@ parseXferArg(char *arg, char **userName, char **hostName, char **fName)
 
     if (!tmp_ptr || *user_arg == '\0') {
 	char lsfUserName[MAXLSFNAMELEN];
-        if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) != 0) {
+        if (getUser(lsfUserName, sizeof(lsfUserName)) != 0) {
             free(freeup_tmp);
             return -1;
         }

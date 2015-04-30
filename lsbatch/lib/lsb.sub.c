@@ -1963,7 +1963,7 @@ getOtherParams (struct submit  *jobSubReq, struct submitReq *submitReq,
     } else
         submitReq->nxf = 0;
 
-    if ((pw = getpwdirlsfuser_(auth->lsfUserName)) == NULL) {
+    if ((pw = getpwnam(auth->lsfUserName)) == NULL) {
         lsberrno = LSBE_SYS_CALL;
         return -1;
     }
@@ -1974,11 +1974,8 @@ getOtherParams (struct submit  *jobSubReq, struct submitReq *submitReq,
         return -1;
     }
 
-
     for (i = 0; pw->pw_dir[i] != '\0' && submitReq->cwd[i] == pw->pw_dir[i];
          i++);
-
-
 
     if ((i != 0) && (pw->pw_dir[i] == '\0')) {
         if (submitReq->cwd[i] == '\0')
@@ -2012,7 +2009,7 @@ acctMapGet(int *fail, char *lsfUserName)
     struct passwd *pw;
     struct stat statbuf;
 
-    if ((pw = getpwdirlsfuser_(lsfUserName)) == NULL)
+    if ((pw = getpwnam(lsfUserName)) == NULL)
         return (NULL);
 
     strcpy(hostfn, pw->pw_dir);
@@ -2086,7 +2083,7 @@ getUserInfo(struct submitReq *submitReq, struct submit *jobSubReq)
         int lsberrno;
     } err;
 
-    if (getLSFUser_(lsfUserName, MAXLINELEN) != 0) {
+    if (getUser(lsfUserName, MAXLINELEN) != 0) {
         return -1;
     }
 

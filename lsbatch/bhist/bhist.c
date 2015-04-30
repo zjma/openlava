@@ -320,7 +320,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 else if ((bhistReq->options & OPT_ALLUSERS) != OPT_ALLUSERS)
                 {
                     bhistReq->options |= OPT_USER;
-                    if ((pwPtr = getpwlsfuser_(optarg)) != NULL) {
+                    if ((pwPtr = getpwnam(optarg)) != NULL) {
                         bhistReq->userId = pwPtr->pw_uid;
                     } else {
                         bhistReq->userId = -1;
@@ -1047,24 +1047,16 @@ displayhist(struct bhistReq *bhistReq)
             }
             else {
                 char *jobName, *pos;
-                char osUserName[MAXLINELEN];
                 jobName = job->submit.jobName;
                 if ((pos = strchr(jobName, '[')) && LSB_ARRAY_IDX(job->jobId)) {
                     *pos = '\0';
                     sprintf(jobName, "%s[%d]", jobName, LSB_ARRAY_IDX(job->jobId)
                         );
                 }
+
 	        TRUNC_STR(jobName, 8);
-
-
-                if (getOSUserName_(jobRecord->job->user, osUserName,
-                                   MAXLINELEN) != 0) {
-                    strncpy(osUserName, job->user, MAXLINELEN);
-                    osUserName[MAXLINELEN - 1] = '\0';
-                }
-
 	        printf("%-7.7s %-7.7s %-9.9s %-8.0f%-8.0f%-8.0f%-8.0f%-8.0f%-8.0f%-10.0f\n",
-                       lsb_jobid2str(job->jobId), osUserName,
+                       lsb_jobid2str(job->jobId), jobRecord->job->user,
 		       jobName, NegtoZero(pendTime),
 		       NegtoZero(pendSuspTime), NegtoZero(runTime),
 		       NegtoZero(usrSuspTime), NegtoZero(sysSuspTime),
@@ -1880,7 +1872,7 @@ getUserName(int userId)
 {
     static char lsfUserName[MAXLINELEN];
 
-    if (getLSFUserByUid_(userId, lsfUserName, MAXLINELEN) == 0)
+    if (getUserByUid(userId, lsfUserName, MAXLINELEN) == 0)
         return (lsfUserName);
     else
         return ((_i18n_msg_get(ls_catd,NL_SETN,3220, "unknown"))); /* catgets  3220  */

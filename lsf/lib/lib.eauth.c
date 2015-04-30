@@ -39,8 +39,8 @@ getAuth_(struct lsfAuth *auth, char *host)
 {
     auth->uid = getuid();
 
-    if (getLSFUser_(auth->lsfUserName, sizeof(auth->lsfUserName)) < 0) {
-        ls_syslog(LOG_DEBUG, I18N_FUNC_FAIL_MM, "getAuth", "getLSFUser_");
+    if (getUser(auth->lsfUserName, sizeof(auth->lsfUserName)) < 0) {
+        ls_syslog(LOG_DEBUG, I18N_FUNC_FAIL_MM, "getAuth", "getUser");
         lserrno = LSE_BADUSER;
         return -1;
     }
@@ -57,7 +57,7 @@ getAuth_(struct lsfAuth *auth, char *host)
     } else
         auth->kind = CLIENT_SETUID;
 
-    return (0);
+    return 0;
 }
 
 #define EAUTHNAME "eauth"
@@ -216,8 +216,8 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
             char *myargv[3];
             struct passwd *pw;
 
-            if ((pw = getpwlsfuser_(user)) == (struct passwd *)NULL) {
-                ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "getpwlsfuser_", user);
+            if ((pw = getpwnam(user)) == (struct passwd *)NULL) {
+                ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "getpwnam", user);
                 exit(-1);
             }
 
@@ -344,9 +344,9 @@ getLSFAdmin(void)
     lsfUserName = (clusterInfo->nAdmins == 0 ? clusterInfo->managerName :
                    clusterInfo->admins[0]);
 
-    if ((pw = getpwlsfuser_(lsfUserName)) == NULL) {
+    if ((pw = getpwnam(lsfUserName)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
-                  fname, "getpwlsfuser_", lsfUserName);
+                  fname, "getpwnam", lsfUserName);
         return (NULL);
     }
 

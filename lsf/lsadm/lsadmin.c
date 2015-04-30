@@ -435,7 +435,7 @@ checkPerm(void)
     char username[128];
     struct passwd *pw;
 
-    if (getLSFUser_(username, sizeof(username)) < 0) {
+    if (getUser(username, sizeof(username)) < 0) {
         return -1;
     }
 

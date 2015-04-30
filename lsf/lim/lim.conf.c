@@ -1791,7 +1791,7 @@ readCluster(int checkMode)
         clusAdminIds[0] = 0;
         nClusAdmins = 1;
         clusAdminNames = malloc(sizeof (char *));
-        getLSFUserByUid_(0, rootName, sizeof(rootName));
+        getUserByUid(0, rootName, sizeof(rootName));
         clusAdminNames[0] = putstr_(rootName);
     }
 
@@ -1984,8 +1984,8 @@ domanager (FILE *clfp, char *lsfile, int *LineNum, char *secName)
         nClusAdmins = 1;
         clusAdminIds = (int *) malloc (sizeof (int));
         clusAdminGids = (int *) malloc (sizeof (int));
-        if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
+        if (getUser(lsfUserName, sizeof(lsfUserName)) < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
             return -1;
         }
         clusAdminIds[0] = getuid();
@@ -4178,7 +4178,7 @@ getAdmins (char *line, char *lsfile, int *LineNum, char *secName)
 
     sp = line;
     while ((word = getNextWord_(&sp)) != NULL) {
-        if ((pw = getpwlsfuser_(word)) != NULL) {
+        if ((pw = getpwnam(word)) != NULL) {
             if (putInLists (word, &admins, &numAds, forWhat) < 0)
                 return(&admins);
         } else if ((unixGrp = getgrnam(word)) != NULL) {

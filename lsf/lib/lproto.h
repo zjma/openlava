@@ -357,7 +357,7 @@ extern int getLogClass_ (char *, char *);
 extern int getLogMask(char **, char *);
 extern void ls_openlog(const char *, const char *, int, char *);
 extern void ls_closelog(void);
-extern int  ls_setlogmask(int maskpri);
+extern int  ls_setlogmask(int);
 
 extern void initkeylist(struct keymap *, int, int, struct lsInfo *);
 extern void freekeyval(struct keymap *);
@@ -381,16 +381,8 @@ extern int removeUtmpEntry(pid_t);
 extern int createSpoolSubDir(const char *);
 
 
-extern struct passwd *getpwlsfuser_(const char *lsfUserName);
-extern struct passwd *getpwdirlsfuser_(const char *lsfUserName);
-
-extern int getLSFUser_(char *lsfUserName, unsigned int lsfUserNameSize);
-extern int getLSFUserByName_(const char *osUserName,
-                             char *lsfUserName, unsigned int lsfUserNameSize);
-extern int getLSFUserByUid_(uid_t uid, char *lsfUserName, unsigned int lsfUserNameSize);
-
-extern int getOSUserName_(const char *lsfUserName,
-                          char *osUserName, unsigned int osUserNameSize);
-extern int getOSUid_(const char *lsfUserName, uid_t *uid);
+extern int getUser(char *, unsigned int);
+extern int getUserByUid(uid_t, char *, unsigned int);
+extern int getUid(const char *lsfUserName, uid_t *uid);
 
 #endif

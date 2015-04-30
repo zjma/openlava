@@ -141,9 +141,9 @@ printUserName(void)
     char *encUsername;
     char dataBuff[1024];
 
-    if (getLSFUser_(lsfUserName, sizeof(lsfUserName)) < 0) {
+    if (getUser(lsfUserName, sizeof(lsfUserName)) < 0) {
 #if defined(DEBUG)
-        fprintf(logfp, "getLSFUser_ failed: %s!\n", ls_sysmsg());
+        fprintf(logfp, "getUser failed: %s!\n", ls_sysmsg());
 #endif   
         return(-1);   
     }

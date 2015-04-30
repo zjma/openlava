@@ -118,7 +118,7 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
     }
 
     if (userName == NULL ) {
-        TIMEIT(0, (cc = getLSFUser_(lsfUserName, MAXLINELEN)), "getLSFUser_");
+        TIMEIT(0, (cc = getUser(lsfUserName, MAXLINELEN)), "getUser");
         if (cc  != 0) {
             return (NULL);
         }

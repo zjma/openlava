@@ -95,11 +95,11 @@ lsb_peekjob (LS_LONG_INT jobid)
 	    free(reply_buf);
 	}
 	
-	if (getLSFUser_(lsfUserName, MAXLINELEN) != 0) {
+	if (getUser(lsfUserName, MAXLINELEN) != 0) {
 	    return(NULL);
 	}
 
-	if ((pw = getpwdirlsfuser_(lsfUserName)) == NULL) {
+	if ((pw = getpwnam(lsfUserName)) == NULL) {
 	    lsberrno = LSBE_SYS_CALL;
 	    return(NULL);
 	}

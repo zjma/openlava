@@ -982,7 +982,7 @@ addMember(struct gData *groupPtr,
     if (grouptype == USER_GRP) {
         subgrpPtr = getGrpData (tempUGData, word, nTempUGroups);
         if (!subgrpPtr)
-            TIMEIT(0, pw = getpwlsfuser_(word), "addMemeber_getpwnam");
+            TIMEIT(0, pw = getpwnam(word), "addMemeber_getpwnam");
 
         isgrp = TRUE;
         if (pw != NULL) {
@@ -1101,7 +1101,7 @@ parseAUids (struct qData *qp, char *line)
         if (strcmp (word, "all") == 0) {
             setAllusers (qp, &admins);
             return;
-        } else if ((pw = getpwlsfuser_(word))) {
+        } else if ((pw = getpwnam(word))) {
             if (putInLists (word, &admins, &numAds, forWhat) < 0) {
                 callFail = TRUE;
                 break;
@@ -1281,7 +1281,7 @@ parseGroups (int groupType, struct gData **group, char *line, char *filename)
             continue;
         }
         if (groupType == USER_GRP) {
-            TIMEIT(0, pw = getpwlsfuser_(word), "parseGroups_getpwnam");
+            TIMEIT(0, pw = getpwnam(word), "parseGroups_getpwnam");
             if (pw != NULL) {
                 h_addEnt_(&mygp->memberTab, word, NULL);
                 continue;
@@ -1695,7 +1695,7 @@ addUnixGrp (struct group *unixGrp, char *grpName,
     }
     gp = addGroup (groups, grpTemp, ngroups);
     while (unixGrp->gr_mem[++i] != NULL)  {
-        if ((pw = getpwlsfuser_(unixGrp->gr_mem[i])))
+        if ((pw = getpwnam(unixGrp->gr_mem[i])))
             addMember (gp, unixGrp->gr_mem[i], USER_GRP, filename,
                        groups, ngroups);
         else {
@@ -1739,11 +1739,11 @@ getClusterData(void)
         nManagers = 1;
         lsbManagers = my_malloc(sizeof (char *), fname);
         lsbManagers[0] = my_malloc(MAX_LSB_NAME_LEN, fname);
-        if (getLSFUser_(lsbManagers[0], MAX_LSB_NAME_LEN) == 0) {
+        if (getUser(lsbManagers[0], MAX_LSB_NAME_LEN) == 0) {
 
             managerIds = my_malloc (sizeof (uid_t), fname);
-            if (getOSUid_(lsbManagers[0], &managerIds[0]) != 0) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getOSUid_");
+            if (getUid(lsbManagers[0], &managerIds[0]) != 0) {
+                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUid");
                 if (! lsb_CheckMode)
                     mbdDie(MASTER_RESIGN);
                 else {
@@ -1753,7 +1753,7 @@ getClusterData(void)
                 managerIds[0] = -1;
             }
         } else {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getLSFUser_");
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
             mbdDie(MASTER_RESIGN);
         }
         if (!lsb_CheckMode)
@@ -1818,7 +1818,7 @@ setManagers (struct clusterInfo clusterInfo)
 
         lsbManagers[i] = safeSave (sp);
 
-        if ((pw = getpwlsfuser_ (sp)) != NULL) {
+        if ((pw = getpwnam (sp)) != NULL) {
             managerIds[i] = pw->pw_uid;
             if (numValid == 0) {
                 gid = pw->pw_gid;
@@ -3088,7 +3088,7 @@ updUserList(int mbdInitFlags)
             ent = h_nextEnt_(&next);
             continue;
 
-        } else if (getpwlsfuser_ (uData->user) != NULL) {
+        } else if (getpwnam (uData->user) != NULL) {
 
             if (defUser != NULL) {
 

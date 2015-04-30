@@ -384,7 +384,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
                 i = strlen(sp);
                 if (!strncmp(sp, jp->jobSpecs.cwd, i)) {
                     struct passwd *pw;
-                    pw = getpwdirlsfuser_(jp->execUsername);
+                    pw = getpwnam(jp->execUsername);
                     if (pw) {
                         strcpy(jp->jobSpecs.execCwd, pw->pw_dir);
                     }
@@ -606,7 +606,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
         }
 
 
-        if ((pw = getpwdirlsfuser_(jp->execUsername)) &&
+        if ((pw = getpwnam(jp->execUsername)) &&
             pw->pw_dir && isAbsolutePathExec(pw->pw_dir)) {
             if (chdir(pw->pw_dir) == 0) {
                 char homePath[MAXPATHLEN];
@@ -657,7 +657,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
     }
 
 
-    if ((pw = getpwdirlsfuser_(jp->execUsername)) &&
+    if ((pw = getpwnam(jp->execUsername)) &&
         pw->pw_dir && isAbsolutePathExec(pw->pw_dir)) {
 
         if (jp->jobSpecs.cwd[0] == '\0')
@@ -741,7 +741,7 @@ lsbatchDir(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
     }
 
 
-    pw = getpwdirlsfuser_(jp->execUsername);
+    pw = getpwnam(jp->execUsername);
 
     if ( (pw && pw->pw_dir && isAbsolutePathExec(pw->pw_dir))) {
         if (goodSpoolDir)

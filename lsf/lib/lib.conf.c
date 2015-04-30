@@ -1269,7 +1269,7 @@ getAdmins (char *line, char *fname, int *lineNum, char *secName, int lookupAdmin
         char *forWhat = "for LSF administrator";
 
         if (lookupAdmins) {
-            if ((pw = getpwlsfuser_(word)) != NULL) {
+            if ((pw = getpwnam(word)) != NULL) {
                 if (putInLists (word, &admins, &numAds, forWhat) < 0)
                     return(&admins);
             } else if ((unixGrp = getgrnam(word)) != NULL) {

@@ -85,7 +85,7 @@ lsb_merr (char *s)
         else
             die (SLAVE_FATAL);
     }
-    if (lsbManager == NULL || (getpwlsfuser_(lsbManager)) == NULL) {
+    if (lsbManager == NULL || (getpwnam(lsbManager)) == NULL) {
         if (lsbManager == NULL)
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8601,
                                              "%s: LSF administrator name is NULL"), /* catgets 8601 */
@@ -174,7 +174,7 @@ addr_process (char *adbuf, char *user, char *tohost, char *spec)
 }
 
 FILE *
-smail (char *to, char *tohost)
+smail(char *to, char *tohost)
 {
     char fname[] = "smail";
     FILE *fmail;
@@ -183,7 +183,6 @@ smail (char *to, char *tohost)
     char toaddr[256];
     char smcmd[500];
     char *sendmailp;
-    char osUserName[MAXLINELEN];
     uid_t userid;
 
     if (lsb_CheckMode)
@@ -195,25 +194,18 @@ smail (char *to, char *tohost)
         return stderr;
     }
 
-
-    if (getOSUserName_(to, osUserName, MAXLINELEN) != 0) {
-        strncpy(osUserName, to, MAXLINELEN);
-        osUserName[MAXLINELEN - 1] = '\0';
-    }
-
-
     if (debug > 2)
         return(stderr);
 
     if(pipe(maild) < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "pipe", osUserName);
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "pipe", to);
         return stderr;
     }
-    addr_process(toaddr, osUserName, tohost,
+    addr_process(toaddr, to, tohost,
                  daemonParams[LSB_MAILTO].paramValue);
     if (logclass & (LC_TRACE | LC_EXEC))
         ls_syslog(LOG_DEBUG1, "%s: user=%s host=%s toaddr=%s spec=%s",
-                  fname, osUserName, tohost,
+                  fname, to, tohost,
                   toaddr, daemonParams[LSB_MAILTO].paramValue);
 
     switch (pid = fork()) {
@@ -242,7 +234,7 @@ smail (char *to, char *tohost)
         case -1:
             close(maild[1]);
             close(maild[0]);
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fork", osUserName);
+            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fork", to);
             return stderr;
 
         default:
@@ -250,7 +242,7 @@ smail (char *to, char *tohost)
     }
     fmail = fdopen(maild[1], "w");
     if(fmail == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fdopen", osUserName);
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fdopen", to);
         close(maild[1]);
         return stderr;
     }
@@ -261,7 +253,7 @@ smail (char *to, char *tohost)
     if (ferror(fmail)) {
         fclose(fmail);
         ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "fprintf", "header",
-                  osUserName);
+                  to);
         return stderr;
     }
     return fmail;

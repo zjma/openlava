@@ -324,7 +324,7 @@ getManagerId(struct sbdPackage *sbdPackage)
     }
 
     for (i = 0; i < sbdPackage->nAdmins; i++) {
-        if ((pw = getpwlsfuser_(sbdPackage->admins[i])) != NULL) {
+        if ((pw = getpwnam(sbdPackage->admins[i])) != NULL) {
             lsbManager = safeSave(sbdPackage->admins[i]);
             managerId  = pw->pw_uid;
             break;
@@ -333,7 +333,7 @@ getManagerId(struct sbdPackage *sbdPackage)
 
     if (lsbManager == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: getpwlsfuser_() failed for LSF administrator defined in sbdPackage.\
+%s: getpwnam() failed for LSF administrator defined in sbdPackage.\
  Non uniform userid space?",
                   __func__);
         die(FATAL_ERR);
