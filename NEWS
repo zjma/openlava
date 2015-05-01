@@ -1,4 +1,10 @@
-Release notes for openlava versions
+Release notes for OpenLava versions
+
+4.0pre1
+=======
+
+-- Removed obsolete mls code and infrastructure simplifying user
+   management.
 
 3.0
 ====
