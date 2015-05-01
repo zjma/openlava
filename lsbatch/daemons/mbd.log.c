@@ -90,6 +90,9 @@ static int              createAcct0File(void);
 void                    log_timeExpired(int, time_t);
 static int canSwitch(struct eventRec *, struct jData *);
 static char *instrJobStarter1(char *, int, char *, char *, char *);
+static int streamEvent(struct eventRec *);
+static int countStream(char *);
+
 int                     nextJobId_t = 1;
 time_t                  dieTime;
 static char             elogFname[MAXFILENAMELEN];
@@ -212,6 +215,17 @@ init_log(void)
     chuser(managerId);
 
     sprintf(infoDir, "%s/logdir/info",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    if (mkdir(infoDir, 0700) == -1 && errno != EEXIST) {
+        chuser(batchId);
+        ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, infoDir);
+        mbdDie(MASTER_FATAL);
+    }
+
+    /* Create the stream directory.
+     */
+    sprintf(infoDir, "%s/logdir/stream",
             daemonParams[LSB_SHAREDIR].paramValue);
 
     if (mkdir(infoDir, 0700) == -1 && errno != EEXIST) {
@@ -1109,15 +1123,6 @@ replay_jobrequeue(char *filename, int lineNum)
         return (FALSE);
     }
     handleRequeueJob(jp, eventTime);
-
-
-
-
-
-
-
-
-
     jp->endTime   = 0;
 
     return (TRUE);
@@ -1334,7 +1339,7 @@ log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
 }
 
 int
-log_newjob(struct jData * job)
+log_newjob(struct jData *job)
 {
     static char             fname[] = "log_newjob";
 
@@ -1342,7 +1347,7 @@ log_newjob(struct jData * job)
 }
 
 static int
-log_jobdata(struct jData * job, char *fname1, int type)
+log_jobdata(struct jData *job, char *fname1, int type)
 {
     static char             fname[] = "log_jobdata";
     struct submitReq       *jobBill = &(job->shared->jobBill);
@@ -1396,6 +1401,7 @@ log_jobdata(struct jData * job, char *fname1, int type)
 
     for (j = 0; j < LSF_RLIM_NLIMITS; j++)
         jobNewLog->rLimits[j] = jobBill->rLimits[j];
+
     strcpy(jobNewLog->hostSpec, jobBill->hostSpec);
     if (jobNewLog->hostSpec[0] == '\0') {
         hostFactor = getHostFactor(jobBill->fromHost);
@@ -1857,7 +1863,7 @@ log_chkpnt(struct jData * jData, int ok, int flags)
 void
 log_jobsigact (struct jData *jData, struct statusReq *statusReq, int sigFlags)
 {
-    static char             fname[] = "log_jobsigact";
+    static char  fname[] = "log_jobsigact";
 
     if (openEventFile(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -2196,17 +2202,19 @@ putEventRec1(const char *fname)
     ret = 0;
 
     if (lsb_puteventrec(log_fp, logPtr) < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_EMSG_S,
-                  fname, "lsb_puteventrec", lsb_sysmsg());
+        ls_syslog(LOG_ERR, "\
+%s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
         ret = -1;
     }
+
+    streamEvent(logPtr);
 
     free(logPtr);
     chuser(managerId);
     cc = FCLOSEUP(&log_fp);
     chuser(batchId);
     if (cc < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fclose");
+        ls_syslog(LOG_ERR, "%s: fclose() failed: %m", __func__);
         ret = -1;
     }
 
@@ -2410,7 +2418,8 @@ checkAcctLog(void)
             }
         }
 
-        if ((!needArchive) && (acctArchiveInSize > 0) && (jbuf.st_size > (acctArchiveInSize*KILOBYTE))){
+        if ((!needArchive) && (acctArchiveInSize > 0)
+            && (jbuf.st_size > (acctArchiveInSize*KILOBYTE))){
             needArchive = 1;
         }
 
@@ -2552,7 +2561,6 @@ switch_log(void)
             continue;
         }
 
-
         eventTime = logPtr->eventTime;
 
         switch (logPtr->type) {
@@ -2561,8 +2569,7 @@ switch_log(void)
                 jobId = LSB_JOBID(logPtr->eventLog.jobNewLog.jobId,
                                   logPtr->eventLog.jobNewLog.idx);
                 break;
-            case EVENT_JOB_MODIFY2:
-            {
+            case EVENT_JOB_MODIFY2: {
                 struct idxList *idxListP;
                 int tmpJobId;
                 if (getJobIdIndexList(logPtr->eventLog.jobModLog.jobIdStr,
@@ -2652,10 +2659,11 @@ switch_log(void)
                 break;
         }
 
-
+        /* The head of the job array
+         */
         jarray = checkJobInCore(LSB_ARRAY_JOBID(jobId));
-
-
+        /* the job element
+         */
         jp = checkJobInCore(jobId);
 
         if ((preserved)
@@ -4136,19 +4144,18 @@ replay_jobforce(char* file, int line)
 
 }
 
-
 static int
 canSwitch(struct eventRec *logPtr, struct jData *jp)
 {
     if (jp) {
         if (jp->startTime > 0 && logPtr->eventTime < jp->startTime)
-            return(TRUE);
+            return TRUE;
         else
-            return(FALSE);
-    }
-    else
-        return(TRUE);
-    return(FALSE);
+            return FALSE;
+    } else
+        return TRUE;
+
+    return FALSE;
 }
 
 void
@@ -4204,15 +4211,15 @@ checkJobInCore(LS_LONG_INT jobId)
     struct listSet *ptr;
 
     if ((jp = getJobData(jobId)) != NULL)
-        return(jp);
+        return jp;
 
     for (ptr = voidJobList; ptr; ptr = ptr->next) {
         if (jobId == ((struct jData *)ptr->elem)->jobId ||
             jobId == LSB_ARRAY_JOBID(((struct jData *)ptr->elem)->jobId)) {
-            return((struct jData *)ptr->elem);
+            return (struct jData *)ptr->elem;
         }
     }
-    return(NULL);
+    return NULL;
 }
 
 static char *
@@ -4838,3 +4845,129 @@ checkDirAccess(const char *dir)
 
     return 0;
 }
+
+#define MAX_STREAM_RECORDS 10
+
+/* streamEvent()
+ *
+ * Write the lsb.stream and reset it every
+ * million records written. The stream file
+ * is an external interface to system events.
+ */
+static int
+streamEvent(struct eventRec *logPtr)
+{
+    static FILE *fp;
+    static int n;
+    static char streamFile[PATH_MAX];
+    static char streamFile2[PATH_MAX];
+    struct eventRec logPtr2;
+    char *mode;
+
+    if (fp == NULL) {
+
+        sprintf(streamFile, "%s/logdir/stream/lsb.stream.0",
+                daemonParams[LSB_SHAREDIR].paramValue);
+
+        mode = "w";
+        if (logPtr->type == EVENT_MBD_START) {
+            /* MBD starting let's count the records
+             * in the stream file to test.
+             */
+            n = countStream(streamFile);
+            if (n > 0) {
+                mode = "a";
+                /* This in theory should never happen unless
+                 * MBD dies unexpectedly not writing
+                 * EVENT_MBD_DIE
+                 */
+                if (n == MAX_STREAM_RECORDS)
+                    n = n - 1;
+            }
+        }
+
+        fp = fopen(streamFile, mode);
+        if (fp == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: failed to open stream %s %m", __func__, streamFile);
+            return -1;
+        }
+    }
+
+    if (lsb_puteventrec(fp, logPtr) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
+        return -1;
+    }
+
+    n = n + 1;
+
+    if ((n % MAX_STREAM_RECORDS) == 0) {
+
+        logPtr2.type = EVENT_STREAM_END;
+        sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);
+        logPtr2.eventTime = logPtr->eventTime;
+        logPtr2.eventLog.eos.numRecords = n;
+
+        if (lsb_puteventrec(fp, &logPtr2) < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
+            return -1;
+        }
+
+        sprintf(streamFile2, "%s/logdir/stream/lsb.stream.1",
+                daemonParams[LSB_SHAREDIR].paramValue);
+
+        fclose(fp);
+        fp = NULL;
+        n = 0;
+
+        if (rename(streamFile, streamFile2) != 0) {
+            ls_syslog(LOG_ERR, "\
+%s: rename() from %s to %s failed %m", __func__, streamFile, streamFile2);
+            /* Keep writing in the old file...
+             */
+            fp = fopen(streamFile, "a");
+            n = n + 1;
+            return -1;
+        }
+
+        fp = fopen(streamFile, mode);
+        if (fp == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: failed to open stream %s %m", __func__, streamFile);
+            return -1;
+        }
+    }
+
+    if (fp)
+        fflush(fp);
+
+    return 0;
+}
+
+/* countStream()
+ *
+ * Count records in the stream file
+ */
+static int
+countStream(char *file)
+{
+    FILE *fp;
+    int cc;
+    int n;
+
+    fp = fopen(file, "r");
+    if (fp == NULL)
+        return 0;
+
+    n = 0;
+    while ((cc = fgetc(fp)) != EOF) {
+        if (cc == '\n')
+            ++n;
+    }
+    fclose(fp);
+
+    return n;
+}
+

@@ -78,6 +78,7 @@ static int writeLogSwitch(FILE* , struct logSwitchLog*);
 static int writeJobForce(FILE* , struct jobForceRequestLog*);
 static int readJobForce(char *, struct jobForceRequestLog* );
 static int writeJobAttrSet(FILE* , struct jobAttrSetLog*);
+static int writeStreamEnd(FILE *, struct endStream *);
 static int readJobAttrSet(char *, struct jobAttrSetLog* );
 static void freeLogRec(struct eventRec *);
 struct eventRec * lsbGetNextJobEvent(struct eventLogHandle *,
@@ -1643,6 +1644,9 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
         case EVENT_LOG_SWITCH:
             etype = "LOG_SWITCH";
             break;
+        case EVENT_STREAM_END:
+            etype = "STREAM_END";
+            break;
         default:
             lsberrno = LSBE_UNKNOWN_EVENT;
             return -1;
@@ -1758,6 +1762,9 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
         case EVENT_LOG_SWITCH:
             lsberrno = writeLogSwitch(log_fp,
                                       &(logPtr->eventLog.logSwitchLog));
+            break;
+        case EVENT_STREAM_END:
+            lsberrno = writeStreamEnd(log_fp, &(logPtr->eventLog.eos));
             break;
     }
 
@@ -2565,6 +2572,15 @@ writeJobMsg(FILE *log_fp, struct jobMsgLog *jobMsgLog)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
+        return LSBE_SYS_CALL;
+
+    return LSBE_NO_ERROR;
+}
+
+static int
+writeStreamEnd(FILE *fp, struct endStream *eos)
+{
+    if (fprintf(fp, " %d \n", eos->numRecords) < 0)
         return LSBE_SYS_CALL;
 
     return LSBE_NO_ERROR;

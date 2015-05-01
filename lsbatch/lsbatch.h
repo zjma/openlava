@@ -122,6 +122,8 @@
 #define JOB_STAT_WAIT         (0x200)
 #define JOB_STAT_UNKWN        0x10000
 
+/* Event in the lsb.events file
+ */
 #define    EVENT_JOB_NEW          1
 #define    EVENT_JOB_START        2
 #define    EVENT_JOB_STATUS       3
@@ -144,7 +146,6 @@
 #define    EVENT_JOB_MSG_ACK      20
 #define    EVENT_JOB_REQUEUE      21
 #define    EVENT_JOB_SIGACT       22
-
 #define    EVENT_SBD_JOB_STATUS   23
 #define    EVENT_JOB_START_ACCEPT 24
 #define    EVENT_JOB_CLEAN        25
@@ -152,7 +153,7 @@
 #define    EVENT_LOG_SWITCH       27
 #define    EVENT_JOB_MODIFY2      28
 #define    EVENT_JOB_ATTR_SET     29
-#define    EVENT_UNUSED_30        30
+#define    EVENT_STREAM_END       30
 #define    EVENT_UNUSED_31        31
 #define    EVENT_UNUSED_32        32
 
@@ -1254,6 +1255,10 @@ struct jobForceRequestLog {
     char    userName[MAX_LSB_NAME_LEN];
 };
 
+struct endStream {
+    int numRecords;
+};
+
 union  eventLog {
     struct jobNewLog jobNewLog;
     struct jobStartLog jobStartLog;
@@ -1283,6 +1288,7 @@ union  eventLog {
     struct logSwitchLog logSwitchLog;
     struct jobModLog jobModLog;
     struct jobAttrSetLog jobAttrSetLog;
+    struct endStream eos;
 };
 
 
