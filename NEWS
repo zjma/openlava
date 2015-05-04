@@ -4,6 +4,7 @@ Release notes for openlava versions
 ====
 
 -- Fix bug in openlava.in, the variable err was incorrectly defined.
+-- Fix xdr version number bug in lsb.xdr.c
 
 3.0beta
 =======
