@@ -102,7 +102,7 @@ case "$opcode" in
         exit 1
         ;;
   'status')
-        err = 0
+        err=0
         PID=`pidof lim`
         check_ret_code
         echo "lim pid: <$PID>"
