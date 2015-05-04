@@ -193,14 +193,14 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
     if (!xdr_int(xdrs, &submitReq->userPriority))
         goto Error1;
 
-    /* From now on, openlava_xdr_version 3 we handle
+    /* From now on, OPENLAVA_XDR_VERSION 30 we handle
      * backward compatibility.
      */
 
     /* Library encode to daemon
      */
     if (xdrs->x_op == XDR_ENCODE
-        && hdr->version >= 3) {
+        && hdr->version >= 30) {
         if (!xdr_var_string(xdrs, &submitReq->userGroup))
             goto Error1;
     }
@@ -208,7 +208,7 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
     /* Daemon decode from library
      */
     if (xdrs->x_op == XDR_DECODE) {
-        if (hdr->version >= 3) {
+        if (hdr->version >= 30) {
             if (!xdr_var_string(xdrs, &submitReq->userGroup))
                 goto Error1;
         } else {

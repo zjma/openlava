@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -120,7 +121,7 @@ xdr_decisionReq(XDR *xdrs, struct decisionReq *decisionReqPtr,
 bool_t
 xdr_placeReply(XDR *xdrs, struct placeReply *placeRepPtr, struct LSFHeader *hdr)
 {
-    int i, status=FALSE;
+    int i, status = FALSE;
     static  char  *memp;
 
     if (!xdr_int(xdrs,&placeRepPtr->numHosts)) {
@@ -156,7 +157,7 @@ bool_t
 xdr_loadReply(XDR *xdrs, struct loadReply *loadReplyPtr, struct LSFHeader *hdr)
 {
     char *sp;
-    int  i, status=TRUE;
+    int  i, status = TRUE;
     static char *memp;
 
     if (!(xdr_int(xdrs, &loadReplyPtr->nEntry)
@@ -232,7 +233,7 @@ xdr_loadReply(XDR *xdrs, struct loadReply *loadReplyPtr, struct LSFHeader *hdr)
 bool_t
 xdr_jobXfer(XDR *xdrs, struct jobXfer *jobXferPtr, struct LSFHeader *hdr)
 {
-    int i, status=FALSE;
+    int i, status = FALSE;
     char *sp;
     static  char  *memp;
 
@@ -258,10 +259,10 @@ xdr_jobXfer(XDR *xdrs, struct jobXfer *jobXferPtr, struct LSFHeader *hdr)
 
 
     for (i = 0; i < jobXferPtr->numHosts; i++) {
-        status= xdr_arrayElement(xdrs,
-                                 (char *)&jobXferPtr->placeInfo[i],
-                                 hdr,
-                                 xdr_placeInfo);
+        status = xdr_arrayElement(xdrs,
+                                  (char *)&jobXferPtr->placeInfo[i],
+                                  hdr,
+                                  xdr_placeInfo);
         if (!status) {
             if (xdrs->x_op == XDR_DECODE)
                 FREEUP(memp);
@@ -318,7 +319,8 @@ xdr_hostInfoReply(XDR *xdrs, struct hostInfoReply *hostInfoReply,
     for (i=0; i<hostInfoReply->nHost;i++)  {
         status = xdr_arrayElement(xdrs,
                                   (char *)&hostInfoReply->hostMatrix[i],
-                                  hdr, xdr_shortHInfo, (char *)&hostInfoReply->nIndex);
+                                  hdr, xdr_shortHInfo,
+                                  (char *)&hostInfoReply->nIndex);
         if (!status) {
             if (xdrs->x_op == XDR_DECODE)
                 FREEUP(memp);
