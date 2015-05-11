@@ -1693,12 +1693,11 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
         jobSpoolDirLen = 4;
     }
 
-
     count = sizeof(struct parameterInfo) + strlen(paramInfo.defaultQueues)
         + strlen(paramInfo.defaultHostSpec)
         + strlen(paramInfo.defaultProject) + 100 + jobSpoolDirLen;
 
-    reply_buf = (char *) my_malloc(count, "do_paramInfoReq");
+    reply_buf = my_malloc(count, "do_paramInfoReq");
     xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
 
     initLSFHeader_(&replyHdr);

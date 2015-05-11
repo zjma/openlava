@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2011 - 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2011 - 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -299,8 +299,7 @@ lsb_readparam(struct lsConf *conf)
         freeParameterInfo ( pConf->param );
         FREEUP(pConf->param);
     } else {
-        if ((pConf = (struct paramConf *)malloc(sizeof(struct paramConf)))
-            == NULL) {
+        if ((pConf = malloc(sizeof(struct paramConf))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                       sizeof(struct paramConf));
             lsberrno = LSBE_CONF_FATAL;
@@ -309,15 +308,14 @@ lsb_readparam(struct lsConf *conf)
         pConf->param = NULL;
     }
     fname = conf->confhandle->fname;
-    if ((pConf->param = ( struct parameterInfo * ) malloc
-         (sizeof(struct parameterInfo))) == NULL) {
+    if ((pConf->param = malloc(sizeof(struct parameterInfo))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                   sizeof(struct parameterInfo));
         lsberrno = LSBE_CONF_FATAL;
         return (NULL);
     }
-    initParameterInfo(pConf->param);
 
+    initParameterInfo(pConf->param);
 
     conf->confhandle->curNode = conf->confhandle->rootNode;
     conf->confhandle->lineCount = 0;
@@ -406,6 +404,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         {"ACCT_ARCHIVE_SIZE", NULL, 0},
         {"ACCT_ARCHIVE_AGE", NULL, 0},
         {"MAX_PREEMPT_JOBS", NULL, 0},
+        {"MAX_STREAM_RECORDS", NULL, 0},
         {NULL, NULL, 0}
     };
 
@@ -736,6 +735,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                         case 35:
                             pConf->param->maxPreemptJobs = value;
                             break;
+                        case 36:
+                            pConf->param->maxStreamRecords = value;
+                            break;
                         default:
                             ls_syslog(LOG_ERR, "\
 %s: File%s in section Parameters ending at line %d: Impossible cases <%d>.",
@@ -831,6 +833,7 @@ initParameterInfo(struct parameterInfo *param)
     param->acctArchiveInDays = -1;
     param->acctArchiveInSize = -1;
     param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
+    param->maxStreamRecords = 0;
 }
 
 static void

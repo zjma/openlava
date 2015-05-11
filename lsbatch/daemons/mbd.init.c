@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -2106,10 +2106,10 @@ static void
 setDefaultParams(void)
 {
 
-    FREEUP (defaultQueues);
-    FREEUP (defaultHostSpec);
-    FREEUP (lsfDefaultProject);
-    FREEUP (pjobSpoolDir);
+    FREEUP(defaultQueues);
+    FREEUP(defaultHostSpec);
+    FREEUP(lsfDefaultProject);
+    FREEUP(pjobSpoolDir);
 
     msleeptime = DEF_MSLEEPTIME;
     sbdSleepTime = DEF_SSLEEPTIME;

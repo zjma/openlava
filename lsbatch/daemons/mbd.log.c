@@ -2207,7 +2207,8 @@ putEventRec1(const char *fname)
         ret = -1;
     }
 
-    streamEvent(logPtr);
+    if (mbdParams->maxStreamRecords > 0)
+        streamEvent(logPtr);
 
     free(logPtr);
     chuser(managerId);
@@ -2230,7 +2231,7 @@ logFinishedjob(struct jData *job)
     int                   i;
     float                 *hostFactor;
 
-    if ( IS_POST_FINISH(job->jStatus) ) {
+    if (IS_POST_FINISH(job->jStatus)) {
         return;
     }
 
@@ -4846,8 +4847,6 @@ checkDirAccess(const char *dir)
     return 0;
 }
 
-#define MAX_STREAM_RECORDS 10
-
 /* streamEvent()
  *
  * Write the lsb.stream and reset it every
@@ -4863,6 +4862,9 @@ streamEvent(struct eventRec *logPtr)
     static char streamFile2[PATH_MAX];
     struct eventRec logPtr2;
     char *mode;
+
+    if (mbdParams->maxStreamRecords == 0)
+        return 0;
 
     if (fp == NULL) {
 
@@ -4881,7 +4883,7 @@ streamEvent(struct eventRec *logPtr)
                  * MBD dies unexpectedly not writing
                  * EVENT_MBD_DIE
                  */
-                if (n == MAX_STREAM_RECORDS)
+                if (n == mbdParams->maxStreamRecords)
                     n = n - 1;
             }
         }
@@ -4902,7 +4904,7 @@ streamEvent(struct eventRec *logPtr)
 
     n = n + 1;
 
-    if ((n % MAX_STREAM_RECORDS) == 0) {
+    if ((n % mbdParams->maxStreamRecords) == 0) {
 
         logPtr2.type = EVENT_STREAM_END;
         sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);

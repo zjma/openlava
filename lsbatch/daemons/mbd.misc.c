@@ -1283,6 +1283,7 @@ checkParams(struct infoReq *req, struct parameterInfo *reply)
     reply->acctArchiveInDays = acctArchiveInDays;
     reply->acctArchiveInSize = acctArchiveInSize;
     reply->maxPreemptJobs = mbdParams->maxPreemptJobs;
+    reply->maxStreamRecords = mbdParams->maxStreamRecords;
 }
 
 void

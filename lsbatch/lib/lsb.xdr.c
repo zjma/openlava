@@ -446,6 +446,11 @@ xdr_parameterInfo(XDR *xdrs,
             return false;
     }
 
+    if (hdr->version >= 31) {
+        if (! xdr_int(xdrs, &paramInfo->maxStreamRecords))
+            return false;
+    }
+
     return true;
 }
 

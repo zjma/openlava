@@ -59,7 +59,7 @@ main (int argc, char **argv)
                 return -1;
         }
     }
-    if (!(paramInfo = lsb_parameterinfo (NULL, NULL, 0))) {
+    if (!(paramInfo = lsb_parameterinfo(NULL, NULL, 0))) {
 	lsb_perror(NULL);
         return -1;
     }
@@ -186,6 +186,11 @@ The maximum number of finished jobs that can be stored in current events file:\n
 
     printf("Maximum number of preempted jobs per cycle:\n");
     printf("    MAX_PREEMPT_JOBS = %d\n\n", reply->maxPreemptJobs);
+
+    if (reply->maxStreamRecords > 0) {
+        printf("Maximum number of records in lsb.stream file:\n");
+        printf("    MAX_STREAM_RECORDS = %d\n\n", reply->maxStreamRecords);
+    }
 }
 
 

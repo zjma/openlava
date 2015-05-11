@@ -833,6 +833,7 @@ struct parameterInfo {
     int acctArchiveInDays;
     int acctArchiveInSize;
     int maxPreemptJobs;
+    int maxStreamRecords;
 };
 
 
