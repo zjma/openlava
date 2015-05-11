@@ -382,7 +382,7 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
             ls_syslog(LOG_DEBUG2, "%s: hostId=%d, reason=%d reasonTb[%d]=%d",
                       fname, hostId, reason, i, reasonTb[i]);
         if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL)
-            strcpy(hostList, jInfoH->hostNames[hostId]);
+            strcpy(hostList, jInfoH->hostNames[hostId - 1]);
         else
             num = 1;
 
@@ -402,7 +402,7 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
             reasonTb[j] = 0;
             if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL) {
                 sprintf(hostList, "%s, %s", hostList,
-                        jInfoH->hostNames[hostIdJ]);
+                        jInfoH->hostNames[hostIdJ - 1]);
             } else
                 num++;
         }

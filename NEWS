@@ -5,6 +5,7 @@ Release notes for openlava versions
 
 -- Fix bug in openlava.in, the variable err was incorrectly defined.
 -- Fix xdr version number bug in lsb.xdr.c
+-- Fix hostID bug which prevented queue JL/H from working properly.
 
 3.0beta
 =======
