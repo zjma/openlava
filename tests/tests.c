@@ -18,7 +18,7 @@
 
 #include "tests.h"
 
-/* Array of testig functions.
+/* Array of testing functions.
  */
 int (*funtest[])(int) =
 {
@@ -40,8 +40,8 @@ main(int argc, char **argv)
     struct timeval tv;
     struct timeval tv2;
 
-
     gettimeofday(&tv, NULL);
+    setbuf(stdout, NULL);
 
     ok = not_ok = 0;
     num = -1;
@@ -58,11 +58,15 @@ main(int argc, char **argv)
 
     printf("Start pid: %d\n", getpid());
 
+    /* num is set run the specific test only
+     */
     if (num > -1) {
         (*funtest[num])(num);
         goto via;
     }
 
+    /* num is not set run all tests
+     */
     for (n = 0; funtest[n]; n++) {
         cc = (*funtest[n])(n);
         if (cc == 0)

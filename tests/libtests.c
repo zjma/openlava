@@ -30,6 +30,12 @@ done(const char *test)
     printf("test %s DONE\n", test);
 }
 
+static LS_LONG_INT submit_job(int);
+static int wait_for_job(LS_LONG_INT, int);
+static int kill_job(LS_LONG_INT, int);
+static int get_job_status(LS_LONG_INT);
+static void ssleep(int);
+
 /*
  * test0()
  *
@@ -51,14 +57,14 @@ test0(int n)
         ls_perror("ls_getclustername");
         goto hosed;
     }
-    printf(" My cluster name is %s\n", cluster);
+    printf("My cluster name is %s\n", cluster);
 
     master = ls_getmastername();
     if (master == NULL) {
         ls_perror("ls_getmastername");
         goto hosed;
     }
-    printf(" My master name is %s\n", cluster);
+    printf("My master name is %s\n", master);
 
     done(__func__);
     return 0;
@@ -88,7 +94,7 @@ test1(int n)
         return -1;
     }
 
-    printf(" Got %d resources\n", lsInfo->nRes);
+    printf("Got %d resources\n", lsInfo->nRes);
     done(__func__);
     return 0;
 }
@@ -113,7 +119,7 @@ test2(int n)
         return -1;
     }
 
-    printf(" Got %d hosts\n", numhosts);
+    printf("Got %d hosts\n", numhosts);
     done(__func__);
     return 0;
 }
@@ -186,7 +192,7 @@ test5(int n)
 
     best = ls_placereq(NULL, &num, 0, NULL);
     if (best == NULL) {
-        ls_perror(" ls_placereq() 1");
+        ls_perror("ls_placereq() 1");
         failed(__func__);
         return -1;
     }
@@ -194,7 +200,7 @@ test5(int n)
     res_req = "order[r1m]";
     best = ls_placereq(res_req, &num, 0, NULL);
     if (best == NULL) {
-        ls_perror(" ls_placereq() 2");
+        ls_perror("ls_placereq() 2");
         failed(__func__);
         return -1;
     }
@@ -226,14 +232,14 @@ test6(int n)
     printf("I am %s number %d\n", __func__, n);
 
     if (ls_initrex(1, 0) < 0) {
-        ls_perror(" ls_initrex");
+        ls_perror("ls_initrex");
         failed(__func__);
         return -1;
     }
 
     best = ls_placereq(NULL, &num, 0, NULL);
     if (best == NULL) {
-        ls_perror(" ls_placereq()");
+        ls_perror("ls_placereq()");
         failed(__func__);
         return -1;
     }
@@ -244,11 +250,11 @@ test6(int n)
 
     pid = fork();
     if (pid == 0) {
-        printf(" Child pid %d\n", getpid());
+        printf("Child pid %d\n", getpid());
         ls_rexecv(best[0], arg, 0);
         /* should never get here
          */
-        ls_perror(" ls_rexecv()");
+        ls_perror("ls_rexecv()");
         failed(__func__);
         exit(-1);
     }
@@ -274,26 +280,30 @@ test7(int n)
     printf("I am %s number %d\n", __func__, n);
 
     if (lsb_init("test7") < 0) {
-        lsb_perror(" lsb_init()");
+        lsb_perror("lsb_init()");
         failed(__func__);
         return -1;
     }
 
     ent = lsb_queueinfo(NULL, &num, NULL, NULL, 0);
     if (ent == NULL) {
-        lsb_perror(" lsb_queueinfo()");
+        lsb_perror("lsb_queueinfo()");
         failed(__func__);
         return -1;
     }
 
     for (i = 0; i < num; i++) {
-        printf(" queue: %s\n", ent[i].queue);
+        printf("queue: %s\n", ent[i].queue);
     }
 
     done(__func__);
     return 0;
 }
 
+/* test8()
+ *
+ * Test ls_hostinfo()
+ */
 int
 test8(int n)
 {
@@ -304,7 +314,7 @@ test8(int n)
     printf("I am %s number %d\n", __func__, n);
 
     if (lsb_init("test8") < 0) {
-        lsb_perror(" lsb_init()");
+        lsb_perror("lsb_init()");
         failed(__func__);
         return -1;
     }
@@ -316,116 +326,114 @@ test8(int n)
     num = 0;
     h = lsb_hostinfo(NULL, &num);
     if (h == NULL) {
-        lsb_perror(" lsb_hostinfo()");
+        lsb_perror("lsb_hostinfo()");
         failed(__func__);
         return -1;
     }
 
     for (i = 0; i < num; i++) {
-        printf(" host: %s\n", h[i].host);
+        printf("host: %s\n", h[i].host);
     }
 
     done(__func__);
     return 0;
 }
+
+/* test9()
+ *
+ * Test submit a job and wait for it
+ */
 int
 test9(int n)
 {
-    int i;
-    int jobId;
-    struct submit req;
-    struct submitReply reply;
+    LS_LONG_INT jobID;
 
     printf("I am %s number %d\n", __func__, n);
 
-    if (lsb_init("test9") < 0) {
-        lsb_perror(" lsb_init");
+    jobID = submit_job(60);
+    if (wait_for_job(jobID, 10) < 0) {
+        lsb_perror(" wait_for_job()");
         failed(__func__);
         return -1;
-    }
-
-    memset(&req, 0, sizeof(struct submit));
-    req.options = 0;
-    req.maxNumProcessors = 1;
-    req.options2 = 0;
-    req.resReq = NULL;
-
-    for (i = 0; i < LSF_RLIM_NLIMITS; i++)
-        req.rLimits[i] = DEFAULT_RLIMIT;
-
-    req.hostSpec = NULL;
-    req.numProcessors = 1;
-    req.maxNumProcessors = 1;
-    req.beginTime = 0;
-    req.termTime  = 0;
-    req.command = "sleep 60";
-    req.nxf = 0;
-    req.delOptions = 0;
-    req.outFile = "/dev/null";
-
-    jobId = lsb_submit(&req, &reply);
-    if (jobId < 0) {
-        switch (lsberrno) {
-        case LSBE_QUEUE_USE:
-        case LSBE_QUEUE_CLOSED:
-            lsb_perror(" lsb_submit");
-            failed(__func__);
-            return -1;
-        default:
-            lsb_perror(" lsb_submit");
-            failed(__func__);
-            return -1;
-        }
     }
 
     done(__func__);
     return 0;
 }
+
+/* test10()
+ *
+ * Submit a job and kill it
+ */
 int
 test10(int n)
 {
-    struct jobInfoEnt *job;
-    int more;
+    LS_LONG_INT jobID;
+    int status;
 
-    if (lsb_init("test10") < 0) {
-        lsb_perror(" lsb_init");
+    printf("I am %s number %d\n", __func__, n);
+
+    jobID = submit_job(3600);
+    kill_job(jobID, SIGKILL);
+    ssleep(10);
+    status = get_job_status(jobID);
+    if (IS_FINISH(status)) {
+        printf("Job %s finished\n", lsb_jobid2str(jobID));
+    } else {
         failed(__func__);
         return -1;
     }
 
-    if (lsb_openjobinfo(0, NULL, "all", NULL, NULL, ALL_JOB) < 0) {
-        lsb_perror(" lsb_openjobinfo");
-        failed(__func__);
-        return -1;
-    }
-
-    printf(" All jobs submitted by all users:\n");
-    for (;;) {
-        job = lsb_readjobinfo(&more);
-        if (job == NULL) {
-            lsb_perror(" lsb_readjobinfo");
-            failed(__func__);
-            return -1;
-        }
-
-        /* display the job
-         */
-        printf(" Job <%s> of user <%s>, submitted from host <%s>\n",
-               lsb_jobid2str(job->jobId),
-               job->user,
-               job->fromHost);
-
-        if (! more)
-            break;
-    }
-
-    lsb_closejobinfo();
     done(__func__);
+
     return 0;
 }
+
+/* test11()
+ *
+ * Submit a job, suspend it and resume it
+ *
+ */
 int
 test11(int n)
 {
+    LS_LONG_INT jobID;
+    int status;
+
+    printf("I am %s number %d\n", __func__, n);
+
+    jobID = submit_job(3600);
+    kill_job(jobID, SIGSTOP);
+    ssleep(10);
+    status = get_job_status(jobID);
+    if (IS_SUSP(status)) {
+        printf("Job %s correctly suspended\n", lsb_jobid2str(jobID));
+    } else {
+        failed(__func__);
+        return -1;
+    }
+
+    kill_job(jobID, SIGCONT);
+    ssleep(10);
+    status = get_job_status(jobID);
+    if (IS_START(status)) {
+        printf("Job %s correctly resumed\n", lsb_jobid2str(jobID));
+    } else {
+        failed(__func__);
+        return -1;
+    }
+
+    kill_job(jobID, SIGKILL);
+    ssleep(10);
+    status = get_job_status(jobID);
+    if (IS_FINISH(status)) {
+        printf("Job %s correctly finished\n", lsb_jobid2str(jobID));
+    } else {
+        failed(__func__);
+        return -1;
+    }
+
+    done(__func__);
     return 0;
 }
 int
@@ -472,4 +480,179 @@ int
 test20(int n)
 {
     return 0;
+}
+
+static LS_LONG_INT
+submit_job(int runTime)
+{
+    int i;
+    int jobId;
+    struct submit req;
+    struct submitReply reply;
+    char cmd[128];
+
+    if (lsb_init(NULL) < 0) {
+        lsb_perror("lsb_init");
+        failed(__func__);
+        return -1;
+    }
+
+    memset(&req, 0, sizeof(struct submit));
+    req.options = 0;
+    req.maxNumProcessors = 1;
+    req.options2 = 0;
+    req.resReq = NULL;
+
+    for (i = 0; i < LSF_RLIM_NLIMITS; i++)
+        req.rLimits[i] = DEFAULT_RLIMIT;
+
+    if (runTime <= 0)
+        runTime = rand()%60;
+
+    req.hostSpec = NULL;
+    req.numProcessors = 1;
+    req.maxNumProcessors = 1;
+    req.beginTime = 0;
+    req.termTime  = 0;
+    sprintf(cmd, "sleep %d", runTime);
+    req.command = cmd;
+    req.nxf = 0;
+    req.delOptions = 0;
+    req.outFile = "/dev/null";
+
+    jobId = lsb_submit(&req, &reply);
+    if (jobId < 0) {
+        switch (lsberrno) {
+        case LSBE_QUEUE_USE:
+        case LSBE_QUEUE_CLOSED:
+            lsb_perror("lsb_submit");
+            failed(__func__);
+            return -1;
+        default:
+            lsb_perror("lsb_submit");
+            failed(__func__);
+            return -1;
+        }
+    }
+
+    return jobId;
+}
+
+static int
+wait_for_job(LS_LONG_INT jobID, int tm)
+{
+    struct jobInfoEnt  *job;
+    int more;
+    int num;
+    int cc;
+
+    if (lsb_init(NULL) < 0) {
+        lsb_perror(" lsb_init");
+        failed(__func__);
+        return -1;
+    }
+
+    num = 0;
+    while (1) {
+
+        cc = lsb_openjobinfo(jobID, NULL, "all", NULL, NULL, CUR_JOB);
+        if (cc < 0 && num > 0)
+            break;
+        if (cc < 0 && num == 0) {
+            lsb_perror("lsb_openjobinfo");
+            failed(__func__);
+            return -1;
+        }
+
+        job = lsb_readjobinfo(&more);
+        if (job == NULL) {
+            lsb_perror("lsb_readjobinfo");
+            failed(__func__);
+            return -1;
+        }
+
+        /* display the job
+         */
+        printf("\
+Job <%s> of user <%s>, submitted from host <%s> still running...\n",
+               lsb_jobid2str(job->jobId),
+               job->user,
+               job->fromHost);
+
+        sleep(tm);
+        ++num;
+        lsb_closejobinfo();
+    }
+
+    printf("Job <%s> done...\n", lsb_jobid2str(job->jobId));
+
+    return 0;
+}
+
+static int
+kill_job(LS_LONG_INT jobID, int s)
+{
+     if (lsb_init(NULL) < 0) {
+        lsb_perror(" lsb_init");
+        failed(__func__);
+        return -1;
+    }
+
+    if (lsb_signaljob(jobID, s) <0) {
+        lsb_perror(" lsb_signaljob");
+        failed(__func__);
+        return -1;
+    }
+    printf("%s: signal %d delivered all right\n", __func__, s);
+
+    return 0;
+}
+
+static int
+get_job_status(LS_LONG_INT jobID)
+{
+    struct jobInfoEnt *job;
+    int more;
+    int cc;
+
+    if (lsb_init(NULL) < 0) {
+        lsb_perror(" lsb_init");
+        failed(__func__);
+        return -1;
+    }
+
+    cc = lsb_openjobinfo(jobID, NULL, "all", NULL, NULL, ALL_JOB);
+    if (cc < 0) {
+        lsb_perror(" lsb_openjobinfo");
+        failed(__func__);
+        return -1;
+    }
+
+    job = lsb_readjobinfo(&more);
+    if (job == NULL) {
+        lsb_perror(" lsb_readjobinfo");
+        failed(__func__);
+        return -1;
+    }
+
+    lsb_closejobinfo();
+
+    return job->status;
+}
+
+static void
+ssleep(int s)
+{
+    time_t start;
+
+    start = time(NULL);
+    printf(" wait");
+    while (1) {
+        sleep(1);
+        printf(".");
+        if (time(NULL) - start >= s)
+            break;
+    }
+
+    printf("\n");
 }
