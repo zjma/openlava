@@ -103,14 +103,14 @@ chanServSocket_(int type, u_short port, int backlog, int options)
     if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
         close(s);
         lserrno = LSE_SOCK_SYS;
-        return (-2);
+        return -2;
     }
 
     if (backlog > 0) {
         if (listen(s, backlog) < 0) {
             (void)close(s);
             lserrno = LSE_SOCK_SYS;
-            return (-3);
+            return -3;
         }
     }
 

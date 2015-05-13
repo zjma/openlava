@@ -45,7 +45,7 @@ ls_getclustername(void)
         if (getname_(LIM_GET_CLUSNAME, clName, MAXLSFNAMELEN) < 0)
             return NULL;
 
-    return (clName);
+    return clName;
 
 }
 

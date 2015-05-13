@@ -508,8 +508,7 @@ initLimSock_(void)
     if (genParams_[LSF_LIM_PORT].paramValue) {
         if ((service_port = atoi(genParams_[LSF_LIM_PORT].paramValue)) != 0)
             service_port = htons(service_port);
-        else
-        {
+        else {
             lserrno = LSE_LIM_NREG;
             return -1;
         }

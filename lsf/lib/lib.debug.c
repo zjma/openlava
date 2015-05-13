@@ -1,4 +1,5 @@
-/* $Id: lib.debug.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -46,9 +47,8 @@ ls_initdebug (char *appName)
 #endif
 #define LSF_LOG_MASK     4
 
-
     if (initenv_(debParams, NULL) < 0)
-        return -1;                         
+        return -1;
 
     if (debParams[LSF_CMD_LOG_MASK].paramValue != NULL)
         logMask = debParams[LSF_CMD_LOG_MASK].paramValue;
@@ -73,5 +73,5 @@ ls_initdebug (char *appName)
 
     return 0;
 
-} 
+}
 
