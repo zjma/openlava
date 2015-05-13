@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include "lib.h"
 #include "lproto.h"
-#include "lib.osal.h"
 
 struct config_param genParams_[] =
 {
@@ -113,7 +112,6 @@ getTempDir_(void)
     }
 
     return sp;
-
 }
 
 /* initenv_()
@@ -125,10 +123,6 @@ initenv_(struct config_param *userEnv, char *pathname)
     int Error = 0;
     char *envdir;
     static int lsfenvset = FALSE;
-
-    if (osInit_() < 0) {
-        return(-1);
-    }
 
     if ((envdir = getenv("LSF_ENVDIR")) != NULL)
         pathname = envdir;

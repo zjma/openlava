@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include "lib.h"
 #include "../lib/lproto.h"
-#include "lib.osal.h"
+
 
 #define LSF_LOG_MASK   7
 #define DEF_LOG_MASK   LOG_INFO

@@ -22,7 +22,7 @@
 #include <syslog.h>
 #include "lib.h"
 #include "lproto.h"
-#include "lib.osal.h"
+
 
 #define MAXLOOP 3000
 

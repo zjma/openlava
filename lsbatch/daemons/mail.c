@@ -26,12 +26,7 @@
 #include <pwd.h>
 
 #include "daemons.h"
-#include "../../lsf/lib/lib.osal.h"
-
-#ifndef strchr
 #include <string.h>
-#endif
-
 # include <stdarg.h>
 
 #define NL_SETN         10

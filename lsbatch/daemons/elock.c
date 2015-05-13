@@ -23,10 +23,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pwd.h>
-
 #include "daemonout.h"
 #include "daemons.h"
-#include "../../lsf/lib/lib.osal.h"
 
 #define NL_SETN      10
 

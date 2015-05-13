@@ -61,8 +61,6 @@ static char **execArgs(struct jobSpecs *jp, char **execArgv);
 static void jobFinishRusage(struct jobCard *jp);
 static void initJRusage(struct jRusage *);
 static int getJobVersion (struct jobSpecs *);
-
-extern void osConvertPath_(char *pathname);
 extern int sbdlog_newstatus (struct jobCard *jp);
 extern void copyJUsage(struct jRusage *to, struct jRusage *from);
 extern int jRunSuspendAct(struct jobCard *jp, int sigValue, int jState,
@@ -432,7 +430,6 @@ execJob(struct jobCard *jobCardPtr, int chfd)
             && !UID_MAPPED(jobCardPtr)) {
 
             sprintf(tmpJobFile, "%s%s", jobSpecsPtr->jobFile, JOBFILEEXT);
-            osConvertPath_(tmpJobFile);
             jobArgv[0] = tmpJobFile;
             jobArgv[1] = NULL;
 

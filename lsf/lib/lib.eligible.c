@@ -111,7 +111,7 @@ inittasklists_(void)
         }
     }
 
-    if ((homep = osHomeEnvVar_()) != NULL) {
+    if ((homep = getenv("HOME")) != NULL) {
         strcpy(filename, homep);
         strcat(filename, "/.lsftask");
         if (access(filename, R_OK) == 0) {

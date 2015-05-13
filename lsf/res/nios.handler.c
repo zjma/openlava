@@ -26,7 +26,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "../lib/lib.h"
-#include "../lib/lib.osal.h"
 #include "../../lsbatch/lsbatch.h"
 #include "../intlib/list.h"
 #include "../res/rescom.h"
@@ -2045,7 +2044,7 @@ READ_RETRY:
 }
 
 int
-ls_niodump(LS_HANDLE_T outputFile, int tid, int options,
+ls_niodump(int outputFile, int tid, int options,
            char *taggingFormat)
 {
     static char fname[] = "ls_niodump()";
@@ -2404,7 +2403,9 @@ notify_task(int tid, int opCode)
     reqHdr.reserved = tid;
 
     if (conn[connIndex].rpid > 0 && conn[connIndex].sock.fd != -1) {
-        xdrmem_create(&xdrs, (char *) &buf, sizeof(struct LSFHeader),
+        xdrmem_create(&xdrs,
+                      (char *)&buf,
+                      sizeof(struct LSFHeader),
                       XDR_ENCODE);
         if (!xdr_LSFHeader(&xdrs, &reqHdr)) {
             xdr_destroy(&xdrs);
