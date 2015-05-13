@@ -212,7 +212,7 @@ getNextToken(char **sp)
     if (cp[0] == '\0')
         return NULL;
 
-    if (cp[0] == ':' || cp[0] == '=' || cp[0] == ' ')
+    if (cp[0] == ':' || cp[0] == '=' || cp[0] == ' ' || cp[0] == ',')
         *sp += 1;
     cp = *sp;
     if (cp[0] == '\0')
@@ -223,6 +223,8 @@ getNextToken(char **sp)
         *cp = '\0';
     if ((cp = strchr(word, '=')) != NULL)
         *cp = '\0';
+    if ((cp = strchr(word, ',')) != NULL)
+        *cp = 0;
 
     *sp += strlen(word);
     return word;

@@ -90,7 +90,7 @@ extern char **environ;
 #define OPENLAVA_XDR_VERSION 31
 
 #define LSF_DEFAULT_SOCKS       15
-#define MAXLINELEN              512
+#define MAXLINELEN              PATH_MAX
 #define MAXLSFNAMELEN           256
 #define MAXSRES                 32
 #define MAXRESDESLEN            256

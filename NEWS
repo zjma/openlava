@@ -6,11 +6,19 @@ Release notes for OpenLava versions
 -- Removed obsolete mls code and infrastructure simplifying user
    management.
 
-3.0
-====
+3.0.1
+======
 
 -- Fix bug in openlava.in, the variable err was incorrectly defined.
 -- Fix xdr version number bug in lsb.xdr.c
+-- Fix hostID bug which prevented queue JL/H from working properly.
+-- Allow comma as separator together with colon when rusage is
+   specified. e.g -R rusage[mem=1,vcs=2]
+
+3.0
+====
+
+Major release which includes hierarchical slot fairshare and preemption.
 
 3.0beta
 =======

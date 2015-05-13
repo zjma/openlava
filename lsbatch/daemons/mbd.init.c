@@ -2902,7 +2902,7 @@ updHostList(void)
 
     hostList = listCreate("Host List");
 
-    cc = 0;
+    cc = 1;
     for (e = h_firstEnt_(&hostTab, &stab);
          e != NULL;
          e = h_nextEnt_(&stab)) {
