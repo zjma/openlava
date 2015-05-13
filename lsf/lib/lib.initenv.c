@@ -124,6 +124,8 @@ initenv_(struct config_param *userEnv, char *pathname)
     char *envdir;
     static int lsfenvset = FALSE;
 
+    chanInit_();
+
     if ((envdir = getenv("LSF_ENVDIR")) != NULL)
         pathname = envdir;
     else if (pathname == NULL)
