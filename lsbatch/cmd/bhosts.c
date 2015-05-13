@@ -162,7 +162,7 @@ main(int argc, char **argv)
 
     if (sOption) {
         displayShareRes(argc, argv, optind);
-        return (0);
+        return 0;
     }
     while ((cc = getopt(argc, argv, "lwR:")) != EOF) {
         switch (cc) {
@@ -956,28 +956,28 @@ makeShareFields(char *hostname, struct lsInfo *lsInfo, char ***nameTable,
         TIMEIT(0, (resourceInfo = lsb_sharedresourceinfo (NULL, &numRes, NULL, 0)), "ls_sharedresourceinfo");
 
         if (resourceInfo == NULL) {
-            return (-1);
+            return -1;
         }
 
         if ((namTable =
                         (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         if ((totalTable =
                         (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         if ((rsvTable =
                         (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
 
         if ((fmtTable = (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         first = FALSE;
     } else {

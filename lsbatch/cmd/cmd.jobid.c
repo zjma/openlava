@@ -105,7 +105,7 @@ getSpecJobIds (int argc, char **argv, LS_LONG_INT **jobIds0, int *options)
 
     if ( argc < optind + 1 ) {
         *jobIds0 = NULL;
-        return (0);
+        return 0;
     }
 
     if ((jobIds = (LS_LONG_INT *) calloc (MAX_JOB_IDS, sizeof (LS_LONG_INT))) == NULL) {
@@ -190,7 +190,7 @@ getSpecIdxs (char *jobName, int **idxs0)
 
     if ((idxList = parseJobArrayIndex(jobName)) == NULL) {
         *idxs0= NULL;
-        return(0);
+        return 0;
     }
     if ((idxs = (int *) calloc (MAX_JOB_IDS, sizeof (int))) == NULL) {
         perror("calloc");
@@ -230,20 +230,20 @@ getOneJobId (char *string, LS_LONG_INT *outJobId, int options)
 
 
     if (getJobIdIndexList (string, &jobId, &idxListP, 0)) {
-        return(-1);
+        return -1;
     }
 
     if (jobId == 0) {
 	fprintf(stderr, "%s.\n",
 		(_i18n_msg_get(ls_catd,NL_SETN,1006, "Job Id = 0 is out of valid range"))); /* catgets  1006  */
 	freeIdxList(idxListP);
-        return(-1);
+        return -1;
     }
 
 
     if (idxListP == NULL) {
 	*outJobId = jobId;
-	return(0);
+	return 0;
     }
 
 
@@ -253,13 +253,13 @@ getOneJobId (char *string, LS_LONG_INT *outJobId, int options)
 	fprintf(stderr, "%s: %s.\n", string,
 		(_i18n_msg_get(ls_catd,NL_SETN,1007, "Illegal job array index. One element only"))); /* catgets  1007  */
 	freeIdxList(idxListP);
-	return(-1);
+	return -1;
     }
 
 
     *outJobId = LSB_JOBID(jobId, idxListP->start);
     freeIdxList(idxListP);
-    return (0);
+    return 0;
 
 }
 
@@ -295,42 +295,42 @@ int options)
 
         if (!isint_(inJobIdStr)) {
 	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string); /* catgets  1008  */
-	    return(-1);
+	    return -1;
 	}
 
 
 	if ((jobId = atoi(inJobIdStr)) < 0) {
 	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
-	    return(-1);
+	    return -1;
 	}
 	*outJobId = jobId;
-	return(0);
+	return 0;
     }
 
 
     if ((jobIdLen = (int) (startP - inJobIdStr)) >= 16) {
 	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1010, "Job Id (%s) is too long.\n")), string); /* catgets  1010  */
-        return(-1);
+        return -1;
     }
     STRNCPY(jobIdStr, inJobIdStr, jobIdLen+1);
 
 
     if (!isint_(jobIdStr)) {
 	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
-        return(-1);
+        return -1;
     }
     jobId = atoi(jobIdStr);
     if ((jobId <= 0) || (jobId > LSB_MAX_ARRAY_JOBID))  {
 	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1012, "%s: Job ID out of valid range.\n")), string); /* catgets  1012  */
-        return(-1);
+        return -1;
     }
     *outJobId = jobId;
 
 
     if ((*idxListP = parseJobArrayIndex(inJobIdStr)) == NULL) {
-        return(-1);
+        return -1;
     }
-    return (0);
+    return 0;
 
 }
 
@@ -420,14 +420,14 @@ getJobIdList (char *jobIdStr, LS_LONG_INT **jobIdList)
     int i, j;
 
     if (getJobIdIndexList (jobIdStr, &jobId, &idxListP, 0)) {
-        return(-1);
+        return -1;
     }
 
     if (jobId <= 0)
-        return(-1);
+        return -1;
 
     if ((jobIds = (LS_LONG_INT *) calloc (MAX_JOB_IDS, sizeof (LS_LONG_INT))) == NULL) {
-        return(-1);
+        return -1;
     }
 
     if (idxListP == NULL) {
@@ -444,7 +444,7 @@ getJobIdList (char *jobIdStr, LS_LONG_INT **jobIdList)
                 sizeOfJobIdArray += MAX_JOB_IDS;
                 if ((temp = (LS_LONG_INT *) realloc(jobIds,
                     sizeOfJobIdArray * sizeof(LS_LONG_INT))) == NULL) {
-                    return(-1);
+                    return -1;
                 }
                 jobIds = temp;
             }

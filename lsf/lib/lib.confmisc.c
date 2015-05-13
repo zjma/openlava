@@ -313,7 +313,7 @@ putInLists (char *word, struct admins *admins, int *numAds, char *forWhat)
     if (isInlist (admins->adminNames, word, admins->nAdmins)) {
         ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5411,
 	"%s: Duplicate user name <%s> %s; ignored"), fname, word, forWhat); /* catgets 5411 */
-        return (0);
+        return 0;
     }
     admins->adminIds[admins->nAdmins] = (pw == NULL) ? -1 : pw->pw_uid;
     admins->adminGIds[admins->nAdmins] = (pw == NULL) ? -1 : pw->pw_gid;
@@ -338,14 +338,14 @@ putInLists (char *word, struct admins *admins, int *numAds, char *forWhat)
             FREEUP (admins->adminNames);
             admins->nAdmins = 0;
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         } else {
             admins->adminIds = tempIds;
             admins->adminGIds = tempGids;
             admins->adminNames = tempNames;
         }
     }
-    return (0);
+    return 0;
 } 
 
 int
@@ -354,12 +354,12 @@ isInlist (char **adminNames, char *userName, int actAds)
     int i;
 
     if (actAds == 0)
-        return (FALSE);
+        return false;
     for (i = 0; i < actAds; i++) {
         if (strcmp (adminNames[i], userName) == 0)
-            return (TRUE);
+            return true;
     }
-    return (FALSE);
+    return false;
 
 } 
 

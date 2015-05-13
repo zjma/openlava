@@ -36,10 +36,10 @@ ls_putacctrec(FILE *log_fp, struct lsfAcctRec *acctRec)
     || lsfRu2Str(log_fp, &acctRec->lsfRu) < 0
     || fprintf(log_fp, "\n") < 0) {
         lserrno = LSE_FILE_SYS;
-        return (-1);
+        return -1;
     }
 
-    return(0);
+    return 0;
 
 } 
 

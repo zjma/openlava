@@ -349,17 +349,17 @@ resParent(int s, struct passwd *pw, struct lsfAuth *auth,
     hdr.version = OPENLAVA_XDR_VERSION;
     if (!xdr_resChildInfo(&xdrs, &childInfo, &hdr)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resChildInfo");
-        return(-1);
+        return -1;
     }
     len = XDR_GETPOS(&xdrs);
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, hpipe) < 0) {
 	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "socketpair");
-	return(-1);
+	return -1;
     }
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, wrapPipe) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "socketpair");
-        return(-1);
+        return -1;
     }
     sprintf(hndlbuf,"%d:%d", hpipe[1], s);
 
@@ -391,7 +391,7 @@ resParent(int s, struct passwd *pw, struct lsfAuth *auth,
 	close(hpipe[1]);
         close(wrapPipe[0]);
         close(wrapPipe[1]);
-	return(-1);
+	return -1;
     }
 
     if (pid == 0) {
@@ -431,7 +431,7 @@ resParent(int s, struct passwd *pw, struct lsfAuth *auth,
                 ;
             close(wrapPipe[0]);
             close(hpipe[0]);
-            return (-1);
+            return -1;
         }
     }
     close (wrapPipe[0]);
@@ -440,18 +440,18 @@ resParent(int s, struct passwd *pw, struct lsfAuth *auth,
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "write");
         xdr_destroy(&xdrs);
         close(hpipe[0]);
-        return(-1);
+        return -1;
     }
 
     if (write(hpipe[0], buf, len) != len) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "write");
         xdr_destroy(&xdrs);
         close(hpipe[0]);
-        return(-1);
+        return -1;
     }
     xdr_destroy(&xdrs);
     close(hpipe[0]);
-    return(0);
+    return 0;
 }
 
 

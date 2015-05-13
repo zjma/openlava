@@ -365,12 +365,12 @@ getEligibleSites(struct resVal *resValPtr,
     ncand = flags = 0;
 
     if (initCandList() < 0)
-        return(-1);
+        return -1;
 
     if (! fromHostPtr) {
         fromHostPtr = findHost(reqPtr->preferredHosts[0]);
         if (!fromHostPtr)
-            return (0);
+            return 0;
     }
 
     for (j = 1; j < reqPtr->numPrefs; j++) {
@@ -1571,9 +1571,9 @@ initCandList(void)
     if (!candidates) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "initCandList", "calloc");
         candListSize = 0;
-        return(-1);
+        return -1;
     }
-    return(0);
+    return 0;
 
 }
 
@@ -1589,12 +1589,12 @@ addCandList(struct hostNode *hPtr, int pos)
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "addCandList", "realloc");
             FREEUP(candidates);
             candListSize=0;
-            return(-1);
+            return -1;
         }
         candidates = (struct hostNode **)memp;
     }
     candidates[pos] = hPtr;
-    return(0);
+    return 0;
 }
 
 void

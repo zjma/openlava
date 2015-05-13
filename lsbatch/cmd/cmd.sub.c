@@ -73,7 +73,7 @@ do_sub(int argc, char **argv, int option)
         sub_perror("lsb_init");
         fprintf(stderr, ". %s.\n",
                 (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted"))); /* catgets  1551  */
-        return (-1);
+        return -1;
     }
 
     if (logclass & (LC_TRACE | LC_SCHED | LC_EXEC))
@@ -82,7 +82,7 @@ do_sub(int argc, char **argv, int option)
     if (fillReq(argc, argv, option, &req) < 0){
         fprintf(stderr,  ". %s.\n",
                 (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted")));
-        return (-1);
+        return -1;
     }
 
 
@@ -93,13 +93,13 @@ do_sub(int argc, char **argv, int option)
         prtErrMsg (&req, &reply);
         fprintf(stderr,  ". %s.\n",
                 (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted")));
-        return(-1);
+        return -1;
     }
 
     if (req.nxf)
         free(req.xf);
 
-    return(0);
+    return 0;
 
 }
 
@@ -207,7 +207,7 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
 
             LS_LONG_INT arrayJobId;
             if (getOneJobId (argv[optind+1], &arrayJobId, 0))
-                return(-1);
+                return -1;
 
             sprintf(chkDir, "%s/%s", argv[optind], lsb_jobidinstr(arrayJobId));
 
@@ -220,17 +220,17 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
             emptyCmd = FALSE;
             argv[argc] = myArgv0;
             if (!CopyCommand(&argv[argc], myArgc))
-                return (-1);
+                return -1;
         }
         else if (argc >= optind + 1) {
 
             emptyCmd = FALSE;
             if (!CopyCommand(argv+optind, argc-optind-1))
-                return (-1);
+                return -1;
         } else
             if (parseScript(stdin, &embedArgc, &embedArgv,
                             EMBED_INTERACT|EMBED_BSUB) == -1)
-                return (-1);
+                return -1;
 
         req->command = commandline;
         SKIPSPACE(req->command);
@@ -239,7 +239,7 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
                 fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1559, "No command is specified in the script file"))); /* catgets  1559  */
             else
                 fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1560, "No command is specified"))); /* catgets  1560  */
-            return (-1);
+            return -1;
         }
     }
 
@@ -249,19 +249,19 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
 
         if (setOption_(embedArgc, embedArgv, template, req,
                        ~req->options, ~req->options2, NULL) == -1)
-            return (-1);
+            return -1;
 
         if (req->options2 & SUB2_JOB_CMD_SPOOL) {
 
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1562,
                                            "-Zs is not supported for embeded job command"))); /* catgets  1562  */
-            return (-1);
+            return -1;
         }
     }
 
     if (optionFlag) {
         if (parseOptFile_(optionFileName, req, NULL) == NULL)
-            return (-1);
+            return -1;
         optionFlag = FALSE;
     }
 
@@ -269,7 +269,7 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
         if(addLabel2RsrcReq(req) != 0) {
             fprintf(stderr, I18N(1581,
                                  "Set job mac label failed.")); /* catgets 1581 */
-            return(-1);
+            return -1;
         }
     }
 
@@ -309,7 +309,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
         firstLine[0] = '\0';
         if ((buf = malloc(size)) == NULL) {
             fprintf(stderr, I18N_FUNC_FAIL,__func__,"malloc" );
-            return (-1);
+            return -1;
         }
         ttyin = isatty(fileno(from));
         if (ttyin){
@@ -336,7 +336,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
             }
         }
         if (parseLine (line, embedArgc, embedArgv, option) == -1)
-            return (-1);
+            return -1;
 
         if (option & EMBED_INTERACT) {
             if (!firstLine[0])
@@ -354,7 +354,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
                 if ((buf = (char *) realloc(buf, size)) == NULL) {
                     free(buf);
                     fprintf(stderr, I18N_FUNC_FAIL,__func__,"realloc" );
-                    return (-1);
+                    return -1;
                 }
             }
             for (i=length, j=0; j<lineLen; i++, j++)
@@ -382,7 +382,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
                     if (( buf = (char *) realloc(buf, size)) == NULL ) {
                         free(buf);
                         fprintf(stderr,I18N_FUNC_FAIL,__func__,"realloc" );
-                        return(-1);
+                        return -1;
                     }
                 }
                 sprintf(&buf[length], szTmpShellCommands, SCRIPT_WORD_END);
@@ -390,7 +390,7 @@ parseScript(FILE *from, int *embedArgc, char ***embedArgv, int option)
         }
         commandline = buf;
     }
-    return (0);
+    return 0;
 
 }
 
@@ -413,7 +413,7 @@ CopyCommand(char **from, int len)
 
     if ((commandline = (char *) malloc(size)) == NULL) {
         fprintf(stderr, I18N_FUNC_FAIL,__func__,"malloc" );
-        return (FALSE);
+        return false;
     }
 
     if (lsbParams[LSB_API_QUOTE_CMD].paramValue == NULL) {
@@ -591,7 +591,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
         if ((argBuf = (char **) malloc(INCREASE * sizeof(char *)))
             == NULL) {
             fprintf(stderr, I18N_FUNC_FAIL,__func__,"malloc" );
-            return (-1);
+            return -1;
         }
         bufSize = INCREASE;
         *embedArgc = 1;
@@ -611,7 +611,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
         }
         else {
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1568, "Invalid option"))); /* catgets  1568  */
-            return (-1);
+            return -1;
         }
         argBuf[1] = NULL;
     }
@@ -619,10 +619,10 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
 
     SKIPSPACE(line);
     if (*line == '\0')
-        return (0);
+        return 0;
     if (*line != '#') {
         emptyCmd = FALSE;
-        return (0);
+        return 0;
     }
 
 
@@ -632,7 +632,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
         line += strlen(key);
         SKIPSPACE(line);
         if (*line != '-') {
-            return (0);
+            return 0;
         }
         while (TRUE) {
             quoteMark = '"';
@@ -642,10 +642,10 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
                     quoteMark = '\'';
 
             if ((sp = getNextValueQ_(&line, quoteMark, quoteMark)) == NULL)
-                return (0);
+                return 0;
 
             if (*sp == '#')
-                return (0);
+                return 0;
 
             if (*embedArgc + 2 > bufSize) {
                 bufSize += INCREASE;
@@ -653,7 +653,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
                                                 bufSize * sizeof(char *)))
                     == NULL) {
                     fprintf(stderr, I18N_FUNC_FAIL,__func__,"realloc" );
-                    return (-1);
+                    return -1;
                 }
                 *embedArgv = argBuf;
             }
@@ -662,7 +662,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
             argBuf[*embedArgc] = NULL;
         }
     }
-    return (0);
+    return 0;
 
 }
 
@@ -729,7 +729,7 @@ addLabel2RsrcReq(struct submit *subreq)
         size = label_len + rsrcreq_len + strlen(and_symbol) + 10;
         temp = (char *)calloc(1, size);
         if (temp == NULL) {
-            return(-1);
+            return -1;
         }
 
         sprintf(temp, "%s%s(select[%s]) %s %s", job_label, and_symbol,
@@ -759,7 +759,7 @@ addLabel2RsrcReq(struct submit *subreq)
         size = label_len + rsrcreq_len + strlen(and_symbol) + 4;
         temp = (char *)calloc(1, size);
         if (temp == NULL) {
-            return(-1);
+            return -1;
         }
 
         sprintf(temp, "%s%s(%s) %s", job_label, and_symbol,
@@ -773,13 +773,13 @@ addLabel2RsrcReq(struct submit *subreq)
         size = label_len + rsrcreq_len + 2;
         temp = (char *)calloc(1, size);
         if (temp == NULL) {
-            return(-1);
+            return -1;
         }
         sprintf(temp, "%s %s", job_label, req);
     }
 
     subreq->resReq = temp;
     free(req);
-    return(0);
+    return 0;
 }
 

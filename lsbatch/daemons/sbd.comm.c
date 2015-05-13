@@ -76,7 +76,7 @@ status_job(mbdReqType reqType,
 
     if (jp->notReported < 0) {
         jp->notReported = -INFINIT_INT;
-        return (0);
+        return 0;
     }
 
     statusReq.jobId = jp->jobSpecs.jobId;
@@ -142,7 +142,7 @@ status_job(mbdReqType reqType,
 
     if ((request_buf = malloc(len)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, request_buf, len, XDR_ENCODE);
@@ -191,7 +191,7 @@ status_job(mbdReqType reqType,
         xdr_destroy(&xdrs);
         FREEUP(request_buf);
         failcnt++;
-        return(-1);
+        return -1;
     } else if (cc == 0) {
 
     }
@@ -221,7 +221,7 @@ status_job(mbdReqType reqType,
 
         if (logclass & LC_COMM)
             ls_syslog(LOG_DEBUG1, "%s: Job <%s> rd_select() failed, assume connection broken", fname, lsb_jobid2str(jp->jobSpecs.jobId));
-        return(-1);
+        return -1;
     }
     reply = hdr.opCode;
     switch (reply) {
@@ -239,7 +239,7 @@ status_job(mbdReqType reqType,
                               lsb_jobid2str(jp->jobSpecs.jobId),
                               jp->jobSpecs.jStatus);
             }
-            return (0);
+            return 0;
         case LSBE_NO_JOB:
             if ( !IS_POST_FINISH(jp->jobSpecs.jStatus) ) {
                 ls_syslog( LOG_ERR, _i18n_msg_get( ls_catd , NL_SETN, 5205,
@@ -247,7 +247,7 @@ status_job(mbdReqType reqType,
             }
 
             jp->notReported = -INFINIT_INT;
-            return (0);
+            return 0;
         case LSBE_STOP_JOB:
             if (jobsig (jp, SIGSTOP, TRUE) < 0)
                 SET_STATE(jp->jobSpecs.jStatus, JOB_STAT_EXIT);
@@ -255,14 +255,14 @@ status_job(mbdReqType reqType,
                 SET_STATE(jp->jobSpecs.jStatus, JOB_STAT_USUSP);
                 jp->jobSpecs.reasons |= SUSP_USER_STOP;
             }
-            return (-1);
+            return -1;
         case LSBE_SBATCHD:
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5206,
                                              "%s: mbatchd on host <%s> doesn't think I'm configured as a batch server when I report the status for job <%s>"), /* catgets 5206 */
                       fname,
                       masterHost,
                       lsb_jobid2str(jp->jobSpecs.jobId));
-            return (-1);
+            return -1;
         default:
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5207,
                                              "%s: Illegal reply code <%d> from mbatchd on host <%s> for job <%s>"), /* catgets 5207 */
@@ -270,7 +270,7 @@ status_job(mbdReqType reqType,
                       reply,
                       masterHost,
                       lsb_jobid2str(jp->jobSpecs.jobId));
-            return(-1);
+            return -1;
     }
 }
 
@@ -507,7 +507,7 @@ msgSbd(LS_LONG_INT jobId, char *req, sbdReqType reqType, int (*xdrFunc)())
     if (!xdr_encodeMsg(&xdrs, req, &hdr, xdrFunc, 0, NULL)) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname, lsb_jobid2str(jobId), "xdr_encodeMsg");
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
     for (retryInterval = 5, cc = -1; cc != 0;) {
@@ -547,7 +547,7 @@ msgSbd(LS_LONG_INT jobId, char *req, sbdReqType reqType, int (*xdrFunc)())
         exit(-1);
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -566,7 +566,7 @@ msgSupervisor(struct lsbMsg *lsbMsg, struct clientNode *cliPtr)
     if (cliPtr == NULL) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5220,
                                          "%s: cliPtr is null"), fname); /* catgets 5220 */
-        return (-1);
+        return -1;
     }
 
     initLSFHeader_(&reqHdr);
@@ -576,7 +576,7 @@ msgSupervisor(struct lsbMsg *lsbMsg, struct clientNode *cliPtr)
         if (logclass & LC_COMM)
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
 
     if ((cc = b_write_fix(chanSock_(cliPtr->chanfd), reqBuf,
@@ -587,11 +587,11 @@ msgSupervisor(struct lsbMsg *lsbMsg, struct clientNode *cliPtr)
                       chanSock_(cliPtr->chanfd),
                       XDR_GETPOS(&xdrs));
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
 
     xdr_destroy(&xdrs);
-    return (0);
+    return 0;
 }
 
 int
@@ -641,7 +641,7 @@ sendUnreportedStatus (struct chunkStatusReq *chunkStatusReq)
 
     if ((request_buf = (char *) malloc(len)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, request_buf, len, XDR_ENCODE);
@@ -691,7 +691,7 @@ sendUnreportedStatus (struct chunkStatusReq *chunkStatusReq)
         xdr_destroy(&xdrs);
         FREEUP(request_buf);
         failcnt++;
-        return (-1);
+        return -1;
     }
 
     failcnt = 0;
@@ -705,14 +705,14 @@ sendUnreportedStatus (struct chunkStatusReq *chunkStatusReq)
     reply = hdr.opCode;
     switch (reply) {
         case LSBE_NO_ERROR:
-            return (0);
+            return 0;
         default:
             ls_syslog(LOG_ERR, I18N(5221,
                                     "%s: Illegal reply code <%d> from mbatchd on host <%s>"), /* catgets 5221 */
                       fname,
                       reply,
                       masterHost);
-            return(-1);
+            return -1;
     }
 
 }

@@ -483,12 +483,12 @@ shouldStop (struct hostLoad *loadV,
 
 
     if( jobCard->postJobStarted ) {
-        return (FALSE);
+        return false;
     }
 
 
     if (jobCard->jobSpecs.jAttrib & JOB_URGENT_NOSTOP)
-	return (FALSE);
+	return false;
 
 
     if (now - jobCard->windWarnTime < sbdSleepTime)
@@ -845,16 +845,16 @@ jobResumeAction (struct jobCard *jp, int sigValue, int suspReason)
 
     if (jp->jobSpecs.reasons & SUSP_MBD_LOCK) {
 
-        return (-1);
+        return -1;
     };
 
 
     if (jp->jobSpecs.actPid)
-        return (0);
+        return 0;
 
 
     if (!(jp->jobSpecs.reasons & suspReason))
-        return (-1);
+        return -1;
 
     if (logclass & (LC_TRACE | LC_SCHED | LC_EXEC))
         ls_syslog(LOG_DEBUG1, "%s: Try to resume job %s with the current reason %d and the triggered reason %d;",
@@ -864,10 +864,10 @@ jobResumeAction (struct jobCard *jp, int sigValue, int suspReason)
         if (jobsig(jp, 0, FALSE) < 0) {
 
             SBD_SET_STATE(jp, JOB_STAT_EXIT);
-            return (-1);
+            return -1;
         }
     sbdlog_newstatus(jp);
-    return (0);
+    return 0;
 
 }
 
@@ -1183,7 +1183,7 @@ cleanupMigJob(struct jobCard *jp)
     unlockHosts (jp, jp->jobSpecs.numToHosts);
 
     if (!jp->jobSpecs.postCmd || jp->jobSpecs.postCmd[0] == '\0')
-        return (0);
+        return 0;
 
 
     if ((pid = fork()) < 0) {

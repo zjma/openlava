@@ -66,19 +66,19 @@ doEnvParams_(struct config_param *plp)
     char *spp;
 
     if (!plp)
-        return(0);
+        return 0;
 
     for (; plp->paramName != NULL ; plp++) {
         if ((sp = getenv(plp->paramName)) != NULL) {
             if (NULL == (spp = putstr_(sp))) {
                 lserrno = LSE_MALLOC;
-                return(-1);
+                return -1;
             }
             FREEUP(plp->paramValue);
             plp->paramValue = spp;
         }
     }
-    return(0);
+    return 0;
 }
 
 char *
@@ -131,21 +131,21 @@ initenv_(struct config_param *userEnv, char *pathname)
 
     if (lsfenvset) {
         if (userEnv == NULL) {
-            return (0);
+            return 0;
         }
         if (readconfenv_(NULL, userEnv, pathname) < 0) {
-            return (-1);
+            return -1;
         } else if (doEnvParams_(userEnv) < 0) {
-            return (-1);
+            return -1;
         }
         return 0;
     }
 
     if (readconfenv_(genParams_, userEnv, pathname) < 0)
-        return (-1);
+        return -1;
     else {
         if (doEnvParams_(genParams_) < 0)
-            return (-1);
+            return -1;
         lsfenvset = TRUE;
         if (doEnvParams_(userEnv) < 0)
             Error = 1;
@@ -167,9 +167,9 @@ initenv_(struct config_param *userEnv, char *pathname)
     lsTmpDir_ = getTempDir_();
 
     if (Error)
-        return(-1);
+        return -1;
 
-    return(0);
+    return 0;
 }
 
 int
@@ -196,7 +196,7 @@ readconfenv_(struct config_param *pList1,
             if (plp->paramValue != NULL) {
 
                 lserrno = LSE_BAD_ARGS;
-                return(-1);
+                return -1;
             }
         }
 
@@ -205,7 +205,7 @@ readconfenv_(struct config_param *pList1,
             if (plp->paramValue != NULL) {
 
                 lserrno = LSE_BAD_ARGS;
-                return(-1);
+                return -1;
             }
         }
     if (confPath) {
@@ -233,7 +233,7 @@ readconfenv_(struct config_param *pList1,
     if (!fp) {
 
         lserrno = LSE_LSFCONF;
-        return(-1);
+        return -1;
     }
 
     lineNum = 0;
@@ -252,16 +252,16 @@ readconfenv_(struct config_param *pList1,
         if (!setConfEnv(key, value, pList1)
             || !setConfEnv(key, value, pList2)) {
             fclose(fp);
-            return(-1);
+            return -1;
         }
     }
     fclose(fp);
     if (errLineNum_ != 0) {
         lserrno = saveErrNo;
-        return(-1);
+        return -1;
     }
 
-    return(0);
+    return 0;
 
 }
 
@@ -354,7 +354,7 @@ setConfEnv (char *name, char *value, struct config_param *paramList)
             paramList->paramValue = putstr_(value);
             if (paramList->paramValue == NULL) {
                 lserrno = LSE_MALLOC;
-                return(0);
+                return 0;
             }
         }
     }

@@ -1,4 +1,5 @@
-/* $Id: res.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,17 +28,8 @@
 
 #include "../intlib/intlibout.h"
 #include "../lib/lproto.h"
-#include "../lib/lib.osal.h"
 #include "../lib/lib.xdr.h"
 #include "rescom.h"
-
-# if !defined(_BSD)
-# define _BSD
-# endif
-
-
-
-
 
 typedef gid_t GETGROUPS_T;
 

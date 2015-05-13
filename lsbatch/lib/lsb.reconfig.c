@@ -36,7 +36,7 @@ lsb_reconfig (int configFlag)
     mbdReqtype = BATCH_RECONFIG;
 
     if (authTicketTokens_(&auth, NULL) == -1)
-	return (-1);
+	return -1;
 
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
 
@@ -47,14 +47,14 @@ lsb_reconfig (int configFlag)
 
     if (!xdr_encodeMsg(&xdrs, NULL, &hdr, NULL, 0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
     if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                        &hdr, NULL, NULL, NULL)) == -1)
     {
         xdr_destroy(&xdrs);
-	return (-1);
+	return -1;
     }
     xdr_destroy(&xdrs);
     if (cc)
@@ -62,7 +62,7 @@ lsb_reconfig (int configFlag)
 
     lsberrno = hdr.opCode;
     if (lsberrno == LSBE_NO_ERROR)
-	return(0);
+	return 0;
     else
-	return(-1);
+	return -1;
 }

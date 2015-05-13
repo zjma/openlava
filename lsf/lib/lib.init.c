@@ -42,14 +42,14 @@ ls_initrex(int num, int options)
     if (initenv_(NULL, NULL)<0) {
         if (rootuid_ && !(options & KEEPUID))
             setuid(getuid());
-        return(-1);
+        return -1;
     }
 
     inithostsock_();
     lsQueueInit_(&requestQ, lsReqCmp_, NULL);
     if (requestQ == NULL) {
         lserrno = LSE_MALLOC;
-        return(-1);
+        return -1;
     }
 
     res_addr_.sin_family = AF_INET;
@@ -75,7 +75,7 @@ res_init_fail:
             lserrno = LSE_RES_NREG;
             if (rootuid_ && !(options & KEEPUID))
                 setuid(getuid());
-            return (-1);
+            return -1;
         }
     }
 
@@ -117,7 +117,7 @@ opensocks_(int num)
             if (i > 0) {
                 break;
             } else {
-               return(-1);
+               return -1;
             }
         }
 
@@ -133,7 +133,7 @@ opensocks_(int num)
                 if (i > 0)
                    break;
                 else
-                   return (-1);
+                   return -1;
             }
 
 #if defined(FD_CLOEXEC)
@@ -182,7 +182,7 @@ ls_fdbusy(int fd)
         pfd = hEntPtr->hData;
         if (fd == pfd[0]
             || fd == pfd[1])
-            return (TRUE);
+            return true;
 
         hEntPtr = h_nextEnt_(&hashSearchPtr);
     }

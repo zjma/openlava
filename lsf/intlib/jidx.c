@@ -155,10 +155,10 @@ __YYSCLASS char * yyreds[] =
 #define YYERROR		goto yyerrlab
 
 #ifndef __RUNTIME_YYMAXDEPTH
-#define YYACCEPT	return(0)
+#define YYACCEPT	return 0
 #define YYABORT		return(1)
 #else
-#define YYACCEPT	{free_stacks(); return(0);}
+#define YYACCEPT	{free_stacks(); return 0;}
 #define YYABORT		{free_stacks(); return(1);}
 #endif
 
@@ -650,7 +650,7 @@ static int allocate_stacks() {
 	   yyerror( (nl_msg(30004,"unable to allocate space for yacc stacks")) );
 	   return(1);
 	   }
-	else return(0);
+	else return 0;
 
 }
 

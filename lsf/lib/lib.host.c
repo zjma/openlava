@@ -389,7 +389,7 @@ getAskedHosts_(char *optarg,
     nhlist = 0;
     if ((hlist = calloc(num, sizeof (char *))) == NULL)  {
         lserrno = LSE_MALLOC;
-        return (-1);
+        return -1;
     }
 
     *badIdx = 0;
@@ -435,10 +435,10 @@ getAskedHosts_(char *optarg,
 
     if (foundBadHost) {
         lserrno = LSE_BAD_HOST;
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 
   Error:
     for (i = 0; i < nhlist; i++)
@@ -446,5 +446,5 @@ getAskedHosts_(char *optarg,
     free(hlist);
     hlist = NULL;
     nhlist = 0;
-    return (-1);
+    return -1;
 }

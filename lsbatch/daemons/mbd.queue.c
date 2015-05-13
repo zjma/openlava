@@ -671,18 +671,18 @@ isQueAd(struct qData *qp, char *lsfUserName)
     char *admins, *user;
 
     if (!qp->nAdmins || !qp->admins)
-        return (FALSE);
+        return false;
 
     admins = qp->admins;
 
     for (user = getNextWord_(&admins); user; user = getNextWord_(&admins)) {
          if ((strcmp(user, lsfUserName) == 0)
                 || (strcmp(user, "all users") == 0)) {
-             return (TRUE);
+             return true;
          }
     }
 
-    return (FALSE);
+    return false;
 }
 int
 isAuthQueAd(struct qData *qp, struct lsfAuth *auth)
@@ -697,19 +697,19 @@ isInQueues(char *queue, char **queues, int num)
     int i;
 
     if (num <= 0 || queues == NULL || queue == NULL)
-        return (FALSE);
+        return false;
     for (i = 0; i < num; i++) {
         if (!strcmp (queue, queues[i]))
-            return (TRUE);
+            return true;
     }
-    return (FALSE);
+    return false;
 
 }
 bool_t
 isQInQSet(struct qData *queue, LS_BITSET_T *queueSet)
 {
     if (queue == NULL || queueSet == NULL)
-        return(FALSE);
+        return false;
 
     return(setIsMember(queueSet, queue));
 }

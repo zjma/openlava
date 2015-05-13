@@ -371,11 +371,11 @@ inIdxList(LS_LONG_INT jobId, struct idxList *idxList)
                 LSB_ARRAY_IDX(jobId) > idx->end)
                 continue;
             if (((LSB_ARRAY_IDX(jobId)-idx->start) % idx->step) == 0)
-                return(TRUE);
+                return true;
         }
-        return(FALSE);
+        return false;
     }
-    return(TRUE);
+    return true;
 }
 
 int

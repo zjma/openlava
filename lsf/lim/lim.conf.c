@@ -256,14 +256,14 @@ doindex(FILE *fp, int *LineNum, char *lsfile)
                                          "%s: %s(%d): Premature EOF"), /* catgets 5208 */
                   fname, lsfile, *LineNum);
         lim_CheckError = WARNING_ERR;
-        return(TRUE);
+        return true;
     }
 
     if (isSectionEnd(linep, lsfile, LineNum, "newindex")) {
         ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5209,
                                              "%s: %s(%d): empty section"), /* catgets 5209 */
                   fname, lsfile, *LineNum);
-        return(TRUE);
+        return true;
     }
 
     if (strchr(linep, '=') == NULL) {
@@ -273,13 +273,13 @@ doindex(FILE *fp, int *LineNum, char *lsfile)
                       fname,  lsfile, *LineNum);
             lim_CheckError = WARNING_ERR;
             doSkipSection(fp, LineNum, lsfile, "newindex");
-            return(TRUE);
+            return true;
         }
 
 
         while ((linep = getNextLineC_(fp, LineNum, TRUE)) != NULL) {
             if (isSectionEnd(linep, lsfile, LineNum, "newindex"))
-                return(TRUE);
+                return true;
             if (mapValues(keyList, linep) < 0) {
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5211,
                                                  "%s: %s(%d): values do not match keys for section newindex; ignoring line"), fname, lsfile, *LineNum); /* catgets 5211 */
@@ -290,25 +290,25 @@ doindex(FILE *fp, int *LineNum, char *lsfile)
             if (!setIndex(keyList, lsfile, *LineNum)) {
                 doSkipSection(fp, LineNum, lsfile, "newindex");
                 freeKeyList (keyList);
-                return(FALSE);
+                return false;
             }
             freeKeyList (keyList);
         }
     } else {
         if (readHvalues(keyList, linep, fp, lsfile,
                         LineNum, TRUE, "newindex") <0)
-            return(TRUE);
+            return true;
         if (! setIndex(keyList, lsfile, *LineNum)) {
-            return(FALSE);
+            return false;
         }
-        return(TRUE);
+        return true;
     }
 
     ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5212,
                                      "%s: %s(%d): Premature EOF"), /* catgets 5212 */
               fname, lsfile, *LineNum);
     lim_CheckError = WARNING_ERR;
-    return(TRUE);
+    return true;
 
 }
 
@@ -324,7 +324,7 @@ setIndex(struct keymap *keyList, char *lsfile, int linenum)
                                          "%s: %s(%d): Name %s is too long (maximum is %d chars); ignoring index"), /* catgets 5213 */
                   fname, lsfile, linenum, keyList[3].val, MAXLSFNAMELEN-1);
         lim_CheckError = WARNING_ERR;
-        return(TRUE);
+        return true;
     }
 
     if (strpbrk(keyList[3].val, ILLEGAL_CHARS) != NULL) {
@@ -332,14 +332,14 @@ setIndex(struct keymap *keyList, char *lsfile, int linenum)
                                          "%s: %s(%d): illegal character (one of %s)"), /* catgets 5214 */
                   fname, lsfile, linenum, ILLEGAL_CHARS);
         lim_CheckError = WARNING_ERR;
-        return(TRUE);
+        return true;
     }
     if (isdigit (keyList[3].val[0])) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5215,
                                          "%s: %s(%d): Index name <%s> begun with a digit is illegal; ignored"), /* catgets 5215 */
                   fname, lsfile, linenum, keyList[3].val);
         lim_CheckError = WARNING_ERR;
-        return(TRUE);
+        return true;
     }
 
     if ((resIdx = resNameDefined(keyList[3].val)) >= 0) {
@@ -347,7 +347,7 @@ setIndex(struct keymap *keyList, char *lsfile, int linenum)
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5216,
                                              "%s: %s(%d): Name <%s> is not a dynamic resource; ignored"), /* catgets 5216 */
                       fname, lsfile, linenum, keyList[3].val);
-            return (TRUE);
+            return true;
         }
         if ((allInfo.resTable[resIdx].flags & RESF_BUILTIN))
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5217,
@@ -358,7 +358,7 @@ setIndex(struct keymap *keyList, char *lsfile, int linenum)
                                              "%s: %s(%d): Name <%s> reserved or previously defined;ignoring"), /* catgets 5219 */
                       fname, lsfile, linenum, keyList[3].val);
             lim_CheckError = WARNING_ERR;
-            return(TRUE);
+            return true;
         }
     } else {
         resIdx = allInfo.nRes;
@@ -791,7 +791,7 @@ resNameDefined (char *name)
         if (strcmp(name, allInfo.resTable[i].name) == 0)
             return(i);
     }
-    return(-1);
+    return -1;
 }
 
 static char
@@ -1133,7 +1133,7 @@ doresourcemap(FILE *fp, char *lsfile, int *LineNum)
     if (! linep) {
         ls_syslog(LOG_ERR, I18N_PREMATURE_EOF,
                   fname, lsfile, *LineNum, "resourceMap");
-        return (-1);
+        return -1;
     }
 
 
@@ -1141,7 +1141,7 @@ doresourcemap(FILE *fp, char *lsfile, int *LineNum)
         ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5477,
                                              "%s: %s(%d): Empty resourceMap, no keywords or resources defined."), /* catgets 5477 */
                   fname, lsfile, *LineNum);
-        return (-1);
+        return -1;
     }
 
     if (strchr(linep, '=') == NULL) {
@@ -1149,13 +1149,13 @@ doresourcemap(FILE *fp, char *lsfile, int *LineNum)
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5267,
                                              "%s: %s(%d): keyword line format error for section resource, ignoring section"), fname, lsfile, *LineNum); /* catgets 5267 */
             doSkipSection(fp, LineNum, lsfile, "resourceMap");
-            return (-1);
+            return -1;
         }
 
 
         while ((linep = getNextLineC_(fp, LineNum, TRUE)) != NULL) {
             if (isSectionEnd(linep, lsfile, LineNum, "resourceMap")) {
-                return (0);
+                return 0;
             }
 
             if (mapValues(keyList, linep) < 0) {
@@ -1286,11 +1286,11 @@ doresourcemap(FILE *fp, char *lsfile, int *LineNum)
     } else {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5273,
                                          "%s: %s(%d): horizontal resource section not implemented yet"), fname, lsfile, *LineNum); /* catgets 5273 */
-        return (-1);
+        return -1;
     }
 
 
-    return (0);
+    return 0;
 
 }
 
@@ -1309,7 +1309,7 @@ addSharedResourceInstance(int nHosts, char **hosts, char *resName)
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5274,
                                          "%s: Resource name <%s> not defined"), /* catgets 5274 */
                   fname, resName);
-        return (-1);
+        return -1;
     }
 
 
@@ -1323,7 +1323,7 @@ addSharedResourceInstance(int nHosts, char **hosts, char *resName)
     if (tmp == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL, fname, "malloc",
                   sizeof(struct sharedResourceInstance));
-        return (-1);
+        return -1;
     } else {
         tmp->nextPtr = NULL;
         tmp->resName = putstr_(resName) ;
@@ -1331,7 +1331,7 @@ addSharedResourceInstance(int nHosts, char **hosts, char *resName)
         if (tmp->hosts == NULL){
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL, fname, "malloc",
                       nHosts*sizeof(struct hostNode) );
-            return (-1);
+            return -1;
         } else {
             cnt = 0;
             for ( i=0; i<nHosts; i++ ){
@@ -1382,14 +1382,14 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
                                          "%s: %s(%d): Resource name <%s> location <%s>"), /* catgets 5382 */
                   fname, lsfile, LineNum,
                   (resName?resName:"NULL"), (location?location:"NULL"));
-        return (-1);
+        return -1;
     }
 
     if ((resNo = resNameDefined(resName)) < 0) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5275,
                                          "%s: %s(%d): Resource name <%s> not defined"), /* catgets 5275 */
                   fname, lsfile, LineNum, resName);
-        return (-1);
+        return -1;
     }
 
     dynamic = (allInfo.resTable[resNo].flags & RESF_DYNAMIC);
@@ -1410,12 +1410,12 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5383,
                                          "%s: %s(%d): number of '[' is not match that of ']' in <%s> for resource <%s>; ignoring"), /* catgets 5383 */
                   fname, lsfile, LineNum, location, resName);
-        return (-1);
+        return -1;
     }
 
     if ((initValue = (char *)malloc(4*sizeof(char))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-        return (-1);
+        return -1;
     }
     sp = location;
 
@@ -1433,9 +1433,9 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
         if (*sp == '\0') {
             FREEUP(initValue);
             if (first == TRUE)
-                return (-1);
+                return -1;
             else
-                return (0);
+                return 0;
         }
         cp = sp;
         if ( *cp != '[' && *cp != '\0') {
@@ -1461,7 +1461,7 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
                                                  "%s: %s(%d): Invalid characters (%s) used as NUMERIC resource value; ignoring"), /* catgets 5386 */
                           fname, lsfile, LineNum, initValue);
                 FREEUP(initValue);
-                return (-1);
+                return -1;
             }
             cp[0] = ssp;
             if (isspace(*cp))
@@ -1491,7 +1491,7 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
                                                  "%s: %s(%d): Bad format for instance <%s>; ignoring the instance"), /* catgets 5385 */
                           fname, lsfile, LineNum, instance);
                 FREEUP(initValue);
-                return (-1);
+                return -1;
             }
             if (error == TRUE) {
                 sp++;
@@ -1594,7 +1594,7 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
             if (*sp == '\0')
             {
                 FREEUP(initValue);
-                return (-1);
+                return -1;
             }
             sp++;
         }
@@ -1603,7 +1603,7 @@ addResourceMap (char *resName, char *location, char *lsfile, int LineNum,
         FREEUP (hosts[j]);
     FREEUP (hosts);
     FREEUP(initValue);
-    return (0);
+    return 0;
 
 }
 
@@ -1616,14 +1616,14 @@ parseHostList (char *hostList, char *lsfile, int LineNum, char ***hosts, int *ha
     int numHosts = 0, i;
 
     if (hostList == NULL)
-        return (-1);
+        return -1;
 
     sp = hostList;
     while ((host = getNextWord_(&sp)) != NULL)
         numHosts++;
     if ((hostTable = (char **) calloc (numHosts, sizeof(char *))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-        return (-1);
+        return -1;
     }
     sp = hostList;
     numHosts = 0;
@@ -1640,7 +1640,7 @@ parseHostList (char *hostList, char *lsfile, int LineNum, char ***hosts, int *ha
             for (i = 0; i < numHosts; i++)
                 FREEUP (hostTable[i]);
             FREEUP (hostTable);
-            return (-1);
+            return -1;
         }
         if (!strcmp (hostName, "default"))
             *hasDefault = TRUE;
@@ -1648,7 +1648,7 @@ parseHostList (char *hostList, char *lsfile, int LineNum, char ***hosts, int *ha
     }
     if (numHosts == 0) {
         FREEUP (hostTable);
-        return (-1);
+        return -1;
     }
     *hosts = hostTable;
     return (numHosts);
@@ -1704,7 +1704,7 @@ static int
 validType (char *type)
 {
     if (type == NULL)
-        return (-1);
+        return -1;
 
     if (!strcasecmp (type, "Boolean"))
         return (LS_BOOLEAN);
@@ -1715,7 +1715,7 @@ validType (char *type)
     if (!strcasecmp (type, "Numeric"))
         return (LS_NUMERIC);
 
-    return (-1);
+    return -1;
 }
 
 int
@@ -1822,12 +1822,12 @@ readCluster2(struct clusterNode *clPtr)
             limParams[LSF_CONFDIR].paramValue, clPtr->clName);
 
     if (configCheckSum(fileName, &clPtr->checkSum) < 0) {
-        return (-1);
+        return -1;
     }
     if ((clfp = confOpen(fileName, "r")) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
                   fname, "confOpen", fileName);
-        return(-1);
+        return -1;
     }
 
     for (;;) {
@@ -2051,7 +2051,7 @@ domanager (FILE *clfp, char *lsfile, int *LineNum, char *secName)
             return 0;
         }
     }
-    return (0);
+    return 0;
 
 }
 
@@ -2072,7 +2072,7 @@ getClusAdmins (char *line, char *lsfile, int *LineNum, char *secName)
     if (strcmp (lastSecName, secName) == 0) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5294,
                                          "%s: %s(%d): section <%s> is multiply specified; ignoring the section"), fname, lsfile, *LineNum, secName); /* catgets 5294 */
-        return (-1);
+        return -1;
     }
     lserrno = LSE_NO_ERR;
     admins = getAdmins (line, lsfile, LineNum, secName);
@@ -2085,17 +2085,17 @@ getClusAdmins (char *line, char *lsfile, int *LineNum, char *secName)
     if (strcmp (secName, "clustermanager") == 0 &&
         strcmp (lastSecName, "clusteradmins") == 0) {
         if (setAdmins (admins, A_THEN_M) < 0)
-            return (-1);
+            return -1;
     } else if (strcmp (lastSecName, "clustermanager") == 0 &&
                strcmp (secName, "clusteradmins") == 0) {
         if (setAdmins (admins, M_THEN_A) < 0)
-            return (-1);
+            return -1;
     } else {
         if (setAdmins (admins, M_OR_A) < 0)
-            return (-1);
+            return -1;
     }
     strcpy (lastSecName, secName);
-    return (0);
+    return 0;
 
 }
 
@@ -2116,7 +2116,7 @@ setAdmins (struct admins *admins, int mOrA)
         FREEUP (tempAdminIds);
         FREEUP (tempAdminGids);
         FREEUP (tempAdminNames);
-        return (-1);
+        return -1;
     }
     if (mOrA == M_THEN_A) {
         workNAdmins = nClusAdmins;
@@ -2168,7 +2168,7 @@ setAdmins (struct admins *admins, int mOrA)
     clusAdminNames = tempAdminNames;
 
 
-    return (0);
+    return 0;
 }
 static int
 doclparams (FILE *clfp, char *lsfile, int *LineNum)
@@ -2922,7 +2922,7 @@ archNameToNo(const char *archName)
     if (best_pos) {
         return (best_pos);
     }
-    return (-1);
+    return -1;
 }
 
 static
@@ -3248,32 +3248,32 @@ addHostInstance (struct sharedResource *sharedResource,  int nHosts, char **host
     struct  resourceInstance *instance;
 
     if (nHosts <= 0 || hostNames == NULL)
-        return (-1);
+        return -1;
 
     if (resourceMap == FALSE) {
 
         if (sharedResource->numInstances > 1) {
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5405,
                                              "%s: More than one instatnce defined for the resource <%s> on host <%s> in host section; ignoring"), fname, sharedResource->resourceName, hostNames[0]); /* catgets 5405 */
-            return (-1);
+            return -1;
         }
         if (sharedResource->numInstances == 0) {
 
             if (addInstance (sharedResource, nHosts, hostNames, value) == NULL) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "addInstance");
-                return (-1);
+                return -1;
             }
         } else {
 
             if (addHostList (sharedResource->instances[0], nHosts, hostNames) < 0) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "addHostList");
-                return (-1);
+                return -1;
             }
         }
         instance = sharedResource->instances[0];
 
         if (addHostNodeIns(instance, nHosts, hostNames) < 0)
-            return (-1);
+            return -1;
     } else {
 
         if (numHosts == 0 && temp == NULL) {
@@ -3316,11 +3316,11 @@ addHostInstance (struct sharedResource *sharedResource,  int nHosts, char **host
         }
         if ((instance = addInstance (sharedResource, numHosts, temp, value)) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "addInstance");
-            return (-1);
+            return -1;
         }
 
         if (addHostNodeIns(instance, numHosts, temp) < 0)
-            return (-1);
+            return -1;
 
 
 
@@ -3331,7 +3331,7 @@ addHostInstance (struct sharedResource *sharedResource,  int nHosts, char **host
             return -1 ;
         }
     }
-    return (0);
+    return 0;
 
 }
 
@@ -3464,7 +3464,7 @@ addHostNodeIns(struct resourceInstance *instance,
         hPtr->instances = temp;
         hPtr->numInstances++;
     }
-    return (0);
+    return 0;
 }
 
 static struct  resourceInstance *
@@ -3489,7 +3489,7 @@ addHostList (struct resourceInstance *resourceInstance, int nHosts, char **hostN
     struct hostNode *hostPtr;
 
     if (resourceInstance == NULL || nHosts <= 0 || hostNames == NULL)
-        return (-1);
+        return -1;
 
     if (resourceInstance->nHosts == 0)
         temp = (struct hostNode **)
@@ -3500,7 +3500,7 @@ addHostList (struct resourceInstance *resourceInstance, int nHosts, char **hostN
 
     if (temp == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (-1);
+        return -1;
     }
     resourceInstance->hosts = temp;
 
@@ -3513,7 +3513,7 @@ addHostList (struct resourceInstance *resourceInstance, int nHosts, char **hostN
         resourceInstance->hosts[resourceInstance->nHosts] = hostPtr;
         resourceInstance->nHosts++;
     }
-    return (0);
+    return 0;
 
 }
 static struct resourceInstance *
@@ -3654,7 +3654,7 @@ validLoadIndex(const char *resName)
             return (i);
     }
 
-    return(-1);
+    return -1;
 
 }
 
@@ -3669,7 +3669,7 @@ validHostType(const char *hType)
             return (i);
     }
 
-    return (-1);
+    return -1;
 
 }
 int
@@ -3682,7 +3682,7 @@ validHostModel(const char *hModel)
             return (i);
     }
 
-    return (-1);
+    return -1;
 
 }
 
@@ -3694,7 +3694,7 @@ addHostType(char *type)
     if (allInfo.nTypes == MAXTYPES) {
         ls_syslog(LOG_ERR, "\
 %s: Too many host types defined in section HostType. You can only define up to %d host types; host type %s ignored", __func__, MAXTYPES, type);
-        return(FALSE);
+        return false;
     }
 
     for (i = 0; i < allInfo.nTypes; i++) {
@@ -4004,7 +4004,7 @@ reCheckClusterClass(struct clusterNode *clPtr)
         clPtr->resBitMaps = calloc(GET_INTNUM(allInfo.nRes), sizeof (int));
         if (clPtr->resBitMaps == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return (-1);
+            return -1;
         }
         for (i = 0; i < GET_INTNUM(allInfo.nRes); i++)
             clPtr->resBitMaps[i] = 0;
@@ -4014,7 +4014,7 @@ reCheckClusterClass(struct clusterNode *clPtr)
         clPtr->hostTypeBitMaps = calloc(GET_INTNUM(allInfo.nTypes), sizeof(int));
         if (clPtr->hostTypeBitMaps == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return (-1);
+            return -1;
         }
         for (i = 0; i < GET_INTNUM(allInfo.nTypes); i++)
             clPtr->hostTypeBitMaps[i] = 0;
@@ -4024,7 +4024,7 @@ reCheckClusterClass(struct clusterNode *clPtr)
         clPtr->hostModelBitMaps = calloc(GET_INTNUM(allInfo.nModels), sizeof(int));
         if (clPtr->hostModelBitMaps == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return (-1);
+            return -1;
         }
         for (i = 0; i < GET_INTNUM(allInfo.nModels); i++)
             clPtr->hostModelBitMaps[i] = 0;
@@ -4205,18 +4205,18 @@ doubleResTable(char *lsfile, int lineNum)
     struct resItem *tempTable;
 
     if (sizeOfResTable <= 0)
-        return (-1);
+        return -1;
 
     tempTable = (struct resItem *)realloc (allInfo.resTable,
                                            2* sizeOfResTable*sizeof(struct resItem));
     if (tempTable == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL, fname, "realloc",
                   2 * sizeOfResTable*sizeof (struct resItem));
-        return (-1);
+        return -1;
     }
     allInfo.resTable = tempTable;
     sizeOfResTable *= 2;
-    return (0);
+    return 0;
 
 }
 
@@ -4318,7 +4318,7 @@ setExtResourcesDef(char *resName)
     if ((extResInfoPtr = getExtResourcesDef(resName)) == NULL)
     {
         setExtResourcesDefDefault(resName);
-        return(0);
+        return 0;
     }
 
 
@@ -4329,7 +4329,7 @@ setExtResourcesDef(char *resName)
                                          "%s: type <%s> for external resource <%s> is not valid"),  /* catgets 5371 */
                   fname, extResInfoPtr->type, resName);
         setExtResourcesDefDefault(resName);
-        return(0);
+        return 0;
     }
 
 
@@ -4348,7 +4348,7 @@ setExtResourcesDef(char *resName)
                                              "%s: interval <%s> for external resource <%s> should be a integer greater than 0"),  /* catgets 5372 */
                       fname, extResInfoPtr->interval, resName);
             setExtResourcesDefDefault(resName);
-            return(0);
+            return 0;
         }
     }
 
@@ -4370,7 +4370,7 @@ setExtResourcesDef(char *resName)
                                                      "%s: increasing <%s> for resource <%s> is not valid"),  /* catgets 5373 */
                               fname, extResInfoPtr->increasing, resName);
                     setExtResourcesDefDefault(resName);
-                    return(0);
+                    return 0;
                 }
             }
         } else
@@ -4386,7 +4386,7 @@ setExtResourcesDef(char *resName)
                                              "%s: No increasing specified for a numeric resource <%s>"),  /* catgets 5375 */
                       fname, resName);
             setExtResourcesDefDefault(resName);
-            return(0);
+            return 0;
         }
     }
 
@@ -4404,14 +4404,14 @@ setExtResourcesDef(char *resName)
             if (!(li =  realloc(li, li_len*sizeof(struct liStruct))))
             {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-                return(-1);
+                return -1;
             }
         }
         if ((li[NBUILTINDEX + allInfo.numUsrIndx].name =
              putstr_(allInfo.resTable[allInfo.nRes].name)) == NULL)
         {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return(-1);
+            return -1;
         }
 
         li[NBUILTINDEX + allInfo.numUsrIndx].increasing =
@@ -4419,7 +4419,7 @@ setExtResourcesDef(char *resName)
         allInfo.numUsrIndx++;
         allInfo.numIndx++;
     }
-    return(0);
+    return 0;
 }
 
 static int
@@ -4451,7 +4451,7 @@ setExtResourcesLoc(char *resName, int resNo)
     {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "addResourceMap", resName);
         lim_CheckError = WARNING_ERR;
-        return(-1);
+        return -1;
     }
 
     if (!(isDefault &&
@@ -4463,7 +4463,7 @@ setExtResourcesLoc(char *resName, int resNo)
         allInfo.resTable[resNo].flags |= RESF_SHARED;
     }
 
-    return(0);
+    return 0;
 }
 
 

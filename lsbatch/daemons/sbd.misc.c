@@ -269,7 +269,7 @@ fcp(char *file1, char *file2, struct hostent *hp)
 
     close(fd1);
     close(fd2);
-    return (0);
+    return 0;
 }
 
 #ifdef __sun__

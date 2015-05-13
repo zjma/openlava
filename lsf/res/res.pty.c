@@ -55,13 +55,13 @@ ptymaster(char *line)
     master_fd = open("/dev/ptmx", O_RDWR);
     if (master_fd < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "open", "/dev/ptmx");
-        return(-1);
+        return -1;
     }
     if (grantpt(master_fd) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "grantpt",
             master_fd);
         close(master_fd);
-        return(-1);
+        return -1;
     }
 
     if (unlockpt(master_fd) < 0) {
@@ -74,7 +74,7 @@ ptymaster(char *line)
         if (slave == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "ptsname");
             close(master_fd);
-            return(-1);
+            return -1;
         }
         strcpy(line,slave);
 #else
@@ -86,7 +86,7 @@ ptymaster(char *line)
         if (slave == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "ptsname");
             close(master_fd);
-            return(-1);
+            return -1;
         }
         strcpy(line,slave);
 #if !defined(__sun__)
@@ -107,7 +107,7 @@ ptyslave(char *tty_name)
     slave = open(tty_name, O_RDWR);
 
     if (slave < 0) {
-        return(-1);
+        return -1;
     }
 
     return(slave);

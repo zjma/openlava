@@ -84,11 +84,11 @@ bhc (int argc, char *argv[], int opCode)
 	!(numHosts == 0 && all)) {
 
 	if ((hostInfo = getHostList(&numHosts, hostPoint)) == NULL)
-	    return (-1);
+	    return -1;
     } else {
 	if ((hostInfo = lsb_hostinfo (hostPoint, &numHosts)) == NULL) {
 	    lsb_perror(NULL);
-	    return (-1);
+	    return -1;
 	}
     }
 

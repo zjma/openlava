@@ -55,14 +55,14 @@ remvMemb(struct hTab *tabPtr, LS_LONG_INT member)
     if (tabPtr) {
         sprintf(memberStr,LS_LONG_FORMAT , member);
         if ((ent = h_getEnt_(tabPtr, memberStr)) == NULL)
-	    return(FALSE);
+	    return false;
         else {
             ent->hData = NULL;
 	    h_delEnt_ (tabPtr, ent);
-	    return(TRUE);
+	    return true;
         }
     }
-    return(FALSE);
+    return false;
 }
 
 hEnt *
@@ -103,14 +103,14 @@ remvMembStr(struct hTab *tabPtr, char *memberStr)
 
     if (tabPtr && memberStr) {
         if ((ent = h_getEnt_(tabPtr, memberStr)) == NULL)
-	    return(FALSE);
+	    return false;
         else {
             ent->hData = NULL;
 	    h_delEnt_(tabPtr, ent);
-	    return(TRUE);
+	    return true;
         }
     }
-    return(FALSE);
+    return false;
 }
 
 hEnt *
@@ -146,7 +146,7 @@ insertSortIntList(struct sortIntList *header, int value)
     while (listPtr != header) {
 
 	if (listPtr->value == value)
-	    return(0);
+	    return 0;
         if (header->value) {
 
 	    if (listPtr->value > value)
@@ -204,12 +204,12 @@ int
 getMinSortIntList(struct sortIntList *header, int *minValue)
 {
     if (header == header->forw)
-	return(-1);
+	return -1;
     if (header->value)
 	*minValue = header->forw->value;
     else
 	*minValue = header->back->value;
-    return(0);
+    return 0;
 
 }
 
@@ -218,12 +218,12 @@ getMaxSortIntList(struct sortIntList *header, int *maxValue)
 {
 
     if (header == header->forw)
-	return(-1);
+	return -1;
     if (header->value)
 	*maxValue = header->back->value;
     else
 	*maxValue = header->forw->value;
-    return(0);
+    return 0;
 
 }
 
@@ -249,15 +249,15 @@ sndJobFile_(int s, struct lenData *jf)
 
     if (b_write_fix(s, NET_INTADDR_(&nlen), NET_INTSIZE_) != NET_INTSIZE_) {
 	lsberrno = LSBE_SYS_CALL;
-	return (-1);
+	return -1;
     }
 
     if (b_write_fix(s, jf->data, jf->len) != jf->len) {
 	lsberrno = LSBE_SYS_CALL;
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 

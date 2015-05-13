@@ -182,7 +182,7 @@ ls_ropen(char *host, char *fn, int flags, int mode)
 
 
     if ((rh = rhConnect(host)) == NULL)
-	return (-1);
+	return -1;
 
     for (fd = 0; fd < maxOpen && ft[fd].host; fd++);
 
@@ -194,7 +194,7 @@ ls_ropen(char *host, char *fn, int flags, int mode)
 					      sizeof(struct rfTab)))
 	    == NULL) {
 	    lserrno = LSE_MALLOC;
-	    return (-1);
+	    return -1;
 	}
 
 	ft = tmpft;
@@ -212,18 +212,18 @@ ls_ropen(char *host, char *fn, int flags, int mode)
     if (lsSendMsg_(rh->sock, RF_OPEN, 0, (char *) &req, buf,
 		   sizeof(struct LSFHeader) + MAXFILENAMELEN +
 		   sizeof(req), xdr_ropenReq, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, buf, sizeof(hdr), &hdr, NULL, NULL, SOCK_READ_FIX)
 	< 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
     ft[fd].host = rh;
@@ -242,7 +242,7 @@ ls_rclose(int fd)
 
     if (fd < 0 || fd >= maxOpen || ft[fd].host == NULL) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     rh = ft[fd].host;
@@ -251,12 +251,12 @@ ls_rclose(int fd)
     if (lsSendMsg_(rh->sock, RF_CLOSE, 0, (char *) &reqfd, buf,
 		   sizeof(struct LSFHeader) + sizeof(reqfd), xdr_int,
 		   SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, buf, sizeof(hdr), &hdr, NULL, NULL, SOCK_READ_FIX)
 	< 0) {
-	return (-1);
+	return -1;
     }
 
     ft[fd].host = NULL;
@@ -267,10 +267,10 @@ ls_rclose(int fd)
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -287,7 +287,7 @@ ls_rwrite(int fd, char *buf, int len)
 
     if (fd < 0 || fd >= maxOpen || ft[fd].host == NULL) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     rh = ft[fd].host;
@@ -298,23 +298,23 @@ ls_rwrite(int fd, char *buf, int len)
     if (lsSendMsg_(rh->sock, RF_WRITE, 0, (char *) &req, (char *) &msgBuf,
 		   sizeof(struct LSFHeader) + sizeof(req),
 		   xdr_rrdwrReq, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (SOCK_WRITE_FIX(rh->sock, buf, len) != len) {
 	lserrno = LSE_MSG_SYS;
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, (char *) &msgBuf, sizeof(hdr), &hdr, NULL, NULL,
 		   SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
     return (hdr.length);
@@ -334,7 +334,7 @@ ls_rread(int fd, char *buf, int len)
 
     if (fd < 0 || fd >= maxOpen || ft[fd].host == NULL) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     rh = ft[fd].host;
@@ -345,23 +345,23 @@ ls_rread(int fd, char *buf, int len)
     if (lsSendMsg_(rh->sock, RF_READ, 0, (char *) &req, (char *) &msgBuf,
 		   sizeof(struct LSFHeader) + sizeof(req),
 		   xdr_rrdwrReq, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, (char *) &msgBuf, sizeof(hdr), &hdr, NULL, NULL,
 		   SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
     if (SOCK_READ_FIX(rh->sock, buf, hdr.length) != hdr.length) {
 	lserrno = LSE_MSG_SYS;
-	return (-1);
+	return -1;
     }
     return (hdr.length);
 }
@@ -380,7 +380,7 @@ ls_rlseek(int fd, off_t offset, int whence)
 
     if (fd < 0 || fd >= maxOpen || ft[fd].host == NULL) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     rh = ft[fd].host;
@@ -391,18 +391,18 @@ ls_rlseek(int fd, off_t offset, int whence)
 
     if (lsSendMsg_(rh->sock, RF_LSEEK, 0, (char *) &req, (char *) &msgBuf,
 		   sizeof(msgBuf), xdr_rlseekReq, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, (char *) &msgBuf, sizeof(hdr), &hdr, NULL, NULL,
 		   SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
     return ((off_t) hdr.length);
@@ -419,7 +419,7 @@ ls_rfstat(int fd, struct stat *st)
 
     if (fd < 0 || fd >= maxOpen || ft[fd].host == NULL) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     rh = ft[fd].host;
@@ -429,21 +429,21 @@ ls_rfstat(int fd, struct stat *st)
     if (lsSendMsg_(rh->sock, RF_FSTAT, 0, (char *) &reqfd, buf,
 		   sizeof(struct LSFHeader) + sizeof(reqfd), xdr_int,
 		   SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, buf, MSGSIZE, &hdr,
 		   (char *) st, xdr_stat, SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -454,18 +454,18 @@ ls_rfcontrol(int command, int arg)
       case RF_CMD_MAXHOSTS:
 	if (arg < 1) {
 	    lserrno = LSE_BAD_ARGS;
-	    return (-1);
+	    return -1;
 	}
 	maxnrh = arg;
-	return (0);
+	return 0;
 
       case RF_CMD_RXFLAGS:
 	rxFlags = arg;
-	return (0);
+	return 0;
 
       default:
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 }
 
@@ -485,7 +485,7 @@ int rhTerminate(char *host)
 
     if ((hp = Gethostbyname_(host)) == NULL) {
 	lserrno = LSE_BAD_HOST;
-	return (-1);
+	return -1;
     }
 
     for (prev = NULL, rh = rHosts; rh; prev = rh, rh = rh->next) {
@@ -507,12 +507,12 @@ int rhTerminate(char *host)
 	    free(rh->hname);
 	    free(rh);
 	    nrh--;
-	    return (0);
+	    return 0;
 	}
     }
 
     lserrno = LSE_BAD_HOST;
-    return (-1);
+    return -1;
 }
 
 
@@ -525,29 +525,29 @@ ls_rstat(char *host, char *fn, struct stat *st)
     struct stringLen fnStr;
 
     if ((rh = rhConnect(host)) == NULL)
-	return (-1);
+	return -1;
 
     fnStr.len = MAXFILENAMELEN;
     fnStr.name = fn;
     if (lsSendMsg_(rh->sock, RF_STAT, 0, (char *)&fnStr, buf,
 		   sizeof(struct LSFHeader) + MAXFILENAMELEN,
 		   xdr_stringLen, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, buf, MSGSIZE, &hdr,
 		   (char *) st, xdr_stat, SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 char *
@@ -607,17 +607,17 @@ ls_conntaskport(int rpid)
 	resTimeout = RES_TIMEOUT;
 
     if ((tid = tid_find(rpid)) == NULL) {
-        return (-1);
+        return -1;
     }
 
     sinLen = sizeof(sin);
     if (getpeername(tid->sock, (struct sockaddr *) &sin, &sinLen) < 0) {
         lserrno = LSE_SOCK_SYS;
-        return (-1);
+        return -1;
     }
 
     if ((sock = CreateSock_(SOCK_STREAM)) < 0) {
-        return (-1);
+        return -1;
     }
 
     sin.sin_port = tid->taskPort;
@@ -629,7 +629,7 @@ ls_conntaskport(int rpid)
     if (cc < 0) {
         closesocket(sock);
         lserrno = LSE_CONN_SYS;
-        return (-1);
+        return -1;
     }
 
     return (sock);
@@ -648,7 +648,7 @@ ls_runlink(char *host, char *fn)
     struct stringLen fnStr;
 
     if ((rh = rhConnect(host)) == NULL)
-	return (-1);
+	return -1;
 
     hostStr.len = MAXHOSTNAMELEN;
     hostStr.name = hostname;
@@ -658,21 +658,21 @@ ls_runlink(char *host, char *fn)
     if (lsSendMsg_(rh->sock, RF_UNLINK, 0, (char *) &fnStr, buf,
 		   sizeof(struct LSFHeader) + MAXFILENAMELEN,
 		   xdr_stringLen, SOCK_WRITE_FIX, NULL) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (lsRecvMsg_(rh->sock, buf, MSGSIZE, &hdr,
 		   (char *) &hostStr, xdr_stringLen, SOCK_READ_FIX) < 0) {
-	return (-1);
+	return -1;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 

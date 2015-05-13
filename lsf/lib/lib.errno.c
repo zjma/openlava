@@ -113,7 +113,7 @@ errnoEncode_(int eno)
     if (eno >= NERRNO_MAP)
 	return(eno);
     else                
-	return(0);
+	return 0;
 
 } 
 
@@ -127,7 +127,7 @@ errnoDecode_(int eno)
         if (strerror(eno) != NULL)
             return(eno);
         else
-            return(0); 
+            return 0; 
     }
     
     return(errno_map[eno]);

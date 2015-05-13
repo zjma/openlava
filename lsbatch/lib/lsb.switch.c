@@ -38,16 +38,16 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
 
     if (jobId <= 0 || queue == 0) {
 	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+	return -1;
     }
     if (queue && (strlen (queue) >= MAX_LSB_NAME_LEN - 1)) {
         lsberrno = LSBE_BAD_QUEUE;
-        return(-1);
+        return -1;
     }
 
 
     if (authTicketTokens_(&auth, NULL) == -1)
-	return (-1);
+	return -1;
     
     jobSwitchReq.jobId = jobId;
     strcpy (jobSwitchReq.queue, queue);
@@ -62,7 +62,7 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
     if (!xdr_encodeMsg(&xdrs, (char *)&jobSwitchReq, &hdr, xdr_jobSwitchReq,
 		       0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
     
@@ -70,7 +70,7 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
                        &hdr, NULL, NULL, NULL)) == -1)
     {
 	xdr_destroy(&xdrs);
-	return (-1);
+	return -1;
     }
 
     xdr_destroy(&xdrs);
@@ -79,8 +79,8 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
 	free(reply_buf);
 
     if (lsberrno == LSBE_NO_ERROR)
-        return(0);
+        return 0;
     else
-	return(-1);
+	return -1;
 
 } 

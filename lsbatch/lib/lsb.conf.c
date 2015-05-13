@@ -2557,7 +2557,7 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
         FREEUP (nonOverridableHosts);
         FREEUP (tmpHosts);
         FREEUP (hostList);
-        return(FALSE);
+        return false;
     }
     h_initTab_(tmpHosts, 32);
     h_initTab_(nonOverridableHosts, 32);
@@ -4187,7 +4187,7 @@ do_Queues(struct lsConf *conf,
                         lsberrno = LSBE_CONF_WARNING;
                         freekeyval(keylist);
                         freeQueueInfo( &queue );
-                        return(FALSE);
+                        return false;
                     }
                     subString = getNextWord_(&originalString);
                 }
@@ -5787,7 +5787,7 @@ parseSigActCmd (struct queueInfoEnt *qp, char *linep, char *fname,
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5408,
                                                  "%s:File %s %s at line %d: SUSPEND, RESUME or TERMINATE is missing"), __func__, fname, section, *lineNum); /* catgets 5408 */
             lsberrno = LSBE_CONF_WARNING;
-            return(-1);
+            return -1;
         }
         if (strcmp (actClass, "SUSPEND") == 0)
             actClassValue = 0;

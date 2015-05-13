@@ -256,7 +256,7 @@ sumMembers (struct gData *gp, char r, int first)
 	num = 0;
 
     if (gp->numGroups == 0 && gp->memberTab.numEnts == 0 && r)
-        return (0);
+        return 0;
 
     num += gp->memberTab.numEnts;
 
@@ -265,7 +265,7 @@ sumMembers (struct gData *gp, char r, int first)
     else {
 	for (i=0; i<gp->numGroups; i++)
             if (sumMembers (gp->gPtr[i], r, 0) == 0)
-                return (0);
+                return 0;
     }
 
     return (num);
@@ -886,7 +886,7 @@ userSetOnNewUser(LS_BITSET_T *subjectSet,
 
     setAddElement(set, (void *)newUser);
 
-    return (0);
+    return 0;
 
 }
 

@@ -271,7 +271,7 @@ readPIMBuf(char *pfile)
 	}
         if ((fp = openPIMFile(pfile)) == NULL) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "openPIMFile", pfile);
-   	    return (FALSE);
+   	    return false;
         }
 	if (fread(pimInfoBuf,sizeof(char),pimInfoLen,fp) <= 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fread");
@@ -316,7 +316,7 @@ readPIMFile(char *pfile)
 
 	if ((buffer=readPIMBuf(pfile))==NULL) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "readPIMBuf");
-	    return(FALSE);
+	    return false;
 	}
 
 	FREEUP(pinfoList);
@@ -325,14 +325,14 @@ readPIMFile(char *pfile)
 	if (pinfoList == NULL) {
 		ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname,  "malloc",
 				sizeof(struct lsPidInfo) * MAX_NUM_PID);
-		return(FALSE);
+		return false;
 	}
 
 	tmpbuf = getNextString(buffer,pimString);
 	if (tmpbuf == NULL) {
 		ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5908,
 	"%s format error"), "pim.info"); /* catgets 5908 */
-		return(FALSE);
+		return false;
 	}
 	buffer = tmpbuf;
 
@@ -357,13 +357,13 @@ readPIMFile(char *pfile)
 				ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "realloc",
 					  sizeof(struct lsPidInfo)
 					  * (npinfoList + MAX_NUM_PID));
-				return(FALSE);
+				return false;
 			}
 			pinfoList = tmp;
 		}
 	}
 
-	return(TRUE);
+	return true;
 }
 
 static struct jRusage *
@@ -496,14 +496,14 @@ inAddPList(struct lsPidInfo *pinfo)
 	if (pinfo->pgid == pgidList[i]) {
 	    if (pinfo->pid > -1) {
 		if (intoPidList(pinfo) == -1)
-		    return (-1);
+		    return -1;
 	    }
 	    return (1);
 	}
     }
 
     if (pinfo->pid < 0)
-	return (0);
+	return 0;
 
     for (i = 0; i < npidList; i++) {
 	if (pinfo->ppid == pidList[i].pid) {
@@ -519,19 +519,19 @@ inAddPList(struct lsPidInfo *pinfo)
 		if (tmpPtr == NULL) {
 		    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "inAddPList",
 			"realloc", (npgidList + PGID_LIST_SIZE) * sizeof(int));
-		    return (-1);
+		    return -1;
 		}
 		pgidList = tmpPtr;
 	    }
 
 	    if (intoPidList(pinfo) == -1)
-		return (-1);
+		return -1;
 
 	    return (1);
 	}
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -554,12 +554,12 @@ intoPidList(struct lsPidInfo *pinfo)
 	if (tmpPtr == NULL) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "intoPidList", "realloc",
 			(npidList + PID_LIST_SIZE) * sizeof(struct pidInfo));
-	    return (-1);
+	    return -1;
 	}
 	pidList = tmpPtr;
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -570,14 +570,14 @@ pimPort(struct sockaddr_in *pimAddr, char *pfile)
     int port;
 
     if ((fp = openPIMFile(pfile)) == NULL)
-	return (-1);
+	return -1;
 
     fscanf(fp, "%d", &port);
 
     fclose(fp);
 
     pimAddr->sin_port = htons(port);
-    return (0);
+    return 0;
 }
 
 

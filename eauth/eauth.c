@@ -118,7 +118,7 @@ main (int argc, char **argv)
     fclose(logfp);
 #endif
 
-    return (0);
+    return 0;
 } 
 
 
@@ -145,14 +145,14 @@ printUserName(void)
 #if defined(DEBUG)
         fprintf(logfp, "getUser failed: %s!\n", ls_sysmsg());
 #endif   
-        return(-1);   
+        return -1;   
     }
         
     if ((encUsername = encryptByKey_(NULL, lsfUserName)) == NULL){
 #if defined(DEBUG)
         fprintf(logfp, "encryptByKey_ (NULL, %s) failed!\n",  pw->pw_name);
         
-        return (-1);
+        return -1;
 #endif  
     }      
     memset(dataBuff,0,sizeof(dataBuff));
@@ -191,7 +191,7 @@ vauth(char *lsfUserName, char *datBuf, int datLen)
 #if defined(DEBUG)
         fprintf(logfp, "decryptByKey_(NULL,  %s) failed!\n", datBuf);
 #endif 
-	return (-1);
+	return -1;
     }
     if (strcmp(deUserName, lsfUserName) != 0) {
 #if defined(DEBUG)
@@ -199,12 +199,12 @@ vauth(char *lsfUserName, char *datBuf, int datLen)
 	        deUserName, lsfUserName);
         fflush(logfp);
 #endif
-	return (-1);
+	return -1;
     }
 #if defined(DEBUG)
     fprintf(logfp, "decrypt username success, dataBuf is %s, username is %s\n", datBuf, lsfUserName);
     fflush(logfp);
 #endif 
-    return (0);
+    return 0;
 
 } 

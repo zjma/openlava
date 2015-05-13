@@ -417,13 +417,13 @@ isAncestor(struct jgTreeNode *x, struct jgTreeNode *y)
     struct jgTreeNode *ndPtr;
 
     if (!x || !y)
-        return(FALSE);
+        return false;
 
     for (ndPtr = y->parent; ndPtr; ndPtr = ndPtr->parent)
         if (ndPtr == x)
-            return(TRUE);
+            return true;
 
-    return(FALSE);
+    return false;
 }
 
 int
@@ -432,13 +432,13 @@ isChild(struct jgTreeNode *x, struct jgTreeNode *y)
     struct jgTreeNode *ndPtr;
 
     if (!x || !y)
-        return(FALSE);
+        return false;
 
     for (ndPtr = FIRST_CHILD(x); ndPtr; ndPtr = RIGHT_SIBLING(ndPtr))
         if (ndPtr == y)
-            return(TRUE);
+            return true;
 
-    return(FALSE);
+    return false;
 }
 
 struct jgTreeNode *
@@ -1028,10 +1028,10 @@ jgrpPermitOk(struct lsfAuth *auth, struct jgTreeNode *jgrp)
     struct jgTreeNode *nPtr;
 
     if (!jgrp)
-        return(FALSE);
+        return false;
 
     if (mSchedStage == M_STAGE_REPLAY)
-        return(TRUE);
+        return true;
 
     if (auth->uid == 0 || isAuthManager(auth)) {
         return TRUE;
@@ -1070,7 +1070,7 @@ jgrpPermitOk(struct lsfAuth *auth, struct jgTreeNode *jgrp)
                     return TRUE;
         }
     }
-    return(FALSE);
+    return false;
 }
 
 bool_t
@@ -1257,7 +1257,7 @@ skipJgrpByReq (int options, int jStatus)
     else if ((options & DONE_JOB) && IS_FINISH(jStatus)) {
         return FALSE;
     }
-    return(TRUE);
+    return true;
 }
 
 static int
@@ -1271,50 +1271,50 @@ isSelected(struct jobInfoReq *jobInfoReq, struct jData *jpbw,
     char allhosts = jgrp->allhosts;
 
     if (skipJgrpByReq (jobInfoReq->options, jpbw->jStatus))
-        return(FALSE);
+        return false;
 
     if (!allqueues && strcmp(jpbw->qPtr->queue, jobInfoReq->queue) != 0)
-        return(FALSE);
+        return false;
 
     if (!allusers && strcmp(jpbw->userName, jobInfoReq->userName)) {
         if (jgrp->uGrp == NULL)
-            return(FALSE);
+            return false;
         else if (!gMember(jpbw->userName, jgrp->uGrp))
-            return(FALSE);
+            return false;
     }
 
     if (!allhosts) {
         struct gData *gp;
         if (IS_PEND (jpbw->jStatus))
-            return(FALSE);
+            return false;
 
         if (jpbw->hPtr == NULL) {
             if (!(jpbw->jStatus & JOB_STAT_EXIT))
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6404,
                                                  "%s: Execution host for job <%s> is null"), /* catgets 6404 */
                           fname, lsb_jobid2str(jpbw->jobId));
-            return(FALSE);
+            return false;
         }
         gp = getHGrpData (jobInfoReq->host);
         if (gp != NULL) {
             for (i = 0; i < jpbw->numHostPtr; i++) {
                 if (jpbw->hPtr[i] == NULL)
-                    return(FALSE);
+                    return false;
                 if (gMember(jpbw->hPtr[i]->host, gp))
                     break;
             }
             if (i >= jpbw->numHostPtr)
-                return(FALSE);
+                return false;
         }
         else {
             for (i = 0; i < jpbw->numHostPtr; i++) {
                 if (jpbw->hPtr[i] == NULL)
-                    return(FALSE);
+                    return false;
                 if (equalHost_(jobInfoReq->host, jpbw->hPtr[i]->host))
                     break;
             }
             if (i >= jpbw->numHostPtr)
-                return(FALSE);
+                return false;
         }
     }
 
@@ -1325,12 +1325,12 @@ isSelected(struct jobInfoReq *jobInfoReq, struct jData *jpbw,
                 LSB_ARRAY_IDX(jpbw->jobId) > idx->end)
                 continue;
             if (((LSB_ARRAY_IDX(jpbw->jobId)-idx->start) % idx->step) == 0)
-                return(TRUE);
+                return true;
         }
-        return(FALSE);
+        return false;
     }
     else
-        return(TRUE);
+        return true;
 }
 
 static int
@@ -1361,7 +1361,7 @@ storeToJgrpList(void *ptr, struct jgrpInfo *jgrp, int type)
         jgrp->jgrpList[jgrp->numNodes++].isJData = TRUE;
     else
         jgrp->jgrpList[jgrp->numNodes++].isJData = FALSE;
-    return(TRUE);
+    return true;
 }
 
 char *

@@ -76,8 +76,8 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
         FREEUP(jobSpecs->execHosts);
         if (!xdr_thresholds(xdrs, jobSpecs) ||
             !xdr_lenData(xdrs, &jobSpecs->eexec))
-            return(FALSE);
-        return(TRUE);
+            return false;
+        return true;
     }
 
     if (xdrs->x_op == XDR_ENCODE) {
@@ -85,7 +85,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
     }
     if (!xdr_int(xdrs, &jobArrId)) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "xdr_int", "jobId");
-        return(FALSE);
+        return false;
     }
 
     if (!(xdr_int(xdrs, &jobSpecs->userId) &&
@@ -100,7 +100,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	  xdr_float(xdrs, &jobSpecs->lastCpuTime))) {
 	ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 	    "xdr_int", "userId");
-        return(FALSE);
+        return false;
     }
 
     nLimits = LSF_RLIM_NLIMITS;
@@ -109,7 +109,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		  lsb_jobid2str(tmpJobId),
 		  "xdr_int", "nLimits");
-	return(FALSE);
+	return false;
     }
 
 
@@ -118,7 +118,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	    ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
 		      lsb_jobid2str(tmpJobId),
 		      "xdr_lsfLimit");
-	    return(FALSE);
+	    return false;
 	}
     }
 
@@ -130,7 +130,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
 			  lsb_jobid2str(tmpJobId),
 			  "xdr_lsfLimit");
-		return(FALSE);
+		return false;
 	    }
 	}
     }
@@ -150,7 +150,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
           xdr_int(xdrs, &jobSpecs->jAttrib)))  {
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname, lsb_jobid2str(tmpJobId),
 	    "xdr_int", "jStatus");
-	return(FALSE);
+	return false;
     }
 
     sp[0] = jobSpecs->jobFile;
@@ -183,7 +183,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		  lsb_jobid2str(tmpJobId),
 		  "xdr_int", "jobFile");
-        return(FALSE);
+        return false;
     }
      if (xdrs->x_op == XDR_DECODE)
          sp[11][0] = '\0';
@@ -191,7 +191,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
          ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		   lsb_jobid2str(tmpJobId),
                    "xdr_int", "jobFile");
-         return(FALSE);
+         return false;
      }
 
     sp[12] = jobSpecs->queue;
@@ -207,7 +207,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
           xdr_string(xdrs, &sp[14], MAX_LSB_NAME_LEN))) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname, lsb_jobid2str(tmpJobId),
             "xdr_int", "jobFile");
-        return(FALSE);
+        return false;
     }
 
 
@@ -215,7 +215,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
     if (!xdr_int(xdrs, &jobSpecs->numToHosts)) {
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname, lsb_jobid2str(tmpJobId),
 	    "xdr_int", "numToHosts");
-	return(FALSE);
+	return false;
     }
 
     if (xdrs->x_op == XDR_DECODE && jobSpecs->numToHosts) {
@@ -228,7 +228,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	    ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		      lsb_jobid2str(tmpJobId),
 		      "xdr_var_string", "toHosts");
-	    return(FALSE);
+	    return false;
 	}
     }
 
@@ -243,7 +243,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		  lsb_jobid2str(tmpJobId),
 		  "xdr_int", "nxf");
-        return(FALSE);
+        return false;
     }
 
     if (xdrs->x_op == XDR_DECODE && jobSpecs->nxf > 0) {
@@ -257,7 +257,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 	    ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		      lsb_jobid2str(tmpJobId),
 		      "xdr_arrayElement", "xf");
-	    return(FALSE);
+	    return false;
 	}
     }
 
@@ -286,7 +286,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
           xdr_int(xdrs, &jobSpecs->execUid)  &&
           xdr_int(xdrs, &jobSpecs->maxNumProcessors)  &&
           xdr_int(xdrs, &jobSpecs->numEnv)))
-            return(FALSE);
+            return false;
 
     if (xdrs->x_op == XDR_DECODE && jobSpecs->numEnv) {
         jobSpecs->env = (char **) my_calloc(jobSpecs->numEnv,
@@ -295,16 +295,16 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 
     for (i = 0; i < jobSpecs->numEnv; i++) {
         if (!xdr_var_string(xdrs, &jobSpecs->env[i]))
-                return(FALSE);
+                return false;
     }
 
 
     if (!xdr_lenData(xdrs, &jobSpecs->eexec))
-        return (FALSE);
+        return false;
 
 
     if (!xdr_int(xdrs, &jobSpecs->niosPort))
-        return (FALSE);
+        return false;
     sp[0] = jobSpecs->resumeCond;
     sp[1] = jobSpecs->stopCond;
     sp[2] = jobSpecs->suspendActCmd;
@@ -317,7 +317,7 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
     }
     if (!(xdr_string(xdrs, &sp[0],  MAXLINELEN)) ||
         !(xdr_string(xdrs, &sp[1],  MAXLINELEN)))
-        return (FALSE);
+        return false;
 
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -327,28 +327,28 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
 
     for ( i = 2; i < 5; i++)
         if (!(xdr_string(xdrs, &sp[i], MAXLINELEN)))
-            return(FALSE);
+            return false;
 
 
     for (i = 0; i <LSB_SIG_NUM; i++)
         if (!(xdr_int(xdrs, &jobSpecs->sigMap[i])))
-            return(FALSE);
+            return false;
 
     if (!(xdr_int(xdrs, &jobSpecs->actValue)))
-        return (FALSE);
+        return false;
 
     if (!xdr_var_string(xdrs, &jobSpecs->loginShell))
-        return (FALSE);
+        return false;
 
     if (!xdr_var_string(xdrs, &jobSpecs->schedHostType))
-        return (FALSE);
+        return false;
 
     if (!xdr_var_string(xdrs, &jobSpecs->execHosts))
-        return (FALSE);
+        return false;
 
 
     if (!xdr_int(xdrs, &jobSpecs->options2)) {
-        return(FALSE);
+        return false;
     }
 
 
@@ -356,11 +356,11 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
     if(!( xdr_string(xdrs, &pTemp, MAXPATHLEN))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
                   "xdr_string", "jobSpoolDir");
-        return(FALSE);
+        return false;
     }
 
     if (!(xdr_int(xdrs, &jobArrElemId))) {
-	return (FALSE);
+	return false;
     }
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -373,35 +373,35 @@ xdr_jobSpecs (XDR *xdrs, struct jobSpecs *jobSpecs, struct LSFHeader *hdr)
     if (!(xdr_string(xdrs, &sp[0], MAXFILENAMELEN))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 		       "xdr_string", "inFileSpool");
-        return (FALSE);
+        return false;
     }
     if (!(xdr_string(xdrs, &sp[1], MAXFILENAMELEN))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 			"xdr_string", "commandSpool");
-        return (FALSE);
+        return false;
     }
 
     if (!(xdr_int(xdrs, &jobSpecs->userPriority))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "xdr_int",
 		       "userPriority");
-        return (FALSE);
+        return false;
     }
 
     sp[0] = jobSpecs->execUsername;
     if (!(xdr_string(xdrs, &sp[0], MAX_LSB_NAME_LEN))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 			"xdr_string", "execUsername");
-        return (FALSE);
+        return false;
     }
 
     sp[0] = jobSpecs->prepostUsername;
     if (!(xdr_string(xdrs, &sp[0], MAX_LSB_NAME_LEN))) {
 	ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 			"xdr_string", "prepostUsername");
-	return (FALSE);
+	return false;
     }
 
-    return(TRUE);
+    return true;
 
 }
 
@@ -425,14 +425,14 @@ xdr_jobSig (XDR *xdrs, struct jobSig *jobSig, struct LSFHeader *hdr)
 	  xdr_int(xdrs, &(jobSig->actFlags)) &&
           xdr_int(xdrs,&(jobSig->reasons)) &&
           xdr_int(xdrs,&(jobSig->subReasons))))
-        return (FALSE);
+        return false;
     if (!xdr_var_string(xdrs, &jobSig->actCmd))
-	return (FALSE);
+	return false;
     if (xdrs->x_op == XDR_DECODE)
 	actCmd = jobSig->actCmd;
 
     if (!xdr_int(xdrs, &jobArrElemId)) {
-        return (FALSE);
+        return false;
     }
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -442,17 +442,17 @@ xdr_jobSig (XDR *xdrs, struct jobSig *jobSig, struct LSFHeader *hdr)
 	jobId64To32(jobSig->newJobId, &newJobArrId, &newJobArrElemId);
     }
     if (!xdr_int(xdrs,&newJobArrId)) {
-        return (FALSE);
+        return false;
     }
 
     if (!xdr_int(xdrs, &newJobArrElemId)) {
-        return (FALSE);
+        return false;
     }
 
     if (xdrs->x_op == XDR_DECODE) {
 	jobId32To64(&jobSig->newJobId,newJobArrId,newJobArrElemId);
     }
-    return (TRUE);
+    return true;
 }
 
 bool_t
@@ -463,36 +463,36 @@ xdr_jobReply (XDR *xdrs, struct jobReply *jobReply, struct LSFHeader *hdr)
 	jobId64To32(jobReply->jobId, &jobArrId, &jobArrElemId);
     }
     if (! xdr_int(xdrs, &jobArrId))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->jobPid))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->jobPGid))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->actPid))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->jStatus))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->reasons))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->actValue))
-        return (FALSE);
+        return false;
 
     if (! xdr_int(xdrs, &jobReply->actStatus))
-        return (FALSE);
+        return false;
 
     if (!xdr_int(xdrs, &jobArrElemId)) {
-        return (FALSE);
+        return false;
     }
     if (xdrs->x_op == XDR_DECODE) {
 	jobId32To64(&jobReply->jobId,jobArrId,jobArrElemId);
     }
-    return(TRUE);
+    return true;
 }
 
 bool_t
@@ -516,7 +516,7 @@ xdr_statusReq (XDR *xdrs, struct statusReq *statusReq, struct LSFHeader *hdr)
             FREEUP (statusReq->runRusage.pidInfo);
         if (statusReq->runRusage.npgids > 0)
             FREEUP (statusReq->runRusage.pgid);
-        return(TRUE);
+        return true;
     }
 
     if (xdrs->x_op == XDR_ENCODE) {
@@ -531,57 +531,57 @@ xdr_statusReq (XDR *xdrs, struct statusReq *statusReq, struct LSFHeader *hdr)
 	  xdr_int(xdrs,&statusReq->reason) &&
 	  xdr_int(xdrs,&statusReq->subreasons) &&
 	  xdr_int(xdrs, (int *) &statusReq->sbdReply)))
-        return (FALSE);
+        return false;
 
 
     if (!xdr_arrayElement(xdrs, (char *) &statusReq->lsfRusage, hdr,
 			  xdr_lsfRusage))
-        return (FALSE);
+        return false;
 
     if (!(xdr_int(xdrs, &statusReq->execUid) &&
           xdr_int(xdrs, &statusReq->numExecHosts)))
-        return(FALSE);
+        return false;
     if (xdrs->x_op == XDR_DECODE) {
         if (statusReq->numExecHosts > 0) {
             statusReq->execHosts = (char **) calloc(statusReq->numExecHosts,
                                      sizeof(char *));
             if (!statusReq->execHosts)
-                return(FALSE);
+                return false;
         }
     }
     if (!xdr_array_string(xdrs, statusReq->execHosts, MAXHOSTNAMELEN,
                                                       statusReq->numExecHosts))
-        return(FALSE);
+        return false;
     if (!(xdr_int(xdrs, &statusReq->exitStatus) &&
           xdr_var_string(xdrs, &statusReq->execHome) &&
 	  xdr_var_string(xdrs, &statusReq->execUsername) &&
 	  xdr_var_string(xdrs, &statusReq->execCwd) &&
 	  xdr_var_string(xdrs, &statusReq->queuePreCmd) &&
 	  xdr_var_string(xdrs, &statusReq->queuePostCmd)))
-	return(FALSE);
+	return false;
 
 
     if (!xdr_int(xdrs, &statusReq->msgId))
-        return (FALSE);
+        return false;
 
 
 
     if (!(xdr_jRusage(xdrs, &(statusReq->runRusage), hdr)))
-        return (FALSE);
+        return false;
 
     if (!(xdr_int(xdrs, &(statusReq->sigValue)) &&
          xdr_int(xdrs, &(statusReq->actStatus))))
-        return(FALSE);
+        return false;
 
     if (!xdr_int(xdrs, &jobArrElemId)) {
-        return (FALSE);
+        return false;
     }
 
     if (xdrs->x_op == XDR_DECODE) {
 	jobId32To64(&statusReq->jobId,jobArrId,jobArrElemId);
     }
 
-    return(TRUE);
+    return true;
 }
 
 bool_t
@@ -603,12 +603,12 @@ xdr_chunkStatusReq (XDR *xdrs, struct chunkStatusReq *chunkStatusReq,
             FREEUP(chunkStatusReq->statusReqs[i]);
 	}
         FREEUP(chunkStatusReq->statusReqs);
-        return(TRUE);
+        return true;
     }
     if (!xdr_int(xdrs, &chunkStatusReq->numStatusReqs)) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "xdr_int",
 		  "numStatusReqs");
-        return(FALSE);
+        return false;
     }
     if (xdrs->x_op == XDR_DECODE && chunkStatusReq->numStatusReqs) {
         chunkStatusReq->statusReqs = (struct statusReq **)
@@ -622,7 +622,7 @@ xdr_chunkStatusReq (XDR *xdrs, struct chunkStatusReq *chunkStatusReq,
     for ( i = 0; i < chunkStatusReq->numStatusReqs; i++) {
          xdr_statusReq(xdrs, chunkStatusReq->statusReqs[i], hdr);
     }
-    return(TRUE);
+    return true;
 }
 
 bool_t
@@ -645,23 +645,23 @@ xdr_sbdPackage (XDR *xdrs, struct sbdPackage *sbdPackage, struct LSFHeader *hdr)
          xdr_int(xdrs, &sbdPackage->numJobs) &&
          xdr_string (xdrs, &sp, MAX_LSB_NAME_LEN))) {
 	ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "xdr_int", "lsbManager");
-	return(FALSE);
+	return false;
     }
 
     if (xdrs->x_op == XDR_ENCODE) {
         for (i = 0; i < sbdPackage->numJobs; i++)
 	    if (!xdr_arrayElement(xdrs, (char *) &(sbdPackage->jobs[i]),
                                          hdr, xdr_jobSpecs))
-		return(FALSE);
+		return false;
 
 
         if (!xdr_sbdPackage1 (xdrs, sbdPackage, hdr))
-	    return(FALSE);
+	    return false;
     }
 
 
 
-    return(TRUE);
+    return true;
 
 }
 
@@ -675,18 +675,18 @@ xdr_sbdPackage1 (XDR *xdrs, struct sbdPackage *sbdPackage, struct LSFHeader *hdr
     if (!(xdr_int(xdrs, &sbdPackage->uJobLimit))) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 	          "xdr_int", "uJobLimit");
-        return(FALSE);
+        return false;
     }
 
     if (!(xdr_int(xdrs, &sbdPackage->rusageUpdateRate) &&
           xdr_int(xdrs, &sbdPackage->rusageUpdatePercent)))
-        return(FALSE);
+        return false;
 
 
     if (!xdr_int(xdrs, &sbdPackage->jobTerminateInterval)) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname,
 		"xdr_int", "jobTerminateInterval");
-	return (FALSE);
+	return false;
     }
 
 
@@ -701,12 +701,12 @@ xdr_sbdPackage1 (XDR *xdrs, struct sbdPackage *sbdPackage, struct LSFHeader *hdr
                = (char **) calloc (sbdPackage->nAdmins, sizeof (char *));
             if (sbdPackage->admins == NULL) {
                 sbdPackage->nAdmins = 0;
-                return (FALSE);
+                return false;
             }
         }
         for (i = 0; i < sbdPackage->nAdmins; i++) {
             if (!xdr_var_string (xdrs, &sbdPackage->admins[i]))
-                return (FALSE);
+                return false;
         }
     }
 
@@ -717,7 +717,7 @@ xdr_sbdPackage1 (XDR *xdrs, struct sbdPackage *sbdPackage, struct LSFHeader *hdr
 	FREEUP(sbdPackage->admins);
     }
 
-    return(TRUE);
+    return true;
 }
 
 static int
@@ -738,7 +738,7 @@ xdr_thresholds(XDR *xdrs, struct jobSpecs *jobSpecs)
         }
         FREEUP(jobSpecs->thresholds.loadSched);
         FREEUP(jobSpecs->thresholds.loadStop);
-        return(TRUE);
+        return true;
     }
 
     if (!(xdr_int(xdrs, &jobSpecs->thresholds.nIdx) &&
@@ -746,7 +746,7 @@ xdr_thresholds(XDR *xdrs, struct jobSpecs *jobSpecs)
 	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 		  lsb_jobid2str(jobSpecs->jobId),
 		  "xdr_int", "nIdx/nThresholds");
-        return(FALSE);
+        return false;
     }
     if (xdrs->x_op == XDR_DECODE) {
 	jobSpecs->thresholds.loadSched = (float **)
@@ -768,11 +768,11 @@ xdr_thresholds(XDR *xdrs, struct jobSpecs *jobSpecs)
 		ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
 			  lsb_jobid2str(jobSpecs->jobId),
 			  "xdr_float", "loadStop/loadSched");
-                return(FALSE);
+                return false;
             }
 	}
     }
-    return (TRUE);
+    return true;
 
 }
 

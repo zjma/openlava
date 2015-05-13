@@ -35,24 +35,24 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
 	  xdr_int(xdrs, &cmd->filemask) &&
 	  xdr_int(xdrs, &cmd->priority) &&
 	  xdr_int(xdrs, &cmd->options)))
-	return (FALSE);
+	return false;
 
     sp = cmd->cwd;
     if (xdrs->x_op == XDR_DECODE)
 	sp[0] = '\0';
 
     if (!xdr_string(xdrs, &sp, MAXPATHLEN))
-	return (FALSE);
+	return false;
 
     if (xdrs->x_op == XDR_ENCODE)
 	for (argc=0; cmd->argv[argc]; argc++);
     
     if (!xdr_int(xdrs, &argc))
-	return (FALSE);
+	return false;
     
     if (xdrs->x_op == XDR_DECODE) {
 	if ((cmd->argv = (char **) calloc(argc + 1, sizeof(char *))) == NULL)
-	    return (FALSE);
+	    return false;
     }
 	
     for (i=0; i<argc; i++) {
@@ -62,7 +62,7 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
 		    free(cmd->argv[i]);
 		free(cmd->argv);
 	    }
-	    return (FALSE);
+	    return false;
 	}
     }
 
@@ -75,7 +75,7 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
 	if (xdrs->x_op == XDR_DECODE)
 	    goto DecodeQuit;
 	else
-	    return (FALSE);
+	    return false;
     }
 
     
@@ -89,17 +89,17 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
 	    if (xdrs->x_op == XDR_DECODE)
 		goto DecodeQuit;
 	    else
-		return (FALSE);
+		return false;
 	}
     }
 
-    return (TRUE);
+    return true;
     
   DecodeQuit:
     for (i=0; i<argc; i++)
 	free(cmd->argv[i]);
     free(cmd->argv);
-    return (FALSE);
+    return false;
 }
 
 
@@ -113,11 +113,11 @@ xdr_resSetenv (XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
 	for (nenv=0; envp->env[nenv]; nenv++);
 
     if (!xdr_int(xdrs, &nenv))
-	return(FALSE);
+	return false;
 
     if (xdrs->x_op == XDR_DECODE) {
 	if ((envp->env = (char **) calloc(nenv + 1, sizeof(char *))) == NULL)
-	    return (FALSE);
+	    return false;
     }
     
     for (i=0; i<nenv; i++) {
@@ -126,7 +126,7 @@ xdr_resSetenv (XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
 		while (i--)
 		    free(envp->env[i]);
 		free(envp->env);
-		return (FALSE);
+		return false;
 	    }
 	} else { 
 	    sp = envp->env[i]; 
@@ -137,14 +137,14 @@ xdr_resSetenv (XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
             }
 
 	    if (!xdr_var_string(xdrs, &sp))
-		return (FALSE);
+		return false;
 	}
     }
     
     if (xdrs->x_op == XDR_DECODE)
 	envp->env[nenv] = NULL;
 
-    return (TRUE);
+    return true;
 } 
 
 bool_t 
@@ -153,9 +153,9 @@ xdr_resRKill (XDR *xdrs, struct resRKill *rkill, struct LSFHeader *hdr)
     if (! (xdr_int(xdrs, &rkill->rid) &&
 	   xdr_int(xdrs, &rkill->whatid) &&
 	   xdr_int(xdrs, &rkill->signal)))
-	return (FALSE);
+	return false;
 
-    return (TRUE);
+    return true;
 }
 
 bool_t 
@@ -163,9 +163,9 @@ xdr_resGetpid (XDR *xdrs, struct resPid *pidreq, struct LSFHeader *hdr)
 {
     if (! (xdr_int(xdrs, &pidreq->rpid) &&
 	   xdr_int(xdrs, &pidreq->pid)))
-	return (FALSE);
+	return false;
 
-    return (TRUE);
+    return true;
 } 
 
 bool_t 
@@ -174,10 +174,10 @@ xdr_resGetRusage (XDR *xdrs, struct resRusage *rusageReq,struct LSFHeader *hdr)
     if (! (xdr_int(xdrs, &rusageReq->rid) 
 	   && xdr_int(xdrs, &rusageReq->whatid)
 	   && xdr_int(xdrs, &rusageReq->options))) {
-	return (FALSE);
+	return false;
     }
 
-    return (TRUE);
+    return true;
 } 
 
 
@@ -190,10 +190,10 @@ xdr_resChdir (XDR *xdrs, struct resChdir *ch, struct LSFHeader *hdr)
 	sp[0] = '\0';
 
     if (!xdr_string(xdrs, &sp, MAXFILENAMELEN))
-	return (FALSE);
+	return false;
 
     
-    return (TRUE);
+    return true;
 }
 
 
@@ -202,8 +202,8 @@ xdr_resControl (XDR *xdrs, struct resControl *ctrl, struct LSFHeader *hdr)
 {
     if (! (xdr_int(xdrs, &ctrl->opCode) 
            && xdr_int(xdrs, &ctrl->data))) 
-	return (FALSE);
-    return (TRUE);
+	return false;
+    return true;
 }
 
 
@@ -212,10 +212,10 @@ xdr_resStty (XDR *xdrs, struct resStty *tty, struct LSFHeader *hdr)
 {
     if (xdrs->x_op == XDR_ENCODE) {
 	if (!encodeTermios_(xdrs, &tty->termattr))
-	    return (FALSE);
+	    return false;
     } else {
 	if (!decodeTermios_(xdrs, &tty->termattr))
-	    return (FALSE);
+	    return false;
     }
 
     
@@ -223,9 +223,9 @@ xdr_resStty (XDR *xdrs, struct resStty *tty, struct LSFHeader *hdr)
 	   xdr_u_short(xdrs, &tty->ws.ws_col) &&
 	   xdr_u_short(xdrs, &tty->ws.ws_xpixel) &&
 	   xdr_u_short(xdrs, &tty->ws.ws_ypixel)))
-	return (FALSE);
+	return false;
     
-    return (TRUE);
+    return true;
 }
 
 bool_t 
@@ -242,7 +242,7 @@ xdr_ropenReq (XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
     }
 
     if (!xdr_string(xdrs, &sp, len)) {
-	return (FALSE);
+	return false;
     }
 
     if (xdrs->x_op == XDR_ENCODE) {
@@ -275,10 +275,10 @@ xdr_ropenReq (XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
 	    flags |= LSF_O_CREAT_DIR;
         }
 	if (!xdr_int(xdrs, &flags))
-	    return (FALSE);
+	    return false;
     } else {
 	if (!xdr_int(xdrs, &flags))
-	    return (FALSE);
+	    return false;
 	req->flags = 0;
 	if (flags & LSF_O_WRONLY)
 	    req->flags |= O_WRONLY;
@@ -310,9 +310,9 @@ xdr_ropenReq (XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
     }
 
     if (!xdr_int(xdrs, &req->mode))
-	return (FALSE);
+	return false;
 
-    return (TRUE);
+    return true;
 } 
 
 bool_t 
@@ -340,7 +340,7 @@ xdr_rlseekReq (XDR *xdrs, struct rlseekReq *req, struct LSFHeader *hdr)
 
     if (!(xdr_int(xdrs, &req->fd) && xdr_int(xdrs, &whence) &&
 	  xdr_int(xdrs, &req->offset)))
-	return (FALSE);
+	return false;
 
     if (xdrs->x_op == XDR_DECODE) {
 	req->whence = 0;
@@ -352,14 +352,14 @@ xdr_rlseekReq (XDR *xdrs, struct rlseekReq *req, struct LSFHeader *hdr)
 	    req->whence |= SEEK_END;
     }
 
-    return (TRUE);
+    return true;
 } 
 
 bool_t
 xdr_noxdr(XDR *xdrs, int size, struct LSFHeader *header)
 {
     XDR_SETPOS(xdrs, size + LSF_HEADER_LEN);
-    return (TRUE);
+    return true;
 } 
      
 

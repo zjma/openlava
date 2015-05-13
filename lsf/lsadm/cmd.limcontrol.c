@@ -71,7 +71,7 @@ limCtrl(int argc, char **argv, int opCode)
                 break;
             if (!getConfirm("Do you want to reconfigure? [y/n] ")) {
                 fprintf(stderr, "Reconfiguration aborted.\n");
-                return(-1);
+                return -1;
             }
             break;
         default:

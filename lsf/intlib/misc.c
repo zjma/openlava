@@ -83,7 +83,7 @@ getBootTime(time_t *bootTime)
 	envIFS = (char *)malloc(len+8);
         if(envIFS == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-    	    return (-1);
+    	    return -1;
 	}
 	sprintf(envIFS, "IFS=%s", oldIFS);
 	putenv("IFS=");
@@ -132,7 +132,7 @@ getBootTime(time_t *bootTime)
 		putenv(envIFS);
 		FREEUP(envIFS);
     	    }
-	    return (0);
+	    return 0;
 	}
 	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "getBootTime", "popen");
     }
@@ -144,7 +144,7 @@ getBootTime(time_t *bootTime)
 	FREEUP(envIFS);
     }
 
-    return (-1);
+    return -1;
 }
 
 
@@ -240,22 +240,22 @@ matchName(char *pattern, char *name)
     int i, ip;
 
     if (!pattern || !name)
-        return(FALSE);
+        return false;
 
     ip = (int)strlen(pattern);
     for (i = 0; i < ip && pattern[i] != '['; i++) {
 
         if (pattern[i] == '*')
-            return(TRUE);
+            return true;
 
         if (name[i] == '\0' || name[i] == '[' || pattern[i] != name[i])
-            return(FALSE);
+            return false;
     };
 
     if (name[i] == '\0' || name[i] == '[' )
-        return(TRUE);
+        return true;
     else
-        return(FALSE);
+        return false;
 
 }
 
@@ -527,7 +527,7 @@ compareAddrValues(char *rangeStr, char *valueStr)
 		      "%s: Bad address value <%s>"), /* catgets 5710 */
 		      fname, valueStr);
 	}
-	return(FALSE);
+	return false;
     }
 
     lowPtr = range;
@@ -551,7 +551,7 @@ compareAddrValues(char *rangeStr, char *valueStr)
 			  "%s: Bad high range value <%s>"), /* catgets 5711 */
 			  fname, highPtr);
 	    }
-	    return(FALSE);
+	    return false;
 	}
     }
 
@@ -566,7 +566,7 @@ compareAddrValues(char *rangeStr, char *valueStr)
 			      "%s: Bad low range value <%S>"), /* catgets 5712 */
 			      fname, lowPtr);
 		}
-		return(FALSE);
+		return false;
 	}
     }
 
@@ -576,9 +576,9 @@ compareAddrValues(char *rangeStr, char *valueStr)
 		  fname, lowRange, highRange, value);
     }
     if ( (lowRange <= value) && (highRange >= value) ) {
-	return(TRUE);
+	return true;
     }
-    return(FALSE);
+    return false;
 }
 
 int
@@ -595,13 +595,13 @@ withinAddrRange(char *addrRange, char *address)
 
 
     if (addrRange == NULL) {
-	return(TRUE);
+	return true;
     }
 
     if ( (addrRange[0] == '\0')
 	 || (address == NULL)
 	 || (address[0] == '\0') ) {
-	return(FALSE);
+	return false;
     }
 
     mystrncpy(tempAddrRange, addrRange, sizeof(char)*MAXADDRSTRING);
@@ -620,7 +620,7 @@ withinAddrRange(char *addrRange, char *address)
 	if (*nextAddr != '\0') {
 
 	    if (withinAddrRange(nextAddr, tempAddress) == TRUE) {
-		return(TRUE);
+		return true;
 	    }
 	}
     }
@@ -654,14 +654,14 @@ withinAddrRange(char *addrRange, char *address)
 
 
 	if (compareAddrValues(mark1, mark2) == FALSE) {
-	    return(FALSE);
+	    return false;
 	}
 
 	mark1 = ptr1;
 	mark2 = ptr2;
     }
 
-    return(TRUE);
+    return true;
 }
 
 int
@@ -688,21 +688,21 @@ validateAddrValue(char *rangeStr)
     if (highPtr != NULL) {
 	if (*highPtr == '*') {
 	    if (highPtr[1] != '\0') {
-		return(FALSE);
+		return false;
 	    }
 	} else {
 
 	    digitCheck = highPtr;
 	    while (*digitCheck != '\0') {
 		if (isdigit((int)*digitCheck) == FALSE) {
-		    return(FALSE);
+		    return false;
 		}
 		digitCheck += sizeof(char);
 	    }
 
 	    highRange = atoi(highPtr);
 	    if ( (highRange < 0) || (highRange > 255) ) {
-		return(FALSE);
+		return false;
 	    }
 	}
     }
@@ -710,29 +710,29 @@ validateAddrValue(char *rangeStr)
     if (lowPtr != NULL) {
 	if (*lowPtr == '*') {
 	    if (lowPtr[1] != '\0') {
-		return(FALSE);
+		return false;
 	    }
 	} else {
 
 	    digitCheck = lowPtr;
 	    while (*digitCheck != '\0') {
 		if (isdigit((int)*digitCheck) == FALSE) {
-		    return(FALSE);
+		    return false;
 		}
 		digitCheck += sizeof(char);
 	    }
 
 	    lowRange = atoi(lowPtr);
 	    if ( (lowRange < 0) || (lowRange > 255) ) {
-		return(FALSE);
+		return false;
 	    }
 	}
     }
 
     if (lowRange > highRange) {
-	return(FALSE);
+	return false;
     }
-    return(TRUE);
+    return true;
 }
 
 int
@@ -749,7 +749,7 @@ validateAddrRange(char *addrRange)
 
 
     if (addrRange == NULL) {
-	return(TRUE);
+	return true;
     }
 
 
@@ -768,7 +768,7 @@ validateAddrRange(char *addrRange)
 	if (*nextAddr != '\0') {
 
 	    if (validateAddrRange(nextAddr) == FALSE) {
-		return(FALSE);
+		return false;
 	    }
 	}
     }
@@ -794,7 +794,7 @@ validateAddrRange(char *addrRange)
 	    ls_syslog(LOG_ERR, I18N(5717,
 		      "%s: too many fields in address range <%s>"), /* catgets 5717 */
 		      fname, debugAddrRange);
-	    return(FALSE);
+	    return false;
 	}
 
 
@@ -802,7 +802,7 @@ validateAddrRange(char *addrRange)
 	    ls_syslog(LOG_ERR, I18N(9999,
 		      "%s: invalid address range <%s>\n"), /* catgets 5718 */
 		      fname, debugAddrRange);
-	    return(FALSE);
+	    return false;
 	}
 	fieldCount++;
 
@@ -813,9 +813,9 @@ validateAddrRange(char *addrRange)
 	ls_syslog(LOG_ERR, I18N(5718,
 		  "%s: invalid address range <%s>\n"), /* catgets 5718 */
 		  fname, debugAddrRange);
-	return(FALSE);
+	return false;
     }
-    return(TRUE);
+    return true;
 }
 
 char *

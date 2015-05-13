@@ -147,9 +147,9 @@ oneLimDebug(struct debugReq *pdebug, char *hostname)
 
     if (callLim_(limReqCode, &debugData, xdr_debugReq, NULL,
                  NULL, host, 0, NULL) < 0)
-        return (-1);
+        return -1;
 
-    return (0);
+    return 0;
 
 }
 

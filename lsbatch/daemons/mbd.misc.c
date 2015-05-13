@@ -1351,7 +1351,7 @@ isAuthManager(struct lsfAuth *auth)
 {
 
     if (mSchedStage == M_STAGE_REPLAY)
-        return(TRUE);
+        return true;
 
     return (isManager(auth->lsfUserName));
 }

@@ -85,7 +85,7 @@ getEAuth(struct eauth *eauth, char *host)
         if (logclass & (LC_AUTH |LC_TRACE))
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL,  "runEAuth", "runEClient", path);
         lserrno = LSE_EAUTH;
-        return (-1);
+        return -1;
     }
 
     if (ld.len == 0) {
@@ -93,7 +93,7 @@ getEAuth(struct eauth *eauth, char *host)
             ls_syslog(LOG_DEBUG, "runEAuth: <%s> got no data", path);
         FREEUP(ld.data);
         lserrno = LSE_EAUTH;
-        return (-1);
+        return -1;
     }
 
     if (ld.len > EAUTH_SIZE) {
@@ -102,7 +102,7 @@ getEAuth(struct eauth *eauth, char *host)
                       path, ld.len);
         FREEUP(ld.data);
         lserrno = LSE_EAUTH;
-        return (-1);
+        return -1;
     }
 
     memcpy(eauth->data, ld.data, ld.len);
@@ -117,7 +117,7 @@ getEAuth(struct eauth *eauth, char *host)
         ls_syslog(LOG_DEBUG, "runEAuth: <%s> got len=%d",
                   path, ld.len);
 
-    return (0);
+    return 0;
 
 }
 
@@ -136,7 +136,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
 
     if (!(genParams_[LSF_AUTH].paramValue &&
           !strcmp(genParams_[LSF_AUTH].paramValue, AUTH_PARAM_EAUTH)))
-        return (-1);
+        return -1;
 
     eauth_client = getenv("LSF_EAUTH_CLIENT");
     eauth_server = getenv("LSF_EAUTH_SERVER");
@@ -195,20 +195,20 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
 
         {
             if ((user = getLSFAdmin()) == NULL) {
-                return (-1);
+                return -1;
             }
         }
 
         if (pipe(in) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "pipe(in)", uData);
             lserrno = LSE_SOCK_SYS;
-            return (-1);
+            return -1;
         }
 
         if (pipe(out) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "pipe(out)", uData);
             lserrno = LSE_SOCK_SYS;
-            return (-1);
+            return -1;
         }
 
 
@@ -261,7 +261,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
             close(in[1]);
             close(out[0]);
             lserrno = LSE_FORK;
-            return(-1);
+            return -1;
         }
 
         connected = TRUE;
@@ -276,7 +276,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
         CLOSEHANDLE(in[1]);
         CLOSEHANDLE(out[0]);
         connected = FALSE;
-        return (-1);
+        return -1;
     }
     if(logclass & (LC_AUTH | LC_TRACE))
         ls_syslog(LOG_DEBUG, _i18n_msg_get(ls_catd , NL_SETN, 5514,
@@ -291,7 +291,7 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
         CLOSEHANDLE(in[1]);
         CLOSEHANDLE(out[0]);
         connected = FALSE;
-        return (-1);
+        return -1;
     }
     if(logclass & (LC_AUTH | LC_TRACE))
         ls_syslog(LOG_DEBUG, _i18n_msg_get(ls_catd , NL_SETN, 5516,
@@ -306,17 +306,17 @@ verifyEAuth_(struct lsfAuth *auth, struct sockaddr_in *from)
         CLOSEHANDLE(in[1]);
         CLOSEHANDLE(out[0]);
         connected = FALSE;
-        return (-1);
+        return -1;
     }
 
     if (ok != '1') {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5518,
                                          "%s: eauth <%s> len=%d failed, rc=%c"), /* catgets 5518 */
                   fname, uData, auth->k.eauth.len, ok);
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 static char *

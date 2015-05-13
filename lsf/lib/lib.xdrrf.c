@@ -39,7 +39,7 @@ lsRecvMsg_(int sock, char *buf, int bufLen, struct LSFHeader *hdr,
 
     if (hdr->length == 0 || data == NULL) {
 	xdr_destroy(&xdrs);
-	return (0);
+	return 0;
     }
 
     XDR_SETPOS(&xdrs, 0);
@@ -50,7 +50,7 @@ lsRecvMsg_(int sock, char *buf, int bufLen, struct LSFHeader *hdr,
 	return (cc);
     }
 
-    return (0);
+    return 0;
 }
 
 int lsSendMsg_ (int s, int opCode, int hdrLength, char *data, char *reqBuf,
@@ -77,7 +77,7 @@ int lsSendMsg_ (int s, int opCode, int hdrLength, char *data, char *reqBuf,
                        auth)) {
 	xdr_destroy(&xdrs);
 	lserrno = LSE_BAD_XDR;
-	return(-1);
+	return -1;
     }
 
     if ((*writeFunc)(s, (char *)reqBuf, XDR_GETPOS(&xdrs)) !=
@@ -89,5 +89,5 @@ int lsSendMsg_ (int s, int opCode, int hdrLength, char *data, char *reqBuf,
 
     xdr_destroy(&xdrs);
 
-    return (0);
+    return 0;
 }

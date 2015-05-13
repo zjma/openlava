@@ -314,9 +314,9 @@ ls_loadadj(char *resreq, struct placeInfo *placeinfo, int listsize)
 
     if (callLim_(LIM_LOAD_ADJ, &loadadjReq, xdr_jobXfer, NULL, NULL,
                  NULL, _USE_TCP_, NULL) < 0)
-	return (-1);
+	return -1;
 
-    return (0);
+    return 0;
 
 }
 

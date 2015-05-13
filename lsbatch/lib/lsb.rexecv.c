@@ -87,7 +87,7 @@ CopyCommand2(char **from, int len)
 
     if ((commandline = (char *) malloc(size)) == NULL) {
         fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,802 , "Unable to allocate memory for commands"))); /* catgets  802   */
-        return (FALSE);
+        return false;
     }
 
     strcpy(commandline, from[0]);
@@ -221,7 +221,7 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
         if ((argBuf = (char **) malloc(INCREASE * sizeof(char *)))
             == NULL) {
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,803 , "Unable to allocate memory for options"))); /* catgets  803   */
-            return (-1);
+            return -1;
         }
         bufSize = INCREASE;
         *embedArgc = 1;
@@ -241,24 +241,24 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
         }
         else {
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,804 , "Invalid option"))); /* catgets  804   */
-            return (-1);
+            return -1;
         }
         argBuf[1] = NULL;
     }
 
     if (!parsing && !emptyCmd)
-        return (0);
+        return 0;
 
     SKIPSPACE(line);
     if (*line == '\0')
-        return (0);
+        return 0;
     if (*line != '#') {
         emptyCmd = FALSE;
-        return (0);
+        return 0;
     }
 
     if (!parsing)
-        return (0);
+        return 0;
 
     ++line;
     SKIPSPACE(line);
@@ -267,7 +267,7 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
         SKIPSPACE(line);
         if (*line != '-') {
             parsing = FALSE;
-            return (0);
+            return 0;
         }
         while (TRUE) {
             quoteMark = '"';
@@ -277,10 +277,10 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
                     quoteMark = '\'';
 
             if ((sp = getNextValueQ_(&line, quoteMark, quoteMark)) == NULL)
-                return (0);
+                return 0;
 
             if (*sp == '#')
-                return (0);
+                return 0;
 
             if (*embedArgc + 2 > bufSize) {
                 char **tmp;
@@ -291,7 +291,7 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
                     fprintf(stderr,
                             _i18n_msg_get(ls_catd, NL_SETN, 803,
                                           "Unable to allocate memory for options"));
-                    return (-1);
+                    return -1;
                 }
                 argBuf = tmp;
             }
@@ -300,7 +300,7 @@ parseLine2(char *line, int *embedArgc, char ***embedArgv, int option)
             argBuf[*embedArgc] = NULL;
         }
     }
-    return (0);
+    return 0;
 
 }
 
@@ -337,7 +337,7 @@ parseScript2(FILE *from, int *embedArgc, char ***embedArgv, int option)
             fprintf(stderr,
                     _i18n_msg_get(ls_catd, NL_SETN, 802,
                                   "Unable to allocate memory for commands"));
-            return (-1);
+            return -1;
         }
         ttyin = isatty(fileno(from));
         if (ttyin){
@@ -357,7 +357,7 @@ parseScript2(FILE *from, int *embedArgc, char ***embedArgv, int option)
             continue;
         }
         if (parseLine2(line, embedArgc, embedArgv, option) == -1)
-            return (-1);
+            return -1;
 
         if (option & EMBED_INTERACT) {
             if (!firstLine[0])
@@ -375,7 +375,7 @@ parseScript2(FILE *from, int *embedArgc, char ***embedArgv, int option)
                 if ((sp = (char *) realloc(buf, size)) == NULL) {
                     free(buf);
                     fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,807 , "Unable to reallocate memory for commands"))); /* catgets  807   */
-                    return (-1);
+                    return -1;
                 }
                 buf = sp;
             }
@@ -405,7 +405,7 @@ parseScript2(FILE *from, int *embedArgc, char ***embedArgv, int option)
                     if ((sp = (char *) realloc(buf, size)) == NULL ) {
                         free(buf);
                         fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,808 , "Unable to reallocate memory for temp shell file"))); /* catgets  808   */
-                        return(-1);
+                        return -1;
                     }
                     buf = sp;
                 }
@@ -414,7 +414,7 @@ parseScript2(FILE *from, int *embedArgc, char ***embedArgv, int option)
         }
         commandline = buf;
     }
-    return (0);
+    return 0;
 
 }
 
@@ -474,7 +474,7 @@ fillReq2(int argc, char **argv, int operate, struct submit *req)
 
     optind = 1;
     if (setOption_ (argc, argv, template, req, ~0, NULL) == -1)
-        return (-1);
+        return -1;
 
     if (operate == CMD_BSUB && (req->options & SUB_INTERACTIVE)
             && (req->options & SUB_PTY)) {
@@ -496,17 +496,17 @@ fillReq2(int argc, char **argv, int operate, struct submit *req)
         emptyCmd = FALSE;
         argv[argc] = myArgv0;
         if (!CopyCommand2(&argv[argc], myArgc))
-            return (-1);
+            return -1;
     }
     else if (argc >= optind + 1) {
 
         emptyCmd = FALSE;
         if (!CopyCommand2(argv+optind, argc-optind-1))
-        return (-1);
+        return -1;
     } else
         if (parseScript2(stdin, &embedArgc, &embedArgv,
                         EMBED_INTERACT|EMBED_BSUB) == -1)
-            return (-1);
+            return -1;
 
     req->command = commandline;
     SKIPSPACE(req->command);
@@ -515,7 +515,7 @@ fillReq2(int argc, char **argv, int operate, struct submit *req)
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,809 , "No command is specified in the script file"))); /* catgets  809   */
         else
             fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,810 , "No command is specified"))); /* catgets  810   */
-        return (-1);
+        return -1;
     }
 
     if (embedArgc > 1 && operate == CMD_BSUB) {
@@ -523,12 +523,12 @@ fillReq2(int argc, char **argv, int operate, struct submit *req)
         optind = 1;
         if (setOption_ (embedArgc, embedArgv, template, req, ~req->options, NULL)
             == -1)
-            return (-1);
+            return -1;
     }
 
     if (optionFlag) {
         if (parseOptFile_(optionFileName, req, NULL) == NULL)
-            return (-1);
+            return -1;
         optionFlag = FALSE;
     }
     return 0;
@@ -549,30 +549,30 @@ lsb_rexecv(int argc, char **argv, char **env, int *fds, int options)
     memset(&req, 0, sizeof(struct submit));
     if (fillReq2(argc, argv, CMD_BSUB, &req) < 0) {
         lsberrno = LSBE_BAD_ARG;
-        return (-1);
+        return -1;
     }
     if (!(req.options & SUB_INTERACTIVE)) {
         lsberrno = LSBE_ONLY_INTERACTIVE;
-        return (-1);
+        return -1;
     }
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobIdFd) < 0) {
         lsberrno = LSBE_SYS_CALL;
-        return (-1);
+        return -1;
     }
 
     if ((pid = fork()) < 0){
         close(jobIdFd[0]);
         close(jobIdFd[1]);
         lsberrno = LSBE_NO_FORK;
-        return (-1);
+        return -1;
     }
     if (pid == 0){
         if ((pid = fork()) < 0){
             close(jobIdFd[0]);
             close(jobIdFd[1]);
             lsberrno = LSBE_NO_FORK;
-            return (-1);
+            return -1;
         }
         if (pid != 0) {
             _exit(0);
@@ -618,7 +618,7 @@ lsb_rexecv(int argc, char **argv, char **env, int *fds, int options)
                 kill(pid, SIGTERM);
             }
             close(jobIdFd[0]);
-            return (-1);
+            return -1;
         }
 
         if (jobId < 0) {
@@ -636,7 +636,7 @@ lsb_rexecv(int argc, char **argv, char **env, int *fds, int options)
             lsberrno = LSBE_SYS_CALL;
             kill(pid, SIGTERM);
             close(jobIdFd[0]);
-            return (-1);
+            return -1;
         }
     }
     lsberrno = LSBE_NO_ERROR;

@@ -27,7 +27,7 @@ expSyntax_(char *resReq)
     struct stringLen str;
 
     if (initenv_(NULL, NULL) < 0)
-        return (-1);
+        return -1;
 
     if (!resReq)
         resReq = " ";

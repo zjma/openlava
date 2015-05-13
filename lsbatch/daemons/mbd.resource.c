@@ -1023,7 +1023,7 @@ resName2resIndex(char *resName)
 	}
     }
 
-    return(-1);
+    return -1;
 
 }
 
@@ -1041,7 +1041,7 @@ isItPreemptResourceIndex(int index)
     int i;
 
     if (pRMOPtr == NULL) {
-        return(0);
+        return 0;
     }
 
     for (i = 0; i < pRMOPtr->numPreemptResources; i++) {
@@ -1051,7 +1051,7 @@ isItPreemptResourceIndex(int index)
 	}
     }
 
-    return(0);
+    return 0;
 }
 
 int
@@ -1060,7 +1060,7 @@ isReservePreemptResource(struct  resVal *resValPtr)
     int resn;
 
     if (!resValPtr) {
-        return(0);
+        return 0;
     }
 
     FORALL_PRMPT_RSRCS(resn) {
@@ -1071,7 +1071,7 @@ isReservePreemptResource(struct  resVal *resValPtr)
 	}
     } ENDFORALL_PRMPT_RSRCS;
 
-    return(0);
+    return 0;
 
 }
 
@@ -1310,7 +1310,7 @@ isHostsInSameInstance(int index, struct hData *hPtr1, struct hData *hPtr2)
     int         j;
 
     if (hPtr1 == hPtr2) {
-	return(TRUE);
+	return true;
     }
 
     for (i = 0; i < numResources; i++) {
@@ -1331,13 +1331,13 @@ isHostsInSameInstance(int index, struct hData *hPtr1, struct hData *hPtr2)
 		}
 	    }
             if (found >= 2) {
-		return(TRUE);
+		return true;
 	    }
             if (found == 1) {
-		return(FALSE);
+		return false;
 	    }
 	}
-	return(FALSE);
+	return false;
     }
-    return(FALSE);
+    return false;
 }

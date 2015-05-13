@@ -33,24 +33,24 @@ getPPSGids_(int pid, int *ppid, int *sid, int *pgid)
 
     if (pid < 0) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
     strcpy(procPath, "/proc/");
     sprintf(&procPath[6], "%d", (int) pid);
     if (access(procPath, R_OK|F_OK)) {
 	lserrno = LSE_FILE_SYS;
-	return (-1);
+	return -1;
     }
     strcat(procPath, "/stat");
     if ((fp = fopen(procPath, "r")) == NULL) {
 	lserrno = LSE_NO_FILE;
-	return (-1);
+	return -1;
     }
     fscanf(fp, "%d %s %c %d %d %d", &i, procPath, &c, &pp,&pg, &sd);
     FCLOSEUP(&fp);
     if (pid != i) {
         lserrno = LSE_MISC_SYS;
-	return (-1);
+	return -1;
     }
     if (ppid)
     *ppid = (int) pp;
@@ -58,5 +58,5 @@ getPPSGids_(int pid, int *ppid, int *sid, int *pgid)
     *sid = (int) sd;
     if (pgid)
     *pgid = (int) pg;
-    return (0);
+    return 0;
 }

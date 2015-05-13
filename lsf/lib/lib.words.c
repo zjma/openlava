@@ -189,7 +189,7 @@ stripQStr (char *q, char *str)
 
     for (; *q != '"' && *q != '\0'; q++);
     if (*q == '\0')
-        return (-1);
+        return -1;
 
     for (q++; *q != '\0'; q++, str++) {
         if (*q == '"') {
@@ -204,7 +204,7 @@ stripQStr (char *q, char *str)
     }
 
     if (*q == '\0')
-        return (-1);
+        return -1;
     return (q-fr+1);
 }
 

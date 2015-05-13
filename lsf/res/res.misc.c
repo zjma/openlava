@@ -30,28 +30,28 @@ xdr_resChildInfo(XDR  *xdrs,
 {
    if (!xdr_lsfAuth(xdrs, childInfo->lsfAuth, hdr)
        || !xdr_resConnect(xdrs, childInfo->resConnect, hdr))
-      return(FALSE);
+      return false;
 
    if (!xdr_var_string(xdrs, &childInfo->pw->pw_name)
        || !xdr_var_string(xdrs, &childInfo->pw->pw_dir)
        || !xdr_var_string(xdrs, &childInfo->pw->pw_shell)
        || !xdr_int(xdrs, (int *)&childInfo->pw->pw_uid)
        || !xdr_int(xdrs, (int *)&childInfo->pw->pw_gid)) {
-       return(FALSE);
+       return false;
    }
 
    if (!xdr_var_string(xdrs, &childInfo->host->h_name))
-      return(FALSE);
+      return false;
 
    if (xdrs->x_op == XDR_DECODE)
       childInfo->host->h_aliases = NULL;
 
    if (!xdr_portno(xdrs, &childInfo->parentPort))
-       return(FALSE);
+       return false;
 
    if (!xdr_int(xdrs, &childInfo->currentRESSN))
-       return(FALSE);
+       return false;
 
-   return(TRUE);
+   return true;
 
 }

@@ -133,7 +133,7 @@ bool_t
 xdr_loadmatrix(XDR *xdrs, int len, struct loadVectorStruct *lmp,
                struct LSFHeader *hdr)
 {
-    return(TRUE);
+    return true;
 }
 
 
@@ -179,7 +179,7 @@ xdr_statInfo(XDR *xdrs, struct statInfo *sip, struct LSFHeader *hdr)
            xdr_short(xdrs, &(sip->hostNo)) &&
            xdr_int(xdrs, &(sip->maxSwap)) &&
            xdr_int(xdrs, &(sip->maxTmp)) ))
-        return(FALSE);
+        return false;
 
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -189,9 +189,9 @@ xdr_statInfo(XDR *xdrs, struct statInfo *sip, struct LSFHeader *hdr)
 
     if (!(xdr_string(xdrs, &sp1, MAXLSFNAMELEN) &&
           xdr_string(xdrs, &sp2,  MAXLSFNAMELEN))) {
-        return (FALSE);
+        return false;
     }
-    return(TRUE);
+    return true;
 }
 
 #define MIN_FLOAT16  2.328306E-10
@@ -274,7 +274,7 @@ xdr_lvector(XDR *xdrs, float *li, int nIndices)
     for (i = 0; i < (NBUILTINDEX/2 + 1); i++) {
         if (!xdr_u_int(xdrs, &a[i])) {
             FREEUP (a);
-            return (FALSE);
+            return false;
         }
     }
 
@@ -294,11 +294,11 @@ xdr_lvector(XDR *xdrs, float *li, int nIndices)
     for (i = NBUILTINDEX; i<nIndices; i++) {
         if (! xdr_float(xdrs, &li[i])) {
             FREEUP (a);
-            return (FALSE);
+            return false;
         }
     }
 
     FREEUP (a);
-    return(TRUE);
+    return true;
 
 }

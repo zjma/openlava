@@ -58,12 +58,12 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
 
     if (tid < 0) {
 	lserrno = LSE_BAD_ARGS;
-	return (-1);
+	return -1;
     }
 
     if (!nios_ok_)  {
 	lserrno = LSE_NORCHILD;
-	return (-1);
+	return -1;
     }
 
     blockALL_SIGS_(&newMask, &oldMask);
@@ -83,7 +83,7 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
 	!= sizeof(req)) {
 	lserrno = LSE_MSG_SYS;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return(-1);
+	return -1;
     }
 
 
@@ -94,13 +94,13 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
 	else
 	    lserrno = LSE_TIME_OUT;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return(-1);
+	return -1;
     }
 
     if (b_read_fix(cli_nios_fd[0], (char *) &hdr, sizeof(hdr)) == -1) {
 	lserrno = LSE_MSG_SYS;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return(-1);
+	return -1;
     }
 
     if (WAIT_BLOCK(options) && hdr.opCode == NONB_RETRY) {
@@ -118,11 +118,11 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
       case CHILD_FAIL:
 	lserrno = LSE_NORCHILD;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return(-1);
+	return -1;
 
       case NONB_RETRY:
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return(0);
+	return 0;
 
       case CHILD_OK:
 	rpid = readWaitReply(status, ru);
@@ -133,7 +133,7 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
 
 	lserrno = LSE_PROTOC_NIOS;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return (-1);
+	return -1;
     }
 
 }
@@ -146,7 +146,7 @@ readWaitReply(LS_WAIT_T *status, struct rusage *ru)
     if (b_read_fix(cli_nios_fd[0], (char *) &reply.r, sizeof(reply.r))
 	!= sizeof(reply.r)) {
 	lserrno = LSE_MSG_SYS;
-	return(-1);
+	return -1;
     }
     (void) tid_remove(reply.r.pid);
     if (status)

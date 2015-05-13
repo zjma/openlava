@@ -133,7 +133,7 @@ getChkpntDirFile(char *pPathBuf, const char *pFileName){
 	int iIndex;
 
 	if (pPathBuf == NULL){
-		return (-1);
+		return -1;
 	}
 	strcpy(pPathBuf,"");
 	
@@ -151,7 +151,7 @@ getChkpntDirFile(char *pPathBuf, const char *pFileName){
 	}else{
 		sprintf(logMesgBuf,"%s : LSB_CHKPNT_DIR is not defined\n",fname);
 		logMesg(logMesgBuf);
-		return(-1);
+		return -1;
 	}
 
 	
@@ -170,7 +170,7 @@ getChkpntDirFile(char *pPathBuf, const char *pFileName){
 		}
 		strcat(pPathBuf, pFileNameChar);
 	}
-	return(0);
+	return 0;
 }
 
 
@@ -182,7 +182,7 @@ redirectFd(const char *pFileName, int iFileNo){
 	int   ireValue = -1;
 
 	if ((pFileName == NULL) || (iFileNo < 0)){
-		return(-1);
+		return -1;
 	}
 	
 	
@@ -191,7 +191,7 @@ redirectFd(const char *pFileName, int iFileNo){
 		sprintf(logMesgBuf, "%s : open() can't open %s file\n%s\n",
 			fname, pFileName, errno? strerror(errno) : "");
 		logMesg(logMesgBuf);
-	 	return(-1);
+	 	return -1;
 	}
 	
 	if (dup2(iFd,iFileNo) != -1){
@@ -215,7 +215,7 @@ initLog(char *pMesgHeader){
 	
 	if (m_pLogFile == NULL){
 		if (getChkpntDirFile(logFileName, ECHKPNT_LOG_FILENAME) != 0){
-			return(-1);
+			return -1;
 		}else{
 			m_pLogFile = fopen(logFileName,"a");
 			if (m_pLogFile != NULL){
@@ -225,12 +225,12 @@ initLog(char *pMesgHeader){
 				}
 				m_pMessageHeader = putstr_(pMesgHeader);
 				fprintf(m_pLogFile,"########### begin to checkpoint ############\n");
-				return(0);
+				return 0;
 			}
-			return(-1);
+			return -1;
 		}
 	}else{
-		return(-1);
+		return -1;
 	}
 	
 }

@@ -51,14 +51,14 @@ sysHist(int argc, char **argv, int opCode)
 	case 'f':
             if (strlen(optarg) > MAXFILENAMELEN -1) {
 		fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1051, "%s: File name too long\n")), optarg); /* catgets  1051  */
-		return(-1);
+		return -1;
             } else
 	        req.eventFileName = optarg;
 	    break;
         case 't':
             if (getBEtime(optarg, 't', req.eventTime) == -1) {
 		ls_perror(optarg);
-		return (-1);
+		return -1;
             }
             break;
 	default:
@@ -114,7 +114,7 @@ searchEventFile(struct histReq *req, int *eventFound)
 
     if (ls_readconfenv(histParams, envdir) < 0) {
 	ls_perror("ls_readconfenv");
-	return(-1);
+	return -1;
     }
 
     if (!req->eventFileName) {
@@ -131,12 +131,12 @@ searchEventFile(struct histReq *req, int *eventFound)
 
     if (stat(eventFileName, &statBuf) < 0) {
         perror(eventFileName);
-        return (-1);
+        return -1;
     }
 
     if ((log_fp = fopen(eventFileName, "r")) == NULL) {
 	perror(eventFileName);
-	return(-1);
+	return -1;
     }
 
     eventMatched = FALSE;
@@ -323,12 +323,12 @@ isRequested(char *name, char **nameList)
     int  i = 0;
 
     if (!nameList)
-	return(TRUE);
+	return true;
 
     while (nameList[i]) {
 	if (strcmp(name, nameList[i++]) == 0)
-	    return(TRUE);
+	    return true;
     }
 
-    return(FALSE);
+    return false;
 }

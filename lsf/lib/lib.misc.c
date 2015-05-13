@@ -350,7 +350,7 @@ putEnv(char *env, char *val)
 
     buf = malloc(strlen(env) + strlen(val) + 4);
     if (buf == NULL)
-        return (-1);
+        return -1;
 
     sprintf(buf, "%s=%s", env, val);
     return putenv(buf);
@@ -403,11 +403,11 @@ Bind_(int sockfd, struct sockaddr *myaddr, int addrlen)
                     cliaddr->sin_port = htons(port);
                 }
                 else
-                    return (-1);
+                    return -1;
             }
         }
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "Bind_", "bind", BIND_RETRY_TIMES);
-        return (-1);
+        return -1;
     }
 }
 
@@ -551,11 +551,11 @@ isLSFAdmin_(const char *name)
 
     for (i = 0; i < LSFAdmins.numAdmins; i++) {
         if (strcmp(name, LSFAdmins.names[i]) == 0) {
-            return(TRUE);
+            return true;
         }
     }
 
-    return(FALSE);
+    return false;
 
 }
 

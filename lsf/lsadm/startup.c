@@ -84,14 +84,14 @@ getLSFenv(void)
 
     if (initenv_(myParamList, envDir) < 0){
 	ls_perror(envDir);
-	return (-1);
+	return -1;
     }
 
     if (myParamList[LSF_CONFDIR].paramValue == NULL) {
         fprintf(stderr, "%s %s %s/lsf.conf\n", "LSF_CONFDIR",
 		I18N(400, "not defined in") /* catgets 400 */,
 	        envDir);
-	return (-1);
+	return -1;
     }
 
     if (myParamList[LSF_SERVERDIR].paramValue == NULL
@@ -99,7 +99,7 @@ getLSFenv(void)
         fprintf(stderr, "%s %s %s/lsf.conf or environment\n", "LSF_SERVERDIR",
 		I18N(400, "not defined in"),
 	        envDir);
-	return (-1);
+	return -1;
     }
 
     if (myParamList[LSF_BINDIR].paramValue == NULL
@@ -107,7 +107,7 @@ getLSFenv(void)
         fprintf(stderr, "%s %s %s/lsf.conf  or environment\n", "LSF_BINDIR",
 		I18N(400, "not defined in"),
 	        envDir);
-	return (-1);
+	return -1;
     }
 
     if (logclass & (LC_TRACE)) {
@@ -125,13 +125,13 @@ getLSFenv(void)
 
     if ( access(lsfSharedFile, R_OK)) {
             ls_perror("Can't access lsf.shared.");
-            return(-1);
+            return -1;
     }
 
     mySharedConf = ls_readshared(lsfSharedFile);
     if (mySharedConf == NULL) {
         ls_perror("ls_readshared");
-        return (-1);
+        return -1;
     }
 
     if (logclass & (LC_TRACE)) {
@@ -141,17 +141,17 @@ Clusters name is: %s\n", mySharedConf->clusterName);
     }
 
     if ((myClusterConf = findMyCluster(mySharedConf->clusterName, mySharedConf))) {
-        return(0);
+        return 0;
     } else {
 
 
         if (lserrno && lserrno != LSE_NO_FILE) {
-            return (-1);
+            return -1;
         }
     }
 
     fprintf(stderr, "%s\n", I18N(401, "Host does not belong to LSF cluster.")); /* catgets 401 */
-    return (-1);
+    return -1;
 }
 
 static char *
@@ -184,7 +184,7 @@ setStartupUid(void)
 	return 0;
     }
 
-    return (-1);
+    return -1;
 }
 
 
@@ -473,7 +473,7 @@ execDaemon(int uid, char **myargv)
 
     if ((childpid = fork()) < 0) {
         perror("fork");
-	return (-1);
+	return -1;
     } else if (childpid > 0) {
         while ( wait(&status) != childpid)
             ;
@@ -502,17 +502,17 @@ startup(int argc, char **argv, int opCode)
 
     if (ls_initdebug(argv[0]) < 0) {
 	ls_perror("ls_initdebug");
-	return (-1);
+	return -1;
     }
 
     if (getLSFenv() < 0)
-	return (-1);
+	return -1;
 
 
     if (setStartupUid() < 0) {
 	fprintf(stderr, "%s\n",
 		I18N(414, "Not authorized to start up as root")); /* catgets 414 */
-	return (-1);
+	return -1;
     }
 
     confirm = TRUE;
@@ -523,7 +523,7 @@ startup(int argc, char **argv, int opCode)
                 break;
             default:
 
-                return (-1);
+                return -1;
         }
     }
 

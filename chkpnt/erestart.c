@@ -524,7 +524,7 @@ getUserCmdFromJF(char *pUserCmd, const char *pJobFileName){
 	if (pFile == NULL){
 		sprintf(logMesgBuf,"%s : fopen() can not open the %s file\n%s\n",fname,pJobFileName,strerror(errno));
 		logMesg(logMesgBuf);
-		return(-1);
+		return -1;
 	}
 	
 	
@@ -555,14 +555,14 @@ getUserCmdFromJF(char *pUserCmd, const char *pJobFileName){
 					pCurChar[len-1]='\0';
 				}
 				strcpy(pUserCmd,pCurChar);
-				return(0);
+				return 0;
 			}else{
 				iCmdFlag = 0;
 			}
 			break;
 		}
 	}
-	return(-1);
+	return -1;
 }
 
 
@@ -585,7 +585,7 @@ isUserCmdLineMark(const char *pLine){
 		pCurChar[ii -1] = '\0';
 	}
 	if (*pCurChar != '#'){
-		return(-1);
+		return -1;
 	}
 	
 	
@@ -600,20 +600,20 @@ isUserCmdLineMark(const char *pLine){
 			*pCurChar = '\0';
 		}
 		if (strcmp(pCurWord, apWord[ii]) != 0){
-			return(-1);
+			return -1;
 		}
 	}
 	if (ii != 3){
-		return(-1);
+		return -1;
 	}
 	if (pCurChar != NULL){
 		
 		while(*(++pCurChar) == ' ');
 		if (*pCurChar != '\0'){
-			return(-1);
+			return -1;
 		}
 	}
-	return(0);
+	return 0;
 }
 
 
@@ -631,7 +631,7 @@ getUserCmdFromCmdF(char *pNewUserCmd){
 		sprintf(logMesgBuf,"%s : getChkpntDirFile call fail, can not combine the %s with chkpnt dir\n",
 			fname,ECHKPNT_RESTART_CMD_FILE);
 		logMesg(logMesgBuf);
-		return(-1);
+		return -1;
 	}
 		
 	
@@ -639,11 +639,11 @@ getUserCmdFromCmdF(char *pNewUserCmd){
 	if (pFile == NULL){
 		
 		if (errno == ENOENT){
-			return(0);
+			return 0;
 		}else{
 			sprintf(logMesgBuf,"%s : fopen() can not open the %s file\n%s\n",fname,cmdFileName,strerror(errno));
 			logMesg(logMesgBuf);
-			return(-1);
+			return -1;
 		}
 	}else{
 		sprintf(logMesgBuf,"%s : the .restart_cmd exists \n",fname);
@@ -697,7 +697,7 @@ buildNewJobFile(char *pNewJobFileName,const char *pUserCmd, const char *pJobFile
 
 	
 	if ((pJobFileName == NULL) || (pNewJobFileName == NULL)){
-		return(-1);
+		return -1;
 	}
 	strcpy(pNewJobFileName,pJobFileName);
 	strcat(pNewJobFileName,ECHKPNT_NEWJOBFILE_SUFFIX);
@@ -708,14 +708,14 @@ buildNewJobFile(char *pNewJobFileName,const char *pUserCmd, const char *pJobFile
 		sprintf(logMesgBuf,"%s : fopen() can not open the %s file\n%s\n",
 			fname,pJobFileName,strerror(errno));
 		logMesg(logMesgBuf);
-		return(-1);
+		return -1;
 	}
 	pDest = fopen(pNewJobFileName, "w");
 	if (pDest == NULL){
 		sprintf(logMesgBuf,"%s : fopen() can not create the %s file\n%s\n",
 			fname,pNewJobFileName,strerror(errno));
 		logMesg(logMesgBuf);
-		return(-1);
+		return -1;
 	}
 
 	
@@ -767,7 +767,7 @@ buildNewJobFile(char *pNewJobFileName,const char *pUserCmd, const char *pJobFile
 			fname,pNewJobFileName,strerror(errno));
 		logMesg(logMesgBuf);
 		unlink(pNewJobFileName);
-		return(-1);
+		return -1;
 	}
-	return(0);
+	return 0;
 }

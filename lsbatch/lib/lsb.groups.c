@@ -140,7 +140,7 @@ sendGrpReq (char *clusterName, int options, struct infoReq *groupInfo,
                        NULL)){
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
 
@@ -153,7 +153,7 @@ sendGrpReq (char *clusterName, int options, struct infoReq *groupInfo,
                        NULL,
                        NULL)) == -1) {
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
 
 
@@ -172,17 +172,17 @@ sendGrpReq (char *clusterName, int options, struct infoReq *groupInfo,
             xdr_destroy(&xdrs);
             if (cc)
                 free(reply_buf);
-            return(-1);
+            return -1;
         }
         xdr_destroy(&xdrs);
         if (cc)
             free(reply_buf);
-        return (0);
+        return 0;
     }
 
     if (cc)
         free(reply_buf);
-    return(-1);
+    return -1;
 
 }
 

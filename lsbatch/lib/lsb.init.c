@@ -104,6 +104,6 @@ lsb_init(char *appName)
                  lsbParams[LSB_TIME_CMD].paramValue);
 
 
-    return(0);
+    return 0;
 }
 

@@ -678,7 +678,7 @@ saveSBValue(char *name, char *value)
     int updHostNo = -1;
 
     if ((indx = getResEntry(name)) < 0)
-        return (-1);
+        return -1;
 
     if (!(allInfo.resTable[indx].flags & RESF_DYNAMIC))
         return -1 ;
@@ -690,7 +690,7 @@ saveSBValue(char *name, char *value)
     }
 
     if (myHostPtr->numInstances <= 0)
-        return (-1);
+        return -1;
 
     for (i = 0; i < myHostPtr->numInstances; i++) {
 
@@ -916,7 +916,7 @@ isResourceSharedInAllHosts(char *resName)
         }
     }
 
-    return(0);
+    return 0;
 
 }
 

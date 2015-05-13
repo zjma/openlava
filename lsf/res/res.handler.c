@@ -706,7 +706,7 @@ setClUid(struct client *cli_ptr)
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "setsid",
                   cli_ptr->username);
 
-    return(0);
+    return 0;
 }
 
 static
@@ -726,7 +726,7 @@ int recvConnect(int s, struct resConnect *connReq, int (*readFunc)(),
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "readDecodeHdr_");
         sendReturnCode(s, RESE_REQUEST);
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
     currentRESSN = reqHdr.refCode;
 
@@ -735,7 +735,7 @@ int recvConnect(int s, struct resConnect *connReq, int (*readFunc)(),
     if ((buf = malloc(reqHdr.length)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
         sendReturnCode(s, RESE_NOMEM);
-        return (-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, buf, XDR_DECODE_SIZE_(reqHdr.length), XDR_DECODE);
@@ -746,13 +746,13 @@ int recvConnect(int s, struct resConnect *connReq, int (*readFunc)(),
         sendReturnCode(s, RESE_REQUEST);
         xdr_destroy(&xdrs);
         free(buf);
-        return (-1);
+        return -1;
     }
 
     free(buf);
     xdr_destroy(&xdrs);
 
-    return (0);
+    return 0;
 }
 
 void
@@ -903,7 +903,7 @@ forwardTaskMsg(int srcSock, int destSock,
 
     if (FD_NOT_VALID(destSock)) {
         sendReturnCode(srcSock, RESE_INVCHILD);
-        return(-1);
+        return -1;
     }
 
     if (debug > 1) {
@@ -919,11 +919,11 @@ forwardTaskMsg(int srcSock, int destSock,
         if (kill(-pid, 0) < 0) {
 
             sendReturnCode(srcSock, RESE_INVCHILD);
-            return (-1);
+            return -1;
         } else {
             if (! noAck)
                 sendReturnCode(srcSock, RESE_FATAL);
-            return(-1);
+            return -1;
         }
     }
 
@@ -947,7 +947,7 @@ forwardTaskMsg(int srcSock, int destSock,
     if (! noAck)
         sendReturnCode(srcSock, RESE_OK);
 
-    return(0);
+    return 0;
 }
 
 void
@@ -1731,7 +1731,7 @@ checkPermResCtrl( struct client *cli_ptr )
 
 
     if (cli_ptr->ruid == 0 || debug)
-        return(0);
+        return 0;
 
     if (mycluster == NULL) {
         if ((mycluster = ls_getclustername()) == NULL) {
@@ -1766,7 +1766,7 @@ checkPermResCtrl( struct client *cli_ptr )
 
     for (i = 0; i < nAdmins; i++) {
         if (strcmp(cli_ptr->username, admins[i]) == 0)
-            return (0);
+            return 0;
     }
 
     return(RESE_DENIED);
@@ -1774,7 +1774,7 @@ checkPermResCtrl( struct client *cli_ptr )
 tryDefault:
 
     if (isLSFAdmin_(cli_ptr->username)) {
-        return(0);
+        return 0;
     }
     return (RESE_DENIED);
 
@@ -2154,7 +2154,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "ptymaster",
                   pty_name);
         *ack = RESE_PTYMASTER;
-        return (-1);
+        return -1;
     }
 
     if (debug > 1)
@@ -2166,7 +2166,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "socketpair");
         close(pty[0]);
         *ack = RESE_SOCKETPAIR;
-        return (-1);
+        return -1;
     }
 
     if (info)
@@ -2176,7 +2176,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
             close(sv[1]);
             close(pty[0]);
             *ack = RESE_SOCKETPAIR;
-            return (-1);
+            return -1;
         }
 
 
@@ -2191,7 +2191,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
             close(info[0]);
             close(info[1]);
         }
-        return (-1);
+        return -1;
     }
 
     if ((pid = fork()) < 0) {
@@ -2208,7 +2208,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
             close(errSock[1]);
         }
         *ack = RESE_FORK;
-        return (-1);
+        return -1;
     }
 
 
@@ -2242,7 +2242,7 @@ forkPty(struct client *cli_ptr, int *pty, int *sv, int *info, int *errSock,
         *ack = parentPty(pty, sv, pty_name);
         setEUid(cli_ptr->ruid);
         if (*ack != RESE_OK)
-            return (-1);
+            return -1;
     }
 
     return (pid);
@@ -2260,13 +2260,13 @@ forkSV(struct client *cli_ptr, int *sv, int *info, int *errSock, resAck *ack)
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, info) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "socketpair");
             *ack = RESE_SOCKETPAIR;
-            return (-1);
+            return -1;
         }
 
     if (pairsocket(AF_INET, SOCK_STREAM, 0, sv) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "pairsocket");
         *ack = RESE_SOCKETPAIR;
-        return (-1);
+        return -1;
     }
 
 
@@ -2276,7 +2276,7 @@ forkSV(struct client *cli_ptr, int *sv, int *info, int *errSock, resAck *ack)
         *ack = RESE_SOCKETPAIR;
         close(sv[0]);
         close(sv[1]);
-        return (-1);
+        return -1;
     }
 
     pid = fork();
@@ -3318,7 +3318,7 @@ notify_client(int s, int rpid, resAck ack, struct sigStatusUsage *sigStatRu)
         fflush(stdout);
     }
 
-    return (0);
+    return 0;
 
 }
 
@@ -3482,7 +3482,7 @@ resSignal(struct child *chld, struct resSignal sig)
         else {
             if ( (sigUnixNTCtrlC = getSigVal(sigBuf1)) ==-1 ) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "getSigVal");
-                return (-1);
+                return -1;
             }
         }
         if (!sigBuf2)
@@ -3491,7 +3491,7 @@ resSignal(struct child *chld, struct resSignal sig)
             if ( (sigUnixNTCtrlB = getSigVal(sigBuf2)) ==-1 ) {
                 ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "getSigVal",
                           "CTRL_BREAK");
-                return (-1);
+                return -1;
             }
         }
     }
@@ -3525,7 +3525,7 @@ resSignal(struct child *chld, struct resSignal sig)
 
     firstTime = 0;
 
-    return (0);
+    return 0;
 }
 
 static void
@@ -4090,7 +4090,7 @@ pairsocket(int af, int type, int protocol, int *sv)
         printf("pairsocket\n");
 
     if (af != AF_INET || type != SOCK_STREAM)
-        return(-1);
+        return -1;
 
     if ((hp = Gethostbyname_(Myhost)) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -4099,7 +4099,7 @@ pairsocket(int af, int type, int protocol, int *sv)
     }
     if ((s = socket(af, type, protocol)) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "malloc", "af");
-        return (-1);
+        return -1;
     }
     memset((char*)&sa, 0, sizeof(sa));
     sa.sin_addr.s_addr = INADDR_ANY;
@@ -4108,25 +4108,25 @@ pairsocket(int af, int type, int protocol, int *sv)
     if (Bind_(s, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "Bind_");
         close(s);
-        return (-1);
+        return -1;
     }
     sa_size = sizeof(sa);
     if (getsockname(s, (struct sockaddr *)&sa, &sa_size) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "getsockname");
         close(s);
-        return(-1);
+        return -1;
     }
 
     if (listen(s,1) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "listen");
         close(s);
-        return(-1);
+        return -1;
     }
 
     if ((sv[1]=socket(af, type, protocol)) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "socket");
         close(s);
-        return (-1);
+        return -1;
     }
 
     memcpy((char *)&sa.sin_addr, hp->h_addr, hp->h_length);
@@ -4134,7 +4134,7 @@ pairsocket(int af, int type, int protocol, int *sv)
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "connect");
         close(s);
         close(sv[1]);
-        return (-1);
+        return -1;
     }
 
     ls_syslog(LOG_DEBUG, "pairsocket(), connected to passive socket '%d'",
@@ -4159,13 +4159,13 @@ pairsocket(int af, int type, int protocol, int *sv)
 
         close(s);
         close(sv[1]);
-        return(-1);
+        return -1;
     } else if (iRetVal == -1) {
 
         ls_syslog(LOG_DEBUG, "pairsocket(), select() failed: %m");
         close(s);
         close(sv[1]);
-        return(-1);
+        return -1;
     } else if (FD_ISSET(s, &fdReadMask)) {
         ls_syslog(LOG_DEBUG, "pairsocket(), select() ok");
 
@@ -4175,12 +4175,12 @@ pairsocket(int af, int type, int protocol, int *sv)
             ls_syslog(LOG_DEBUG, I18N_FUNC_FAIL_M, fname, "accept");
             close(s);
             close(sv[1]);
-            return (-1);
+            return -1;
         }
 
 
         close(s);
-        return (0);
+        return 0;
     }
 
 
@@ -4189,7 +4189,7 @@ pairsocket(int af, int type, int protocol, int *sv)
               iRetVal);
     close(s);
     close(sv[1]);
-    return(-1);
+    return -1;
 
 }
 
@@ -4205,7 +4205,7 @@ sendReturnCode(int s, int code)
 
     if (writeEncodeHdr_(s, &replyHdr, SOCK_WRITE_FIX) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "writeEncodeHdr_");
-        return (-1);
+        return -1;
     }
 
     return 0;
@@ -4486,15 +4486,15 @@ setCliEnv(struct client *cl, char *envName, char *value)
             strcpy (buf, cl->env[cnt]);
             cp = buf;
             if ((sp = strstr (buf, "="))  == NULL)
-                return (-1);
+                return -1;
             *sp = '\0';
             if (strncmp (buf, envName, strlen(cp)) == 0) {
 
                 FREEUP (cl->env[cnt]);
                 sprintf(buf, "%s=%s", envName, value);
                 if ((cl->env[cnt] = putstr_(buf)) == NULL)
-                    return (-1);
-                return (0);
+                    return -1;
+                return 0;
             }
         }
     }
@@ -4514,14 +4514,14 @@ int addCliEnv(struct client *cl, char *envName, char *value)
 
     if ((env = (char **) realloc(cl->env, (cnt + 2) * sizeof(char *)))
         == NULL)
-        return (-1);
+        return -1;
 
     cl->env = env;
     sprintf(buf, "%s=%s", envName, value);
     if ((cl->env[cnt] = putstr_(buf)) == NULL)
-        return (-1);
+        return -1;
     cl->env[cnt+1] = NULL;
-    return (0);
+    return 0;
 }
 
 
@@ -4754,7 +4754,7 @@ lsbJobStart(char **jargv, u_short retPort, char *host, int usePty)
 
 
     sigprocmask(SIG_SETMASK, &oldSigMask, NULL);
-    return (0);
+    return 0;
 
 }
 
@@ -4776,7 +4776,7 @@ ttyCallback(int s, ttyStruct *tty)
         ls_syslog(LOG_DEBUG, "ttyCallback: readDecodeHdr failed cc=%d: %M",
                   cc);
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
     xdr_destroy(&xdrs);
 
@@ -4784,7 +4784,7 @@ ttyCallback(int s, ttyStruct *tty)
         buf = malloc(msgHdr.length);
         if (!buf) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return (-1);
+            return -1;
         }
 
         if ((cc = SOCK_READ_FIX(s, buf, msgHdr.length)) != msgHdr.length) {
@@ -4792,7 +4792,7 @@ ttyCallback(int s, ttyStruct *tty)
                       "ttyCallback: b_read_fix(%d) failed, cc=%d: %m",
                       msgHdr.length, cc);
             free(buf);
-            return (-1);
+            return -1;
         }
     } else {
         buf = NULL;
@@ -4805,14 +4805,14 @@ ttyCallback(int s, ttyStruct *tty)
             if (!xdr_resStty(&xdrs, &restty, &msgHdr)) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resStty");
                 xdr_destroy(&xdrs);
-                return (-1);
+                return -1;
             }
             xdr_destroy(&xdrs);
             free(buf);
             tty->attr = restty.termattr;
             tty->ws = restty.ws;
 
-            return (0);
+            return 0;
 
         default:
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5278,
@@ -4821,7 +4821,7 @@ ttyCallback(int s, ttyStruct *tty)
     if (buf)
         free(buf);
 
-    return (-1);
+    return -1;
 }
 
 
@@ -5657,12 +5657,12 @@ addResNotifyList(LIST_T *list, int rpid, int opCode, resAck ack,
     if (!list || rpid < 0 || opCode < RES2NIOS_CONNECT
         || opCode > RES2NIOS_NEWTASK) {
         lserrno = LSE_BAD_ARGS;
-        return (-1);
+        return -1;
     }
 
     if ((notice = (resNotice_t *) malloc(sizeof(resNotice_t))) == NULL) {
         lserrno = LSE_MALLOC;
-        return (-1);
+        return -1;
     }
     notice->rpid = rpid;
     notice->opCode = opCode;
@@ -5680,7 +5680,7 @@ addResNotifyList(LIST_T *list, int rpid, int opCode, resAck ack,
     if (listInsertEntryAtBack(list, (LIST_ENTRY_T *) notice) < 0) {
         FREEUP(notice);
         lserrno = LSE_INTERNAL;
-        return (-1);
+        return -1;
     }
 
     return 0;
@@ -5694,7 +5694,7 @@ deliver_notifications(LIST_T *list)
     int n = 0;
     if (!list) {
         lserrno = LSE_BAD_ARGS;
-        return (-1);
+        return -1;
     }
     if (list->numEnts == 0)
         return 0;
@@ -5727,7 +5727,7 @@ deliver_notifications(LIST_T *list)
                 n++;
             }
             else if (lserrno == LSE_MALLOC)
-                return (-1);
+                return -1;
         } else {
             listRemoveEntry(list, (LIST_ENTRY_T *) notice);
             n++;
@@ -5770,7 +5770,7 @@ notify_nios(int retsock, int rpid, int opCode)
                 }
             }
         }
-        return (-1);
+        return -1;
     }
     if (debug>1) {
         printf("NIOS is notified for task <%d>\n", rpid);
@@ -5798,7 +5798,7 @@ resUpdatetty(struct LSFHeader msgHdr)
         tempBuf = malloc(msgHdr.length);
         if (!tempBuf) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            return(-1);
+            return -1;
         }
 
         if ((cc = SOCK_READ_FIX(conn2NIOS.sock.fd, tempBuf, msgHdr.length))
@@ -5807,7 +5807,7 @@ resUpdatetty(struct LSFHeader msgHdr)
                       "%s: b_read_fix(%d) failed, cc=%d: %m",
                       fname, msgHdr.length, cc);
             free(tempBuf);
-            return(-1);
+            return -1;
         }
     } else {
         tempBuf = NULL;
@@ -5818,7 +5818,7 @@ resUpdatetty(struct LSFHeader msgHdr)
     if (!xdr_resStty(&xdrs, &restty, &msgHdr)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resStty");
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
     xdr_destroy(&xdrs);
     free(tempBuf);

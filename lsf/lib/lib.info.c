@@ -61,7 +61,7 @@ expandList1_(char ***tolist, int num, int *bitmMaps, char **keys)
 
     if ((temp = (char **)calloc (num,  sizeof (char *))) == NULL)  {
         lserrno = LSE_MALLOC;
-        return (-1);
+        return -1;
     }
     for (ii=0, jj=0; ii <num; ii++) {
         TEST_BIT(ii, bitmMaps, isSet);
@@ -92,7 +92,7 @@ expandList_(char ***tolist, int mask, char **keys)
         *tolist = calloc(j, sizeof (char *));
         if (!*tolist) {
             lserrno = LSE_MALLOC;
-            return(-1);
+            return -1;
         }
         for(i=0; i < j; i++)
             (*tolist)[i] = temp[i];
@@ -131,7 +131,7 @@ errReturn:
     FREEUP (clusPtr->admins);
     FREEUP (clusPtr->adminIds);
     lserrno = LSE_MALLOC;
-    return(-1);
+    return -1;
 
 }
 
@@ -716,7 +716,7 @@ ls_isclustername(char *name)
     clname = ls_getclustername();
     if (clname && strcmp(clname,name) == 0)
         return(1);
-    return (0);
+    return 0;
 }
 
 struct lsSharedResourceInfo *

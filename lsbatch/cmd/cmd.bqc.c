@@ -47,7 +47,7 @@ bqc (int argc, char *argv[], int opCode)
             lsb_perror(queues[numQueues]);
         else
             lsb_perror(NULL);
-        return (-1);
+        return -1;
     }
 
     for (i = 0; i < numQueues; i++) {
@@ -70,7 +70,7 @@ ctrlQueue (char *queue, int opCode)
         case LSBE_MBATCHD:
         default:
             lsb_perror (queue);
-            return (-1);
+            return -1;
         }
     }
 
@@ -89,8 +89,8 @@ ctrlQueue (char *queue, int opCode)
         break;
     default:
         fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,955, "Command internal error: corrupt opCode\n"))); /* catgets  955  */
-        return (-1);
+        return -1;
     }
-    return (0);
+    return 0;
 }
 

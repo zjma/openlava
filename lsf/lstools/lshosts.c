@@ -516,6 +516,6 @@ main(int argc, char **argv)
     }
 
     _i18n_end ( ls_catd );
-    return(0);
+    return 0;
 }
 

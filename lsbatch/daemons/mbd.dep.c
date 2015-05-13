@@ -900,46 +900,46 @@ mergeNode(int level)
       case MERGE_TOP:
          op=popStackDep(operatorStack);
          if (!op)
-            return(-1);
+            return -1;
          operand1=popStackDep(operandStack);
          if (!operand1) {
             pushStackDep(operatorStack,op);
-            return(-1);
+            return -1;
          }
          if ((op->type != DPT_NOT) &&
              ((operand2=popStackDep(operandStack)) == NULL)) {
              pushStackDep(operatorStack, op);
              pushStackDep(operandStack,operand1);
-             return(-1);
+             return -1;
          }
          op->dptLeft = operand1;
          if (op->type != DPT_NOT)
              op->dptRight = operand2;
          pushStackDep(operandStack, op);
-         return(0);
+         return 0;
 
       case MERGE_LEFT:
 
          while (1) {
              op = popStackDep(operatorStack);
              if (!op)
-                 return(-1);
+                 return -1;
              if (op->type == DPT_LEFT_) {
                  free(op);
-                 return(0);
+                 return 0;
              }
              pushStackDep(operatorStack, op);
              if (mergeNode(MERGE_TOP) < 0)
-                return(-1);
+                return -1;
          }
        case MERGE_ALL:
           while(mergeNode(MERGE_TOP) >= 0);
-          return(0);
+          return 0;
      default:
         break;
    }
 
-   return(-1);
+   return -1;
 
 }
 
@@ -965,13 +965,13 @@ pushStackDep(struct Stack *stack, struct dptNode *node)
        sp = realloc(stack->nodes, stack->size*2*sizeof(struct dptNode *));
        if (!sp) {
            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "realloc");
-           return(-1);
+           return -1;
        }
        stack->size *= 2;
        stack->nodes = (struct dptNode **)sp;
    }
    stack->nodes[++stack->top] = node;
-   return (0);
+   return 0;
 }
 
 
@@ -1293,10 +1293,10 @@ createMoreNodes (dptType tokenType, int numJob, struct jData **jobRec,
 	    return -1;
         PUSH_STACK(operatorStack, node);
 	if (mergeNode(MERGE_TOP) < 0)
-	    return(-1);
+	    return -1;
 
    }
-   return(0);
+   return 0;
 
 Error:
    return -1;
@@ -1309,38 +1309,38 @@ opExpr(int opType, int operand1, int operand2)
     switch (opType) {
         case DPT_LT:
             if (operand1 < operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_LE:
             if (operand1 <= operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_GT:
             if (operand1 > operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_GE:
             if (operand1 >= operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_EQ:
             if (operand1 == operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_NE:
             if (operand1 != operand2)
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_TRUE:
-	    return(TRUE);
+	    return true;
     }
-    return(FALSE);
+    return false;
 }
 
 static int
@@ -1369,7 +1369,7 @@ getCounterOfDep(int type, int *counts)
 		"%s: dep Type <%d> out of bound"),  /* catgets 5501 */
 		fname,
                 type);
-            return(0);
+            return 0;
     }
 }
 
@@ -1420,40 +1420,40 @@ evalJobDep(struct dptNode *node, struct jData *jpbw, struct jData *depJob)
          && ( node->type != DPT_ENDED     )
          && ( node->type != DPT_STARTED   )
        )  {
-        return(FALSE);
+        return false;
     }
 
     if (jpbw == NULL)
-        return(FALSE);
+        return false;
 
     switch (node->type) {
         case DPT_DONE:
             if ((depJob == NULL || depJob->endTime < jpbw->endTime) &&
                 ((jpbw->jStatus & JOB_STAT_DONE) || (IS_PEND(jpbw->jStatus)
                 && jpbw->jFlags & JFLAG_LASTRUN_SUCC)))
-                return(TRUE);
+                return true;
              else
-                return(FALSE);
+                return false;
 
         case DPT_POST_DONE:
             if ( (depJob == NULL) || (depJob->endTime < jpbw->endTime) ) {
 		if ( IS_POST_DONE(jpbw->jStatus)
 			   && (jpbw->jStatus & JOB_STAT_DONE) ) {
 
-		    return(TRUE);
+		    return true;
 		}
 	    }
-            return(FALSE);
+            return false;
 
         case DPT_POST_ERR:
             if ( (depJob == NULL) || (depJob->endTime < jpbw->endTime) ) {
 		if ( IS_POST_ERR(jpbw->jStatus)
 			   && (jpbw->jStatus & JOB_STAT_DONE) ) {
 
-		    return(TRUE);
+		    return true;
 		}
 	    }
-            return(FALSE);
+            return false;
 
         case DPT_EXIT: {
             int exitCode;
@@ -1464,25 +1464,25 @@ evalJobDep(struct dptNode *node, struct jData *jpbw, struct jData *depJob)
                 (IS_FINISH(jpbw->jStatus) || (IS_PEND(jpbw->jStatus)
                 && !(jpbw->jFlags & JFLAG_LASTRUN_SUCC)))
                 && !(jpbw->jStatus & JOB_STAT_DONE))
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         }
         case DPT_ENDED:
             if ((depJob == NULL || depJob->endTime < jpbw->endTime) &&
                 ((IS_FINISH(jpbw->jStatus) || IS_PEND(jpbw->jStatus))))
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         case DPT_STARTED:
             if (jpbw->startTime
                 && (depJob == NULL || depJob->endTime < jpbw->startTime)
                 && !(jpbw->jStatus & JOB_STAT_PRE_EXEC))
-                return(TRUE);
+                return true;
             else
-                return(FALSE);
+                return false;
         default:
-                return(FALSE);
+                return false;
     }
 }
 

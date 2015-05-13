@@ -602,6 +602,6 @@ The current window has %d lines.\n", LINES);
             sleep(updateRate);
     }
 
-    return(0);
+    return 0;
 }
 

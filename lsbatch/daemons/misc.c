@@ -147,7 +147,7 @@ get_ports(void)
                 "%s: %s service not registered"),
                 fname,
                 MBATCHD_SERV));
-            return(-1);
+            return -1;
         }
         mbd_port = sv->s_port;
     }
@@ -176,12 +176,12 @@ get_ports(void)
                 "%s: %s service not registered"), /* catgets 8231 */
                 fname,
                 SBATCHD_SERV);
-            return(-1);
+            return -1;
         }
         sbd_port = sv->s_port;
     }
 
-    return (0);
+    return 0;
 }
 
 uid_t chuser(uid_t uid)

@@ -104,7 +104,7 @@ main(int argc, char **argv)
 
     if (sOption == TRUE) {
         displayShareResource(argc, argv, optind, FALSE, extView);
-        return(0);
+        return 0;
     }
 
     while ((achar = getopt(argc, argv, "R:I:NEln:w")) != EOF) {

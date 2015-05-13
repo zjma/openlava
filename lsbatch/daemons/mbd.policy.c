@@ -2282,7 +2282,7 @@ getHostJobSlots (struct jData *jp, struct hData *hp, int *numAvailSlots,
             ls_syslog(LOG_DEBUG2, "%s: Q's JL/P reached.  Set reason <%d>",
                       fname, jp->newReason);
         *numAvailSlots = 0;
-        return (0);
+        return 0;
     }
     *numAvailSlots = numSlots;
 
@@ -2292,7 +2292,7 @@ getHostJobSlots (struct jData *jp, struct hData *hp, int *numAvailSlots,
     if (numNeeded > numSlots1) {
         jp->newReason = PEND_QUE_HOST_JLIMIT;
         *numAvailSlots = 0;
-        return (0);
+        return 0;
     }
     numSlots = MIN(numSlots, numSlots1);
     *numAvailSlots = numSlots;
@@ -2304,7 +2304,7 @@ getHostJobSlots (struct jData *jp, struct hData *hp, int *numAvailSlots,
 
     if (numSlots1 == 0) {
         *numAvailSlots = 0;
-        return (0);
+        return 0;
     }
 
 
@@ -2380,7 +2380,7 @@ getHostJobSlots1 (int numNeeded, struct jData *jp, struct hData *hp,
             if (logclass & (LC_JLIMIT))
                 ls_syslog(LOG_DEBUG2, "%s: rs=%d job=%s host=%s maxJobs=%d numJobs=%d", fname, jp->newReason, lsb_jobid2str(jp->jobId), hp->host, hp->maxJobs, hp->numJobs);
             *numAvailSlots = 0;
-            return (0);
+            return 0;
         }
         if (jp->numCandPtr == 1
             && *numAvailSlots < jp->shared->jobBill.numProcessors) {
@@ -2418,7 +2418,7 @@ uJobLimitOk (struct jData *jp, struct hTab *uAcct, int uJobLimit, int disp)
     INC_CNT(PROF_CNT_uJobLimitOk);
 
     if (uJobLimit <= 0)
-        return (0);
+        return 0;
     if (uJobLimit == INFINIT_INT)
         return (INFINIT_INT);
 
@@ -2429,13 +2429,13 @@ uJobLimitOk (struct jData *jp, struct hTab *uAcct, int uJobLimit, int disp)
         if (1 + disp * (numStartJobs + ap->numRESERVE) > uJobLimit) {
             if (logclass & (LC_JLIMIT))
                 ls_syslog(LOG_DEBUG2, "%s: job=%s, uJobLimit=%d, numRUN=%d, numSSUSP=%d, numUSUSP=%d, numRESERVE=%d", fname, lsb_jobid2str(jp->jobId), uJobLimit, ap->numRUN, ap->numSSUSP, ap->numUSUSP, ap->numRESERVE);
-            return (0);
+            return 0;
         }
         if (jp->shared->jobBill.numProcessors +
             disp * (numStartJobs + ap->numRESERVE)> uJobLimit) {
             if (logclass & (LC_JLIMIT))
                 ls_syslog(LOG_DEBUG2, "%s: job=%s, uJobLimit=%d, numRUN=%d, numSSUSP=%d, numUSUSP=%d, numRESERVE=%d", fname, lsb_jobid2str(jp->jobId), uJobLimit, ap->numRUN, ap->numSSUSP, ap->numUSUSP, ap->numRESERVE);
-            return (0);
+            return 0;
         }
         found = TRUE;
         numSlots = uJobLimit - disp * (numStartJobs + ap->numRESERVE);
@@ -2444,7 +2444,7 @@ uJobLimitOk (struct jData *jp, struct hTab *uAcct, int uJobLimit, int disp)
     if (!found
         && jp->shared->jobBill.maxNumProcessors > 1
         && jp->shared->jobBill.numProcessors > uJobLimit)
-        return (0);
+        return 0;
 
     return (numSlots);
 
@@ -2459,7 +2459,7 @@ pJobLimitOk (struct hData *hp, struct hostAcct *hAcct, float pJobLimit)
     INC_CNT(PROF_CNT_pJobLimitOk);
 
     if (pJobLimit <= 0.0)
-        return (0);
+        return 0;
     if (pJobLimit >= INFINIT_FLOAT)
         return (INFINIT_INT);
 
@@ -2472,7 +2472,7 @@ pJobLimitOk (struct hData *hp, struct hostAcct *hAcct, float pJobLimit)
     if (numSlots <= 0) {
         if ((logclass & LC_JLIMIT) && hAcct != NULL)
             ls_syslog(LOG_DEBUG2, "%s: host=%s, pJobLimit=%f, numRUN=%d, numSSUSP=%d, numUSUSP=%d, numRESERVE=%d", fname, hp->host, pJobLimit, hAcct->numRUN, hAcct->numSSUSP, hAcct->numUSUSP, hAcct->numRESERVE);
-        return (0);
+        return 0;
     }
 
     return (numSlots);
@@ -2488,7 +2488,7 @@ hJobLimitOk (struct hData *hp, struct hostAcct *hAcct, int hJobLimit)
     INC_CNT(PROF_CNT_hJobLimitOk);
 
     if (hJobLimit <= 0)
-        return (0);
+        return 0;
     if (hJobLimit == INFINIT_INT)
         return (INFINIT_INT);
 
@@ -2500,7 +2500,7 @@ hJobLimitOk (struct hData *hp, struct hostAcct *hAcct, int hJobLimit)
     if (numSlots <= 0) {
         if ((logclass & LC_JLIMIT) && hAcct != NULL)
             ls_syslog(LOG_DEBUG2, "%s: host=%s, hJobLimit=%d, numRUN=%d, numSSUSP=%d, numUSUSP=%d, numRESERVE=%d", fname, hp->host, hJobLimit, hAcct->numRUN, hAcct->numSSUSP, hAcct->numUSUSP, hAcct->numRESERVE);
-        return (0);
+        return 0;
     }
 
     return (numSlots);
@@ -2528,7 +2528,7 @@ cntUserJobs (struct jData *jp, struct gData *gp, struct hData *hp,
             }
         }
     }
-    return (0);
+    return 0;
 }
 
 int
@@ -2566,15 +2566,15 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
     *numAvailSlots = 0;
     if (hp->maxJobs <= 0) {
         jp->newReason = PEND_HOST_JOB_LIMIT;
-        return (0);
+        return 0;
     }
     if (hp->uJobLimit <= 0) {
         jp->newReason = PEND_HOST_USR_JLIMIT;
-        return (0);
+        return 0;
     }
     if (uData && uData->pJobLimit <= 0.0) {
         jp->newReason = PEND_USER_PROC_JLIMIT;
-        return (0);
+        return 0;
     }
 
 
@@ -2637,7 +2637,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
         if (logclass & (LC_JLIMIT))
             ls_syslog(LOG_DEBUG2, "%s: slots=%d numRESERVE=%d",
                       fname, slots, hp->numRESERVE);
-        return (0);
+        return 0;
     }
 
 
@@ -2652,7 +2652,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
         if (logclass & (LC_JLIMIT))
             ls_syslog(LOG_DEBUG2, "%s: slots=%d runJobsHostUser=%d rsvSlots=%d",
                       fname, slots, runJobsHostUser, rsvSlots);
-        return (0);
+        return 0;
     }
 
 
@@ -2669,7 +2669,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
             if (logclass & (LC_JLIMIT))
                 ls_syslog(LOG_DEBUG2, "%s: slots=%d rsvSlots=%d",
                           fname, slots, rsvSlots);
-            return (0);
+            return 0;
         }
     }
 
@@ -2682,7 +2682,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
         if (uData->pJobLimit <= 0.0) {
             jp->newReason = PEND_USER_PROC_JLIMIT;
             *numAvailSlots = 0;
-            return (0);
+            return 0;
         }
 
         highJobsHost = 0;
@@ -2726,7 +2726,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
                 *numAvailSlots = 0;
                 if (logclass & (LC_JLIMIT))
                     ls_syslog(LOG_DEBUG2, "%s: pJobLimit=%f slots=%d rsvSlots=%d", fname, uData->pJobLimit, slots, rsvSlots);
-                return (0);
+                return 0;
             }
         }
 
@@ -2993,7 +2993,7 @@ dispatch_it (struct jData *jp)
     if ((jpbw = getZombieJob(jp->jobId)) != NULL) {
         if (strcmp (jpbw->hPtr[0]->host, jp->hPtr[0]->host) == 0) {
             jp->newReason = PEND_SBD_ZOMBIE;
-            return (FALSE);
+            return false;
         }
     }
 
@@ -3789,7 +3789,7 @@ orderByStatus (struct candHost *hosts, int j, bool_t orderByClosedFull)
         tmp = hosts[j];
         hosts[j] = hosts[j-1];
         hosts[j-1] = tmp;
-        return (0);
+        return 0;
     }
 
 
@@ -3818,10 +3818,10 @@ isCandHost (char *hostname, struct jData *jp)
             if (logclass & (LC_SCHED | LC_TRACE))
                 ls_syslog(LOG_DEBUG, "%s: host <%s> is a candidate host",
                           fname,hostname);
-            return (TRUE);
+            return true;
         }
     }
-    return (FALSE);
+    return false;
 }
 
 static void
@@ -3872,7 +3872,7 @@ cntUserSlots(struct hTab *uAcct, struct uData *up, int *runJobSlots)
         return (ap->numRESERVE);
     }
     *runJobSlots = 0;
-    return (0);
+    return 0;
 
 }
 
@@ -4100,7 +4100,7 @@ cntHostSlots (struct hTab *hAcct, struct hData *hp)
     if ((ap = getHAcct(hAcct, hp)) != NULL) {
         return (ap->numRESERVE);
     }
-    return (0);
+    return 0;
 
 }
 

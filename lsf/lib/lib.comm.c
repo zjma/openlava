@@ -58,7 +58,7 @@ ls_getrpid(void)
     if (amSlave_ == TRUE)
         return(myrpid_);
     else
-	return(0);
+	return 0;
 }
 
 int 
@@ -71,7 +71,7 @@ ls_sndmsg(int tid, char *buf, int count, task_sock)
 	sock = msock_;
     else {
         if ((tid = tid_find(tid, task_sock)) == NULL)
-	    return (-1);
+	    return -1;
 	sock = tid->sock;
     }
 
@@ -93,7 +93,7 @@ ls_rcvmsg(int tid, char *buf, int count)
 	} else {
             if ( (sock = tid_find(tid, task_sock)) < 0) {
 		lserrno = LSE_RES_INVCHILD;
-		return(-1);
+		return -1;
 	    }
         }
     }

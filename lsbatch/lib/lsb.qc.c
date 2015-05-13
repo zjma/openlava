@@ -38,13 +38,13 @@ lsb_queuecontrol (char *queue, int opCode)
         qcReq.name = (char *) malloc (MAXHOSTNAMELEN);
         if (qcReq.name == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(-1);
+            return -1;
         }
     }
     
 
     if (authTicketTokens_(&auth, NULL) == -1)
-	return (-1);
+	return -1;
 
     
     switch (opCode) {
@@ -62,16 +62,16 @@ lsb_queuecontrol (char *queue, int opCode)
 	break;
     default:
 	lsberrno = LSBE_BAD_ARG;
-	return (-1);
+	return -1;
     }
 
     if (queue == NULL) {
 	lsberrno = LSBE_QUEUE_NAME;
-	return(-1);
+	return -1;
     } else {
         if (strlen (queue) >= MAXHOSTNAMELEN - 1) {
             lsberrno = LSBE_BAD_QUEUE;
-            return (-1);
+            return -1;
         }
 	strcpy(qcReq.name, queue);
     }
@@ -85,7 +85,7 @@ lsb_queuecontrol (char *queue, int opCode)
     hdr.opCode = mbdReqtype;
     if (!xdr_encodeMsg(&xdrs, (char *)&qcReq, &hdr, xdr_controlReq, 0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
     
@@ -93,7 +93,7 @@ lsb_queuecontrol (char *queue, int opCode)
                        &hdr, NULL, NULL, NULL)) == -1)
     {
         xdr_destroy(&xdrs); 
-	return (-1);
+	return -1;
     }
 
     xdr_destroy(&xdrs); 
@@ -104,8 +104,8 @@ lsb_queuecontrol (char *queue, int opCode)
     if (cc)
 	free(reply_buf);    
     if (lsberrno == LSBE_NO_ERROR)
-	return(0);
+	return 0;
 
-    return(-1);
+    return -1;
 
 } 

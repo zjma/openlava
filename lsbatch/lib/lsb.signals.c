@@ -216,9 +216,9 @@ isSigTerm (int sigValue)
         case SIG_TERM_MEMLIMIT:
         case SIG_TERM_FORCE:
         case SIG_KILL_REQUEUE:
-            return(TRUE);
+            return true;
         default:
-            return (FALSE);
+            return false;
     }
 }
 
@@ -230,9 +230,9 @@ isSigSusp (int sigValue)
        case SIG_SUSP_LOAD:
        case SIG_SUSP_WINDOW:
        case SIG_SUSP_OTHER:
-            return(TRUE);
+            return true;
         default:
-            return (FALSE);
+            return false;
     }
 }
 
@@ -241,20 +241,20 @@ terminateWhen_(int *sigMap, char *name)
 {
     if (strcmp(name, "WINDOW") == 0) {
         if (sigMap[- SIG_SUSP_WINDOW] != 0)
-            return (TRUE);
+            return true;
         else
-            return (FALSE);
+            return false;
     } else if (strcmp(name, "USER") == 0) {
         if (sigMap[- SIG_SUSP_USER] != 0)
-            return (TRUE);
+            return true;
         else
-            return (FALSE);
+            return false;
     } else if (strcmp(name, "LOAD") == 0) {
         if (sigMap[- SIG_SUSP_LOAD] != 0)
-            return (TRUE);
+            return true;
         else
-            return (FALSE);
+            return false;
     } else
-        return (FALSE);
+        return false;
 
 }

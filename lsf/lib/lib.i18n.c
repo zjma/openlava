@@ -33,14 +33,14 @@ _i18n_init (int modId)
 {
 
     I18nInitFlag = 1 ;
-    return(0);
+    return 0;
 
 }
 
 int
 _i18n_end()
 {
-    return(0);
+    return 0;
 }
 
 

@@ -151,28 +151,28 @@ xdr_arrayElement(XDR *xdrs,
         XDR_SETPOS(xdrs, pos + NET_INTSIZE_);
     } else {
         if (!xdr_int(xdrs, &nextElementOffset))
-            return (FALSE);
+            return false;
     }
 
     cp = va_arg(ap, char *);
     if (cp) {
         if (!(*xdr_func)(xdrs, data, hdr, cp))
-            return (FALSE);
+            return false;
     } else {
         if (!(*xdr_func)(xdrs, data, hdr))
-            return (FALSE);
+            return false;
     }
 
     if (xdrs->x_op == XDR_ENCODE) {
         nextElementOffset = XDR_GETPOS(xdrs) - pos;
         XDR_SETPOS(xdrs, pos);
         if (!xdr_int(xdrs, &nextElementOffset))
-            return (FALSE);
+            return false;
     }
 
 
     XDR_SETPOS(xdrs, pos + nextElementOffset);
-    return (TRUE);
+    return true;
 }
 
 bool_t
@@ -190,14 +190,14 @@ xdr_array_string(XDR *xdrs, char **astring, int maxlen, int arraysize)
                 || (astring[i] = putstr_(sp)) == NULL) {
                 for (j = 0; j < i; j++)
                     FREEUP(astring[j]);
-                return (FALSE);
+                return false;
             }
         } else {
             if (! xdr_string(xdrs, &astring[i], maxlen))
-                return (FALSE);
+                return false;
         }
     }
-    return (TRUE);
+    return true;
 
 }
 
@@ -338,7 +338,7 @@ xdr_lsfLimit(XDR *xdrs, struct lsfLimit *limits, struct LSFHeader *hdr)
           xdr_u_int(xdrs, (unsigned int*)&limits->rlim_maxl) &&
           xdr_u_int(xdrs, (unsigned int*)&limits->rlim_maxh)))
         return FALSE;
-    return (TRUE);
+    return true;
 }
 
 bool_t
@@ -387,7 +387,7 @@ xdr_debugReq (XDR *xdrs, struct debugReq  *debugReq,
         if (phostname == NULL) {
             phostname = (char *) malloc (MAXHOSTNAMELEN);
             if (phostname == NULL)
-                return (FALSE);
+                return false;
         }
         debugReq->hostName = phostname;
         phostname[0] = '\0';

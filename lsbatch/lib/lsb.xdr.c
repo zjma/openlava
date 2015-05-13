@@ -1699,10 +1699,10 @@ allocLoadIdx(float **loadSched, float **loadStop, int *outSize, int size)
     *outSize = 0;
 
     if ((*loadSched = (float *) calloc(size, sizeof(float))) == NULL)
-        return (-1);
+        return -1;
 
     if ((*loadStop = (float *) calloc(size, sizeof(float))) == NULL)
-        return (-1);
+        return -1;
 
     *outSize = size;
 

@@ -82,7 +82,7 @@ connected_(char *hostName, int sock1, int sock2, int seqno)
 
     hEntPtr->hData = sp;
 
-    return (0);
+    return 0;
 
 }
 
@@ -185,12 +185,12 @@ _isconnected_(char *hostName, int *sock)
 
     sp = _gethostdata_(hostName);
     if (sp == NULL)
-        return (FALSE);
+        return false;
 
     sock[0] = sp[0];
     sock[1] = sp[1];
 
-    return (TRUE);
+    return true;
 }
 
 int
@@ -200,7 +200,7 @@ _getcurseqno_(char *hostName)
 
     sp = _gethostdata_(hostName);
     if (sp == NULL)
-	return(-1);
+	return -1;
 
     return(sp[2]);
 }
@@ -264,7 +264,7 @@ _findmyconnections_(struct connectEnt **connPtr)
 
     ent = h_firstEnt_(&conn_table, &sTab);
     if (ent == NULL) {
-        return (0);
+        return 0;
     }
 
     n = 0;

@@ -590,7 +590,7 @@ processClient(struct clientNode *client, int *needFree)
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_ENO_D, fname, "chanDequeue_",
                   cherrno);
         shutDownClient(client);
-        return(-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, buf->data, buf->len, XDR_DECODE);
@@ -599,7 +599,7 @@ processClient(struct clientNode *client, int *needFree)
         xdr_destroy(&xdrs);
         chanFreeBuf_(buf);
         shutDownClient(client);
-        return(-1);
+        return -1;
     }
 
     mbdReqtype = reqHdr.opCode;
@@ -670,7 +670,7 @@ processClient(struct clientNode *client, int *needFree)
                 shutDownClient(client);
                 xdr_destroy(&xdrs);
                 chanFreeBuf_(buf);
-                return(-1);
+                return -1;
             }
             break;
 
@@ -806,9 +806,9 @@ endLoop:
          reqHdr.opCode != BATCH_STATUS_CHUNK) ||
         statusReqCC < 0) {
         shutDownClient(client);
-        return(-1);
+        return -1;
     }
-    return(0);
+    return 0;
 
 }
 

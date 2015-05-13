@@ -179,18 +179,18 @@ openLogFile(const char *ident, char *myname)
         if (lstat(logfile, &st) < 0) {
             if (errno == ENOENT) {
                 if ((lfp = fopen(logfile, "a")) == NULL) {
-                    return (-1);
+                    return -1;
                 }
             } else {
-                return (-1);
+                return -1;
             }
         } else if (S_ISREG(st.st_mode) && st.st_nlink == 1) {
 
             if ((lfp = fopen(logfile, "a")) == NULL) {
-                return (-1);
+                return -1;
             }
         } else {
-            return (-1);
+            return -1;
         }
     }
 
@@ -205,9 +205,9 @@ openLogFile(const char *ident, char *myname)
             chmod(logfile, 0644);
         }
         log_dest = LOGTO_FILE;
-        return (0);
+        return 0;
     }
-    return (-1);
+    return -1;
 }
 
 void

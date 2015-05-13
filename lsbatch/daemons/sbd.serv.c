@@ -828,7 +828,7 @@ ctrlSbdDebug(struct debugReq  *pdebug)
                        (debug > 1), daemonParams[LSF_LOG_MASK].paramValue);
   	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "initenv_");
             die(SLAVE_FATAL);
-            return (-1);
+            return -1;
         }
 
         getLogClass_(daemonParams[LSB_DEBUG_SBD].paramValue,
@@ -888,7 +888,7 @@ ctrlSbdDebug(struct debugReq  *pdebug)
     }
     else {
         ls_perror("No this debug command!\n");
-        return (-1);
+        return -1;
     }
     return (LSBE_NO_ERROR);
 }
@@ -1095,17 +1095,17 @@ replyHdrWithRC(int rc, int chfd, int jobId)
 	ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed for job <%d>", fname,
 		  jobId);
 	xdr_destroy(&xdrs2);
-	return (-1);
+	return -1;
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
         ls_syslog(LOG_ERR, "%s: chanWrite_(%d) failed for job <%d>: %m",
 		  fname, XDR_GETPOS(&xdrs2), jobId);
 	xdr_destroy(&xdrs2);
-	return (-1);
+	return -1;
     }
     xdr_destroy(&xdrs2);
-    return (0);
+    return 0;
 }				/* replyHdrWithRC */
 
 

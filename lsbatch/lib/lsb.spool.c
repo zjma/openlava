@@ -988,7 +988,7 @@ removeSpoolFile( const char* hostName
 
             sprintf(szRshDest, "rm -rf %s",destinFileFullPath);
             execlp(RSHCMD, RSHCMD, hostName, szRshDest, NULL);
-            return(-1);
+            return -1;
             break;
 
         case -1:

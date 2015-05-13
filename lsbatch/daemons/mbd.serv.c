@@ -130,14 +130,14 @@ checkUseSelectJgrps(struct LSFHeader *reqHdr, struct jobInfoReq *req)
 {
 
     if (req->jobId != 0 && !(req->options & JGRP_ARRAY_INFO))
-        return(FALSE);
+        return false;
 
 
     if ((req->jobName[0] == '\0') &&
         !(req->options & JGRP_ARRAY_INFO))
-        return(FALSE);
+        return false;
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -1163,7 +1163,7 @@ do_chunkStatusReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "getHostEntryByAddr_",
                   sockAdd2Str_(from));
         errorBack(chfd, LSBE_BAD_HOST, from);
-        return (-1);
+        return -1;
     }
 
     if (!xdr_chunkStatusReq(xdrs, &chunkStatusReq, reqHdr)) {
@@ -1229,7 +1229,7 @@ do_restartReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
 %s: gethostbyaddr() failed %s", __func__,
                   sockAdd2Str_(from));
         errorBack(chfd, LSBE_BAD_HOST, from);
-        return (-1);
+        return -1;
     }
 
     if ((hData = getHostData(hp->h_name)) == NULL) {
@@ -1241,7 +1241,7 @@ do_restartReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
 %s: Got registration request from unknown host %s at %s",
                   __func__, hp->h_name, sockAdd2Str_(from));
         errorBack(chfd, LSBE_BAD_HOST, from);
-        return (-1);
+        return -1;
     }
     hStatChange(hData, 0);
 
@@ -1976,8 +1976,8 @@ do_modifyReq(XDR * xdrs, int s, struct sockaddr_in * from, char *hostName,
     reply = modifyJob(&modifyReq, &submitReply, auth);
 sendback:
     if (sendBack(reply, &modifyReq.submitReq, &submitReply, s) < 0)
-        return (-1);
-    return (0);
+        return -1;
+    return 0;
 
 }
 
@@ -2045,13 +2045,13 @@ sendBack (int reply, struct submitReq *submitReq,
                        xdr_submitMbdReply, 0, NULL)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
-        return (-1);
+        return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) != XDR_GETPOS(&xdrs2))
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "chanWrite_",
                   XDR_GETPOS(&xdrs2));
     xdr_destroy(&xdrs2);
-    return (0);
+    return 0;
 
 }
 
@@ -2581,7 +2581,7 @@ ctrlMbdDebug(struct debugReq *pdebug,  struct lsfAuth *auth)
     }
     else {
         ls_perror("No this debug command!\n");
-        return (-1);
+        return -1;
     }
 
     return (LSBE_NO_ERROR);
@@ -2711,7 +2711,7 @@ do_resourceInfoReq (XDR *xdrs, int chfd, struct sockaddr_in *from,
         xdr_destroy(&xdrs2);
         FREEUP(reply_buf);
         freeShareResourceInfoReply (&resInfoReply);
-        return(-1);
+        return -1;
     }
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,
@@ -2721,12 +2721,12 @@ do_resourceInfoReq (XDR *xdrs, int chfd, struct sockaddr_in *from,
         xdr_destroy(&xdrs2);
         FREEUP(reply_buf);
         freeShareResourceInfoReply (&resInfoReply);
-        return(-1);
+        return -1;
     }
     xdr_destroy(&xdrs2);
     FREEUP(reply_buf);
     freeShareResourceInfoReply (&resInfoReply);
-    return(0);
+    return 0;
 
 }
 
@@ -2828,7 +2828,7 @@ Reply:
                        NULL)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&replyXdr);
-        return(-1);
+        return -1;
     }
 
 
@@ -2837,11 +2837,11 @@ Reply:
                    XDR_GETPOS(&replyXdr)) <= 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "chanWrite_");
         xdr_destroy(&replyXdr);
-        return(-1);
+        return -1;
     }
 
     xdr_destroy(&replyXdr);
-    return(0);
+    return 0;
 }
 
 int
@@ -2892,15 +2892,15 @@ do_setJobAttr(XDR * xdrs, int s, struct sockaddr_in * from, char *hostName,
                        0, NULL)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs2);
-        return (-1);
+        return -1;
     }
     if (chanWrite_(s, reply_buf, XDR_GETPOS(&xdrs2)) != XDR_GETPOS(&xdrs2)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "chanWrite_");
         xdr_destroy(&xdrs2);
-        return (-1);
+        return -1;
     }
     xdr_destroy(&xdrs2);
-    return (0);
+    return 0;
 }
 
 /* sendLSFHeader()

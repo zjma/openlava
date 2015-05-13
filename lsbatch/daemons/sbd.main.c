@@ -475,7 +475,7 @@ main (int argc, char **argv)
 	clientIO(&chanmask);
     }
 
-    return(0);
+    return 0;
 
 }
 
@@ -1018,9 +1018,9 @@ isLSFAdmin(struct lsfAuth *auth)
     getLSFAdmins_();
 
     if (isLSFAdmin_(auth->lsfUserName)) {
-        return(TRUE);
+        return true;
     }
 
-    return(FALSE);
+    return false;
 
 }

@@ -334,7 +334,7 @@ getNextJobId (void)
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6504,
                                          "%s: Too many jobs in the system; can't accept any new job for the moment"), /* catgets 6504 */
                   fname);
-        return (-1);
+        return -1;
     }
     freeJobId = nextJobId;
     nextJobId++;
@@ -1087,7 +1087,7 @@ skipJobListByReq (int options, int joblist)
         return FALSE;
     }
 
-    return(TRUE);
+    return true;
 
 }
 
@@ -1175,13 +1175,13 @@ findLastJob(int options, struct jData *jobPtr, struct jData **recentJob)
     LS_LONG_INT jobIdDiff;
 
     if (!(options & LAST_JOB))
-        return(TRUE);
+        return true;
     if (*recentJob == NULL) {
         *recentJob = jobPtr;
-        return(TRUE);
+        return true;
     }
     if (jobPtr->shared->jobBill.submitTime < (*recentJob)->shared->jobBill.submitTime)
-        return (FALSE);
+        return false;
     if (jobPtr->shared->jobBill.submitTime == (*recentJob)->shared->jobBill.submitTime) {
 
 
@@ -1189,7 +1189,7 @@ findLastJob(int options, struct jData *jobPtr, struct jData **recentJob)
             jobIdDiff += MAX_INTERNAL_JOBID;
         if (jobIdDiff < (MAX_INTERNAL_JOBID / 2))
 
-            return (FALSE);
+            return false;
 
     }
     *recentJob = jobPtr;
@@ -3086,7 +3086,7 @@ ususpPendingEvent(struct jData *jpbw)
             return TRUE;
     }
 
-    return (FALSE);
+    return false;
 }
 
 
@@ -6797,7 +6797,7 @@ mergeSubReq (struct submitReq *to, struct submitReq *old,
         }
     }
 
-    return (0);
+    return 0;
 
 }
 
@@ -7150,17 +7150,17 @@ rUsagesOk (struct resVal *jobResVal, struct resVal *queueResVal)
     int    ldx, jobBitSet, queueBitSet;
 
     if (jobResVal == NULL || queueResVal == NULL) {
-        return (TRUE);
+        return true;
     }
 
     if (queueResVal->duration < jobResVal->duration
         && jobResVal->duration != INFINIT_INT) {
-        return (FALSE);
+        return false;
     }
 
     if (queueResVal->duration == jobResVal->duration &&
         queueResVal->decay > jobResVal->decay) {
-        return (FALSE);
+        return false;
     }
 
     for (ldx = 0; ldx < allLsInfo->numIndx; ldx++) {
@@ -7173,9 +7173,9 @@ rUsagesOk (struct resVal *jobResVal, struct resVal *queueResVal)
 
         if (jobResVal->val[ldx] <= queueResVal->val[ldx])
             continue;
-        return (FALSE);
+        return false;
     }
-    return (TRUE);
+    return true;
 }
 
 static void
@@ -7264,7 +7264,7 @@ shouldLockJob (struct jData *jData, int newStatus)
     int duration = INFINIT_INT, resBitMaps = 0;
 
     if (newStatus & JOB_STAT_USUSP)
-        return (TRUE);
+        return true;
 
     if (jData->shared->resValPtr)
         getReserveParams (jData->shared->resValPtr, &duration, &resBitMaps);
@@ -7273,9 +7273,9 @@ shouldLockJob (struct jData *jData, int newStatus)
         getReserveParams (jData->qPtr->resValPtr, &duration, &resBitMaps);
 
     if (duration - jData->runTime > 0 && resBitMaps != 0)
-        return (TRUE);
+        return true;
 
-    return (FALSE);
+    return false;
 }
 
 static void
@@ -8311,7 +8311,7 @@ rusgMatch(struct resVal* resValPtr, const char *resName)
     int ldx;
 
     if (resValPtr == NULL || resName == NULL) {
-        return (0);
+        return 0;
     }
 
     for (ldx = allLsInfo->numIndx; ldx < allLsInfo->nRes; ldx++) {
@@ -8329,7 +8329,7 @@ rusgMatch(struct resVal* resValPtr, const char *resName)
             return (1);
         }
     }
-    return (0);
+    return 0;
 }
 
 

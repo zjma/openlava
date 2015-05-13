@@ -433,7 +433,7 @@ getModelFactor_r(char *hostModel, float *cpuFactor)
             return 0;
         }
 
-    return (-1);
+    return -1;
 }
 
 hEnt *
@@ -1641,14 +1641,14 @@ hasResReserve(struct resVal *resVal)
     int i;
 
     if (resVal == NULL)
-        return (FALSE);
+        return false;
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
         if (resVal->rusgBitMaps[i] != 0)
-            return (TRUE);
+            return true;
 
     }
-    return (FALSE);
+    return false;
 
 }
 

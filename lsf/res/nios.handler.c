@@ -402,7 +402,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                 else if (lserrno == LSE_BAD_CHAN || lserrno == LSE_BAD_ARGS)
                     listRemoveEntry(notifyList, (LIST_ENTRY_T *) notice);
                 else if (lserrno == LSE_MALLOC || lserrno == LSE_NIO_INIT)
-                    return (-1);
+                    return -1;
             }
         }
 
@@ -424,7 +424,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
         if ((retVal = check_timeout_task()) != 0) {
 
             lserrno = retVal;
-            return(-1);
+            return -1;
         }
 
 
@@ -434,7 +434,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
         if (nready < 0) {
             lserrno = LSE_SELECT_SYS;
-            return(-1);
+            return -1;
         } else if (nready == 0 && !sendEof) {
             if (round2Go == 0)
                 return(nready);
@@ -450,7 +450,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
         if (acceptSock && FD_ISSET(acceptSock, &rmask)) {
 
             if (do_newconnect(acceptSock) < 0)
-                return(-1);
+                return -1;
 
             continue;
         }
@@ -486,7 +486,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                             if (bury_task(status, 0, conn[i].rpid) == -1) {
                                 lserrno = LSE_MALLOC;
                                 xdr_destroy(&xdrs);
-                                return(-1);
+                                return -1;
                             }
                             add_list(&readyTaskList, conn[i].rpid,
                                      NIO_IOERR, NULL);
@@ -542,7 +542,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                                 naborted++;
                                 DISCONNECT(i);
                                 lserrno = retVal;
-                                return(-1);
+                                return -1;
                             }
                             break;
                         case RES2NIOS_STATUS:
@@ -558,7 +558,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                                 naborted++;
                                 DISCONNECT(i);
                                 lserrno = retVal;
-                                return(-1);
+                                return -1;
                             } else if (retVal == LSE_BAD_XDR) {
                                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "xdr");
                                 add_list(&readyTaskList, conn[i].rpid,
@@ -607,7 +607,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                             SETTERMSIG(status, STATUS_IOERR);
                             if (bury_task(status, 0, conn[i].rpid) == -1) {
                                 lserrno = LSE_MALLOC;
-                                return(-1);
+                                return -1;
                             }
                             add_list(&readyTaskList, conn[i].rpid,
                                      NIO_IOERR, &status);
@@ -618,7 +618,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                     }
                 } else {
                     if (readResMsg(i) < 0) {
-                        return (-1);
+                        return -1;
                     }
                     if (conn[i].sock.rcount == 0) {
 
@@ -716,7 +716,7 @@ check_timeout_task()
         if (timeout_cnt == conn[i].taskList->numEnts)
             FD_CLR(i, &ncon_bit);
     }
-    return(0);
+    return 0;
 }
 
 int
@@ -759,10 +759,10 @@ ls_nioremovetask(int tid)
             connIndexTable[tid-1] = -1;
             count_unconn--;
         }
-        return(0);
+        return 0;
     }
     lserrno = LSE_BAD_TID;
-    return(-1);
+    return -1;
 }
 
 static void
@@ -787,20 +787,20 @@ ls_nioctl(int tid, int request)
         case NIO_STDIN_ON:
             if (do_setstdin(tid, 1) == -1) {
                 lserrno = LSE_BAD_TID;
-                return(-1);
+                return -1;
             }
             break;
         case NIO_STDIN_OFF:
             if (do_setstdin(tid, 0) == -1) {
                 lserrno = LSE_BAD_TID;
-                return(-1);
+                return -1;
             }
             break;
         default:
             lserrno = LSE_BAD_OPCODE;
-            return(-1);
+            return -1;
     }
-    return(0);
+    return 0;
 }
 
 int
@@ -817,9 +817,9 @@ ls_niowrite(char *buf, int len)
     if (!writeBuf.empty) {
         if ((retVal =flush_buffer()) != 0) {
             lserrno = retVal;
-            return(-1);
+            return -1;
         }
-        return(0);
+        return 0;
     } else {
         struct LSFHeader reqHdr;
         XDR xdrs;
@@ -849,7 +849,7 @@ ls_niowrite(char *buf, int len)
         if (!xdr_LSFHeader(&xdrs, &reqHdr)) {
             xdr_destroy(&xdrs);
             lserrno = LSE_BAD_XDR;
-            return(-1);
+            return -1;
         }
 
         writeBuf.length = cc + XDR_GETPOS(&xdrs);
@@ -875,7 +875,7 @@ flush_buffer()
         if ((retVal = flush_eof()) != 0)
             return(retVal);
     }
-    return(0);
+    return 0;
 }
 
 static int
@@ -921,7 +921,7 @@ flush_databuf()
                     conn[i].bytesWritten = 0;
         }
     }
-    return(0);
+    return 0;
 }
 
 static int
@@ -934,7 +934,7 @@ flush_eof()
         if ((retVal = deliver_eof()) != 0)
             return(retVal);
     }
-    return(0);
+    return 0;
 }
 
 int
@@ -949,14 +949,14 @@ ls_nioclose(void)
 
     if (!writeBuf.empty) {
         sendEof = TRUE;
-        return (0);
+        return 0;
     }
     sendEof = FALSE;
     if ((retVal = deliver_eof()) != 0) {
         lserrno = retVal;
-        return(-1);
+        return -1;
     } else {
-        return(0);
+        return 0;
     }
 }
 
@@ -988,7 +988,7 @@ deliver_eof()
         xdr_destroy(&xdrs);
         lserrno = LSE_BAD_XDR;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-        return(-1);
+        return -1;
     }
     len = XDR_GETPOS(&xdrs);
     xdr_destroy(&xdrs);
@@ -1010,7 +1010,7 @@ deliver_eof()
                 if (bury_task(status, 0, conn[i].rpid) == -1) {
                     lserrno = LSE_MALLOC;
                     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-                    return(-1);
+                    return -1;
                 }
                 ls_syslog(LOG_ERR, I18N(5901, "\
 %s: Error writing EOF to task %d\n"), /* catgets 5901 */
@@ -1022,7 +1022,7 @@ deliver_eof()
         }
     }
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 int
@@ -1049,12 +1049,12 @@ ls_nioread(int tid, char *buf, int len)
     index = connIndexTable[tid-1];
     if (index < 0 || index >= lastConn) {
         lserrno = LSE_BAD_TID;
-        return(-1);
+        return -1;
     }
 
     if (!conn[index].sock.rcount) {
         lserrno = LSE_NO_ERR;
-        return(0);
+        return 0;
     }
 
     if (conn[index].sock.rcount > len)
@@ -1068,7 +1068,7 @@ ls_nioread(int tid, char *buf, int len)
             SETTERMSIG(status, STATUS_IOERR);
             if (bury_task(status, 0, conn[index].rpid) == -1) {
                 lserrno = LSE_MALLOC;
-                return(-1);
+                return -1;
             }
             add_list(&abortedTasks, conn[index].rpid, NIO_IOERR, NULL);
             add_list(&abortedTasks, conn[index].rpid, NIO_EOF, NULL);
@@ -1077,7 +1077,7 @@ ls_nioread(int tid, char *buf, int len)
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "recv");
         errno = sverrno;
         lserrno = LSE_MSG_SYS;
-        return(-1);
+        return -1;
     }
     conn[index].sock.rcount -= cc;
 
@@ -1102,7 +1102,7 @@ ls_nionewtask(int tid, int sock)
     }
     if (tid > maxtasks) {
         lserrno = LSE_TOOMANYTASK;
-        return(-1);
+        return -1;
     }
     i = connIndexTable[tid-1];
     if (i >= 0 && i < lastConn
@@ -1113,12 +1113,12 @@ ls_nionewtask(int tid, int sock)
             || (conn[i].sock.fd == -1) || (sock != 0)) {
 
             lserrno = LSE_TASKEXIST;
-            return(-1);
+            return -1;
         }
         if (task == NULL) {
 
             lserrno = LSE_BAD_TID;
-            return (-1);
+            return -1;
         }
 
         task->rtime = 0;
@@ -1137,7 +1137,7 @@ ls_nionewtask(int tid, int sock)
             ls_syslog(LOG_DEBUG, "\
 %s: connection to new task <%d> is completed",
                       fname, tid);
-        return (0);
+        return 0;
     }
     else if ((i = getFirstFreeIndex()) < maxfds) {
         conn[i].eof = FALSE;
@@ -1162,11 +1162,11 @@ ls_nionewtask(int tid, int sock)
             conn[i].rbuf = (RelayLineBuf *) malloc(sizeof(RelayLineBuf));
             if (conn[i].rbuf == NULL) {
                 lserrno = LSE_MALLOC;
-                return (-1);
+                return -1;
             }
             conn[i].rbuf->bcount = 0;
             if ((task = addTask(conn[i].taskList)) == NULL) {
-                return (-1);
+                return -1;
             }
             task->tid = tid;
             task->eof = FALSE;
@@ -1188,7 +1188,7 @@ ls_nionewtask(int tid, int sock)
         connIndexTable[tid-1] = i;
         if (i == lastConn)
             lastConn++;
-        return (0);
+        return 0;
     }
 
     memset((void *)&status, 0, sizeof(LS_WAIT_T));
@@ -1197,7 +1197,7 @@ ls_nionewtask(int tid, int sock)
         lserrno = LSE_MALLOC;
     else
         lserrno = LSE_TOOMANYTASK;
-    return(-1);
+    return -1;
 }
 
 static int
@@ -1359,7 +1359,7 @@ ls_niotasks(int options, int *tidList, int len)
     }
     if (listLen > len) {
         lserrno = LSE_RPIDLISTLEN;
-        return(-1);
+        return -1;
     } else
         return(listLen);
 
@@ -1441,24 +1441,24 @@ ls_niostatus(int tid, int *status, struct rusage *rusage)
                 if (conn[i].rpid != 0) {
 
                     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-                    return(0);
+                    return 0;
                 }
             }
         } else {
             if ((i = connIndexTable[tid-1]) >= 0 && i < lastConn) {
                 if (conn[i].rpid == tid) {
                     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-                    return(0);
+                    return 0;
                 }
                 if (getTask(conn[i].taskList, tid)) {
                     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-                    return(0);
+                    return 0;
                 }
             }
         }
         lserrno = LSE_BAD_TID;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-        return(-1);
+        return -1;
     }
 }
 
@@ -1479,13 +1479,13 @@ do_newconnect(int s)
         ls_syslog(LOG_DEBUG, "%s: accept new connection", fname);
 
     if ((newsock = doAcceptResCallback_(s, &connReq)) == -1)
-        return (-1);
+        return -1;
 
     len = sizeof(sin);
     if (getpeername(newsock, (struct sockaddr *) &sin, &len) <0) {
         close(newsock);
         lserrno = LSE_SOCK_SYS;
-        return(-1);
+        return -1;
     }
     if ((hostname = (char *) malloc(MAXHOSTNAMELEN*sizeof(char))) == NULL) {
         lserrno = LSE_MALLOC;
@@ -1495,11 +1495,11 @@ do_newconnect(int s)
 
     if (connReq.rpid <= 0) {
         lserrno = LSE_BAD_TID;
-        return(-1);
+        return -1;
     }
     if (connReq.rpid > maxtasks) {
         lserrno = LSE_TOOMANYTASK;
-        return(-1);
+        return -1;
     }
 
     i = connIndexTable[connReq.rpid-1];
@@ -1507,13 +1507,13 @@ do_newconnect(int s)
 
         if (conn[i].rpid == connReq.rpid && conn[i].sock.fd != -1)
 
-            return(0);
+            return 0;
         rtime = 0;
     }
     else {
         if ((i = getFirstFreeIndex()) >= maxfds) {
             lserrno = LSE_TOOMANYTASK;
-            return(-1);
+            return -1;
         }
         rtime = time(0);
     }
@@ -1526,13 +1526,13 @@ do_newconnect(int s)
     conn[i].rbuf = (RelayLineBuf *) malloc(sizeof(RelayLineBuf));
     if (conn[i].rbuf == NULL) {
         lserrno = LSE_MALLOC;
-        return (-1);
+        return -1;
     }
     conn[i].rbuf->bcount = 0;
     conn[i].rtag = -1;
     conn[i].wtag = 0;
     if ((task = addTask(conn[i].taskList)) == NULL)
-        return (-1);
+        return -1;
     task->tid = connReq.rpid;
     task->rtime = rtime;
     task->eof = FALSE;
@@ -1575,7 +1575,7 @@ do_newconnect(int s)
 %s: received the leading task's request: rpid=%d newsock=%d",
                       fname, connReq.rpid, newsock);
     }
-    return (0);
+    return 0;
 
 }
 
@@ -1597,7 +1597,7 @@ doAcceptResCallback_(int s, struct niosConnect *connReq)
             ls_syslog(LOG_DEBUG, "%s: Accept error %d on socket %d",
                       fname, errno, s);
         lserrno = LSE_ACCEPT_SYS;
-        return(-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, buf, MSGSIZE, XDR_DECODE);
@@ -1607,7 +1607,7 @@ doAcceptResCallback_(int s, struct niosConnect *connReq)
                        &xdrs,
                        &msgHdr) < 0) {
         close(newsock);
-        return(-1);
+        return -1;
     }
 
     XDR_SETPOS(&xdrs, 0);
@@ -1622,7 +1622,7 @@ doAcceptResCallback_(int s, struct niosConnect *connReq)
                        NULL) < 0) {
         close(newsock);
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
     xdr_destroy(&xdrs);
 
@@ -1746,7 +1746,7 @@ get_status(int indx, struct LSFHeader *msgHdr, LS_WAIT_T *statusp)
         if ((task = getTask(conn[indx].taskList, conn[indx].rtag)) != NULL)
             task->dead = TRUE;
         *statusp = status;
-        return(0);
+        return 0;
     }
 
 
@@ -1764,7 +1764,7 @@ get_status(int indx, struct LSFHeader *msgHdr, LS_WAIT_T *statusp)
             task->dead = TRUE;
     }
     *statusp = status;
-    return(0);
+    return 0;
 }
 
 static int
@@ -1790,7 +1790,7 @@ bury_task(LS_WAIT_T status, struct rusage *ru, int rpid)
     }
 
     if ((ptid = (Dead_tid *)malloc(sizeof(Dead_tid))) == NULL) {
-        return(-1);
+        return -1;
     }
     ptid->tid = rpid;
     ptid->next = conn[connIndex].deadtid;
@@ -1802,7 +1802,7 @@ bury_task(LS_WAIT_T status, struct rusage *ru, int rpid)
     sigprocmask(SIG_BLOCK, &newMask, &oldMask);
 
     if ((prpid = (Dead_rpid *)malloc(sizeof(Dead_rpid))) == NULL) {
-        return(-1);
+        return -1;
     }
     prpid->rpid = rpid;
     prpid->status = status;
@@ -1826,7 +1826,7 @@ bury_task(LS_WAIT_T status, struct rusage *ru, int rpid)
         dead_rpid = prpid;
 
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 int
@@ -1866,7 +1866,7 @@ ls_niokill(int sigval)
         if (sigbufp == NULL) {
             lserrno = LSE_MALLOC;
             sigprocmask(SIG_SETMASK, &oldMask, NULL);
-            return(-1);
+            return -1;
         }
         sigbufp->sigval = sigval;
         sigbufp->next = NULL;
@@ -1887,16 +1887,16 @@ ls_niokill(int sigval)
 
             lserrno = retVal;
             sigprocmask(SIG_SETMASK, &oldMask, NULL);
-            return(-1);
+            return -1;
         }
         if ((retVal = deliver_signal(sigval)) != 0) {
             lserrno = retVal;
             sigprocmask(SIG_SETMASK, &oldMask, NULL);
-            return(-1);
+            return -1;
         }
     }
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 static int
@@ -1924,7 +1924,7 @@ flush_sigbuf()
         }
     }
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 static int
@@ -1981,7 +1981,7 @@ deliver_signal(int sigval)
     }
     xdr_destroy(&xdrs);
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 
@@ -2006,7 +2006,7 @@ readResMsg(int connIndex)
 
     if (!conn[connIndex].sock.rcount) {
         lserrno = LSE_NO_ERR;
-        return(0);
+        return 0;
     }
 
     retry_count = 1;
@@ -2020,7 +2020,7 @@ READ_RETRY:
             SETTERMSIG(status, STATUS_IOERR);
             if (bury_task(status, 0, conn[connIndex].rpid) == -1) {
                 lserrno = LSE_MALLOC;
-                return(-1);
+                return -1;
             }
             add_list(&abortedTasks, conn[connIndex].rpid, NIO_IOERR, NULL);
             add_list(&abortedTasks, conn[connIndex].rpid, NIO_EOF, NULL);
@@ -2034,7 +2034,7 @@ READ_RETRY:
         }
         errno = sverrno;
         lserrno = LSE_MSG_SYS;
-        return(-1);
+        return -1;
     }
     conn[connIndex].sock.rcount -= cc;
     conn[connIndex].rbuf->bcount += cc;
@@ -2075,12 +2075,12 @@ ls_niodump(int outputFile, int tid, int options,
     index = connIndexTable[tid-1];
     if (index < 0 || index >= lastConn) {
         lserrno = LSE_BAD_TID;
-        return(-1);
+        return -1;
     }
 
     if (conn[index].sock.rcount > 0 || conn[index].rbuf->bcount == 0) {
         lserrno = LSE_NO_ERR;
-        return(0);
+        return 0;
     }
 
 
@@ -2096,7 +2096,7 @@ ls_niodump(int outputFile, int tid, int options,
 %s: error writing remote output"), /* catgets 5904 */
                               fname);
                     lserrno = LSE_MISC_SYS;
-                    return (-1);
+                    return -1;
                 }
             } else {
                 errDisplayflag = 0;
@@ -2134,7 +2134,7 @@ ls_niodump(int outputFile, int tid, int options,
 %s: error writing remote output"), /* catgets 5904 */
                               fname);
                     lserrno = LSE_MISC_SYS;
-                    return (-1);
+                    return -1;
                 }
             } else {
                 errDisplayflag = 0;
@@ -2179,7 +2179,7 @@ ls_niodump(int outputFile, int tid, int options,
 %s: error writing remote output"), /* catgets 5904 */
                           fname);
                 lserrno = LSE_MISC_SYS;
-                return (-1);
+                return -1;
             }
         } else {
             errDisplayflag = 0;
@@ -2196,7 +2196,7 @@ ls_niodump(int outputFile, int tid, int options,
 %s: error writing remote output"), /* catgets 5904 */
                               fname);
                     lserrno = LSE_MISC_SYS;
-                    return (-1);
+                    return -1;
                 }
             } else {
                 errDisplayflag = 0;
@@ -2270,17 +2270,17 @@ addNotifyList(LIST_T *list, int tid, int opCode)
     taskNotice_t *notice;
     if (!list || tid <= 0 || tid > maxtasks) {
         lserrno = LSE_BAD_ARGS;
-        return (-1);
+        return -1;
     }
 
     if (opCode != STATUS_TIMEOUT) {
         lserrno = LSE_BAD_OPCODE;
-        return (-1);
+        return -1;
     }
 
     if ((notice = (taskNotice_t *) malloc(sizeof(taskNotice_t))) == NULL) {
         lserrno = LSE_MALLOC;
-        return (-1);
+        return -1;
     }
     notice->tid = tid;
     notice->opCode = opCode;
@@ -2288,7 +2288,7 @@ addNotifyList(LIST_T *list, int tid, int opCode)
     if (listInsertEntryAtBack(list, (LIST_ENTRY_T *) notice) < 0) {
         FREEUP(notice);
         lserrno = LSE_INTERNAL;
-        return (-1);
+        return -1;
     }
     return 0;
 }
@@ -2310,7 +2310,7 @@ addTaskList(int tid, int connIndex)
     }
     if (tid > maxtasks) {
         lserrno = LSE_TOOMANYTASK;
-        return(-1);
+        return -1;
     }
 
 
@@ -2346,7 +2346,7 @@ addTaskList(int tid, int connIndex)
         return 0;
 
     if ((task = addTask(conn[connIndex].taskList)) == NULL)
-        return (-1);
+        return -1;
     connIndexTable[tid-1] = connIndex;
     task->tid = tid;
     task->eof = FALSE;
@@ -2376,20 +2376,20 @@ notify_task(int tid, int opCode)
 
     if (conn == NULL) {
         lserrno = LSE_NIO_INIT;
-        return (-1);
+        return -1;
     }
     if (tid <= 0 || tid > maxtasks) {
         lserrno = LSE_BAD_TID;
-        return (-1);
+        return -1;
     }
     if ((connIndex = connIndexTable[tid-1]) < 0 || connIndex >= lastConn) {
         lserrno = LSE_BAD_ARGS;
-        return (-1);
+        return -1;
     }
 
     if (!writeBuf.empty) {
         lserrno = LSE_NO_ERR;
-        return (-1);
+        return -1;
     }
 
 
@@ -2411,7 +2411,7 @@ notify_task(int tid, int opCode)
             xdr_destroy(&xdrs);
             lserrno = LSE_BAD_XDR;
             sigprocmask(SIG_SETMASK, &oldMask, NULL);
-            return(-1);
+            return -1;
         }
         len = XDR_GETPOS(&xdrs);
         xdr_destroy(&xdrs);
@@ -2423,7 +2423,7 @@ notify_task(int tid, int opCode)
             if (bury_task(status, 0, conn[connIndex].rpid) == -1) {
                 lserrno = LSE_MALLOC;
                 sigprocmask(SIG_SETMASK, &oldMask, NULL);
-                return(-1);
+                return -1;
             }
             ls_syslog(LOG_ERR, I18N(5905,
                                     "%s: Error writing EOF to task %d"), /* catgets 5905 */
@@ -2440,10 +2440,10 @@ notify_task(int tid, int opCode)
     else {
         lserrno = LSE_BAD_CHAN;
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-        return(-1);
+        return -1;
     }
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(0);
+    return 0;
 }
 
 static int
@@ -2452,7 +2452,7 @@ getFirstFreeIndex(void)
     int i;
     if (conn == NULL) {
         lserrno = LSE_NIO_INIT;
-        return (-1);
+        return -1;
     }
     for (i=0; i<lastConn; i++) {
         if (conn[i].rpid == 0)
@@ -2488,7 +2488,7 @@ sendUpdatetty() {
         ls_syslog(LOG_ERR, I18N(5906, "\
 %s: usepty specified but TTY not detected"), /* catgets 5906 */
                   fname);
-        return(-1);
+        return -1;
     }
 
 
@@ -2527,12 +2527,12 @@ sendUpdatetty() {
                 ls_syslog(LOG_ERR, I18N(5907, "\
 %s: Error: could not connect to %d"), /* catgets 5907 */
                           fname, i);
-                return (-1);
+                return -1;
             }
         }
     }
 
-    return(0);
+    return 0;
 
 }
 

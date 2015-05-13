@@ -186,7 +186,7 @@ mergeW(windows_t *wp, float ohour, float chour)
 {
 
     if ((wp->opentime == -1.0) && (wp->closetime == 25.0))
-        return (TRUE);
+        return true;
 
     if ((ohour == -1.0) && (chour == 25.0)) {
         wp->opentime = -1.0;
@@ -288,48 +288,48 @@ parse_time(char *word, float *hour, int *day)
     sp = strrchr(word, ':');
     if (!sp) {
         if (!isint_(word) || atoi (word) < 0)
-            return (-1);
+            return -1;
         *hour = atof(word);
         if (*hour > 23)
-            return (-1);
+            return -1;
 
     } else {
         *sp = '\0';
         sp++;
 
         if (!isint_(sp) || atoi (sp) < 0)
-            return (-1);
+            return -1;
 
         min = atoi(sp);
         if (min > 59)
-            return (-1);
+            return -1;
 
         sp = strrchr(word, ':');
         if (!sp) {
             if (!isint_(word) || atoi (word) < 0)
-                return (-1);
+                return -1;
             *hour = atof(word);
             if (*hour > 23)
-                return (-1);
+                return -1;
         }
         else {
             *sp = '\0';
             sp++;
             if (!isint_(sp) || atoi (sp) < 0)
-                return (-1);
+                return -1;
 
             *hour = atof(sp);
             if (*hour > 23)
-                return (-1);
+                return -1;
 
             if (!isint_(word) || atoi (word) < 0)
-                return (-1);
+                return -1;
 
             *day  = atoi(word);
             if (*day == 0)
                 *day = 7;
             if (*day < 1 || *day > 7)
-                return (-1);
+                return -1;
         }
     }
 

@@ -118,12 +118,12 @@ addEvent(struct eventRecord *event, struct jobRecord *jobRecord)
             if ( (event->timeStamp < ePtr->timeStamp) ||
                  ((event->timeStamp == ePtr->timeStamp) &&
                   (event->kind == ePtr->kind))) {
-                return (-1);
+                return -1;
             }
         } else if (event->kind == EVENT_MIG || event->kind == EVENT_CHKPNT
                    || event->kind == EVENT_JOB_SIGACT) {
             if (event->timeStamp < ePtr->timeStamp) {
-                return (-1);
+                return -1;
             }
         } else {
             if ( (event->timeStamp < ePtr->timeStamp) ||
@@ -132,7 +132,7 @@ addEvent(struct eventRecord *event, struct jobRecord *jobRecord)
                   (event->jStatus == ePtr->jStatus) &&
                   (event->idx == ePtr->idx) &&
                   (event->timeEvent == ePtr->timeEvent)) ) {
-                return (-1);
+                return -1;
             }
         }
         jobRecord->eventtail->next = event;
@@ -153,7 +153,7 @@ addEvent(struct eventRecord *event, struct jobRecord *jobRecord)
     }
     event->jobR = jobRecord;
     lastEvent = event;
-    return (0);
+    return 0;
 
 }
 
@@ -162,9 +162,9 @@ check_queue(struct bhistReq *Req, char *queue)
 {
     if( ( (!strcmp(queue, Req->queue)) ||
           ((Req->options & OPT_QUEUE) != OPT_QUEUE) ) )
-        return(TRUE);
+        return true;
     else
-        return(FALSE);
+        return false;
 }
 
 struct jobInfoEnt *
@@ -550,14 +550,14 @@ check_host(struct bhistReq *Req, struct jobRecord *jobRecord)
 {
     int i;
     if (( Req->options & OPT_HOST) != OPT_HOST)
-        return(TRUE);
+        return true;
     else {
         for(i=0;i<jobRecord->job->numExHosts;i++) {
             if( !strcmp(Req->checkHost, jobRecord->job->exHosts[i]))
-                return(TRUE);
+                return true;
         }
     }
-    return(FALSE);
+    return false;
 }
 
 struct jobRecord *
@@ -661,10 +661,10 @@ read_newstat(struct eventRec *log)
             matchJobId(&Req, log->eventLog.jobStatusLog.jobId)) {
             if ((jobRecord = createJobRec(log->eventLog.jobStatusLog.jobId))
                 == NULL)
-                return(FALSE);
+                return false;
         }
         else
-            return(FALSE);
+            return false;
 
     }
     else
@@ -687,10 +687,10 @@ read_newstat(struct eventRec *log)
 
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -708,7 +708,7 @@ read_sigact(struct eventRec *log)
 
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
 
     jobRecord = (struct jobRecord *) ent->hData;
@@ -733,10 +733,10 @@ read_sigact(struct eventRec *log)
     event->idx = log->eventLog.sigactLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 char
@@ -751,7 +751,7 @@ read_jobrequeue(struct eventRec *log)
                        log->eventLog.jobRequeueLog.idx);
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *)ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -761,10 +761,10 @@ read_jobrequeue(struct eventRec *log)
     event->idx = log->eventLog.jobRequeueLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -781,7 +781,7 @@ read_chkpnt(struct eventRec *log)
                        log->eventLog.chkpntLog.idx);
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
 
     jobRecord = (struct jobRecord *) ent->hData;
@@ -800,10 +800,10 @@ read_chkpnt(struct eventRec *log)
     event->idx = log->eventLog.chkpntLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -821,7 +821,7 @@ read_mig(struct eventRec *log)
                        log->eventLog.sigactLog.idx);
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -849,10 +849,10 @@ read_mig(struct eventRec *log)
     event->idx = log->eventLog.migLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 char
@@ -868,7 +868,7 @@ read_signal(struct eventRec *log)
 
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -886,10 +886,10 @@ read_signal(struct eventRec *log)
     event->idx = log->eventLog.signalLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 char
@@ -906,7 +906,7 @@ read_jobstartaccept(struct eventRec *log)
 
     if ((ent = chekMemb(&jobIdHT, jobId))
         == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -918,10 +918,10 @@ read_jobstartaccept(struct eventRec *log)
     event->idx = log->eventLog.jobStartAcceptLog.idx;
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -938,7 +938,7 @@ read_switch(struct eventRec *log)
 
 
     if( (ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -956,10 +956,10 @@ read_switch(struct eventRec *log)
 
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -976,7 +976,7 @@ read_jobmove(struct eventRec *log)
 
 
     if( (ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -992,10 +992,10 @@ read_jobmove(struct eventRec *log)
 
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 }
 
 
@@ -1005,7 +1005,7 @@ read_loadIndex(struct eventRec *log)
     int   i;
 
     if (!loadIndex)
-        return(FALSE);
+        return false;
 
     if (loadIndex->name) {
         for (i = 0; i < loadIndex->nIdx; i++) {
@@ -1022,7 +1022,7 @@ read_loadIndex(struct eventRec *log)
         strcpy (loadIndex->name[i], log->eventLog.loadIndexLog.name[i]);
     }
 
-    return (TRUE);
+    return true;
 }
 
 char
@@ -1037,7 +1037,7 @@ read_jobforce(struct eventRec *log)
                        log->eventLog.jobForceRequestLog.idx);
 
     if ((ent = chekMemb(&jobIdHT, jobId)) == NULL)
-        return(FALSE);
+        return false;
 
     jobRecord = (struct jobRecord *) ent->hData;
     event = calloc(1, sizeof(struct eventRecord));
@@ -1050,10 +1050,10 @@ read_jobforce(struct eventRec *log)
 
     if (addEvent(event, jobRecord) == -1) {
         FREEUP(event);
-        return(FALSE);
+        return false;
     }
 
-    return(TRUE);
+    return true;
 
 }
 
@@ -1081,7 +1081,7 @@ addJob(struct jobRecord *newjobRecord)
             if ((ent = addMemb(&jobIdHT, newjobRecord->job->jobId)) != NULL)
                 ent->hData = newjobRecord;
             else
-                return(-1);
+                return -1;
         }
         else
             ent->hData = (int *) newjobRecord;
@@ -1093,7 +1093,7 @@ addJob(struct jobRecord *newjobRecord)
     }
 
     inJobList(jobRecordList, newjobRecord);
-    return (0);
+    return 0;
 
 }
 
@@ -1559,24 +1559,24 @@ matchJobId(struct bhistReq *Req, LS_LONG_INT jobId)
                 if ((jobId == Req->jobIds[i]) ||
                     ((LSB_ARRAY_JOBID(jobId) == LSB_ARRAY_JOBID(Req->jobIds[i]))
                      && (LSB_ARRAY_IDX(jobId) == 0)))
-                    return(TRUE);
+                    return true;
             }
             else
             {
                 if ( LSB_ARRAY_JOBID(jobId) == Req->jobIds[i])
-                    return(TRUE);
+                    return true;
             }
         }
         else if ((jobId == Req->jobIds[i]) ||
                  (LSB_ARRAY_JOBID(Req->jobIds[i]) == LSB_ARRAY_JOBID(jobId) &&
                   (LSB_ARRAY_IDX(Req->jobIds[i]) == 0 || LSB_ARRAY_IDX(jobId) == 0)))
-            return(TRUE);
+            return true;
     }
 
     if (Req->numJobs)
-        return(FALSE);
+        return false;
     else
-        return(TRUE);
+        return true;
 }
 
 
@@ -1628,7 +1628,7 @@ int bhistReqInit(struct bhistReq *bhistReq)
     bhistReq->userId = getuid();
     if (getUser(bhistReq->userName, MAX_LSB_NAME_LEN) != 0) {
         fprintf(stderr, I18N_FUNC_FAIL, "bhistReqInit", "getUser");
-        return (-1);
+        return -1;
     }
     return 0;
 }

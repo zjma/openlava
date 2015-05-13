@@ -35,18 +35,18 @@ lsb_hostcontrol(char *host, int opCode)
         hostControlReq.name = (char *) malloc (MAXHOSTNAMELEN);
         if (hostControlReq.name == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(-1);
+            return -1;
         }
     }
     if (opCode != HOST_OPEN && opCode != HOST_CLOSE &&
         opCode != HOST_REBOOT && opCode != HOST_SHUTDOWN) {
         lsberrno = LSBE_BAD_ARG;
-        return (-1);
+        return -1;
     }
     if (host)
         if (strlen (host) >= MAXHOSTNAMELEN - 1) {
             lsberrno = LSBE_BAD_ARG;
-            return (-1);
+            return -1;
         }
 
     hostControlReq.opCode = opCode;
@@ -56,7 +56,7 @@ lsb_hostcontrol(char *host, int opCode)
         char *h;
         if ((h = ls_getmyhostname()) == NULL) {
             lsberrno = LSBE_LSLIB;
-            return(-1);
+            return -1;
         }
         strcpy(hostControlReq.name, h);
     }
@@ -77,7 +77,7 @@ lsb_hostcontrol(char *host, int opCode)
 
 
     if (authTicketTokens_(&auth, contactHost) == -1)
-        return (-1);
+        return -1;
 
 
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
@@ -85,7 +85,7 @@ lsb_hostcontrol(char *host, int opCode)
     if (!xdr_encodeMsg(&xdrs, (char*) &hostControlReq, &hdr,
                        xdr_controlReq, 0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
     if (opCode == HOST_REBOOT || opCode == HOST_SHUTDOWN) {
@@ -93,12 +93,12 @@ lsb_hostcontrol(char *host, int opCode)
         if ((cc = cmdCallSBD_(hostControlReq.name, request_buf,
                               XDR_GETPOS(&xdrs), &reply_buf,
                               &hdr, NULL)) == -1)
-            return (-1);
+            return -1;
     } else {
 
         if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                            &hdr, NULL, NULL, NULL)) == -1)
-            return (-1);
+            return -1;
     }
 
 
@@ -106,8 +106,8 @@ lsb_hostcontrol(char *host, int opCode)
     if (cc)
         free(reply_buf);
     if (lsberrno == LSBE_NO_ERROR)
-        return(0);
+        return 0;
     else
-        return(-1);
+        return -1;
 
 }

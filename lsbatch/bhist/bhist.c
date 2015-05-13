@@ -303,14 +303,14 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 bhistReq->options |= OPT_ELOGFILE;
                 if (bhistReq->options & OPT_NUMLOGFILE) {
                     fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,3164, "Cannot use option %s together with %s.\n")), "'-f'", "'-n'"); /* catgets  3164  */
-                    return (-1);
+                    return -1;
                 }
                 if (optarg && strlen(optarg) < MAXFILENAMELEN -1) {
                     strcpy(bhistReq->eventFileName, optarg);
                     break;
                 } else {
                     fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,3166, "%s : Bad event file name.\n")),optarg); /* catgets  3166  */
-                    return (-1);
+                    return -1;
                 }
             case 'u':
                 if ( strcmp(optarg, "all") == 0 ) {
@@ -343,7 +343,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 } else {
                     fprintf(stderr, "%s, : ", optarg);
                     fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,3167, "project name too long.\n"))); /* catgets  3167  */
-                    return(-1);
+                    return -1;
                 }
                 break;
 
@@ -378,7 +378,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                     fprintf(stderr, "%s : %s.\n",
                             optarg,
                             _i18n_msg_get(ls_catd,NL_SETN,3170, "Bad queue name")); /* catgets 3170 */
-                    return (-1);
+                    return -1;
                 }
             case 'C':
                 bhistReq->options |= OPT_COMPLETE;
@@ -390,7 +390,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 }
                 if (getBEtime(optarg, 't', bhistReq->endTime) == -1) {
                     ls_perror(optarg);
-                    return (-1);
+                    return -1;
                 }
 
                 break;
@@ -398,14 +398,14 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 bhistReq->options |= OPT_SUBMIT;
                 if (getBEtime(optarg, 't', bhistReq->submitTime) == -1) {
                     ls_perror(optarg);
-                    return (-1);
+                    return -1;
                 }
                 break;
             case 'D':
                 bhistReq->options |= OPT_DISPATCH;
                 if (getBEtime(optarg, 't', bhistReq->startTime) == -1) {
                     ls_perror(optarg);
-                    return (-1);
+                    return -1;
                 }
                 break;
 
@@ -418,7 +418,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                             fprintf(stderr,"<%s> %s.\n",
                                     optarg,
                                     (_i18n_msg_get(ls_catd,NL_SETN,3171, "neither a host model, nor a host name, nor a CPU factor"))); /* catgets  3171  */
-                            return (-1);
+                            return -1;
                         }
                 if (tempPtr)
                     bhistReq->cpuFactor = *tempPtr;
@@ -432,7 +432,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
 
                 if (getBEtime(optarg, 't', bhistReq->searchTime) == -1) {
                     ls_perror(optarg);
-                    return (-1);
+                    return -1;
                 }
                 break;
 
@@ -444,13 +444,13 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
                 bhistReq->jobName = optarg;
 
                 if ((numJobs = getSpecIdxs(bhistReq->jobName, &idxList))==0 && idxerrno!=0)
-                    return (-1);
+                    return -1;
                 break;
             case 'n':
                 bhistReq->options |= OPT_NUMLOGFILE;
                 if (bhistReq->options & OPT_ELOGFILE) {
                     fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,3164, "Cannot use option %s together with %s.\n")), "'-n'", "'-f'"); /* catgets  3164  */
-                    return (-1);
+                    return -1;
                 }
                 fileNumbers(optarg, bhistReq);
                 if (bhistReq->numLogFile == 0)
@@ -484,7 +484,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
             bhistReq->searchTime[1] = defaultTime[1];
         }
 
-        return (0);
+        return 0;
     }
 
 
@@ -551,7 +551,7 @@ do_options(int argc, char **argv, struct bhistReq *bhistReq)
 		|| ((bhistReq->options & OPT_EXIT) != OPT_EXIT))
                 bhistReq->options |= OPT_ALL;
         }
-    return (0);
+    return 0;
 
 }
 
@@ -670,20 +670,20 @@ skip_jobRecord(struct jobRecord *jobRecord, struct bhistReq *Req)
     options = Req->options;
 
     if (!matchJobId(Req, jobRecord->job->jobId))
-        return(TRUE);
+        return true;
     if ( ((options & OPT_ALLUSERS) != OPT_ALLUSERS) &&
          (strcmp(jobRecord->job->user, Req->userName)))
-        return(TRUE);
+        return true;
 
     if ( ((options & OPT_ALLPROJ) != OPT_ALLPROJ) &&
          (strcmp(jobRecord->job->submit.projectName, Req->projectName)))
-        return(TRUE);
+        return true;
 
     if (options & OPT_ARRAY_INFO) {
         if (strchr(jobRecord->job->submit.jobName, '[') == NULL)
-            return(TRUE);
+            return true;
         else
-            return(FALSE);
+            return false;
     }
     if ((options & OPT_ALL) != OPT_ALL && !(options & OPT_CHRONICLE)) {
         if ((options & OPT_DFTSTATUS) != OPT_DFTSTATUS) {
@@ -698,19 +698,19 @@ skip_jobRecord(struct jobRecord *jobRecord, struct bhistReq *Req)
                                                & (JOB_STAT_SSUSP | JOB_STAT_USUSP)))
                   || ((options & OPT_RUN) &&
                       (jobRecord->currentStatus & JOB_STAT_RUN))))
-                return(TRUE);
+                return true;
         }
         else {
             if (jobRecord->currentStatus & (JOB_STAT_DONE |JOB_STAT_EXIT))
-	        return(TRUE);
+	        return true;
         }
     }
 
     if ( (options & OPT_QUEUE) &&
          (strcmp(jobRecord->job->submit.queue, Req->queue) != 0) )
-        return(TRUE);
+        return true;
     if (options & OPT_HOST)  {
-        if  (jobRecord->job->startTime == 0) return(TRUE);
+        if  (jobRecord->job->startTime == 0) return true;
         for (i=0; i < jobRecord->job->numExHosts; i++) {
 	    if (strcmp(jobRecord->job->exHosts[i], Req->checkHost) == 0) {
 	        found = TRUE;
@@ -718,31 +718,31 @@ skip_jobRecord(struct jobRecord *jobRecord, struct bhistReq *Req)
             }
         }
         if (found == FALSE)
-	    return(TRUE);
+	    return true;
     }
 
     if (options & OPT_COMPLETE) {
-        if (jobRecord->job->endTime == 0) return(TRUE);
+        if (jobRecord->job->endTime == 0) return true;
         if ((jobRecord->job->endTime < Req->endTime[0]) ||
             (jobRecord->job->endTime > Req->endTime[1]))
-	    return(TRUE);
+	    return true;
     }
 
     if (options & OPT_SUBMIT) {
-        if (jobRecord->job->submitTime == 0) return(TRUE);
+        if (jobRecord->job->submitTime == 0) return true;
         if ((jobRecord->job->submitTime < Req->submitTime[0]) ||
             (jobRecord->job->submitTime > Req->submitTime[1]))
-	    return(TRUE);
+	    return true;
     }
 
     if (options & OPT_DISPATCH) {
-        if (jobRecord->job->startTime == 0) return(TRUE);
+        if (jobRecord->job->startTime == 0) return true;
         if ((jobRecord->job->startTime < Req->startTime[0]) ||
             (jobRecord->job->startTime > Req->startTime[1]))
-	    return(TRUE);
+	    return true;
     }
 
-    return(FALSE);
+    return false;
 }
 
 static void
@@ -1896,14 +1896,14 @@ dispChkpnt (struct eventRecord *event, struct jobRecord *jobRecord)
     if (newParams != NULL) {
 	if ((newParams->submit.options & SUB_RERUNNABLE) &&
 	    !(newParams->submit.options & SUB_CHKPNTABLE))
-            return (FALSE);
+            return false;
     } else {
 	if ((jobRecord->job->submit.options & SUB_RERUNNABLE) &&
             !(jobRecord->job->submit.options & SUB_CHKPNTABLE))
-            return (FALSE);
+            return false;
 
     }
-    return (TRUE);
+    return true;
 }
 
 
@@ -2984,7 +2984,7 @@ initJobIdIndexS( struct jobIdIndexS *indexS, char *fileName )
 	    fprintf(stderr,  "failed to open the jobId index file.\n");
 	    perror(fileName);
 	}
-	return(-1);
+	return -1;
     }
 
     cc = fscanf(indexS->fp, "\
@@ -2994,7 +2994,7 @@ initJobIdIndexS( struct jobIdIndexS *indexS, char *fileName )
         || strcmp(tag, LSF_JOBIDINDEX_FILETAG)) {
         fprintf(stderr, "wrong jobId index file format.\n");
         fclose(indexS->fp);
-        return(-1);
+        return -1;
     }
 
     fseek(indexS->fp, 80, SEEK_SET);
@@ -3003,5 +3003,5 @@ initJobIdIndexS( struct jobIdIndexS *indexS, char *fileName )
     indexS->version = atof(version);
     indexS->curRow = 0;
 
-    return(0);
+    return 0;
 }

@@ -1539,13 +1539,13 @@ searchAll (char *word)
     char *sp, *cp;
 
     if (!word)
-        return (FALSE);
+        return false;
     cp = word;
     while ((sp = getNextWord_(&cp))) {
         if (strcmp (sp, "all") == 0)
             return  true;
     }
-    return (FALSE);
+    return false;
 
 }
 

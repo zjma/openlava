@@ -146,7 +146,7 @@ do_readyOp(XDR *xdrs, int chanfd, struct sockaddr_in *from,
 
     if (chanAllocBuf_(&buf, sizeof(struct LSFHeader)) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
-        return(-1);
+        return -1;
     }
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = READY_FOR_OP;
@@ -156,7 +156,7 @@ do_readyOp(XDR *xdrs, int chanfd, struct sockaddr_in *from,
     if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_LSFHeader");
         xdr_destroy(&xdrs2);
-        return(-1);
+        return -1;
 
     }
 
@@ -165,11 +165,11 @@ do_readyOp(XDR *xdrs, int chanfd, struct sockaddr_in *from,
     if (chanEnqueue_(chanfd, buf) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "chanEnqueue_");
         xdr_destroy(&xdrs2);
-        return(-1);
+        return -1;
     }
 
     xdr_destroy(&xdrs2);
-    return(0);
+    return 0;
 }
 
 

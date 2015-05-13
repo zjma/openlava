@@ -29,7 +29,7 @@ lsb_signaljob(LS_LONG_INT jobId, int sigValue)
 {
     if (sigValue < 0 || sigValue >= LSF_NSIG) {
         lsberrno = LSBE_BAD_SIGNAL;
-        return (-1);
+        return -1;
     }
     return (signalJob_(sigValue, jobId, 0, 0));
 }
@@ -41,7 +41,7 @@ lsb_chkpntjob(LS_LONG_INT jobId, time_t period, int options)
 
     if (period < LSB_CHKPERIOD_NOCHNG) {
         lsberrno = LSBE_BAD_ARG;
-        return (-1);
+        return -1;
     }
 
     if (options & LSB_CHKPNT_KILL)

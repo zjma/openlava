@@ -34,7 +34,7 @@ tid_register(int taskid, int socknum, u_short taskPort, char *host, bool_t doTas
     if ((tidp = (struct tid *)malloc(sizeof(struct tid))) == 
 	(struct tid *)NULL) {
 	lserrno = LSE_MALLOC;
-	return(-1);
+	return -1;
     }
 
     tidp->rtid = taskid;
@@ -51,7 +51,7 @@ tid_register(int taskid, int socknum, u_short taskPort, char *host, bool_t doTas
     if (doTaskInfo) {
 	lsQueueInit_(&tidp->tMsgQ, NULL, tMsgDestroy_);
 	if (tidp->tMsgQ == NULL) {
-	    return(-1);
+	    return -1;
 	}
     } else
 	tidp->tMsgQ = NULL;
@@ -60,7 +60,7 @@ tid_register(int taskid, int socknum, u_short taskPort, char *host, bool_t doTas
     tidp->refCount = (doTaskInfo) ? 2 : 1;
     tidp->isEOF = (doTaskInfo)? FALSE : TRUE;
 
-    return(0);
+    return 0;
 
 } 
 
@@ -80,11 +80,11 @@ tid_remove(int taskid)
     }
 
     if (p1 == (struct tid *)NULL)
-	return(-1);
+	return -1;
 
     p1->refCount--;
     if (p1->refCount > 0)
-        return(0);
+        return 0;
 
     if (p1 == tid_buckets[i])
 	tid_buckets[i] = p1->link;
@@ -96,7 +96,7 @@ tid_remove(int taskid)
 
     free((char *)p1);
 
-    return(0);
+    return 0;
 
 } 
 
@@ -169,7 +169,7 @@ tidSameConnection_(int socknum, int *ntids, int **tidArray)
     
     if (! *tidArray) {
 	lserrno = LSE_MALLOC;
-	return(-1);
+	return -1;
     }
 
     intp = *tidArray;
@@ -188,7 +188,7 @@ tidSameConnection_(int socknum, int *ntids, int **tidArray)
     if (ntids) 
 	*ntids = tidCnt;
 	
-    return (0);
+    return 0;
 
 } 
 

@@ -85,11 +85,11 @@ parseXferArg(char *arg, char **userName, char **hostName, char **fName)
         *fName = putstr_(tmp_arg);
     } else {
         free(freeup_tmp);
-        return(-1);
+        return -1;
     }
 
     free(freeup_tmp);
-    return(0);
+    return 0;
 }
 
 int doXferRcp(lsRcpXfer *lsXfer, int option);
@@ -113,7 +113,7 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                     fname, RSHCMD, lsXfer->ppszHostFnames[0],
 		    lsXfer->ppszDestFnames[0]);
         if (pipe(rcpp) < 0) {
-            return(-1);
+            return -1;
         }
 
         switch(pid = fork()) {
@@ -129,21 +129,21 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                     close(STDOUT_FILENO);
                     close(STDERR_FILENO);
                     if (dup2(rcpp[1],STDOUT_FILENO) < 0)
-                        return(-1);
+                        return -1;
 
                     if (dup2(rcpp[1],STDERR_FILENO) < 0)
-                        return(-1);
+                        return -1;
 
                     close(rcpp[1]);
                 }
 
                 if ((sourceFh =
 			   open(lsXfer->ppszHostFnames[0], O_RDONLY, 0)) < 0) {
-                    return(-1);
+                    return -1;
                 } else {
                     close(STDIN_FILENO);
                     if (dup2(sourceFh,STDIN_FILENO))
-                        return(-1);
+                        return -1;
 
                     close(sourceFh);
                 }
@@ -154,7 +154,7 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                     sprintf(szRshDest, "cat >>! %s",lsXfer->ppszDestFnames[0]);
                 }
                 execlp(RSHCMD, RSHCMD, lsXfer->szDest, szRshDest, NULL);
-                return(-1);
+                return -1;
                 break;
 
             case -1:
@@ -162,7 +162,7 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                     ls_syslog(LOG_ERR,I18N_FUNC_FAIL_M,fname,"fork" );
                 close(rcpp[0]);
                 close(rcpp[1]);
-                return(-1);
+                return -1;
 
             default:
                 close(rcpp[1]);
@@ -178,19 +178,19 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                 close(rcpp[0]);
 
                 if (waitpid(pid, 0, 0) < 0 && errno != ECHILD) {
-                    return(-1);
+                    return -1;
                 }
 
                 if (cc < 0) {
                     fprintf(stderr, "%s\n", strerror(local_errno));
-                    return(-1);
+                    return -1;
                 }
 
                 if (i > 0) {
                     fprintf(stderr, "%s: %s", RSHCMD, errMsg);
-                    return(-1);
+                    return -1;
                 }
-                return(0);
+                return 0;
             }
     } else {
 	if (logclass & (LC_FILE))
@@ -206,7 +206,7 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
             case -1:
                if (logclass & (LC_FILE))
                     ls_syslog(LOG_ERR,I18N_FUNC_FAIL_M,fname,"fork" );
-               return(-1);
+               return -1;
                break;
 
             default:
@@ -219,10 +219,10 @@ doXferRcp(lsRcpXfer *lsXfer, int option )
                if (WIFEXITED(status)) {
                        if ( WEXITSTATUS(status) == 0) return 0;
                }
-              return (-1);
+              return -1;
        }
 
-        return(-1);
+        return -1;
     }
 }
 
@@ -231,7 +231,7 @@ createXfer( lsRcpXfer *lsXfer )
 {
     lsXfer->iNumFiles = 1;
     lsXfer->iOptions = 0;
-    return(0);
+    return 0;
 }
 
 
@@ -251,7 +251,7 @@ destroyXfer( lsRcpXfer *lsXfer )
         free(lsXfer->ppszHostFnames[i]);
         free(lsXfer->ppszDestFnames[i]);
       }
-    return(0);
+    return 0;
 
 }
 
@@ -272,7 +272,7 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
     hostlist[0] = szRhost;
     hostinfo = ls_gethostinfo((char *)NULL, (int *)NULL, (char **)hostlist, 1, 0);
     if ( hostinfo == (struct hostInfo *)NULL ) {
-	return(-1);
+	return -1;
     } else {
 	if ( strcmp(hostinfo->hostType, "NTX86") == 0
              || strcmp(hostinfo->hostType, "NTALPHA") == 0) {
@@ -281,7 +281,7 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
     }
 
     if ((pszH = ls_getmnthost(szLocalFile)) == NULL) {
-        return(-1);
+        return -1;
     }
 
     strcpy(szHost1, pszH);
@@ -292,7 +292,7 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
             , szLocalFile, szRhost);
 
     if ((pszH = ls_rgetmnthost(szRhost, szRemoteFile)) == NULL) {
-        return(-1);
+        return -1;
     }
 
     strcpy(szHost2, pszH);
@@ -308,7 +308,7 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
     if ( psLstat->st_ino == psRstat->st_ino
          && (strcmp(szFileName1,szFileName2) == 0)
          && equalHost_(szHost1,szHost2)) {
-         return(0);
+         return 0;
     }
     return(1);
 
@@ -351,7 +351,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 	ls_syslog(LOG_ERR,
          I18N(6050,"%s: %s does not support account mapping using rcp"), /* catgets 6050*/
                   fname,"RES");
-	return(-1);
+	return -1;
     }
 
     if ((hp1 = Gethostbyname_(lsXfer->szHost)) == NULL) {
@@ -381,13 +381,13 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 
         if (mystat_(lsXfer->ppszHostFnames[0], &sLstat, lsXfer->pheHost) < 0) {
             ls_syslog(LOG_ERR,I18N_FUNC_FAIL_M,fname,"mystat_" );
-            return(-1);
+            return -1;
         }
 
         if (mystat_(lsXfer->ppszDestFnames[0], &sRstat, lsXfer->pheDest) == 0) {
             if ( (sLstat.st_ino == sRstat.st_ino)
                  && (sLstat.st_dev == sRstat.st_dev) ) {
-                return(0);
+                return 0;
             }
         }
 
@@ -398,7 +398,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
         if ((lfd = myopen_(lsXfer->ppszHostFnames[0], O_RDONLY, 0600,
                            lsXfer->pheHost)) == -1) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "copyFile", "myopen_");
-            return(-1);
+            return -1;
         }
 
         if (logclass & (LC_FILE))
@@ -414,7 +414,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 	    	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M,
                         "copyFile", "myopen_" );
             close(lfd);
-            return(-1);
+            return -1;
         }
 
         if (logclass & (LC_FILE))
@@ -427,7 +427,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 		    		ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "copyFile", "write", ret);
                     close(lfd);
                     close(rfd);
-                    return (-1);
+                    return -1;
                  }
             }
         }
@@ -447,7 +447,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 
         if (mystat_(lsXfer->ppszHostFnames[0], &sLstat, lsXfer->pheHost) < 0) {
             ls_syslog(LOG_ERR,I18N_FUNC_FAIL_M,fname,"mystat_" );
-            return(-1);
+            return -1;
         }
 
 	if (logclass & (LC_FILE))
@@ -462,7 +462,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
             if (iRetVal == 0) {
                fprintf(stderr, I18N(2302, "%s and %s are identical\n"),
                        lsXfer->ppszHostFnames[0], lsXfer->ppszDestFnames[0]);
-               return(-1);
+               return -1;
 	    }
 
 	    if (iRetVal == -1) {
@@ -470,7 +470,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
                 "equivalentXferFile" );
 				ls_rfterminate(lsXfer->szDest);
 
-                return(-1);
+                return -1;
             }
         } else {
 	    file_no_exist = TRUE;
@@ -483,7 +483,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
         if ((lfd = myopen_(lsXfer->ppszHostFnames[0], O_RDONLY, 0600,
                            lsXfer->pheHost)) == -1) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "copyFile", "myopen_");
-            return(-1);
+            return -1;
         }
 
 	if (logclass & (LC_FILE))
@@ -498,7 +498,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
                   ,mode)) == -1) {
                 close(lfd);
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "copyFile", "ls_ropen");
-                return(-1);
+                return -1;
             }
 
         } else {
@@ -508,7 +508,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
                       mode)) == -1) {
                 close(lfd);
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "copyFile", "ls_ropen");
-                return(-1);
+                return -1;
             }
         }
 
@@ -523,7 +523,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
                     ls_rclose(rfd);
 		    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_MM, "copyFIle",
                     "ls_rwrite", ret);
-                    return (-1);
+                    return -1;
                  }
             }
         }
@@ -543,7 +543,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 
         if (ls_rstat(lsXfer->szHost, lsXfer->ppszHostFnames[0], &sLstat) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "copyFile", "ls_rstat");
-            return(-1);
+            return -1;
         }
 
 	if (logclass & (LC_FILE))
@@ -557,14 +557,14 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
             if (iRetVal == 0) {
                fprintf(stderr, I18N(2302, "%s and %s are identical\n"),
                        lsXfer->ppszHostFnames[0], lsXfer->ppszDestFnames[0]);
-               return(-1);
+               return -1;
 	    }
 
 	    if (iRetVal == -1) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "copyFile",
                 "equivalentXferFile" );
 				ls_rfterminate(lsXfer->szHost);
-                return(-1);
+                return -1;
             }
         } else {
 	    file_no_exist = TRUE;
@@ -578,7 +578,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
         if ((lfd = ls_ropen(lsXfer->szHost,
 			    lsXfer->ppszHostFnames[0], O_RDONLY, 0)) == -1) {
 	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "copyFile", "ls_ropen");
-            return(-1);
+            return -1;
         }
 
 	if (logclass & (LC_FILE))
@@ -594,7 +594,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 	    		ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M,
                         "copyFile", "myopen_" );
             		ls_rclose(lfd);
-            		return(-1);
+            		return -1;
         }
 
         if (logclass & (LC_FILE))
@@ -607,7 +607,7 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 		    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "copyFile", "write", ret);
                     ls_rclose(lfd);
                     close(rfd);
-                    return (-1);
+                    return -1;
                  }
             }
         }
@@ -625,10 +625,10 @@ copyFile(lsRcpXfer *lsXfer, char* buf, int option )
 		  "copyFile() does not support third party transfers.",
 		  " Using rcp");
 	lserrno = LSE_FILE_SYS;
-	return(-1);
+	return -1;
     }
 
-    return(0);
+    return 0;
 
 }
 

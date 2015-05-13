@@ -353,12 +353,12 @@ useTmp(char *exHost, char *fname)
 
     if (pid == -1) {
 	perror ("fork");
-	return (FALSE);
+	return false;
     }
 
     if (waitpid(pid, &status, 0) == -1) {
 	perror("waitpid");
-	return (FALSE);
+	return false;
     }
 
     return (WEXITSTATUS(status));

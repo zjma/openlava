@@ -30,7 +30,7 @@ lsb_openjobinfo(LS_LONG_INT jobId, char *jobName, char *userName,
     jobInfoHead = lsb_openjobinfo_a (jobId, jobName, userName, queueName,
                                      hostName, options);
     if (!jobInfoHead)
-        return (-1);
+        return -1;
     return (jobInfoHead->numJobs);
 
 }
@@ -424,7 +424,7 @@ lsb_runjob(struct runJobRequest* runJobRequest)
             && ! (runJobRequest->options &
                   (RUNJOB_OPT_NORMAL | RUNJOB_OPT_NOSTOP)))) {
         lsberrno = LSBE_BAD_ARG;
-        return(-1);
+        return -1;
     }
 
     if (!( runJobRequest->options & (RUNJOB_OPT_NORMAL
@@ -434,7 +434,7 @@ lsb_runjob(struct runJobRequest* runJobRequest)
 
     if (authTicketTokens_(&auth, NULL) == -1) {
         lsberrno = LSBE_LSBLIB;
-        return (-1);
+        return -1;
     }
 
 
@@ -457,7 +457,7 @@ lsb_runjob(struct runJobRequest* runJobRequest)
                        &auth)) {
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
     if ((cc = callmbd(NULL,
@@ -469,7 +469,7 @@ lsb_runjob(struct runJobRequest* runJobRequest)
                       NULL,
                       NULL)) == -1) {
         xdr_destroy(&xdrs);
-        return(-1);
+        return -1;
     }
 
 

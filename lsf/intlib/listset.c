@@ -48,9 +48,9 @@ listSetEqual(struct listSet *set1, struct listSet *set2)
         set2 = set2->next;
     }
     if (!set1 && !set2)
-        return(TRUE);
+        return true;
     else
-        return(FALSE);
+        return false;
 }
 
 struct listSet *
@@ -173,10 +173,10 @@ listSetMember(long elem, struct listSet *set)
 
     while (set) {
         if (set->elem == elem)
-            return(TRUE);
+            return true;
         set = set->next;
     }
-    return(FALSE);
+    return false;
 }
 
 struct listSet *
@@ -332,19 +332,19 @@ listSetGetEle(int k, struct listSet *set)
     int i = 0;
 
     if (k < 1)
-       return(0);
+       return 0;
 
     for (i = 1; i < k; i++)  {
         if (set)
            set = set->next;
         else
-           return(0);
+           return 0;
     }
 
     if (set)
         return(set->elem);
     else
-        return(0);
+        return 0;
 }
 
 

@@ -880,7 +880,7 @@ setJobEnv(struct jobCard *jp)
     putEnv ("LSB_JOBEXIT_STAT", val);
 
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
-    return (0);
+    return 0;
 }
 
 
@@ -997,7 +997,7 @@ mysetLimits(struct jobSpecs *jobSpecsPtr)
     }
 #endif
 
-    return (0);
+    return 0;
 }
 
 int
@@ -1015,7 +1015,7 @@ job_finish (struct jobCard *jobCard, int report)
 
 
     if (report && jobCard->jobSpecs.actPid)
-        return (-1);
+        return -1;
 
 
 
@@ -1027,13 +1027,13 @@ job_finish (struct jobCard *jobCard, int report)
                        (jobCard->jobSpecs.startTime > bootTime) ?
                        ERR_NO_ERROR : ERR_HOST_BOOT) < 0) {
         jobCard->notReported++;
-        return (-1);
+        return -1;
     }
     if ((jobCard->jobSpecs.jStatus & JOB_STAT_PEND) &&
         (jobCard->jobSpecs.reasons == PEND_JOB_START_FAIL ||
          jobCard->jobSpecs.reasons == PEND_JOB_NO_FILE)) {
         deallocJobCard(jobCard);
-        return (0);
+        return 0;
     }
 
     if ( !jobCard->postJobStarted ) {
@@ -1043,14 +1043,14 @@ job_finish (struct jobCard *jobCard, int report)
             ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
                       lsb_jobid2str(jobCard->jobSpecs.jobId), "fork");
             jobCard->notReported++;
-            return (-1);
+            return -1;
         }
 
         if (pid == 0) {
 
             closeBatchSocket();
             finishJob(jobCard);
-            return(0);
+            return 0;
         }
 
 
@@ -1061,14 +1061,14 @@ job_finish (struct jobCard *jobCard, int report)
             jobCard->jobSpecs.jobPid = pid;
             jobCard->jobSpecs.jobPGid = pid;
             jobCard->jobSpecs.jStatus = JOB_STAT_RUN;
-            return(0);
+            return 0;
         }
     }
 
 
     deallocJobCard(jobCard);
 
-    return (0);
+    return 0;
 }
 
 void
@@ -2292,7 +2292,7 @@ sbdStartupStopJob (struct jobCard *jp, int reasons, int subReasons)
         sigValue = SIG_SUSP_OTHER;
 
     if (sigValue == 0)
-        return (0);
+        return 0;
 
     reasons |= SUSP_SBD_STARTUP;
 
@@ -2788,7 +2788,7 @@ setPGid(struct jobCard *jc)
     if (setpgid(0, getpid()) <0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
                   lsb_jobid2str(jc->jobSpecs.jobId), "setpgid");
-        return (-1);
+        return -1;
     }
 
     return (getpid());
@@ -2962,7 +2962,7 @@ createTmpJobFile(struct jobSpecs *jobSpecsPtr, struct hostent *hp,
         sprintf(errMsg, "%s: leaving", fname);
         sbdSyslog(LOG_DEBUG3, errMsg);
     }
-    return (0);
+    return 0;
 
 Error:
     if (logclass & LC_EXEC) {
@@ -2972,7 +2972,7 @@ Error:
     fprintf(stderr, "%s\n", cmdBuf);
     FREEUP(sp);
 
-    return (-1);
+    return -1;
 
 }
 
@@ -2987,10 +2987,6 @@ acctMapTo(struct jobCard *jobCard)
     int num, ccount, i = 0, found=FALSE;
     char myhost, mycluster;
     struct hostent *hp;
-
-    if (jobCard->jobSpecs.userId == PC_LSF_CUGID) {
-        goto trySubUser;
-    }
 
     for (i = 0; i < jobCard->jobSpecs.numEnv; i++) {
         if (logclass & LC_EXEC)
@@ -3072,7 +3068,7 @@ acctMapTo(struct jobCard *jobCard)
             break;
     }
     if (found)
-        return (0);
+        return 0;
 
     if (logclass & LC_EXEC) {
         ls_syslog(LOG_DEBUG1, "%s: No valid map found in user level account map for job <%s>. Trying submission user", fname, lsb_jobid2str(jobCard->jobSpecs.jobId));
@@ -3087,20 +3083,8 @@ trySubUser:
                   fname,
                   lsb_jobid2str(jobCard->jobSpecs.jobId),
                   jobCard->jobSpecs.userName);
-    } else {
-        if(jobCard->jobSpecs.userId == PC_LSF_CUGID) {
-
-            ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5497, "%s: User %s is from a PC client host %s, will use uid %d on SBD host")),  /* catgets 5497 */
-                      fname, jobCard->jobSpecs.userName,
-                      jobCard->jobSpecs.fromHost, pw->pw_uid);
-        }
-        strcpy(jobCard->execUsername, jobCard->jobSpecs.userName);
-        jobCard->execGid  = pw->pw_gid;
-        jobCard->jobSpecs.execUid  = pw->pw_uid;
-        strcpy(jobCard->jobSpecs.execUsername, jobCard->jobSpecs.userName);
-        return(0);
     }
-    return (-1);
+    return -1;
 
 }
 
@@ -3123,7 +3107,7 @@ acctMapOk(struct jobCard *jobCard)
 
 
     if ((!UID_MAPPED(jobCard))) {
-        return (0);
+        return 0;
     }
 
     if ((pw = getpwuid(jobCard->jobSpecs.execUid)) == NULL) {
@@ -3133,7 +3117,7 @@ acctMapOk(struct jobCard *jobCard)
                 jobCard->jobSpecs.execUid,
                 strerror(errno));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
 
     strcpy(hostfn, pw->pw_dir);
@@ -3178,11 +3162,11 @@ acctMapOk(struct jobCard *jobCard)
 
             if (strcmp (jobCard->jobSpecs.clusterName, clusorhost) == 0 ||
                 strcmp(clusorhost,"+") == 0)
-                return (0);
+                return 0;
             if ((hp = Gethostbyname_(clusorhost)) == NULL)
                 continue;
             if (equalHost_(jobCard->jobSpecs.fromHost, hp->h_name))
-                return (0);
+                return 0;
         }
     }
 
@@ -3456,7 +3440,7 @@ postJobSetup(struct jobCard *jp)
     if (setJobEnv (jp) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
                   lsb_jobid2str(jp->jobSpecs.jobId), "setJobEnv");
-        return (-1);
+        return -1;
     }
 
     if (jp->jobSpecs.execUsername[0] == '\0') {
@@ -3464,7 +3448,7 @@ postJobSetup(struct jobCard *jp)
         if (acctMapTo(jp) < 0) {
             ls_syslog(LOG_DEBUG, "%s: acctMapTo() failed for job <%s>",
                       fname, lsb_jobid2str(jp->jobSpecs.jobId));
-            return (-1);
+            return -1;
         }
 
         putEnv ("LSFUSER", jp->execUsername);
@@ -3474,7 +3458,7 @@ postJobSetup(struct jobCard *jp)
         if (acctMapOk(jp) < 0) {
             ls_syslog(LOG_DEBUG, "%s: acctMapOk() failed for job <%s>",
                       fname, lsb_jobid2str(jp->jobSpecs.jobId));
-            return (-1);
+            return -1;
         }
 
         chuser(batchId);
@@ -3513,7 +3497,7 @@ postJobSetup(struct jobCard *jp)
         return (-2);
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -3626,7 +3610,7 @@ requeueJob (struct jobCard *jp)
     if (!WIFEXITED(status)  ||
         !jp->jobSpecs.requeueEValues || jp->jobSpecs.requeueEValues[0]
         == '\0')
-        return (FALSE);
+        return false;
 
     sp = jp->jobSpecs.requeueEValues;
 
@@ -3634,9 +3618,9 @@ requeueJob (struct jobCard *jp)
 
         if ((!isdigit(cp[0])) || (atoi(cp) != w_status))
             continue;
-        return(TRUE);
+        return true;
     }
-    return (FALSE);
+    return false;
 }
 
 
@@ -3679,7 +3663,7 @@ reniceJob(struct jobCard *jp)
                           "%s: prio_process which %d who %d nice %d for job %s: %m",
                           fname, which, who, jp->jobSpecs.nice,
                           lsb_jobid2str(jp->jobSpecs.jobId));
-                return (-1);
+                return -1;
             }
         }
     } else {
@@ -3694,7 +3678,7 @@ reniceJob(struct jobCard *jp)
         }
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -4057,7 +4041,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
                       word);
             freeWeek(jp->week);
             *reply = ERR_BAD_REQ;
-            return (-1);
+            return -1;
         }
     }
     if (jobSpecs->resumeCond && jobSpecs->resumeCond[0] != '\0') {
@@ -4068,7 +4052,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
                       "checkThresholdCond", "resumeCond");
             freeWeek(jp->week);
             *reply = ERR_BAD_REQ;
-            return (-1);
+            return -1;
         }
     }
 
@@ -4080,7 +4064,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
                       "checkThresholdCond", "stopCond");
             freeWeek(jp->week);
             *reply = ERR_BAD_REQ;
-            return (-1);
+            return -1;
         }
     }
 
@@ -4136,7 +4120,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
     jp->postJobStarted = 0;
     jp->userJobSucc = FALSE;
 
-    return (0);
+    return 0;
 }
 
 void
@@ -4218,7 +4202,7 @@ getJobVersion (struct jobSpecs *jobSpecs)
         if (logclass & LC_EXEC)
             ls_syslog(LOG_DEBUG3,"getJobVersion: LSF_VERSION of job <%s> is <%d>", lsb_jobid2str(jobSpecs->jobId), version);
         if (version <= 0)
-            return (-1);
+            return -1;
         return (version);
     }
     return (3);
@@ -4246,10 +4230,10 @@ lockHosts (struct jobCard *jp)
                       "lockHost_",
                       "jp->jobSpecs.toHosts[i]");
             unlockHosts (jp, i);
-            return (-1);
+            return -1;
         }
     }
-    return (0);
+    return 0;
 }
 
 
@@ -4266,15 +4250,15 @@ REShasPTYfix(char *resPath)
 
     if (fscanf(fp, "%s", str) != 1) {
         pclose(fp);
-        return (FALSE);
+        return false;
     }
 
     pclose(fp);
 
     if (strcmp(str, "PTY_FIX"))
-        return (FALSE);
+        return false;
 
-    return (TRUE);
+    return true;
 
 }
 

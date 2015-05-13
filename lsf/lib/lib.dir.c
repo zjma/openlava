@@ -171,7 +171,7 @@ try:
 	return 0;
 
     if ((sp = strchr(goodpath+1, '/')) == NULL)
-	return (-1);
+	return -1;
 
     *goodpath = '\0';
     strcat(filename, sp);
@@ -299,7 +299,7 @@ netHostChdir(char *path, struct hostent *hp)
 
     if (AM_LAST || AM_NEVER) {
 	 if (chdir(usePath(path)) == 0)
-	    return(0);
+	    return 0;
     }
 
     if (strstr(path, "/net/") == path)

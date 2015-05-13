@@ -36,21 +36,21 @@ lsb_movejob (LS_LONG_INT jobId, int *position, int opCode)
 
     if (opCode != TO_TOP && opCode != TO_BOTTOM) {
 	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+	return -1;
     }
 
     if (position == NULL ) {
 	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+	return -1;
     }
 
     if (jobId <= 0 || *position <= 0) {
 	lsberrno = LSBE_BAD_ARG;
-	return(-1);
+	return -1;
     }
 
     if (authTicketTokens_(&auth, NULL) == -1)
-	return (-1);
+	return -1;
 	 
     jobMoveReq.jobId = jobId;
     jobMoveReq.position = *position;
@@ -64,14 +64,14 @@ lsb_movejob (LS_LONG_INT jobId, int *position, int opCode)
     if (!xdr_encodeMsg(&xdrs, (char *) &jobMoveReq, &hdr, xdr_jobMoveReq, 0, &auth)) {
 	xdr_destroy(&xdrs);
 	lsberrno = LSBE_XDR;
-	return(-1);
+	return -1;
     } 
     
     
     if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, 
                        &hdr, NULL, NULL, NULL)) == -1)    {
 	xdr_destroy(&xdrs);
-	return (-1);
+	return -1;
     }
     xdr_destroy(&xdrs);
 
@@ -84,18 +84,18 @@ lsb_movejob (LS_LONG_INT jobId, int *position, int opCode)
             xdr_destroy(&xdrs);
 	    if (cc)
 		free(reply_buf);
-	    return(-1);
+	    return -1;
         }
         *position = jobMoveReq.position ;
         xdr_destroy(&xdrs);
 	if (cc)
 	    free(reply_buf);
-        return(0);
+        return 0;
     }
 
     if (cc)
 	free(reply_buf);
-    return(-1);
+    return -1;
 
 } 
 

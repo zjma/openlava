@@ -549,19 +549,19 @@ pushStack(struct pStack *stack, struct confNode *node)
    struct confNode **sp;
 
    if (stack == NULL || node == NULL )
-       return (-1);
+       return -1;
 
    if (stack->size == stack->top + 1) {
        sp = myrealloc(stack->nodes, stack->size*2*sizeof(struct confNode *));
        if (sp == NULL) {
            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, "pushStack", "malloc");
-           return(-1); 
+           return -1; 
        }
        stack->size *= 2;
        stack->nodes = sp;
    } 
    stack->nodes[++stack->top] = node;
-   return (0);
+   return 0;
 } 
 
 struct confNode *
@@ -589,7 +589,7 @@ addCond(struct lsConf *conf, char *cond)
     int		*values;
 
     if (conf==NULL || cond==NULL)
-	return (FALSE);
+	return false;
 
     for ( i = 0; i < conf->numConds; i ++ ) {
 	if (strcmp(conf->conds[i], cond) == 0)
@@ -597,28 +597,28 @@ addCond(struct lsConf *conf, char *cond)
     }
     
     if (i < conf->numConds)		
-	return (TRUE);
+	return true;
 
     newlist = (char **) malloc ((conf->numConds+1) * sizeof(char *));
     if (newlist == NULL)
-	return (FALSE);
+	return false;
     values = (int *) malloc ((conf->numConds+1) * sizeof(int));
     if (values == NULL)
-	return (FALSE);
+	return false;
     for ( i = 0; i < conf->numConds; i ++ ) {
  	newlist[i] = conf->conds[i];
 	values[i] = conf->values[i];
     }
     newlist[conf->numConds] = putstr_(cond);
     if (newlist[conf->numConds] == NULL)
-	return (FALSE);
+	return false;
     values[conf->numConds] = 0;
     FREEUP(conf->conds);
     FREEUP(conf->values);
     conf->conds = newlist;
     conf->values = values;
     conf->numConds++;
-    return (TRUE);
+    return true;
 } 
 
 static char 
@@ -627,7 +627,7 @@ checkCond(struct lsConf *conf, char *cond)
     int		i;
 
     if (conf==NULL || cond==NULL)
-	return (FALSE);
+	return false;
 
     for ( i = 0; i < conf->numConds; i ++ ) {
 	if (strcmp(conf->conds[i], cond) == 0)
@@ -635,18 +635,18 @@ checkCond(struct lsConf *conf, char *cond)
     }
 
     if (i >= conf->numConds)		
-	return (FALSE);
+	return false;
     if (conf->values[i])
-	return (TRUE);
+	return true;
     else
-	return (FALSE);
+	return false;
 } 
 
 static char 
 linkNode(struct confNode *prev, struct confNode *node)
 {
     if (prev==NULL || node==NULL)
-	return (FALSE);
+	return false;
 
     if (prev->cond) {		
         if (prev->tag == NODE_ALL_DONE) {		
@@ -654,7 +654,7 @@ linkNode(struct confNode *prev, struct confNode *node)
 	    if (prev->fwPtr == NULL)
 		prev->fwPtr = node;
 	    else
-		return (FALSE);
+		return false;
 	} else if (prev->tag == NODE_LEFT_DONE) {
 				
 	    if (prev->rightPtr == NULL)
@@ -662,7 +662,7 @@ linkNode(struct confNode *prev, struct confNode *node)
 	    else if (prev->fwPtr == NULL)
 		prev->fwPtr = node;
 	    else
-		return (FALSE);
+		return false;
 	} else {
             if (prev->leftPtr == NULL)
 	        prev->leftPtr = node;
@@ -671,15 +671,15 @@ linkNode(struct confNode *prev, struct confNode *node)
             else if (prev->fwPtr == NULL)
 	        prev->fwPtr = node;
     	    else
-	        return (FALSE);
+	        return false;
 	}
     } else {			
 	if (prev->fwPtr == NULL)
 	    prev->fwPtr = node;
 	else
-	    return (FALSE);
+	    return false;
     }
-    return (TRUE);
+    return true;
 } 
 
 void

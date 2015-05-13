@@ -322,13 +322,13 @@ Command denied. Invalid level value\n");
                     if (debug.level < 0 || debug.level > 3) {
                         fprintf(stderr, "\
 Command denied. Valid debug level value is [0-3]\n");
-                        return(-1);
+                        return -1;
                     }
                 }
                 else if (debug.level < 1 || debug.level > 5) {
                     fprintf(stderr, "\
 Command denied. Valid timing level value is [1-5]\n");
-                    return(-1);
+                    return -1;
                 }
                 break;
 
@@ -344,7 +344,7 @@ Command denied. Valid timing level value is [1-5]\n");
                     debug.logFileName[strlen(debug.logFileName)-1] == '\\') {
                     fprintf(stderr, "\
 Command denied. File name is needed after the path\n");
-                return(-1);
+                return -1;
                 }
                 break;
 
@@ -400,7 +400,7 @@ Command denied. File name is needed after the path\n");
         hostInfo = ls_gethostinfo("-:server", &numHosts, NULL, 0, LOCAL_ONLY);
         if (hostInfo == NULL) {
             ls_perror("ls_gethostinfo");
-            return (-1);
+            return -1;
         }
         for (i = 0; i<numHosts; i += 20) {
             num = (numHosts - i <  20) ? numHosts - i : 20;

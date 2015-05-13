@@ -46,14 +46,14 @@ nb_write_fix(int s, char *buf, int len)
 	    if (errno == EPIPE)
 	        lserrno = LSE_LOSTCON;
 
-            return (-1);
+            return -1;
         }
 	if (len > 0)
 	{
             gettimeofday(&now, &junk);
 	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
 		errno = ETIMEDOUT;
-		return(-1);
+		return -1;
 	    }
 	    millisleep_(IO_TIMEOUT / 20);
 	}
@@ -81,7 +81,7 @@ nb_read_fix(int s, char *buf, int len)
         } else if (cc == 0 || BAD_IO_ERR(errno)) {
 	    if (cc == 0)
 		errno = ECONNRESET;
-            return (-1);
+            return -1;
         }
 
 	if (len > 0)
@@ -89,7 +89,7 @@ nb_read_fix(int s, char *buf, int len)
             gettimeofday(&now, &junk);
 	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
 		errno = ETIMEDOUT;
-		return(-1);
+		return -1;
 	    }
 	    millisleep_(IO_TIMEOUT / 20);
 	}
@@ -122,12 +122,12 @@ b_read_fix(int s, char *buf, int len)
         } else if (cc == 0 || errno != EINTR) {
 	    if (cc == 0)
 		errno = ECONNRESET;
-            return (-1);
+            return -1;
         }
     }
 
     if (len > 0) {
-        return(-1);
+        return -1;
     }
 
     return(length);
@@ -146,13 +146,13 @@ b_write_fix(int s, char *buf, int len)
             buf += cc;
         } else if (cc < 0 && errno != EINTR) {
 	    lserrno = LSE_SOCK_SYS;
-            return (-1);
+            return -1;
         }
     }
 
     if (len > 0) {
 	lserrno = LSE_SOCK_SYS;
-        return (-1);
+        return -1;
     }
 
     return (length);
@@ -220,7 +220,7 @@ rd_select_(int rd, struct timeval *timeout)
     fd_set rmask;
 
     if (rd < 0) {
-        return (-1);
+        return -1;
     }
 
     for (;;) {
@@ -233,7 +233,7 @@ rd_select_(int rd, struct timeval *timeout)
 
 	if (errno == EINTR)
 	    continue;
-	return (-1);
+	return -1;
     }
 
 }
@@ -271,12 +271,12 @@ detectTimeout_(int s, int recv_timeout)
     ready = rd_select_(s, timep);
     if (ready < 0) {
         lserrno = LSE_SELECT_SYS;
-        return (-1);
+        return -1;
     } else if (ready == 0) {
         lserrno = LSE_TIME_OUT;
-        return(-1);
+        return -1;
     }
-    return(0);
+    return 0;
 }
 
 static void
@@ -323,11 +323,11 @@ nb_read_timeout(int s, char *buf, int len, int timeout)
         nReady = rd_select_(s, &timeval);
         if (nReady < 0) {
             lserrno = LSE_SELECT_SYS;
-            return(-1);
+            return -1;
         } else if (nReady == 0) {
 
             lserrno = LSE_TIME_OUT;
-            return(-1);
+            return -1;
         } else {
             if ((cc = recv(s, buf, len, 0)) > 0) {
                 len -= cc;
@@ -335,7 +335,7 @@ nb_read_timeout(int s, char *buf, int len, int timeout)
             } else if (cc == 0 || BAD_IO_ERR(errno)) {
                 if (cc == 0)
                     errno = ECONNRESET;
-                return (-1);
+                return -1;
             }
 	    if (len == 0 )
 		break;

@@ -119,7 +119,7 @@ int yylex(){
     while((nstr = yylook()) >= 0)
         switch(nstr){
             case 0:
-                if(yywrap()) return(0); break;
+                if(yywrap()) return 0; break;
             case 1:
                 yymark() ;
                 break;
@@ -177,7 +177,7 @@ int yylex(){
                 break;
             default:
                 fprintf(yyout,"bad switch yylook %d",nstr);
-        } return(0); }
+        } return 0; }
 
 extern int main(void);
 
@@ -984,7 +984,7 @@ int yylook(){
 #endif
             {
                 yysptr=yysbuf;
-                return(0);
+                return 0;
             }
 #ifdef YYNLS16_WCHAR
         yyprevious = yytextuc[0] = input();
@@ -1061,13 +1061,13 @@ int yylook(){
 
 int yyback(p, m) int *p;
 {
-    if (p==0) return(0);
+    if (p==0) return 0;
     while (*p)
     {
 	if (*p++ == m)
             return(1);
     }
-    return(0);
+    return 0;
 }
 
 int yyinput(){

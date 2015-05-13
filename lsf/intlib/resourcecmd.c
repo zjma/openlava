@@ -218,27 +218,27 @@ makeShare(char *hostname, char ***nameTable, char ***valueTable,
 
     if (first == TRUE) {
         if ((lsInfo = ls_info()) == NULL) {
-            return (-1);
+            return -1;
         }
 
         TIMEIT(0, (resourceInfo = ls_sharedresourceinfo (NULL, &numRes, NULL, 0)), "ls_sharedresourceinfo");
 
         if (resourceInfo == NULL) {
-            return (-1);
+            return -1;
         }
         if ((namTable =
                         (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         if ((valTable =
                         (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         if ((fmtTable = (char **) malloc (numRes * sizeof(char *))) == NULL){
             lserrno = LSE_MALLOC;
-            return (-1);
+            return -1;
         }
         first = FALSE;
     } else {

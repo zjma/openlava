@@ -81,14 +81,14 @@ rcpFile(struct jobSpecs *jp, struct xFile *xf, char *host, int op,
     if (pipe(p) < 0) {
         sprintf(errMsg, "pipe(): %s",
                 strerror(errno));
-        return (-1);
+        return -1;
     }
 
     if ((pid = fork()) < 0) {
         sprintf(errMsg, "fork(): %s", strerror(errno));
         close(p[0]);
         close(p[1]);
-        return (-1);
+        return -1;
     }
 
     if (pid == 0) {
@@ -179,12 +179,12 @@ rcpFile(struct jobSpecs *jp, struct xFile *xf, char *host, int op,
 
     if (cc < 0) {
         sprintf(errMsg, "read(): %s", strerror(eno));
-        return (-1);
+        return -1;
     }
 
     if (waitpid(pid, &status, 0) < 0) {
         sprintf(errMsg, "waitpid(%d): %s", pid, strerror(errno));
-        return (-1);
+        return -1;
     }
 
     if (LS_STATUS(status)) {
@@ -192,10 +192,10 @@ rcpFile(struct jobSpecs *jp, struct xFile *xf, char *host, int op,
             sprintf(errMsg, _i18n_msg_get(ls_catd , NL_SETN, 305,
                                           "lsrcp exited with non-zero status %x"), /* catgets 305 */
                     LS_STATUS(status));
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 int
@@ -216,7 +216,7 @@ rmJobBufFiles(struct jobCard *jp)
 
 
     if (!isAbsolutePathExec(jp->jobSpecs.jobFile))
-        return (-1);
+        return -1;
 
     if ((hp = Gethostbyname_(jp->jobSpecs.fromHost)) == NULL) {
         sprintf(errMsg, "\
@@ -224,7 +224,7 @@ rmJobBufFiles(struct jobCard *jp)
                 jp->jobSpecs.fromHost,
                 lsb_jobid2str(jp->jobSpecs.jobId));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
 
 
@@ -334,9 +334,9 @@ unlinkBufFiles(char *lsbDir, char *jobFile, struct jobCard *jp,
         error = TRUE;
     }
     if (error)
-        return (-1);
+        return -1;
 
-    return (0);
+    return 0;
 
 }
 
@@ -404,7 +404,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
                 sprintf(errMsg, "cwdJob() failed");
                 sbdSyslog(LOG_DEBUG, errMsg);
             }
-            return (-1);
+            return -1;
         }
 
         strcpy(jp->jobSpecs.execCwd, cwd);
@@ -489,7 +489,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
         }
 
         putEnv("LSB_CHKFILENAME", shellFile);
-        return (0);
+        return 0;
     }
 
     if (UID_MAPPED(jp) || !isAbsolutePathSub(jp, jp->jobSpecs.subHomeDir) ||
@@ -499,7 +499,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
                 sprintf(errMsg, "lsbatchDir() failed");
                 sbdSyslog(LOG_DEBUG, errMsg);
             }
-            return (-1);
+            return -1;
         }
     } else {
         if (lsbatchDir(lsbDir, jp, fromHp, jf) == -1) {
@@ -507,7 +507,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
                 sprintf(errMsg, "lsbatchDir() failed");
                 sbdSyslog(LOG_DEBUG, errMsg);
             }
-            return (-1);
+            return -1;
         }
     }
 
@@ -572,7 +572,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
                 jp->jobSpecs.userId);
         sbdSyslog(LOG_DEBUG, errMsg);
     }
-    return (0);
+    return 0;
 
 }
 
@@ -594,7 +594,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
         strcpy(cwd, jp->jobSpecs.cwd);
         if (mychdir_(cwd, fromHp) == 0) {
             strcpy(cwd, chosenPath);
-            return (0);
+            return 0;
         }
 
         if (logclass & LC_EXEC) {
@@ -627,7 +627,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
                             sprintf(cwd, "%s/%s", pw->pw_dir, subCwd);
                         }
                         if (chdir(cwd) == 0)
-                            return (0);
+                            return 0;
                     }
                 }
             }
@@ -639,10 +639,10 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
                 sprintf(errMsg, "cwdJob: chdir(%s) failed after mychdir_(%s) failed for job <%s>: %s", cwd, chosenPath, lsb_jobidinstr(jp->jobSpecs.jobId), strerror(errno));
                 sbdSyslog(LOG_DEBUG, errMsg);
             }
-            return (-1);
+            return -1;
         }
 
-        return (0);
+        return 0;
     }
 
 
@@ -653,7 +653,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
 
     if (mychdir_(cwd, fromHp) == 0) {
         strcpy(cwd, chosenPath);
-        return (0);
+        return 0;
     }
 
 
@@ -666,7 +666,7 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
             sprintf(cwd, "%s/%s", pw->pw_dir, jp->jobSpecs.cwd);
 
         if (chdir(cwd) == 0)
-            return (0);
+            return 0;
 
         if (logclass & LC_EXEC) {
             sprintf(errMsg, "cwdJob: chdir(%s) failed for job <%s>: %s",
@@ -681,10 +681,10 @@ cwdJob(struct jobCard *jp, char *cwd, struct hostent *fromHp)
         sprintf(errMsg, "cwdJob: chdir tmp (%s) failed for job <%s>: %s",
                 cwd, lsb_jobidinstr(jp->jobSpecs.jobId), strerror(errno));
         sbdSyslog(LOG_DEBUG, errMsg);
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -736,7 +736,7 @@ lsbatchDir(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                 if (sp != NULL)
                     *sp = '/';
             }
-            return (0);
+            return 0;
         }
     }
 
@@ -751,7 +751,7 @@ lsbatchDir(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
         if (lsbDirOk(lsbDir, jp, NULL, jf) == 0) {
 
             putEnv("HOME", pw->pw_dir);
-            return (0);
+            return 0;
         }
     } else if ( fromHp == NULL && goodSpoolDir) {
 
@@ -759,7 +759,7 @@ lsbatchDir(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
         if (lsbDirOk(lsbDir, jp, NULL, jf) == 0) {
 
             putEnv("HOME", jp->jobSpecs.subHomeDir);
-            return (0);
+            return 0;
         }
     }
 
@@ -771,7 +771,7 @@ lsbatchDir(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                 lsb_jobid2str(jp->jobSpecs.jobId), "mkdir");
         sbdSyslog(LOG_ERR, errMsg);
 
-        return (-1);
+        return -1;
     }
 
 
@@ -826,7 +826,7 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                     jobSetupStatus(JOB_STAT_PEND, PEND_JOB_NO_FILE, jp);
                 ls_syslog(LOG_DEBUG, "CreateJobfile for job <%s> fail",
                           lsb_jobid2str(jp->jobSpecs.jobId));
-                return (-1);
+                return -1;
             }
 
 
@@ -835,7 +835,7 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                 if (!strncmp(lsbTmp(), lsbDir, strlen(lsbTmp())))
                     jobSetupStatus(JOB_STAT_PEND, PEND_JOB_RESTART_FILE, jp);
 
-                return (-1);
+                return -1;
             }
         } else {
 
@@ -843,7 +843,7 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                                     chkpntDir, restartDir) < 0) {
                 ls_syslog(LOG_DEBUG, "CreateChkpntJobfile for job <%s> fail",
                           lsb_jobid2str(jp->jobSpecs.jobId));
-                return (-1);
+                return -1;
             }
 
 
@@ -852,7 +852,7 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                 if (openStdFiles(lsbDir, chkpntDir, jp, fromHp) < 0) {
                     unlinkBufFiles(chkpntDir, jp->jobSpecs.jobFile, jp, fromHp);
                     jobSetupStatus(JOB_STAT_PEND, PEND_JOB_RESTART_FILE, jp);
-                    return (-1);
+                    return -1;
                 }
             }
 
@@ -861,7 +861,7 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                 if (openStdFiles(lsbDir, restartDir, jp, fromHp) < 0) {
                     unlinkBufFiles(chkpntDir, jp->jobSpecs.jobFile, jp, fromHp);
                     jobSetupStatus(JOB_STAT_PEND, PEND_JOB_RESTART_FILE, jp);
-                    return (-1);
+                    return -1;
                 }
             }
         }
@@ -882,11 +882,11 @@ lsbDirOk(char *lsbDir, struct jobCard *jp, struct hostent *fromHp,
                     lsb_jobid2str(jp->jobSpecs.jobId), "stat");
             sbdSyslog(LOG_ERR, errMsg);
         }
-        return (-1);
+        return -1;
     }
 
 
-    return (0);
+    return 0;
 
 }
 
@@ -920,7 +920,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                 char cwd[MAXFILENAMELEN];
                 if (cwdJob(jp,cwd,fromHp) == -1) {
                     ls_syslog(LOG_ERR, "%s: cannot find execCwd for job <%s>", fname, lsb_jobid2str(jp->jobSpecs.jobId));
-                    return (-1);
+                    return -1;
                 }
                 strcpy(jp->jobSpecs.execCwd, cwd);
             }
@@ -940,7 +940,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                 jp->jobSpecs.chkpntDir);
         sbdSyslog(LOG_ERR, errMsg);
         jobSetupStatus(JOB_STAT_PEND, PEND_CHKPNT_DIR, jp);
-        return (-1);
+        return -1;
     }
 
 
@@ -967,7 +967,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                 sbdSyslog(LOG_ERR, errMsg);
                 umask(mode);
                 jobSetupStatus(JOB_STAT_PEND, PEND_CHKPNT_DIR, jp);
-                return (-1);
+                return -1;
             }
         } else {
             if ((mkdir(chkDir, 0777) < 0 && errno != EEXIST)
@@ -980,7 +980,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                 sbdSyslog(LOG_ERR, errMsg);
                 umask(mode);
                 jobSetupStatus(JOB_STAT_PEND, PEND_CHKPNT_DIR, jp);
-                return (-1);
+                return -1;
             }
         }
         umask(mode);
@@ -991,7 +991,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
             if (createJobFile(lsbDir, chkpntDir, jp, jf, fromHp) < 0) {
                 if (!strncmp(lsbTmp(), lsbDir, strlen(lsbTmp())))
                     jobSetupStatus(JOB_STAT_PEND, PEND_JOB_NO_FILE, jp);
-                return (-1);
+                return -1;
             }
         }
 
@@ -1021,7 +1021,7 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                             chkpntDir,
                             strerror(errno));
                     sbdSyslog(LOG_ERR, errMsg);
-                    return (-1);
+                    return -1;
                 } else {
                     if (dirp2) {
                         (void) closedir(dirp2);
@@ -1043,9 +1043,9 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
                 if (((dirp2 = opendir(restartDir)) == NULL)
                     && (errno == ENOENT)) {
                     if (myRename(chkpntDir, restartDir) == -1)
-                        return (-1);
+                        return -1;
                     if ((symlink(restartDir, chkpntDir) == -1) && (errno != EEXIST))
-                        return (-1);
+                        return -1;
                 } else {
                     if (dirp2) {
                         (void) closedir(dirp2);
@@ -1063,12 +1063,12 @@ createChkpntJobFile(char *lsbDir, struct jobCard *jp, struct lenData *jf, struct
             unlinkBufFiles(lsbDir, jp->jobSpecs.jobFile, jp, fromHp);
             if (!strncmp(lsbTmp(), lsbDir, strlen(lsbTmp())))
                 jobSetupStatus(JOB_STAT_PEND, PEND_JOB_RESTART_FILE, jp);
-            return (-1);
+            return -1;
         }
 
-        return (0);
+        return 0;
     }
-    return(0);
+    return 0;
 }
 
 int
@@ -1081,9 +1081,9 @@ myRename(char *fromDir, char *toDir)
                                       "Unable to rename checkpoint directory %s to %s: %s."), /* catgets 320 */
                 fromDir, toDir, strerror(errno));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
-    return (0);
+    return 0;
 
 }
 
@@ -1116,9 +1116,9 @@ stdoutDirectSymLink(char *jobFile, char *ext, struct jobSpecs *jobSpecsPtr)
                 lsb_jobidinstr(jobSpecsPtr->jobId), fileLink,
                 fullpath, strerror(errno));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
-    return (0);
+    return 0;
 }
 
 #define STDOUT_DIRECT  1
@@ -1463,7 +1463,7 @@ OpenStdin:
                     lsb_jobidinstr(jobSpecsPtr->jobId), i, jobSpecsPtr->inFile,
                     strerror(errno));
             sbdSyslog(LOG_ERR, errMsg);
-            return (-1);
+            return -1;
         }
         strcpy(stdinName, chosenPath);
         jobCardPtr->stdinFile = stdinName;
@@ -1523,7 +1523,7 @@ OpenStdin:
     else if( !(i < 0) && outFlag && lsbStdoutDirect ) {
 
         if( stdoutDirectSymLink(jobFile, "out", jobSpecsPtr ) < 0 ) {
-            return (-1);
+            return -1;
         }
         jobfileDotOutIsLink = TRUE;
     }
@@ -1541,7 +1541,7 @@ OpenStdin:
                     lsb_jobidinstr(jobSpecsPtr->jobId), filebufLink,
                     filebuf, strerror(errno));
             sbdSyslog(LOG_ERR, errMsg);
-            return (-1);
+            return -1;
         }
     }
 
@@ -1549,7 +1549,7 @@ OpenStdin:
     if (i < 0) {
         sprintf(errMsg, I18N_JOB_FAIL_S_M, fname, lsb_jobid2str(jobSpecsPtr->jobId), "open");
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
     if (dup2(i, 1) == -1) {
         sprintf(errMsg, _i18n_msg_get(ls_catd , NL_SETN, 330,
@@ -1557,7 +1557,7 @@ OpenStdin:
                 fname,
                 lsb_jobidinstr(jobSpecsPtr->jobId), i, filebuf, strerror(errno));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
 
 
@@ -1573,7 +1573,7 @@ OpenStdin:
                     fname,
                     lsb_jobidinstr(jobSpecsPtr->jobId), strerror(errno));
             sbdSyslog(LOG_ERR, errMsg);
-            return (-1);
+            return -1;
         }
     } else {
 
@@ -1628,7 +1628,7 @@ OpenStdin:
         else if( !(i < 0) && outFlag && lsbStdoutDirect ) {
 
             if( stdoutDirectSymLink(jobFile, "err", jobSpecsPtr ) < 0 ) {
-                return (-1);
+                return -1;
             }
             jobfileDotErrIsLink = TRUE;
         }
@@ -1645,7 +1645,7 @@ OpenStdin:
                         lsb_jobidinstr(jobSpecsPtr->jobId),
                         filebufLink, filebuf, strerror(errno));
                 sbdSyslog(LOG_ERR, errMsg);
-                return (-1);
+                return -1;
             }
         }
 
@@ -1656,7 +1656,7 @@ OpenStdin:
                     fname,
                     lsb_jobidinstr(jobSpecsPtr->jobId), filebuf, strerror(errno));
             sbdSyslog(LOG_ERR, errMsg);
-            return (-1);
+            return -1;
         }
 
         if (dup2(i, 2) == -1) {
@@ -1666,14 +1666,14 @@ OpenStdin:
                     lsb_jobidinstr(jobSpecsPtr->jobId),
                     i, filebuf, strerror(errno));
             sbdSyslog(LOG_ERR, errMsg);
-            return (-1);
+            return -1;
         }
     }
 
     if (xMsg[0] != '\0')
         fprintf(stderr, "%s", xMsg);
 
-    return (0);
+    return 0;
 }
 
 
@@ -1688,7 +1688,7 @@ appendJobFile(struct jobCard *jobCard, char *header, struct hostent *hp,
     if ((jobFile_fp = myfopen_(jobCard->jobSpecs.jobFile, "a", hp)) == NULL) {
         sprintf(errMsg, I18N_FUNC_S_FAIL_M, fname, "myopen_",
                 jobCard->jobSpecs.jobFile);
-        return (-1);
+        return -1;
     }
 
     if ((fprintf(jobFile_fp, "# JOB_PID:\n") < 0) ||
@@ -1696,7 +1696,7 @@ appendJobFile(struct jobCard *jobCard, char *header, struct hostent *hp,
         sprintf(errMsg, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
                 jobCard->jobSpecs.jobFile, "JOB_PID");
         FCLOSEUP(&jobFile_fp);
-        return (-1);
+        return -1;
     }
 
     if ((fprintf(jobFile_fp, "# JOB_PGID:\n") < 0) ||
@@ -1704,7 +1704,7 @@ appendJobFile(struct jobCard *jobCard, char *header, struct hostent *hp,
         sprintf(errMsg, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
                 jobCard->jobSpecs.jobFile, "JOB_PGID");
         FCLOSEUP(&jobFile_fp);
-        return (-1);
+        return -1;
     }
 
     if ((fprintf(jobFile_fp, "%s", header) < 0) ||
@@ -1712,16 +1712,16 @@ appendJobFile(struct jobCard *jobCard, char *header, struct hostent *hp,
         sprintf(errMsg, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
                 jobCard->jobSpecs.jobFile, "STATUS");
         FCLOSEUP(&jobFile_fp);
-        return (-1);
+        return -1;
     }
 
     if (FCLOSEUP(&jobFile_fp) < 0) {
         sprintf(errMsg, I18N_FUNC_S_FAIL_M, fname, "fclose",
                 jobCard->jobSpecs.jobFile);
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 
@@ -1775,7 +1775,7 @@ createJobFile(char *lsbDir, char *chkpntDir, struct jobCard *jp, struct lenData 
         sprintf(errMsg, "createJobFile: Job <%s> open jobfile %s failed: lsbDir is %s, jp->jobSpecs.jobFile is %s,  %s",
                 lsb_jobidinstr(jobSpecsPtr->jobId), jobFile, lsbDir, jp->jobSpecs.jobFile, strerror(errno));
         sbdSyslog(LOG_ERR, errMsg);
-        return (-1);
+        return -1;
     }
 
 
@@ -1795,7 +1795,7 @@ createJobFile(char *lsbDir, char *chkpntDir, struct jobCard *jp, struct lenData 
                 strerror(errno));
         sbdSyslog(LOG_DEBUG, errMsg);
         close(fd);
-        return (-1);
+        return -1;
     }
 
     if ((sp = strstr (jf->data, TRAPSIGCMD)) == NULL) {
@@ -1814,7 +1814,7 @@ createJobFile(char *lsbDir, char *chkpntDir, struct jobCard *jp, struct lenData 
                 jobFile, len, cc, strerror(errno));
         sbdSyslog(LOG_DEBUG, errMsg);
         close(fd);
-        return (-1);
+        return -1;
     }
 
     if (close(fd) == -1) {
@@ -1822,7 +1822,7 @@ createJobFile(char *lsbDir, char *chkpntDir, struct jobCard *jp, struct lenData 
                 lsb_jobidinstr(jobSpecsPtr->jobId),
                 jobFile, strerror(errno));
         sbdSyslog(LOG_DEBUG, errMsg);
-        return (-1);
+        return -1;
     }
 
 
@@ -1831,18 +1831,18 @@ createJobFile(char *lsbDir, char *chkpntDir, struct jobCard *jp, struct lenData 
             sprintf(errMsg, "createJobFile:Job <%s> Unable to creat a symbolic link from <%s> to <%s>: %s",
                     lsb_jobidinstr(jobSpecsPtr->jobId), jobFileLink, jobFile, strerror(errno));
             sbdSyslog(LOG_DEBUG, errMsg);
-            return (-1);
+            return -1;
         }
 
         if ((symlink (shellFile, shellFileLink) == -1) && (errno != EEXIST)) {
             sprintf(errMsg, "createJobFile:Job <%s> Unable to creat shellfile symbolic link from <%s> to <%s>: %s",
                     lsb_jobidinstr(jobSpecsPtr->jobId), shellFileLink, shellFile, strerror(errno));
             sbdSyslog(LOG_DEBUG, errMsg);
-            return (-1);
+            return -1;
         }
     }
 
-    return (0);
+    return 0;
 
 }
 
@@ -1852,18 +1852,18 @@ isAbsolutePathSub(struct jobCard *jp, const char *path)
     if (path[0] == '/' ||
         ((jp->jobSpecs.options2 & SUB2_HOST_NT) &&
          (path[0] == '\\' || (path[0] != '\0' && path[1] == ':'))))
-        return(TRUE);
+        return true;
     else
-        return(FALSE);
+        return false;
 }
 
 int
 isAbsolutePathExec(const char *path)
 {
     if (path[0] ==  '/')
-        return(TRUE);
+        return true;
     else
-        return(FALSE);
+        return false;
 }
 
 void
@@ -2025,14 +2025,14 @@ localJobRestartFiles(char *lsbDir, char *restartDir,  struct jobCard *jp, struct
 
     if (symlink(t, s) == -1 && errno != EEXIST) goto return_error;
 
-    return (0);
+    return 0;
 
 return_error:
     sprintf(errMsg, _i18n_msg_get(ls_catd , NL_SETN, 321,
                                   "%s: Job <%s> Unable to creat a symbolic link from <%s> to <%s>: %s"), /* catgets 321 */
             fname, lsb_jobidinstr(jspecs->jobId), t, s, strerror(errno));
     sbdSyslog(LOG_ERR, errMsg);
-    return (-1);
+    return -1;
 
 }
 

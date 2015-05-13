@@ -108,7 +108,7 @@ sig_encode(int sig)
         if (sig >= NSIG_MAP)
             return(sig);
         else
-            return(0);
+            return 0;
     } else
         return(i);
 }
@@ -123,7 +123,7 @@ sig_decode(int sig)
         if (sig < NSIG)
             return(sig);
         else {
-            return(0);
+            return 0;
         }
     }
 

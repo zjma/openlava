@@ -34,7 +34,6 @@
 #include "daemonout.h"
 #include "daemons.h"
 #include "../../lsf/lib/lib.rf.h"
-#include "../../lsf/lib/lib.osal.h"
 
 #define NULLFILE "/dev/null"
 #define JOBFILEEXT ""

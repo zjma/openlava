@@ -34,11 +34,11 @@ lsb_mig (struct submig *mig, int *badHostIdx)
 
     if (mig->jobId <= 0) {
         lsberrno = LSBE_BAD_ARG;
-        return(-1);
+        return -1;
     }
 
     if (authTicketTokens_(&auth, NULL) == -1)
-        return (-1);
+        return -1;
 
     migReq.jobId = mig->jobId;
     migReq.options = 0;
@@ -52,7 +52,7 @@ lsb_mig (struct submig *mig, int *badHostIdx)
             if (strlen (mig->askedHosts[migReq.numAskedHosts])
                 >= MAXHOSTNAMELEN - 1) {
                 lsberrno = LSBE_BAD_HOST;
-                return(-1);
+                return -1;
             }
         }
         migReq.askedHosts = mig->askedHosts;
@@ -67,14 +67,14 @@ lsb_mig (struct submig *mig, int *badHostIdx)
     hdr.opCode = mbdReqtype;
     if (!xdr_encodeMsg(&xdrs, (char *)&migReq, &hdr, xdr_migReq, 0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
 
     if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                        &hdr, NULL, NULL, NULL)) == -1) {
         xdr_destroy(&xdrs);
-        return (-1);
+        return -1;
     }
 
     xdr_destroy(&xdrs);
@@ -85,7 +85,7 @@ lsb_mig (struct submig *mig, int *badHostIdx)
 
         if (cc == 0) {
             *badHostIdx = 0;
-            return (-1);
+            return -1;
         }
 
         xdrmem_create(&xdrs, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
@@ -93,19 +93,19 @@ lsb_mig (struct submig *mig, int *badHostIdx)
             lsberrno = LSBE_XDR;
             xdr_destroy(&xdrs);
             free(reply_buf);
-            return (-1);
+            return -1;
         }
 
         xdr_destroy(&xdrs);
         free(reply_buf);
 
         *badHostIdx = reply.badReqIndx;
-        return (-1);
+        return -1;
     }
 
 
     if (cc)
         free(reply_buf);
-    return (0);
+    return 0;
 
 }

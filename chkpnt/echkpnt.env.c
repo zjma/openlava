@@ -58,7 +58,7 @@ fileIsExist(const char *pWorkPath){
 	}
 	
 	if (strlen(m_pEnvVarFileName) == 0){ 
-		return(-1);
+		return -1;
 	}
 
 	
@@ -69,7 +69,7 @@ fileIsExist(const char *pWorkPath){
 		
 		if (*pWorkPath != '/'){
 			if (getcwd(pWorkFileName,MAXPATHLEN) == NULL){
-				return(-1);
+				return -1;
 			}
 		}
 
@@ -125,21 +125,21 @@ fileIsExist(const char *pWorkPath){
 	if (stat(m_pEnvVarFileName, &statbuf) < 0){
 		
 		if (errno == ENOENT){
-			return(0);
+			return 0;
 		}else{
-			return(-1);
+			return -1;
 		}
 	}
 
 	
 	if (!(S_ISREG(statbuf.st_mode))) {
 		fprintf(stderr,"%s : %s is not a regular file\n",fname,m_pEnvVarFileName);
-		return(-1);
+		return -1;
 	}
 
 	
 	if (fillTable_() == -1){
-		return(-1);
+		return -1;
 	}else{
 		return(1);
 	}
@@ -182,10 +182,10 @@ writeEchkpntVar(const char *pVariableName, const char *pVariableValue){
 	}else if (iReValue == 1) {
 		return(updateVarToFile_());
     	}else if (iReValue == 2){
-		return(0);
+		return 0;
 	}else{
 		
-		return(-1);
+		return -1;
 	}
 }
 
@@ -202,14 +202,14 @@ fillTable_( ){
 	
 	if (m_pEnvVarFileName == NULL){
 		
-    		return(-1);
+    		return -1;
 	}
 
 	
 	pFile = fopen(m_pEnvVarFileName,"r");
     	if (pFile == NULL){
 		
-		return(-1);
+		return -1;
 	}
 
 	
@@ -250,12 +250,12 @@ fillTable_( ){
 			goto error;
 		}
 	}
-	return(0);
+	return 0;
 
 error:
 
 	freeTable_();
-	return(-1);
+	return -1;
 }
 
 
@@ -264,18 +264,18 @@ addNewVarToFile_(const char *pVariableName, const char *pVariableValue){
 	FILE *pFile = NULL;
 
 	if (m_pEnvVarFileName == NULL){
-		return(-1);
+		return -1;
 	}
 	
 	pFile = fopen(m_pEnvVarFileName,"a");
 	if (pFile == NULL){
-		return(-1);
+		return -1;
 	}
 
 	
 	fprintf(pFile,"%s=\"%s\"\n",pVariableName,pVariableValue);
 	fclose(pFile);
-    	return(0);
+    	return 0;
 }
 
 
@@ -287,7 +287,7 @@ updateVarToFile_(){
 	VAR_TABLE_ITEM_T *pTableItem = NULL;
 	
 	if (m_pEnvVarFileName == NULL){
-		return(-1);
+		return -1;
 	}
 
 	
@@ -297,7 +297,7 @@ updateVarToFile_(){
 	
 	pTmpFile = fopen(tmpFileName,"w");
 	if (pTmpFile == NULL){
-		return(-1);
+		return -1;
 	}
 	
 	for (pTableItem = m_pTableHeader; pTableItem != NULL; pTableItem = pTableItem->m_pNextItem){
@@ -314,9 +314,9 @@ updateVarToFile_(){
 
 	
 	if (rename(tmpFileName, m_pEnvVarFileName) == -1){
-		return(-1);
+		return -1;
 	}
-	return(0);
+	return 0;
 }
 
 
@@ -328,7 +328,7 @@ insertVarToTable_(const char *pVariableName, const char *pVariableValue){
 	int iReValue = -1;
 
 	if ((pVariableName == NULL) || (pVariableValue == NULL)){
-		return(-1);
+		return -1;
 	}
 
 	
@@ -345,7 +345,7 @@ insertVarToTable_(const char *pVariableName, const char *pVariableValue){
 		pTableItem = (VAR_TABLE_ITEM_T *)malloc (sizeof(VAR_TABLE_ITEM_T));
 		if (pTableItem == NULL){
 			
-			return(-1);
+			return -1;
 		}
 		pTableItem->m_pNextItem = NULL;
 		
@@ -380,7 +380,7 @@ insertVarToTable_(const char *pVariableName, const char *pVariableValue){
 		
 		if (pTableItem->m_pVarPair->m_pValue == NULL){
 			pTableItem->m_pVarPair->m_pValue = pValue;
-			return(-1);
+			return -1;
 		}
 		free(pValue);
 		iReValue = 1;
@@ -403,7 +403,7 @@ error:
 		free(pTableItem->m_pVarPair);
 		free(pTableItem);
 	}
-	return(-1);
+	return -1;
 }
 
 

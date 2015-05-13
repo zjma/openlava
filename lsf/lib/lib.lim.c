@@ -64,7 +64,7 @@ callLim_(enum limReqCode reqCode,
     if (first) {
 
         if (initLimSock_() < 0)
-            return(-1);
+            return -1;
         first = FALSE;
 
         if (genParams_[LSF_API_CONNTIMEOUT].paramValue) {
@@ -139,14 +139,14 @@ callLim_(enum limReqCode reqCode,
                 FREEUP(repBuf);
             if (hdr != NULL)
                 *hdr = replyHdr;
-            return (0);
+            return 0;
 
         default:
             xdr_destroy(&xdrs);
             if (options & _USE_TCP_)
                 FREEUP(repBuf);
             err_return_(limReplyCode);
-            return (-1);
+            return -1;
     }
 
 }
@@ -171,7 +171,7 @@ callLimTcp_(char *reqbuf,
     *rep_buf = NULL;
     if (!sockIds_[TCP].sin_addr.s_addr) {
         if (ls_getmastername() == NULL)
-            return(-1);
+            return -1;
     }
 
 contact:
@@ -179,7 +179,7 @@ contact:
 
         limchans_[TCP] = chanClientSocket_(AF_INET, SOCK_STREAM, 0);
         if (limchans_[TCP] < 0 )
-            return(-1);
+            return -1;
 
         cc = chanConnect_(limchans_[TCP],
                           &sockIds_[TCP],
@@ -204,7 +204,7 @@ contact:
             sockIds_[TCP].sin_addr.s_addr = 0;
             sockIds_[TCP].sin_port        = 0;
             CLOSECD(limchans_[TCP]);
-            return(-1);
+            return -1;
         }
     }
 
@@ -220,7 +220,7 @@ contact:
                   recvtimeout_*1000);
     if (cc < 0) {
         CLOSECD(limchans_[TCP]);
-        return(-1);
+        return -1;
     }
     *rep_buf = rcvbuf.data;
 
@@ -274,7 +274,7 @@ contact:
                 goto contact;
             } else {
                 lserrno = LSE_LIM_DOWN;
-                return(-1);
+                return -1;
             }
 
         default:
@@ -285,7 +285,7 @@ contact:
         CLOSECD(limchans_[TCP]);
     }
 
-    return (0);
+    return 0;
 }
 
 /* This really need rework...
@@ -394,7 +394,7 @@ contact:
      * the reply.
      */
     if (options & _NON_BLOCK_)
-        return (0);
+        return 0;
 
 check:
     if (rcvreply_(limchans_[id], repbuf) < 0) {
@@ -511,14 +511,14 @@ initLimSock_(void)
         else
         {
             lserrno = LSE_LIM_NREG;
-            return(-1);
+            return -1;
         }
     } else if (genParams_[LSF_LIM_DEBUG].paramValue) {
         service_port = htons(LIM_PORT);
     } else {
         if ((sv = getservbyname("lim", "udp")) == NULL) {
             lserrno = LSE_LIM_NREG;
-            return (-1);
+            return -1;
         }
         service_port = sv->s_port;
     }

@@ -172,7 +172,7 @@ TcpConnect_(char *hostname, u_short port, struct timeval *timeout)
     server.sin_family = AF_INET;
     if ((hp = Gethostbyname_(hostname)) == NULL) {
         lserrno = LSE_BAD_HOST;
-        return (-1);
+        return -1;
     }
 
     memcpy((char *) &server.sin_addr,
@@ -183,19 +183,19 @@ TcpConnect_(char *hostname, u_short port, struct timeval *timeout)
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0))<0) {
 	lserrno = LSE_SOCK_SYS;
-        return (-1);
+        return -1;
     }
     if (io_nonblock_(sock) < 0) {
 	lserrno = LSE_MISC_SYS;
         closesocket(sock);
-        return (-1);
+        return -1;
     }
 
     if (connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0
         && errno != EINPROGRESS) {
 	lserrno = LSE_CONN_SYS;
         closesocket(sock);
-        return (-1);
+        return -1;
     }
 
     for (i = 0; i < 2; i++) {
@@ -208,11 +208,11 @@ TcpConnect_(char *hostname, u_short port, struct timeval *timeout)
                 continue;
             lserrno = LSE_SELECT_SYS;
             closesocket(sock);
-            return (-1);
+            return -1;
         } else if (nwRdy == 0) {
             lserrno = LSE_TIME_OUT;
             closesocket(sock);
-            return (-1);
+            return -1;
         }
         break;
     }

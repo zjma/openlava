@@ -89,7 +89,7 @@ main(int argc, char** argv)
 	    break;
 	case 'V':
 	    fputs(_LS_VERSION_, stderr);
-	    return (0);
+	    return 0;
 	case 'h':
 	    usage(argv[0]);
 	    exit(-1);
@@ -147,7 +147,7 @@ main(int argc, char** argv)
 	   lsb_jobid2str(runJobRequest.jobId));
 
     _i18n_end ( ls_catd );
-    return (0);
+    return 0;
 }
 
 

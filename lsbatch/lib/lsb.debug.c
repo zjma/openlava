@@ -44,14 +44,14 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
     if (host) {
         if (strlen (host) >= MAXHOSTNAMELEN - 1) {
             lsberrno = LSBE_BAD_ARG;
-            return (-1);
+            return -1;
         }
         strcpy(debug.hostName, host);
     } else {
         char *h;
         if ((h = ls_getmyhostname()) == NULL) {
             lsberrno = LSBE_LSLIB;
-            return(-1);
+            return -1;
         }
         strcpy(debug.hostName, h);
     }
@@ -69,7 +69,7 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
 
 
     if (authTicketTokens_(&auth, toHost) == -1){
-        return (-1);
+        return -1;
     }
 
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
@@ -79,7 +79,7 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
 
     if (!xdr_encodeMsg(&xdrs, (char *)&debug, &hdr, xdr_debugReq, 0, &auth)) {
         lsberrno = LSBE_XDR;
-        return(-1);
+        return -1;
     }
 
 
@@ -88,7 +88,7 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
         if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf,
                            &hdr, NULL, NULL, NULL)) == -1) {
             xdr_destroy(&xdrs);
-            return (-1);
+            return -1;
         }
     }
     else {
@@ -96,7 +96,7 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
                               XDR_GETPOS(&xdrs), &reply_buf,
                               &hdr, NULL)) == -1) {
             xdr_destroy(&xdrs);
-            return (-1);
+            return -1;
         }
     }
     xdr_destroy(&xdrs);
@@ -106,8 +106,8 @@ lsb_debugReq(struct debugReq  *pdebug , char *host)
     if (cc)
         free(reply_buf);
     if (lsberrno == LSBE_NO_ERROR)
-        return(0);
+        return 0;
 
-    return(-1);
+    return -1;
 
 }

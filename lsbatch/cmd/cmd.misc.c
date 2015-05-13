@@ -65,14 +65,14 @@ repeatedName (char *s,  char **ss, int n)
 {
     int i;
     if (n == 0)
-        return (FALSE);
+        return false;
     for(i = 0; i < n; i++) {
         if (ss[i] == NULL)
-            return (FALSE);
+            return false;
         if (strcmp(s, ss[i]) == 0)
-            return (TRUE);
+            return true;
     }
-    return (FALSE);
+    return false;
 }
 
 int
