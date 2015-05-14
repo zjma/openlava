@@ -381,7 +381,7 @@ main(int argc, char **argv)
      */
     TIMEIT(0, minit(FIRST_START),"minit");
     log_mbdStart();
-    ls_syslog(LOG_INFO, "%s: (re-)started", __func__);
+    ls_syslog(LOG_INFO, "%s: mbatchd (re-)started", __func__);
     pollSbatchds(FIRST_START);
     lastSchedTime  = 0;
     nextSchedTime  = time(0) + msleeptime;

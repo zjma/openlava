@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -23,9 +23,6 @@
 #include <arpa/inet.h>
 #include "sbd.h"
 
-#include "../../lsf/lib/lsi18n.h"
-#define NL_SETN		11
-
 extern void do_sbdDebug(XDR *xdrs, int chfd, struct LSFHeader *reqHdr);
 
 void sinit(void);
@@ -33,10 +30,11 @@ void init_sstate(void);
 static void processMsg(struct clientNode *);
 static void clientIO(struct Masks *);
 static void houseKeeping(void);
-static int authCmdRequest(struct clientNode *client, XDR *xdrs,
-			  struct LSFHeader *reqHdr);
-static int isLSFAdmin(struct lsfAuth *auth);
-static int get_new_master(struct sockaddr_in *from);
+static int authCmdRequest(struct clientNode *,
+                          XDR *,
+			  struct LSFHeader *);
+static int isLSFAdmin(struct lsfAuth *);
+static int get_new_master(struct sockaddr_in *);
 
 extern void do_modifyjob(XDR *, int, struct LSFHeader *);
 
@@ -117,24 +115,18 @@ int sbdLogMask;
 
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-    static char fname[] = "sbatchd/main";
     int nready, i;
     sigset_t oldsigmask, newmask;
     struct timeval timeout;
     struct Masks sockmask, chanmask;
     int aopt;
-
     char *msg = NULL;
-
-
-    _i18n_init(I18N_CAT_SBD);
 
     saveDaemonDir_(argv[0]);
 
-
-    for (i=1; i<argc; i++) {
+    for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-d") == 0 && argv[i+1] != NULL) {
             env_dir = argv[i+1];
             putEnv("LSF_ENVDIR",env_dir);
@@ -147,7 +139,6 @@ main (int argc, char **argv)
             env_dir = LSETCDIR;
     }
 
-
     if (argc > 1) {
         if (!strcmp(argv[1],"-V")) {
             fputs(_LS_VERSION_, stderr);
@@ -156,9 +147,10 @@ main (int argc, char **argv)
     }
 
     if (initenv_(daemonParams, env_dir) < 0) {
-        ls_openlog("sbatchd", daemonParams[LSF_LOGDIR].paramValue, (debug > 1),
+        ls_openlog("sbatchd",
+                   daemonParams[LSF_LOGDIR].paramValue, (debug > 1),
                    daemonParams[LSF_LOG_MASK].paramValue);
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "initenv_");
+        ls_syslog(LOG_ERR, "%s: initenv_() failed: %M", __func__);
         die(SLAVE_FATAL);
     }
 
@@ -169,7 +161,7 @@ main (int argc, char **argv)
     }
 
     ls_syslog(LOG_WARNING, "\
-%s: LSB_STDOUT_DIRECT configured as %s", fname,
+%s: LSB_STDOUT_DIRECT configured as %s", __func__,
 	      (daemonParams[LSB_STDOUT_DIRECT].paramValue)
 	      ? daemonParams[LSB_STDOUT_DIRECT].paramValue :"NULL");
 
@@ -194,55 +186,45 @@ main (int argc, char **argv)
         }
     }
 
-
-
     if (!debug && isint_(daemonParams[LSB_DEBUG].paramValue)) {
 	debug = atoi(daemonParams[LSB_DEBUG].paramValue);
 	if (debug <= 0 || debug > 3)
 	    debug = 1;
     }
 
-
     if (debug < 2) {
         for (i = sysconf(_SC_OPEN_MAX) ; i >= 3 ; i--)
             close(i);
     }
 
-
     daemon_doinit();
 
     if (debug == 0) {
-        if(getuid() != 0) {
-            fprintf(stderr, _i18n_msg_get(ls_catd , NL_SETN, 2,
-                                          "%s: Real uid is %d, not root\n"), /* catgets 2 */
+        if (getuid() != 0) {
+            fprintf(stderr, "%s: Real uid is %d, not root\n",
                     argv[0], (int)getuid());
             exit(1);
         }
-        if(geteuid() != 0) {
-            fprintf(stderr, _i18n_msg_get(ls_catd , NL_SETN, 3,
-                                          "%s: Effective uid is %d, not root\n"), /* catgets 3 */
+        if (geteuid() != 0) {
+            fprintf(stderr, "%s: Effective uid is %d, not root\n",
                     argv[0], (int)geteuid());
             exit(1);
         }
     } else {
-	if(getuid() == 0) {
-	    fprintf(stderr, _i18n_msg_get(ls_catd , NL_SETN, 4,
-                                          "%s: root cannot run in debug mode\n"), /* catgets 4 */
-                    argv[0]);
+	if (getuid() == 0) {
+	    fprintf(stderr, "%s: root cannot run in debug mode\n", argv[0]);
 	    exit(1);
 	}
     }
 
-    (void)umask(022);
+    umask(022);
 
     if (debug < 2) {
 	daemonize_();
     }
 
-
     getLogClass_(daemonParams[LSB_DEBUG_SBD].paramValue,
                  daemonParams[LSB_TIME_SBD].paramValue);
-
 
     if (debug > 1)
         ls_openlog("sbatchd", daemonParams[LSF_LOGDIR].paramValue, TRUE,
@@ -251,94 +233,71 @@ main (int argc, char **argv)
         ls_openlog("sbatchd", daemonParams[LSF_LOGDIR].paramValue, FALSE,
                    daemonParams[LSF_LOG_MASK].paramValue);
 
-    if (logclass)
-        ls_syslog(LOG_DEBUG3, "%s: logclass=%x", fname, logclass);
-
-
     sbdLogMask = getLogMask(&msg, daemonParams[LSF_LOG_MASK].paramValue);
-    if (msg != NULL)
-        ls_syslog(LOG_ERR, "%s: %s", fname, msg);
-
 
     if (isint_(daemonParams[LSB_SBD_CONNTIMEOUT].paramValue))
         connTimeout = atoi(daemonParams[LSB_SBD_CONNTIMEOUT].paramValue);
     else
         connTimeout = 6;
-    if (logclass & (LC_TRACE | LC_HANG))
-        ls_syslog(LOG_DEBUG, "%s: connTimeout=%d", fname, connTimeout);
-
 
     if (isint_(daemonParams[LSB_SBD_READTIMEOUT].paramValue))
         readTimeout = atoi(daemonParams[LSB_SBD_READTIMEOUT].paramValue);
     else
         readTimeout = 20;
-    if (logclass & (LC_TRACE | LC_HANG))
-        ls_syslog(LOG_DEBUG, "%s: readTimeout=%d", fname, readTimeout);
-
 
     if ((daemonParams[LSF_GETPWNAM_RETRY].paramValue != NULL)
         && (isint_(daemonParams[LSF_GETPWNAM_RETRY].paramValue)))
         getpwnamRetry = atoi(daemonParams[LSF_GETPWNAM_RETRY].paramValue);
 
     if (daemonParams[LSB_MEMLIMIT_ENFORCE].paramValue != NULL) {
-	if (!strcasecmp(daemonParams[LSB_MEMLIMIT_ENFORCE].paramValue, "y"))
-	{
+	if (!strcasecmp(daemonParams[LSB_MEMLIMIT_ENFORCE].paramValue, "y")) {
             lsbMemEnforce = TRUE;
 	}
     }
 
     lsbJobCpuLimit = -1;
     if (daemonParams[LSB_JOB_CPULIMIT].paramValue != NULL) {
-	if (!strcasecmp(daemonParams[LSB_JOB_CPULIMIT].paramValue, "y"))
-	{
+	if (!strcasecmp(daemonParams[LSB_JOB_CPULIMIT].paramValue, "y")) {
 	    lsbJobCpuLimit = 1;
 	} else if (!strcasecmp(daemonParams[LSB_JOB_CPULIMIT].paramValue,
                                "n")) {
 	    lsbJobCpuLimit = 0;
 	} else {
-	    ls_syslog(LOG_ERR, I18N(5001,
-                                    "%s: LSB_JOB_CPULIMIT <%s> in lsf.conf is invalid. Valid values are y|Y or n|N; ignoring the parameter."),
-                      fname, daemonParams[LSB_JOB_CPULIMIT].paramValue); /* catgets 5001 */
-
+	    ls_syslog(LOG_ERR, "\
+%s: LSB_JOB_CPULIMIT <%s> in lsf.conf is invalid", __func__,
+                      daemonParams[LSB_JOB_CPULIMIT].paramValue);
 	}
     }
 
     lsbJobMemLimit = -1;
     if (daemonParams[LSB_JOB_MEMLIMIT].paramValue != NULL) {
-	if (!strcasecmp(daemonParams[LSB_JOB_MEMLIMIT].paramValue, "y"))
-	{
+	if (!strcasecmp(daemonParams[LSB_JOB_MEMLIMIT].paramValue, "y")) {
 	    lsbJobMemLimit = 1;
 	} else if (!strcasecmp(daemonParams[LSB_JOB_MEMLIMIT].paramValue,
                                "n")) {
 	    lsbJobMemLimit = 0;
 	} else {
-	    ls_syslog(LOG_ERR, I18N(5002,
-                                    "%s: LSB_JOB_MEMLIMIT <%s> in lsf.conf is invalid. Valid values are y|Y or n|N; ignoring the parameter."),
-                      fname, daemonParams[LSB_JOB_MEMLIMIT].paramValue); /* catgets 5002 */
+	    ls_syslog(LOG_ERR, "\
+%s: LSB_JOB_MEMLIMIT <%s> in lsf.conf is invalid.", __func__,
+                      daemonParams[LSB_JOB_MEMLIMIT].paramValue);
 	}
     }
 
-    now = time(0);
+    now = time(NULL);
 
-    for (i=0; i<8; i++)
+    for (i = 0; i < 8; i++)
         host_week[i] = NULL;
 
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
     while ((allLsInfo = ls_info()) == NULL) {
-
-	millisleep_ (6000);
+        ls_syslog(LOG_ERR, "%s: ls_info() failed: %M; trying ...", __func__);
+	millisleep_(6000);
     }
 
-
-    for(i=allLsInfo->nModels; i < MAXMODELS; i++)
+    for (i = allLsInfo->nModels; i < MAXMODELS; i++)
         allLsInfo->cpuFactor[i] = 1.0;
-
-    if (logclass & (LC_TRACE | LC_COMM)) {
-        ls_syslog (LOG_DEBUG, "%s: ls_info() succeed", fname);
-    }
-
 
     initParse (allLsInfo);
     tclLsInfo = getTclLsInfo();
@@ -346,14 +305,8 @@ main (int argc, char **argv)
 
     sigprocmask(SIG_SETMASK, NULL, &oldsigmask);
 
-
-
     sinit();
-    ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5041, "%s: (re-)started")), fname);        /* catgets 5041 */
-
-
-    QUEUE_INIT(jmQueue);
-
+    ls_syslog(LOG_INFO, "%s: sbatchd (re-)started", __func__);
 
     getLSFAdmins_();
 
@@ -366,7 +319,8 @@ main (int argc, char **argv)
 	sigaddset(&newmask, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &newmask, NULL);
 
-        /* job_checking is exclusive*/
+        /* job_checking is exclusive
+         */
         if (!debug)
             chdir(LSTMPDIR);
 
@@ -377,12 +331,10 @@ main (int argc, char **argv)
 	    timeout.tv_sec = sbdSleepTime/10;
 	}
 
-
 	if (failcnt && failcnt < 5)
 	    timeout.tv_sec = sbdSleepTime/(5-failcnt);
 
 	sigprocmask(SIG_SETMASK, &oldsigmask, NULL);
-        /* unblock SIGCHLD */
 
         if (need_checkfinish) {
             need_checkfinish = FALSE;
@@ -390,50 +342,36 @@ main (int argc, char **argv)
         }
 
         FD_ZERO(&sockmask.rmask);
-
 	houseKeeping();
 
-	if (logclass & LC_COMM)
-	    ls_syslog(LOG_DEBUG3, "Into select");
-
         nready = chanSelect_(&sockmask, &chanmask, &timeout);
-
-	if (logclass & LC_COMM)
-	    ls_syslog(LOG_DEBUG3, "Out of select: nready=%d", nready);
-
-        now = time(0);
+        now = time(NULL);
         if (nready < 0) {
 	    if (errno == EINTR)
 		delay_check = FALSE;
 	    else
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "select");
+                ls_syslog(LOG_ERR, "%s: select() failed: %m", __func__);
             continue;
         }
 
-	if (sbdSleepTime < 0) {
-	    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5004,
-                                             "%s: Sleep time <%d> is not a non-negative integer; re-life"), fname, sbdSleepTime); /* catgets 5004 */
-	    relife();
-	}
         timeout.tv_sec = sbdSleepTime;
 	sigemptyset(&newmask);
 	sigaddset(&newmask, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &newmask, NULL);
-        /* block SIGCHLD before all */
+
         if (nready == 0) {
-	    if (delay_check) {
+	    if (delay_check)
 		delay_check = FALSE;
-		continue;
-	    }
             continue;
         }
 
-	if (statusChan >= 0 && (FD_ISSET(statusChan, &chanmask.rmask) ||
-				FD_ISSET(statusChan, &chanmask.emask))) {
+	if (statusChan >= 0
+            && (FD_ISSET(statusChan, &chanmask.rmask)
+                || FD_ISSET(statusChan, &chanmask.emask))) {
 
 	    if (logclass & LC_COMM)
-		ls_syslog(LOG_DEBUG,
-			  "main: Exception on statusChan <%d>, rmask <%x>",
+		ls_syslog(LOG_DEBUG, "\
+%s: Exception on statusChan <%d>, rmask <%x>", __func__,
 			  statusChan, chanmask.rmask);
 	    chanClose_(statusChan);
 	    statusChan = -1;
@@ -447,17 +385,15 @@ main (int argc, char **argv)
 
         s = chanAccept_(batchSock, &from);
         if (s == -1) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "chanAccept_");
+            ls_syslog(LOG_ERR, "%s: chanAccept_ failed: %M", __func__);
 	    continue;
         }
 
-
-        client = (struct clientNode *)malloc(sizeof(struct clientNode));
+        client = malloc(sizeof(struct clientNode));
         if (!client) {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5006,
-                                             "%s: Unable to accept connection")); /* catgets 5006 */
-            chanClose_(s);
+            ls_syslog(LOG_ERR, "\
+%s: malloc failed. Unable to accept connection", __func__);
+                chanClose_(s);
             continue;
         }
 
@@ -470,26 +406,28 @@ main (int argc, char **argv)
         inList( (struct listEntry *)clientList, (struct listEntry *) client);
 
         if (logclass & LC_COMM )
-	    ls_syslog(LOG_DEBUG, "%s: Accepted connection from host <%s> on channel <%d>", fname, sockAdd2Str_(&from), client->chanfd);
+	    ls_syslog(LOG_DEBUG, "\
+%s: Accepted connection from host <%s> on channel <%d>", __func__,
+                      sockAdd2Str_(&from), client->chanfd);
 
 	clientIO(&chanmask);
     }
 
     return 0;
-
 }
 
 static void
 clientIO(struct Masks *chanmask)
 {
-    struct clientNode *cliPtr, *nextClient;
+    struct clientNode *cliPtr;
+    struct clientNode *nextClient;
 
     if (logclass & LC_TRACE)
-	ls_syslog(LOG_DEBUG,"clientIO: Entering...");
+	ls_syslog(LOG_DEBUG, "%s: Entering...", __func__);
 
-
-    for(cliPtr=clientList->forw; cliPtr != clientList; cliPtr=nextClient) {
+    for(cliPtr = clientList->forw; cliPtr != clientList; cliPtr = nextClient) {
         nextClient = cliPtr->forw;
+
         if (FD_ISSET(cliPtr->chanfd, &chanmask->emask)) {
 
             shutDownClient(cliPtr);
@@ -499,15 +437,12 @@ clientIO(struct Masks *chanmask)
         if (FD_ISSET(cliPtr->chanfd, &chanmask->rmask)) {
 	    processMsg(cliPtr);
         }
-
     }
 }
-
 
 static void
 processMsg(struct clientNode *client)
 {
-    static char fname[]="processMsg";
     struct Buffer *buf;
     int s;
     sbdReqType sbdReqtype;
@@ -518,15 +453,15 @@ processMsg(struct clientNode *client)
     s = chanSock_(client->chanfd);
 
     if (chanDequeue_(client->chanfd, &buf) < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_ENO_D, fname, "chanDequeue_",
-                  cherrno);
+        ls_syslog(LOG_ERR, "\
+%s: chanDequeue_() failed; cherrno = %d", __func__, cherrno);
         shutDownClient(client);
         return;
     }
 
     xdrmem_create(&xdrs, buf->data, buf->len, XDR_DECODE);
     if (!xdr_LSFHeader(&xdrs, &reqHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_LSFHeader");
+        ls_syslog(LOG_ERR, "%s: Bad header received", __func__);
         shutDownClient(client);
 	xdr_destroy(&xdrs);
         chanFreeBuf_(buf);
@@ -536,19 +471,18 @@ processMsg(struct clientNode *client)
     sbdReqtype = reqHdr.opCode;
 
     if (logclass & (LC_TRACE | LC_COMM))
-	ls_syslog(LOG_DEBUG,"%s: received msg <%d>",fname, sbdReqtype);
+	ls_syslog(LOG_DEBUG,"%s: received msg <%d>", __func__, sbdReqtype);
 
     /* -Wenum-compare warning issued by smart gcc 4.9.1
      * compiler when using sbdReqType != PREPARE_FOR_OP
      */
     if (reqHdr.opCode != PREPARE_FOR_OP)
-        if (io_block_(s) < 0)
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "io_block_");
+        io_block_(s);
 
-    if (sbdReqtype == MBD_NEW_JOB || sbdReqtype == MBD_SIG_JOB ||
-	sbdReqtype == MBD_SWIT_JOB || sbdReqtype == MBD_PROBE ||
-	sbdReqtype == MBD_REBOOT || sbdReqtype == MBD_SHUTDOWN ||
-	sbdReqtype == MBD_MODIFY_JOB) {
+    if (sbdReqtype == MBD_NEW_JOB || sbdReqtype == MBD_SIG_JOB
+        || sbdReqtype == MBD_SWIT_JOB || sbdReqtype == MBD_PROBE
+        || sbdReqtype == MBD_REBOOT || sbdReqtype == MBD_SHUTDOWN
+        || sbdReqtype == MBD_MODIFY_JOB) {
 
         if (get_new_master(&client->from) < 0) {
             errorBack(client->chanfd, LSBE_NOLSF_HOST, &client->from);
@@ -558,12 +492,14 @@ processMsg(struct clientNode *client)
 	    return;
         }
 
-    } else if (sbdReqtype == CMD_SBD_REBOOT ||
-	       sbdReqtype == CMD_SBD_SHUTDOWN ||
-               sbdReqtype == CMD_SBD_DEBUG) {
+    } else if (sbdReqtype == CMD_SBD_REBOOT
+               || sbdReqtype == CMD_SBD_SHUTDOWN
+               || sbdReqtype == CMD_SBD_DEBUG) {
+
 	if ((cc = authCmdRequest(client, &xdrs, &reqHdr)) != LSBE_NO_ERROR) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "authCmdRequest",
-                      sockAdd2Str_(&client->from), sbdReqtype);
+            ls_syslog(LOG_ERR, "\
+%s: authCmdRequest from <%s> reqtype %d failed", __func__,
+		      sockAdd2Str_(&client->from), sbdReqtype);
             errorBack(client->chanfd, cc, &client->from);
 	    shutDownClient(client);
 	    chanFreeBuf_(buf);
@@ -628,8 +564,9 @@ processMsg(struct clientNode *client)
             delay_check = TRUE;
             break;
         default:
-            ls_syslog(LOG_ERR, "%s: Unknown request type <%d>",
-                      fname, sbdReqtype);
+            ls_syslog(LOG_ERR, "\
+%s: Unknown request type <%d> from %s", __func__, sbdReqtype,
+                      sockAdd2Str_(&client->from));
             break;
     }
 
@@ -654,7 +591,6 @@ shutDownClient(struct clientNode *client)
 	client->jp->regOpFlag &= REG_RUSAGE;
     }
     FREEUP(client);
-
 }
 
 void
@@ -779,18 +715,18 @@ get_new_master(struct sockaddr_in *from)
 }
 
 void
-sinit (void)
+sinit(void)
 {
-    static char fname[] = "sinit";
     struct hostInfo *myinfo;
     char *myhostname;
 
     if (logclass & (LC_TRACE | LC_HANG))
-        ls_syslog(LOG_DEBUG, "sbatchd/%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "sbatchd/%s: Entering this routine...", __func__);
 
     if (getBootTime(&bootTime) == -1) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5021,
-                                         "%s: getBootTime() failed; assuming host was not rebooted while sbatchd was down"), fname); /* catgets 5021 */
+        ls_syslog(LOG_ERR, "\
+%s: getBootTime() failed; assuming host was not rebooted while sbatchd was down",
+                  __func__);
 	bootTime = 0;
 	die(SLAVE_FATAL);
     }
@@ -803,45 +739,47 @@ sinit (void)
     Signal_(SIGINT,  (SIGFUNCTYPE) die);
     Signal_(SIGCHLD, (SIGFUNCTYPE) child_handler);
     Signal_(SIGPIPE, SIG_IGN);
-    if (!debug)
-    {
+
+    if (!debug) {
 	Signal_(SIGTTOU, SIG_IGN);
 	Signal_(SIGTTIN, SIG_IGN);
 	Signal_(SIGTSTP, SIG_IGN);
     }
 
-    jobQueHead = (struct jobCard *) mkListHeader () ;
-    clientList = (struct clientNode *) mkListHeader () ;
+    jobQueHead = (struct jobCard *)mkListHeader() ;
+    clientList = (struct clientNode *)mkListHeader() ;
     if (!jobQueHead || !clientList ) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "mkListHeader");
+        ls_syslog(LOG_ERR, "%s: mkListHeader() failed", __func__);
         die(SLAVE_FATAL);
     }
     if ((clusterName = ls_getclustername()) == NULL) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getclustername");
+        ls_syslog(LOG_ERR, "%s: ls_getclustername() failed: %M", __func__);
 	while ((clusterName = ls_getclustername()) == NULL)
 	    millisleep_(sbdSleepTime * 1000);
     }
 
     if ((masterHost = ls_getmastername()) == NULL) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getmastername");
+        ls_syslog(LOG_ERR, "%s: ls_getmastername() failed: %M", __func__);
 	while ((masterHost = ls_getmastername()) == NULL)
 	    millisleep_(sbdSleepTime * 1000);
     }
-    ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5043, "\
-%s: Cluster %s, master %s")), "sbatchd/main", clusterName, masterHost);  /* catgets 5043 */
 
+    ls_syslog(LOG_INFO, "\
+%s: Cluster %s, master %s", __func__, clusterName, masterHost);
 
     master_unknown = FALSE;
     batchId = getuid();
     myhostname = ls_getmyhostname();
     if (myhostname == NULL) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getmyhostname");
+        ls_syslog(LOG_ERR, "%s: ls_getmyhostname() failed: %M", __func__);
 	die(SLAVE_FATAL);
     }
 
-    while ((myinfo = ls_gethostinfo(NULL, NULL, &myhostname,
+    while ((myinfo = ls_gethostinfo(NULL,
+                                    NULL,
+                                    &myhostname,
                                     1, 0)) == NULL) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_gethostinfo");
+	ls_syslog(LOG_ERR, "%s: ls_gethostinfo() failed: %M", __func__);
 	millisleep_(sbdSleepTime * 1000);
     }
 
@@ -854,29 +792,26 @@ sinit (void)
 
     batchSock = init_ServSock(sbd_port);
     if (batchSock < 0) {
-        lsb_mperr( _i18n_printf(I18N_FUNC_FAIL, fname, "init_ServSock"));
+        lsb_mperr("sbatchd: Cannot init servsocket");
         die(SLAVE_FATAL);
     }
+
     if (! debug) {
 	nice(NICE_LEAST);
 	nice(NICE_MIDDLE);
 	nice(0);
     }
 
-
-    if (!debug)
-    {
+    if (!debug) {
 	if (chdir(LSTMPDIR) < 0) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "chdir", LSTMPDIR);
-	    lsb_mperr( _i18n_printf(I18N_FUNC_S_FAIL, fname,
-                                    "chdir", LSTMPDIR));
+            ls_syslog(LOG_ERR, "%s: chdir(%s) failed: %m", __func__, "/tmp");
+	    lsb_mperr1("sbatchd: chdir %s failed\n", "/tmp");
 	    die(SLAVE_FATAL);
 	}
     }
 
-
     if (chanInit_() < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "chanInit_");
+        ls_syslog(LOG_ERR, "%s: chanInit_ Failed to init channel", __func__);
         die(SLAVE_FATAL);
     }
 
@@ -912,47 +847,53 @@ init_sstate (void)
 static void
 houseKeeping(void)
 {
-    static time_t lastTime = 0;
-    static time_t lastCheckMbdTime = 0, lastStartMbdTime = 0;
-    char *updMasterHost, *myhostnm;
-
-
-
-    if (now - lastCheckMbdTime >= CHECK_MBD_TIME) {
-        lastCheckMbdTime = now;
-        updMasterHost = ls_getmastername();
-        if (updMasterHost == NULL) {
-            master_unknown = TRUE;
-            myStatus |= NO_LIM;
-            lserrno = LSE_NO_ERR;
-        } else {
-            masterHost = updMasterHost;
-            myStatus = 0;
-            master_unknown = FALSE;
-            if ((myhostnm = ls_getmyhostname()) == NULL) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "main", "ls_getmyhostname");
-                die(SLAVE_FATAL);
-            }
-            if (equalHost_(masterHost, myhostnm)) {
-                if (mbdPid != 0) {
-                    if (kill(mbdPid, 0) != 0)
-                    {
-                        if ((now - lastStartMbdTime >=
-                             3 * CHECK_MBD_TIME) || !mbdStartedBySbd) {
-                            start_master();
-                            lastStartMbdTime = now;
-                        }
-                    }
-		}
-	    }
-        }
-    }
+    static time_t lastTime;
+    static time_t lastCheckMbdTime;
+    static time_t lastStartMbdTime;
+    char *updMasterHost;
+    char *myhostnm;
 
     if (now - lastTime >= sbdSleepTime / 2) {
 	if (ls_servavail(2, 1) < 0)
-	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "main", "ls_servavail");
+            ls_syslog(LOG_ERR, "%s: ls_servavail : %M", __func__);
 	lastTime = now;
     }
+
+    /* Nice reverse logic
+     */
+    if (! (now - lastCheckMbdTime >= CHECK_MBD_TIME))
+        return;
+
+    lastCheckMbdTime = now;
+    updMasterHost = ls_getmastername();
+
+    if (updMasterHost == NULL) {
+        master_unknown = TRUE;
+        myStatus |= NO_LIM;
+        lserrno = LSE_NO_ERR;
+        return ;
+    }
+
+    masterHost = updMasterHost;
+    myStatus = 0;
+    master_unknown = FALSE;
+    if ((myhostnm = ls_getmyhostname()) == NULL) {
+        ls_syslog(LOG_ERR, "%s: ls_getmyhostname() failed: %M", __func__);
+        die(SLAVE_FATAL);
+    }
+
+    if (equalHost_(masterHost, myhostnm)) {
+
+        if (mbdPid != 0) {
+            if (kill(mbdPid, 0) != 0) {
+                if ((now - lastStartMbdTime >=
+                     3 * CHECK_MBD_TIME) || !mbdStartedBySbd) {
+                    start_master();
+                    lastStartMbdTime = now;
+                }
+            }
+        }
+    } /* if (equalHost()) */
 
 }
 
@@ -1004,16 +945,14 @@ authCmdRequest(struct clientNode *client,
     }
 
     return LSBE_NO_ERROR;
-
 }
 
 
 static int
 isLSFAdmin(struct lsfAuth *auth)
 {
-    if (auth->uid == 0) {
-        return TRUE;
-    }
+    if (auth->uid == 0)
+        return true;
 
     getLSFAdmins_();
 

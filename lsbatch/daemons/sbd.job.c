@@ -992,11 +992,10 @@ mysetLimits(struct jobSpecs *jobSpecsPtr)
 }
 
 int
-job_finish (struct jobCard *jobCard, int report)
+job_finish(struct jobCard *jobCard, int report)
 {
     static char fname[] = "job_finish";
     int pid;
-
 
     if (logclass & LC_EXEC)
         ls_syslog(LOG_DEBUG,
@@ -1008,18 +1007,16 @@ job_finish (struct jobCard *jobCard, int report)
     if (report && jobCard->jobSpecs.actPid)
         return -1;
 
-
-
-    unlockHosts (jobCard, jobCard->jobSpecs.numToHosts);
-
+    unlockHosts(jobCard, jobCard->jobSpecs.numToHosts);
 
     if (report
-        && status_job (BATCH_STATUS_JOB, jobCard, jobCard->jobSpecs.jStatus,
-                       (jobCard->jobSpecs.startTime > bootTime) ?
-                       ERR_NO_ERROR : ERR_HOST_BOOT) < 0) {
+        && status_job(BATCH_STATUS_JOB, jobCard, jobCard->jobSpecs.jStatus,
+                      (jobCard->jobSpecs.startTime > bootTime) ?
+                      ERR_NO_ERROR : ERR_HOST_BOOT) < 0) {
         jobCard->notReported++;
         return -1;
     }
+
     if ((jobCard->jobSpecs.jStatus & JOB_STAT_PEND) &&
         (jobCard->jobSpecs.reasons == PEND_JOB_START_FAIL ||
          jobCard->jobSpecs.reasons == PEND_JOB_NO_FILE)) {
@@ -1044,10 +1041,7 @@ job_finish (struct jobCard *jobCard, int report)
             return 0;
         }
 
-
         if (jobCard->userJobSucc == TRUE) {
-
-
             jobCard->postJobStarted = 1;
             jobCard->jobSpecs.jobPid = pid;
             jobCard->jobSpecs.jobPGid = pid;
@@ -1055,7 +1049,6 @@ job_finish (struct jobCard *jobCard, int report)
             return 0;
         }
     }
-
 
     deallocJobCard(jobCard);
 
