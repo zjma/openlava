@@ -87,7 +87,7 @@ static void writePidInfoFile(const struct jobCard *,
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
-
+static int setupControlGroup(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -129,15 +129,14 @@ sbdChildCloseChan(int exceptChan)
 sbdReplyType
 job_exec(struct jobCard *jobCardPtr, int chfd)
 {
-    static char fname[] = "job_exec";
     struct jobSpecs *jobSpecsPtr;
     int pid;
 
     jobSpecsPtr = &(jobCardPtr->jobSpecs);
     if (logclass & LC_EXEC) {
-        ls_syslog(LOG_DEBUG,
-                  "%s: the Job's JobSpoolDir is %s \n",
-                  fname, jobSpecsPtr->jobSpoolDir);
+        ls_syslog(LOG_DEBUG, "\
+%s: the Job's JobSpoolDir is %s \n",
+                  __func__, jobSpecsPtr->jobSpoolDir);
     }
 
     jobSpecsPtr->reasons = 0;
@@ -146,8 +145,9 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     pid = fork();
 
     if (pid < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-                  lsb_jobid2str(jobSpecsPtr->jobId), "fork");
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh fork() failed starting job %s: %m",
+                  __func__, lsb_jobid2str(jobSpecsPtr->jobId));
         return ERR_FORK_FAIL;
     }
 
@@ -158,11 +158,9 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
         exit(-1);
     }
 
-
-
     jobSpecsPtr->jobPid = pid;
 
-
+    setupControlGroup(jobCardPtr);
 
     if (jobSpecsPtr->options & SUB_RESTART)
         jobSpecsPtr->jobPGid = 0;
@@ -172,8 +170,8 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     jobCardPtr->missing = FALSE;
     jobCardPtr->notReported = 0;
     jobCardPtr->needReportRU = FALSE;
-    return ERR_NO_ERROR;
 
+    return ERR_NO_ERROR;
 }
 
 
@@ -187,8 +185,6 @@ sendNotification(struct jobCard *jobCardPtr)
     char myhostnm[MAXHOSTNAMELEN];
     int  k;
     char *temp1;
-
-
 
     if (jobSpecsPtr->options & SUB_MAIL_USER)
         mail = smail(jobSpecsPtr->mailUser, jobSpecsPtr->fromHost);
@@ -513,7 +509,7 @@ execArgs(struct jobSpecs *jp, char **execArgv)
     static char *argv[64];
     static char debugStr[10];
 
-    argv[i++] = getDaemonPath_("/res",daemonParams[LSF_SERVERDIR].paramValue);
+    argv[i++] = getDaemonPath_("/res", daemonParams[LSF_SERVERDIR].paramValue);
     if (debug) {
         sprintf(debugStr, "-%d", debug);
         argv[i++] = debugStr;
@@ -550,7 +546,7 @@ execArgs(struct jobSpecs *jp, char **execArgv)
 
     argv[i] = NULL;
 
-    return (argv);
+    return argv;
 }
 
 
@@ -1356,7 +1352,7 @@ shouldCopyFromLsbatch(struct jobCard *jp,
 
 
 static int
-send_results (struct jobCard *jp)
+send_results(struct jobCard *jp)
 {
     static char fname[] = "send_results()";
     struct hostent *hp;
@@ -2261,14 +2257,13 @@ renewJobStat (struct jobCard *jp)
                     case JOB_STAT_USUSP:
                         k = sbdStartupStopJob (jp, mbdReasons, mbdSubReasons);
                         break;
-
                 }
             }
         }
     }
 
     if (k < 0)
-        jobGone (jp);
+        jobGone(jp);
 }
 
 
@@ -2292,70 +2287,69 @@ sbdStartupStopJob (struct jobCard *jp, int reasons, int subReasons)
     reasons |= SUSP_SBD_STARTUP;
 
     return (jRunSuspendAct(jp, sigValue,
-                           ((reasons & SUSP_USER_STOP) ? JOB_STAT_USUSP : JOB_STAT_SSUSP),
+                           ((reasons & SUSP_USER_STOP) ? JOB_STAT_USUSP
+                            : JOB_STAT_SSUSP),
                            reasons, subReasons, NO_SIGLOG));
 
 }
 
 void
-jobGone (struct jobCard *jp)
+jobGone(struct jobCard *jp)
 {
     if (logclass & LC_EXEC)
-        ls_syslog(LOG_DEBUG,
-                  "jobGone: Checking if job %s pid %d gone, jp->w_status=%d",
-                  lsb_jobid2str(jp->jobSpecs.jobId), jp->jobSpecs.jobPid, jp->w_status);
+        ls_syslog(LOG_DEBUG, "\
+%s: Checking if job %s pid %d gone, jp->w_status=%d", __func__,
+                  lsb_jobid2str(jp->jobSpecs.jobId),
+                  jp->jobSpecs.jobPid, jp->w_status);
 
-
-
-    if (!jp->missing) {
+    if (! jp->missing) {
         jp->missing = TRUE;
         need_checkfinish = TRUE;
         if (jp->notReported > 0)
             jp->notReported = 0;
-    } else {
-        if (getJobVersion (&jp->jobSpecs) < 4) {
+        return;
+    }
 
-            if (jp->exitPid == 0) {
-                if ( jp->postJobStarted == 0 ) {
-                    jobFileExitStatus(jp);
-                }
-            }
-            if (jp->exitPid >= 0)
-                return;
-        } else {
-            jp->exitPid = -1;
-
+    if (getJobVersion (&jp->jobSpecs) < 4) {
+        if (jp->exitPid == 0) {
             if ( jp->postJobStarted == 0 ) {
-                jobFinishRusage(jp);
+                jobFileExitStatus(jp);
             }
         }
-        if (jp->jobSpecs.actPid == 0 && jp->exitPid == -1) {
+        if (jp->exitPid >= 0)
+            return;
+    } else {
 
-            if (requeueJob(jp) == TRUE) {
-                SBD_SET_STATE(jp, JOB_STAT_PEND);
-                jp->jobSpecs.reasons = PEND_SBD_JOB_REQUEUE;
-            }
-            else {
-                if ( jp->postJobStarted != 0 ) {
-                    if (jp->w_status) {
-                        SBD_SET_STATE(jp, JOB_STAT_PERR);
-                    }
-                    else {
-                        SBD_SET_STATE(jp, JOB_STAT_PDONE);
-                    }
+        jp->exitPid = -1;
+        if (jp->postJobStarted == 0)
+            jobFinishRusage(jp);
+    }
+
+    if (jp->jobSpecs.actPid == 0 && jp->exitPid == -1) {
+
+        if (requeueJob(jp) == TRUE) {
+            SBD_SET_STATE(jp, JOB_STAT_PEND);
+            jp->jobSpecs.reasons = PEND_SBD_JOB_REQUEUE;
+        } else {
+            if (jp->postJobStarted != 0) {
+                if (jp->w_status) {
+                    SBD_SET_STATE(jp, JOB_STAT_PERR);
                 }
                 else {
-                    if (jp->w_status) {
-                        SBD_SET_STATE(jp, JOB_STAT_EXIT);
-                    }
-                    else {
-                        SBD_SET_STATE(jp, JOB_STAT_DONE);
-                    }
+                    SBD_SET_STATE(jp, JOB_STAT_PDONE);
+                }
+            } else {
+                if (jp->w_status) {
+                    SBD_SET_STATE(jp, JOB_STAT_EXIT);
+                }
+                else {
+                    SBD_SET_STATE(jp, JOB_STAT_DONE);
                 }
             }
         }
-        jp->notReported++;
     }
+
+    jp->notReported++;
 }
 
 void
@@ -4068,7 +4062,6 @@ REShasPTYfix(char *resPath)
 static void
 setJobArrayEnv(char *jobName, int jobIndex)
 {
-    static char fname[] = "setJobArrayEnv";
     struct idxList *idxList = NULL, *idx;
     char   *index,  val[MAXLINELEN];
     int found = FALSE;
@@ -4079,7 +4072,7 @@ setJobArrayEnv(char *jobName, int jobIndex)
         return;
     yybuff = index;
     if (idxparse(&idxList, &maxJLimit)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "idxparse", index);
+        ls_syslog(LOG_ERR, "%s: idxparse() error", __func__);
         return;
     }
 
@@ -4094,19 +4087,29 @@ setJobArrayEnv(char *jobName, int jobIndex)
             }
         }
     }
+
     if (found) {
         sprintf(val, "%d", idx->step);
         putEnv("LSB_JOBINDEX_STEP", val);
         sprintf(val, "%d", idx->end);
         putEnv("LSB_JOBINDEX_END", val);
-    } else
-        ls_syslog(LOG_ERR, I18N(5400,
-                                "%s: Job %d not found in job index list"),/* catgets 5400 */
-                  fname, jobIndex);
+    } else {
+        ls_syslog(LOG_ERR, "\
+%s: Job %d not found in job index list", __func__, jobIndex);
+    }
+
     while (idxList) {
         idx = idxList->next;
         FREEUP(idxList);
         idxList = idx;
     }
-    return;
+
+}
+
+/* setupControlGroup()
+ */
+static int
+setupControlGroup(struct jobCard *jc)
+{
+    return 1;
 }

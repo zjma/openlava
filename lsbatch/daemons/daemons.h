@@ -279,7 +279,7 @@ struct jobSpecs {
     char   *loginShell;
     int    maxNumProcessors;
     char   *schedHostType;
-    char *   execHosts;
+    char *execHosts;
     int options2;
     char  jobSpoolDir[MAXPATHLEN];
     char  inFileSpool[MAXFILENAMELEN];

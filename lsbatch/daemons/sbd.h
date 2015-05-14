@@ -52,7 +52,6 @@ struct jobCard {
     int       notReported;
     time_t    windEdge;
     windows_t *week[8];
-
     char      active;
     char      timeExpire;
     char      missing;
@@ -73,16 +72,11 @@ struct jobCard {
 #define JOB_EXEC_QPRE_OK          0x1
 #define JOB_EXEC_QPRE_KNOWN       0x2
 #define JOB_EXEC_STARTED          0x4
-
     char   *stdinFile;
-
     time_t lastStatusMbdTime;
-
     struct jRusage runRusage;
     struct jRusage mbdRusage;
-
     struct jRusage maxRusage;
-
     int delieveredMsgId;
     struct clientNode *client;
     int regOpFlag;
