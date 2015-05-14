@@ -87,7 +87,7 @@ static void writePidInfoFile(const struct jobCard *,
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
-static int setupControlGroup(struct jobCard *);
+static int setup_cpuset(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -159,8 +159,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     }
 
     jobSpecsPtr->jobPid = pid;
-
-    setupControlGroup(jobCardPtr);
+    setup_cpuset(jobCardPtr);
 
     if (jobSpecsPtr->options & SUB_RESTART)
         jobSpecsPtr->jobPGid = 0;
@@ -4098,11 +4097,10 @@ setJobArrayEnv(char *jobName, int jobIndex)
     }
 
 }
-
-/* setupControlGroup()
+/* setup_cpuset()
  */
 static int
-setupControlGroup(struct jobCard *jc)
+setup_cpuset(struct jobCard *jc)
 {
-    return 1;
+    return 0;
 }

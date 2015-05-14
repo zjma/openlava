@@ -158,6 +158,21 @@ struct jobSyslog {
     char msg[MAXLINELEN];
 };
 
+/* This data structure keeps track of the
+ * CPUs on the machine where sbatchd is running
+ * and how many tasks are allocated vis cgroup
+ * to each CPU.
+ */
+struct infoCPUs {
+    int numCPU;     /* CPU number */
+    int numTasks;   /* number of tasks on this CPU */
+};
+
+/* Global array holding the information on all cpus.
+ */
+extern int numCPUs;
+extern struct infoCPUs *array_cpus ;
+
 #define UID_MAPPED(jp) (strcmp((jp)->jobSpecs.userName, (jp)->execUsername))
 #define PURE_INTERACTIVE(jobSpecsPtr) \
      (((jobSpecsPtr)->options & SUB_INTERACTIVE) && \
@@ -314,5 +329,5 @@ extern int sbdread_jobstatus (struct jobCard *jp);
 extern int sbdCheckUnreportedStatus();
 extern void exeActCmd(struct jobCard *jp, char *actCmd, char *exitFile);
 extern void exeChkpnt(struct jobCard *jp, int chkFlags, char *exitFile);
-
+extern int cmp_cpus(const void *, const void *);
 

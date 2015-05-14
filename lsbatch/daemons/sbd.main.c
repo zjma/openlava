@@ -24,9 +24,10 @@
 #include "sbd.h"
 
 extern void do_sbdDebug(XDR *xdrs, int chfd, struct LSFHeader *reqHdr);
-
-void sinit(void);
-void init_sstate(void);
+static void sinit(void);
+static void init_sstate(void);
+static void init_cpus(void);
+static int init_ctrl_groups(void);
 static void processMsg(struct clientNode *);
 static void clientIO(struct Masks *);
 static void houseKeeping(void);
@@ -112,7 +113,8 @@ int lsbJobMemLimit = -1;
 int lsbStdoutDirect = FALSE;
 
 int sbdLogMask;
-
+int numCPUs;
+struct infoCPUs *array_cpus ;
 
 int
 main(int argc, char **argv)
@@ -714,7 +716,7 @@ get_new_master(struct sockaddr_in *from)
     return 0;
 }
 
-void
+static void
 sinit(void)
 {
     struct hostInfo *myinfo;
@@ -815,9 +817,10 @@ sinit(void)
         die(SLAVE_FATAL);
     }
 
+    init_cpus();
 }
 
-void
+static void
 init_sstate (void)
 {
     struct sbdPackage sbdPackage;
@@ -840,7 +843,6 @@ init_sstate (void)
     for (i = 0; i < sbdPackage.nAdmins; i++)
 	FREEUP(sbdPackage.admins[i]);
     FREEUP(sbdPackage.admins);
-
 }
 
 
@@ -962,4 +964,77 @@ isLSFAdmin(struct lsfAuth *auth)
 
     return false;
 
+}
+
+/* cpus_init()
+ *
+ * Initialize the cpus_array[] data structure
+ */
+static void
+init_cpus(void)
+{
+    FILE *fp;
+    char buf[PATH_MAX];
+    int l;
+    int i;
+
+    fp = fopen("/proc/cpuinfo", "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: there is no /proc/couinfo on this machine?", __func__);
+        return;
+    }
+
+    l = strlen("processor");
+    numCPUs = 0;
+    while ((fscanf(fp, "%s", buf)) != EOF) {
+        if (strncmp(buf, "processor", l) == 0)
+            ++numCPUs;
+    }
+
+    fclose(fp);
+
+    if (numCPUs == 0) {
+        ls_syslog(LOG_ERR, "\
+%s: gudness no CPUs on this host, check your /proc/cpuinfo",  __func__);
+        return;
+    }
+
+    array_cpus = calloc(numCPUs, sizeof(struct infoCPUs));
+    for (i = 0; i < numCPUs; i++)
+        array_cpus[i].numCPU = i;
+
+    qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
+
+    ls_syslog(LOG_INFO, "%s: This host has %d CPUs", __func__);
+
+    init_ctrl_groups();
+}
+
+/* cpus_cmp()
+ *
+ * qsort() helper
+ */
+int
+cmp_cpus(const void *c1, const void *c2)
+{
+    const struct infoCPUs *cpu1;
+    const struct infoCPUs *cpu2;
+
+    cpu1 = c1;
+    cpu2 = c2;
+
+    if (cpu1->numTasks > cpu2->numTasks)
+        return 1;
+    if (cpu1->numTasks < cpu2->numTasks)
+        return -1;
+    return 0;
+}
+
+/* init_ctrl_groups()
+ */
+static int
+init_ctrl_groups(void)
+{
+    return 0;
 }
