@@ -34,6 +34,7 @@ static LS_LONG_INT submit_job(int);
 static int wait_for_job(LS_LONG_INT, int);
 static int kill_job(LS_LONG_INT, int);
 static int get_job_status(LS_LONG_INT);
+static struct queueInfoEnt *get_queues(int *);
 static void ssleep(int);
 
 /*
@@ -436,9 +437,34 @@ test11(int n)
     done(__func__);
     return 0;
 }
+
+/* test12()
+ *
+ * Switch a job between queues
+ *
+ */
 int
 test12(int n)
 {
+    struct queueInfoEnt *ent;
+    int num;
+
+    printf("I am %s number %d\n", __func__, n);
+    /* need at least 2 queues
+     */
+    ent = get_queues(&num);
+    if (ent == NULL) {
+        failed(__func__);
+        return -1;
+    }
+
+    if (num < 2) {
+        printf("Need at least 2 queues\n");
+        done(__func__);
+        return 0;
+    }
+
+    done(__func__);
     return 0;
 }
 int
@@ -655,4 +681,25 @@ ssleep(int s)
     }
 
     printf("\n");
+}
+
+static struct queueInfoEnt *
+get_queues(int *num)
+{
+    struct queueInfoEnt *ent;
+
+    if (lsb_init(NULL) < 0) {
+        lsb_perror("lsb_init()");
+        failed(__func__);
+        return NULL;
+    }
+
+    ent = lsb_queueinfo(NULL, num, NULL, NULL, 0);
+    if (ent == NULL) {
+        lsb_perror("lsb_queueinfo()");
+        failed(__func__);
+        return NULL;
+    }
+
+    return ent;
 }
