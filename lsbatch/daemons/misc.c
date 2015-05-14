@@ -846,7 +846,7 @@ lsbFreeResVal (struct resVal **resVal)
 }
 
 void
-doDaemonHang(const char *caller)
+daemonHang(void)
 {
     struct timeval timeval;
     bool_t hang;
@@ -855,7 +855,7 @@ doDaemonHang(const char *caller)
     while (hang) {
         timeval.tv_sec = 2;
         timeval.tv_usec = 0;
-        ls_syslog(LOG_ERR, "%s hanging in %s", __func__ , caller);
+        ls_syslog(LOG_ERR, "%s hanging... ", __func__);
         select(0, NULL, NULL, NULL, &timeval);
     }
 }

@@ -1,4 +1,5 @@
-/* $Id: sbd.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -262,8 +263,6 @@ extern void preExecFinish(struct jobCard *);
 extern void jobGone(struct jobCard *jp);
 extern int setJobEnv(struct jobCard *);
 extern int runQPost(struct jobCard *);
-extern int acctMapOk(struct jobCard *);
-extern int acctMapTo(struct jobCard *);
 extern int postJobSetup(struct jobCard *);
 extern void runUPre(struct jobCard *);
 extern int reniceJob(struct jobCard *);

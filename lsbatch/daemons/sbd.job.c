@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -86,22 +86,24 @@ static void writePidInfoFile(const struct jobCard *,
                              const struct jRusage *);
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
+static int acctMapTo(struct jobCard *jobCard);
 
 
-struct passwd *
-my_getpwnam(const char *name, char *caller)
+static struct passwd *
+__getpwnam__(const char *name)
 {
     int counter = 1;
     struct passwd * pw = NULL;
 
     while (((pw = getpwnam(name)) == NULL) && (counter < getpwnamRetry)) {
         if (logclass & LC_EXEC)
-            ls_syslog(LOG_DEBUG1, "%s: getpwnam(%s) failed %d times:%m",
-                              caller, name, counter);
-        counter ++;
+            ls_syslog(LOG_DEBUG1, "\
+%s: getpwnam(%s) failed %d times:%m", __func__, name, counter);
+
+        ++counter;
         millisleep_(1000);
     }
-    return (pw);
+    return pw;
 }
 
 static void
@@ -318,8 +320,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 %s: Got job start ok from mbatchd for job <%s>",
               fname, lsb_jobid2str(jobSpecsPtr->jobId));
 
-
-    if (acctMapTo(jobCardPtr) < 0)  {
+   if (acctMapTo(jobCardPtr) < 0)  {
         jobSetupStatus(JOB_STAT_PEND, PEND_NO_MAPPING, jobCardPtr);
     }
 
@@ -342,6 +343,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     if (!debug)
         nice(NICE_MIDDLE);
+
     nice(0);
 
     errno = 0;
@@ -362,13 +364,6 @@ execJob(struct jobCard *jobCardPtr, int chfd)
     if (setIds(jobCardPtr) < 0) {
         jobSetupStatus(JOB_STAT_PEND, PEND_JOB_EXEC_INIT, jobCardPtr);
     }
-
-#if 0
-    /* disabled for now...
-     */
-    if (acctMapOk(jobCardPtr) < 0)
-        jobSetupStatus(JOB_STAT_PEND, PEND_RMT_PERMISSION, jobCardPtr);
-#endif
 
     if ((fromHp = Gethostbyname_(jobSpecsPtr->fromHost)) == NULL) {
         jobSetupStatus(JOB_STAT_PEND, PEND_JOB_EXEC_INIT, jobCardPtr);
@@ -2976,218 +2971,32 @@ Error:
 
 }
 
-
-int
+/* acctMapTo()
+ *
+ * Validate the existence of the user on the execution host.
+ *
+ */
+static int
 acctMapTo(struct jobCard *jobCard)
 {
-    static char fname[]="acctMapTo";
-    char *sp = NULL, *myhostnm, clusorhost[MAX_LSB_NAME_LEN];
-    char  user[MAX_LSB_NAME_LEN], line[MAXLINELEN];
     struct passwd *pw;
-    int num, ccount, i = 0, found=FALSE;
-    char myhost, mycluster;
-    struct hostent *hp;
 
-    for (i = 0; i < jobCard->jobSpecs.numEnv; i++) {
-        if (logclass & LC_EXEC)
-            ls_syslog(LOG_DEBUG2,"%s: Job <%s>, env[%d]=%s" ,fname,
-                      lsb_jobid2str(jobCard->jobSpecs.jobId),
-                      i, jobCard->jobSpecs.env[i]);
-        if ((sp = strstr(jobCard->jobSpecs.env[i], "LSB_ACCT_MAP=")) == NULL)
-            continue;
-        break;
-    }
+    if ((pw =  __getpwnam__(jobCard->jobSpecs.userName)) == NULL) {
 
-    if ((myhostnm = ls_getmyhostname()) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, "acctMapTo", "ls_getmyhostname");
-        die(SLAVE_FATAL);
-    }
-
-    if (sp != NULL) {
-        if (strlen(sp) == 13) {
-            sp = NULL;
-        }
-    }
-    if (!sp) {
-        if (logclass & LC_EXEC) {
-            ls_syslog(LOG_DEBUG1, "%s: Job <%s>, no user level account mapping. Trying submission user", fname, lsb_jobid2str(jobCard->jobSpecs.jobId));
-        }
-        goto trySubUser;
-    }
-
-    sp += 13;
-    i = 0;
-    while (*sp != '\n' && *sp != '\0' && i < MAXLINELEN) {
-        line[i++] = *sp++;
-    }
-    line[i] = '\0';
-    sp = line;
-
-    if (logclass & LC_EXEC)
-        ls_syslog(LOG_DEBUG1,"%s: Job <%s>, using map <%s>",fname, lsb_jobid2str(jobCard->jobSpecs.jobId), line);
-
-    while((num = sscanf(sp, "%s %s%n", clusorhost, user, &ccount)) == 2) {
-        if (logclass & LC_EXEC)
-            ls_syslog(LOG_DEBUG2,"%s: checking <%s> <%s>",fname,clusorhost, user);
-        sp += ccount + 1;
-
-
-        if ( strcmp(clusterName, clusorhost) == 0
-             || strcmp("+", clusorhost) == 0) {
-            mycluster = 1;
-        }
-
-        if (!mycluster) {
-            if (((hp = Gethostbyname_(clusorhost)) != NULL)
-                && equalHost_(hp->h_name, myhostnm))
-                myhost = TRUE;
-            else
-                myhost = FALSE;
-        }
-
-        if (!mycluster && !myhost) {
-            if (logclass & LC_EXEC)
-                ls_syslog(LOG_DEBUG2,"%s: <%s> not local cluster or host name",fname,clusorhost);
-            continue;
-        }
-
-        if ((pw = getpwnam (user)) == (struct passwd *)NULL)  {
-            if (logclass & LC_EXEC)
-                ls_syslog(LOG_DEBUG2,"%s: Account <%s> non-existent",fname,user);
-            continue;
-        }
-
-        found = TRUE;
-        strcpy(jobCard->execUsername, user);
-        strcpy(jobCard->jobSpecs.execUsername, user);
-        jobCard->jobSpecs.execUid   = pw->pw_uid;
-        jobCard->execGid = pw->pw_gid;
-
-
-        if (myhost)
-            break;
-    }
-    if (found)
-        return 0;
-
-    if (logclass & LC_EXEC) {
-        ls_syslog(LOG_DEBUG1, "%s: No valid map found in user level account map for job <%s>. Trying submission user", fname, lsb_jobid2str(jobCard->jobSpecs.jobId));
-    }
-
-trySubUser:
-
-    if ((pw =  my_getpwnam(jobCard->jobSpecs.userName, "acctMapTo/trySubUser")) == NULL) {
-
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5441,
-                                         "%s: No valid user name found for job <%s>, userName <%s>. getpwnam() failed:%m"), /* catgets 5441 */
-                  fname,
+        ls_syslog(LOG_ERR, "\
+%s: No valid user name found for job <%s>, userName <%s>. getpwnam() failed:%m",
+                  __func__,
                   lsb_jobid2str(jobCard->jobSpecs.jobId),
                   jobCard->jobSpecs.userName);
-    }
-    return -1;
-
-}
-
-
-
-int
-acctMapOk(struct jobCard *jobCard)
-{
-    static char errMsg[MAXLINELEN];
-    static char hostfn[MAXFILENAMELEN];
-    static char msg[MAXLINELEN*2];
-    static char clusorhost[MAX_LSB_NAME_LEN];
-    static char user[MAX_LSB_NAME_LEN];
-    struct passwd *pw;
-    struct stat statbuf;
-    FILE *fp;
-    char dir[30];
-    char *line;
-    int num;
-
-
-    if ((!UID_MAPPED(jobCard))) {
-        return 0;
-    }
-
-    if ((pw = getpwuid(jobCard->jobSpecs.execUid)) == NULL) {
-        sprintf(errMsg, "\
-%s: Job %s getpwuid %d failed: %s", __func__,
-                lsb_jobid2str(jobCard->jobSpecs.jobId),
-                jobCard->jobSpecs.execUid,
-                strerror(errno));
-        sbdSyslog(LOG_ERR, errMsg);
         return -1;
     }
 
-    strcpy(hostfn, pw->pw_dir);
-    strcat(hostfn,"/.lsfhosts");
+    strcpy(jobCard->execUsername, jobCard->jobSpecs.userName);
+    jobCard->execGid  = pw->pw_gid;
+    jobCard->jobSpecs.execUid  = pw->pw_uid;
+    strcpy(jobCard->jobSpecs.execUsername, jobCard->jobSpecs.userName);
 
-    if ((fp  =fopen(hostfn, "r")) == NULL) {
-        sprintf(errMsg, "\
-%s: Job %s fopen() for file %s failed: %s", __func__,
-                lsb_jobid2str(jobCard->jobSpecs.jobId),
-                hostfn,
-                strerror(errno));
-
-        sbdSyslog(LOG_ERR, errMsg);
-        goto error;
-    }
-    if ((fstat(fileno(fp), &statbuf) < 0) ||
-        (statbuf.st_uid != 0 && statbuf.st_uid != pw->pw_uid) ||
-        (statbuf.st_mode & 066)) {
-        sprintf(errMsg, "\
-%s: Job %s file %s is not owned or writable only by the user, file uid %d, file mode %03o, userId %d", __func__,
-                lsb_jobid2str(jobCard->jobSpecs.jobId),
-                hostfn, (int)statbuf.st_uid,
-                (unsigned int)statbuf.st_mode,
-                (int)pw->pw_uid);
-        sbdSyslog(LOG_ERR, errMsg);
-        FCLOSEUP(&fp);
-        goto error;
-    }
-
-    while ((line=getNextLine_(fp, TRUE)) != NULL) {
-        struct hostent *hp;
-
-        num = sscanf(line,"%s %s %s",clusorhost, user, dir);
-        if (num < 2
-            || (num == 3
-                && (strcmp(dir, "send") == 0
-                    || strcmp(dir,"recv")  != 0)))
-            continue;
-
-        if (strcmp(user, "+") == 0
-            || strcmp (user, jobCard->jobSpecs.userName) == 0) {
-
-            if (strcmp (jobCard->jobSpecs.clusterName, clusorhost) == 0 ||
-                strcmp(clusorhost,"+") == 0)
-                return 0;
-            if ((hp = Gethostbyname_(clusorhost)) == NULL)
-                continue;
-            if (equalHost_(jobCard->jobSpecs.fromHost, hp->h_name))
-                return 0;
-        }
-    }
-
-    sprintf(errMsg, "\
-%s: Job %s no authorization for user name %s from cluster/host %s/%s in file %s", __func__, lsb_jobid2str(jobCard->jobSpecs.jobId),
-            jobCard->jobSpecs.userName, clusterName,
-            jobCard->jobSpecs.fromHost, hostfn);
-    sbdSyslog(LOG_ERR, errMsg);
-
-error:
-    sprintf (msg, "\
-We are unable to start your job %s %s.\nThe error is: %s",
-             lsb_jobid2str(jobCard->jobSpecs.jobId),
-             jobCard->jobSpecs.command, errMsg);
-
-    if (jobCard->jobSpecs.options & SUB_MAIL_USER)
-        merr_user (jobCard->jobSpecs.mailUser, jobCard->jobSpecs.fromHost, msg, "error");
-    else
-        merr_user (jobCard->jobSpecs.userName, jobCard->jobSpecs.fromHost, msg, "error");
-
-    return -1;
+    return 0;
 }
 
 static void
@@ -3454,12 +3263,6 @@ postJobSetup(struct jobCard *jp)
         putEnv ("LSFUSER", jp->execUsername);
         putEnv("USER", jp->execUsername);
         chuser(jp->jobSpecs.execUid);
-
-        if (acctMapOk(jp) < 0) {
-            ls_syslog(LOG_DEBUG, "%s: acctMapOk() failed for job <%s>",
-                      fname, lsb_jobid2str(jp->jobSpecs.jobId));
-            return -1;
-        }
 
         chuser(batchId);
     }

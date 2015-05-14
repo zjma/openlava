@@ -352,7 +352,7 @@ initPaths(struct jobCard *jp, struct hostent *fromHp, struct lenData *jf)
     char *sp;
     bool_t goodSpoolDir = FALSE;
 
-    (void) umask(jp->jobSpecs.umask);
+    umask(jp->jobSpecs.umask);
 
     if (logclass & LC_EXEC) {
         sprintf(errMsg,
