@@ -280,12 +280,6 @@ test7(int n)
 
     printf("I am %s number %d\n", __func__, n);
 
-    if (lsb_init("test7") < 0) {
-        lsb_perror("lsb_init()");
-        failed(__func__);
-        return -1;
-    }
-
     ent = lsb_queueinfo(NULL, &num, NULL, NULL, 0);
     if (ent == NULL) {
         lsb_perror("lsb_queueinfo()");
@@ -313,12 +307,6 @@ test8(int n)
     int i;
 
     printf("I am %s number %d\n", __func__, n);
-
-    if (lsb_init("test8") < 0) {
-        lsb_perror("lsb_init()");
-        failed(__func__);
-        return -1;
-    }
 
     /* This must be set to 0 otherwise a random
      * number will be intepreted by the library
@@ -517,12 +505,6 @@ submit_job(int runTime)
     struct submitReply reply;
     char cmd[128];
 
-    if (lsb_init(NULL) < 0) {
-        lsb_perror("lsb_init");
-        failed(__func__);
-        return -1;
-    }
-
     memset(&req, 0, sizeof(struct submit));
     req.options = 0;
     req.maxNumProcessors = 1;
@@ -572,12 +554,6 @@ wait_for_job(LS_LONG_INT jobID, int tm)
     int num;
     int cc;
 
-    if (lsb_init(NULL) < 0) {
-        lsb_perror(" lsb_init");
-        failed(__func__);
-        return -1;
-    }
-
     num = 0;
     while (1) {
 
@@ -618,11 +594,6 @@ Job <%s> of user <%s>, submitted from host <%s> still running...\n",
 static int
 kill_job(LS_LONG_INT jobID, int s)
 {
-     if (lsb_init(NULL) < 0) {
-        lsb_perror(" lsb_init");
-        failed(__func__);
-        return -1;
-    }
 
     if (lsb_signaljob(jobID, s) <0) {
         lsb_perror(" lsb_signaljob");
@@ -640,12 +611,6 @@ get_job_status(LS_LONG_INT jobID)
     struct jobInfoEnt *job;
     int more;
     int cc;
-
-    if (lsb_init(NULL) < 0) {
-        lsb_perror(" lsb_init");
-        failed(__func__);
-        return -1;
-    }
 
     cc = lsb_openjobinfo(jobID, NULL, "all", NULL, NULL, ALL_JOB);
     if (cc < 0) {
@@ -687,12 +652,6 @@ static struct queueInfoEnt *
 get_queues(int *num)
 {
     struct queueInfoEnt *ent;
-
-    if (lsb_init(NULL) < 0) {
-        lsb_perror("lsb_init()");
-        failed(__func__);
-        return NULL;
-    }
 
     ent = lsb_queueinfo(NULL, num, NULL, NULL, 0);
     if (ent == NULL) {

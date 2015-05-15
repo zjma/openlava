@@ -43,6 +43,11 @@ main(int argc, char **argv)
     gettimeofday(&tv, NULL);
     setbuf(stdout, NULL);
 
+    if (lsb_init(NULL) < 0) {
+        lsb_perror("lsb_init()");
+        return -1;
+    }
+
     ok = not_ok = 0;
     num = -1;
     if (argv[1]) {
