@@ -28,6 +28,7 @@ static void sinit(void);
 static void init_sstate(void);
 static void init_cpus(void);
 static int init_ctrl_groups(void);
+static int init_cpuset(void);
 static void processMsg(struct clientNode *);
 static void clientIO(struct Masks *);
 static void houseKeeping(void);
@@ -63,6 +64,9 @@ int    preemPeriod = DEF_PREEM_PERIOD;
 int    pgSuspIdleT = DEF_PG_SUSP_IT;
 int    rusageUpdateRate = DEF_RUSAGE_UPDATE_RATE;
 int    rusageUpdatePercent = DEF_RUSAGE_UPDATE_PERCENT;
+char   *cgroup_mount = NULL;
+bool_t cgroup_memory_mounted = false;
+bool_t cgroup_cpuset_mounted = false;
 
 int    jobTerminateInterval = DEF_JTERMINATE_INTERVAL;
 char   psbdJobSpoolDir[MAXPATHLEN];
@@ -212,11 +216,6 @@ main(int argc, char **argv)
                     argv[0], (int)geteuid());
             exit(1);
         }
-    } else {
-	if (getuid() == 0) {
-	    fprintf(stderr, "%s: root cannot run in debug mode\n", argv[0]);
-	    exit(1);
-	}
     }
 
     umask(022);
@@ -818,6 +817,7 @@ sinit(void)
     }
 
     init_cpus();
+    init_ctrl_groups();
 }
 
 static void
@@ -839,6 +839,11 @@ init_sstate (void)
     rusageUpdateRate = sbdPackage.rusageUpdateRate;
     rusageUpdatePercent = sbdPackage.rusageUpdatePercent;
     jobTerminateInterval = sbdPackage.jobTerminateInterval;
+    cgroup_mount = sbdPackage.cgroup_mount;
+
+    /* Hard code for now
+     */
+    cgroup_mount = strdup("/cgroup");
 
     for (i = 0; i < sbdPackage.nAdmins; i++)
 	FREEUP(sbdPackage.admins[i]);
@@ -1006,9 +1011,7 @@ init_cpus(void)
 
     qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
 
-    ls_syslog(LOG_INFO, "%s: This host has %d CPUs", __func__);
-
-    init_ctrl_groups();
+    ls_syslog(LOG_INFO, "%s: This host has %d CPUs", __func__, numCPUs);
 }
 
 /* cpus_cmp()
@@ -1036,5 +1039,116 @@ cmp_cpus(const void *c1, const void *c2)
 static int
 init_ctrl_groups(void)
 {
+    char memory[PATH_MAX];
+    char cpuset[PATH_MAX];
+    char buf[PATH_MAX];
+    int l;
+    int l2;
+    FILE *fp;
+
+    /* cgroup_cpuset_mounted and
+     * cgroup_memory_mounted are initialized
+     * to false.
+     */
+    if (cgroup_mount == NULL)
+        return -1;
+
+    sprintf(memory, "%s/memory", cgroup_mount);
+    sprintf(cpuset, "%s/cpuset", cgroup_mount);
+
+    cgroup_cpuset_mounted = cgroup_memory_mounted = false;
+
+
+    fp = fopen("/proc/self/mountinfo", "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to open /proc/self/mountinfo: %m", __func__);
+        return -1;
+    }
+
+    l = strlen(memory);
+    l2 = strlen(cpuset);
+
+    while ((fscanf(fp, "%*s%*s%*s%*s%s", buf)) != EOF) {
+        if (strncmp(buf, "/cgroup/cpuset", l) == 0)
+            cgroup_cpuset_mounted = true;
+        if (strncmp(buf, "/cgroup/memory", l2) == 0)
+            cgroup_memory_mounted = true;
+    }
+
+    fclose(fp);
+
+    if (! cgroup_cpuset_mounted)
+        ls_syslog(LOG_ERR, "\
+%s: /cgroup/cpuset does not appear to be mounted", __func__);
+    if (! cgroup_memory_mounted)
+        ls_syslog(LOG_ERR, "\
+%s: /cgroup/memory does not appear to be mounted", __func__);
+
+
+    if (cgroup_memory_mounted) {
+
+        sprintf(memory, "%s/memory/openlava", cgroup_mount);
+        if (mkdir(memory, 755 ) < 0 && errno != EEXIST) {
+            ls_syslog(LOG_ERR, "\
+%s: failed mkdir() %s: %m", __func__, memory);
+        }
+    }
+
+    if (cgroup_cpuset_mounted) {
+
+        sprintf(cpuset, "%s/cpuset/openlava", cgroup_mount);
+        if (mkdir(cpuset, 755 ) < 0 && errno != EEXIST) {
+            ls_syslog(LOG_ERR, "\
+%s: failed mkdir() %s: %m", __func__, cpuset);
+            cgroup_cpuset_mounted = 0;
+            return -1;
+        }
+
+        if (init_cpuset() < 0) {
+            cgroup_cpuset_mounted = 0;
+            return -1;
+        }
+
+    }
+
+    return 0;
+}
+
+/* init_cpuset()
+ *
+ * Some initialization work has to be done before
+ * attaching jobs to the cpuset.
+ */
+static int
+init_cpuset(void)
+{
+    FILE *fp;
+    char buf[PATH_MAX];
+
+    sprintf(buf, "%s/cpuset/openlava/cpuset.mems", cgroup_mount);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed open %s: %m", __func__, buf);
+        return -1;
+    }
+
+    fprintf(fp, "0\n");
+    fclose(fp);
+
+    sprintf(buf, "%s/cpuset/openlava/cpuset.cpus", cgroup_mount);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed open %s: %m", __func__, buf);
+        return -1;
+    }
+
+    fprintf(fp, "0-%d\n", numCPUs - 1);
+    fclose(fp);
+
     return 0;
 }

@@ -101,7 +101,7 @@ struct jobCard {
     char   *clusterName;
     int    servSocket;
     int    crossPlatforms;
-    char *spooledExec;
+    char   *spooledExec;
     char   postJobStarted;
     char   userJobSucc;
 };
@@ -167,6 +167,9 @@ struct infoCPUs {
     int numCPU;     /* CPU number */
     int numTasks;   /* number of tasks on this CPU */
 };
+extern bool_t cgroup_cpuset_mounted;
+extern bool_t cgroup_memory_mounted;
+extern char *cgroup_mount;
 
 /* Global array holding the information on all cpus.
  */
