@@ -16,7 +16,7 @@ lib.confmisc.c lib.misc.c lib.resctrl.c lib.syslog.c lib.xdrnio.c \
 lib.conn.c lib.host.c lib.nioback.c lib.reslog.c lib.table.c lib.xdrres.c \
 lib.control.c lib.i18n.c lib.nios.c lib.rex.c lib.term.c lib.xdrrf.c \
 lib.cwd.c lib.id.c lib.rf.c lib.tid.c usleep.c \
-lib.debug.c lib.info.c lib.pim.c lib.tty.c whathost.c \
+lib.debug.c lib.info.c lib.pim.c lib.tty.c \
 lib.dir.c lib.init.c lib.place.c lib.rtask.c lib.utmp.c \
 lib.eauth.c lib.initenv.c lib.rwait.c lib.wconf.c \
 lib.eligible.c lib.lim.c lib.queue.c lib.sig.c lib.words.c \

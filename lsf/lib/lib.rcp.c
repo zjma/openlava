@@ -264,14 +264,15 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
     char *hostlist[1];
     struct hostInfo *hostinfo;
     char  * szFileName1, * szFileName2;
+    struct stat stat_buf;
 
     if (logclass & (LC_FILE))
         ls_syslog(LOG_DEBUG,"equivalentXferFile(), ls_getmnthost() for '%s'",
                 szLocalFile);
 
     hostlist[0] = szRhost;
-    hostinfo = ls_gethostinfo((char *)NULL, (int *)NULL, (char **)hostlist, 1, 0);
-    if ( hostinfo == (struct hostInfo *)NULL ) {
+    hostinfo = ls_gethostinfo(NULL, NULL, hostlist, 1, 0);
+    if (hostinfo == NULL) {
 	return -1;
     } else {
 	if ( strcmp(hostinfo->hostType, "NTX86") == 0
@@ -280,10 +281,8 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
 	}
     }
 
-    if ((pszH = ls_getmnthost(szLocalFile)) == NULL) {
+    if (stat(szLocalFile, &stat_buf) < 0)
         return -1;
-    }
-
     strcpy(szHost1, pszH);
 
     if (logclass & (LC_FILE))
