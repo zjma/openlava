@@ -18,7 +18,7 @@ lib.control.c lib.i18n.c lib.nios.c lib.rex.c lib.term.c lib.xdrrf.c \
 lib.cwd.c lib.id.c lib.rf.c lib.tid.c usleep.c \
 lib.debug.c lib.info.c lib.pim.c lib.tty.c whathost.c \
 lib.dir.c lib.init.c lib.place.c lib.rtask.c lib.utmp.c \
-lib.eauth.c lib.initenv.c lib.priority.c lib.rwait.c lib.wconf.c \
+lib.eauth.c lib.initenv.c lib.rwait.c lib.wconf.c \
 lib.eligible.c lib.lim.c lib.queue.c lib.sig.c lib.words.c \
 lib.channel.h lib.h lib.pim.h  lib.rcp.h lib.table.h \
 lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \

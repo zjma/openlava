@@ -2627,27 +2627,6 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
 
     setEUid(0);
     setlimits(cmdmsg->lsfLimits);
-
-    if (! debug) {
-        int newPriority;
-        if (rexecPriority != 0) {
-
-            newPriority = rexecPriority;
-            if (cmdmsg->priority > rexecPriority) {
-                newPriority = cmdmsg->priority;
-            }
-        } else {
-
-            newPriority = cmdmsg->priority;
-        }
-
-        newPriority = newPriority - (-20);
-        if (ls_setpriority(newPriority) == FALSE) {
-            ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_MM, fname, "ls_setpriority",
-                      newPriority);
-        }
-    }
-
     setEUid(cli_ptr->ruid);
 
     umask(cmdmsg->filemask);
