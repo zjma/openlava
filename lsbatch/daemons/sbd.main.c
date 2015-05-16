@@ -26,9 +26,7 @@
 extern void do_sbdDebug(XDR *xdrs, int chfd, struct LSFHeader *reqHdr);
 static void sinit(void);
 static void init_sstate(void);
-static void init_cpus(void);
-static int init_ctrl_groups(void);
-static int init_cpuset(void);
+static void init_ctrl_groups(void);
 static void processMsg(struct clientNode *);
 static void clientIO(struct Masks *);
 static void houseKeeping(void);
@@ -64,7 +62,8 @@ int    preemPeriod = DEF_PREEM_PERIOD;
 int    pgSuspIdleT = DEF_PG_SUSP_IT;
 int    rusageUpdateRate = DEF_RUSAGE_UPDATE_RATE;
 int    rusageUpdatePercent = DEF_RUSAGE_UPDATE_PERCENT;
-char   *cgroup_mount = NULL;
+char   *cpuset_mount = NULL;
+char   *memory_mount = NULL;
 bool_t cgroup_memory_mounted = false;
 bool_t cgroup_cpuset_mounted = false;
 
@@ -734,8 +733,6 @@ sinit(void)
 
     Signal_(SIGALRM, SIG_IGN);
     Signal_(SIGHUP,  SIG_IGN);
-
-
     Signal_(SIGTERM, (SIGFUNCTYPE) die);
     Signal_(SIGINT,  (SIGFUNCTYPE) die);
     Signal_(SIGCHLD, (SIGFUNCTYPE) child_handler);
@@ -753,6 +750,7 @@ sinit(void)
         ls_syslog(LOG_ERR, "%s: mkListHeader() failed", __func__);
         die(SLAVE_FATAL);
     }
+
     if ((clusterName = ls_getclustername()) == NULL) {
         ls_syslog(LOG_ERR, "%s: ls_getclustername() failed: %M", __func__);
 	while ((clusterName = ls_getclustername()) == NULL)
@@ -816,12 +814,11 @@ sinit(void)
         die(SLAVE_FATAL);
     }
 
-    init_cpus();
     init_ctrl_groups();
 }
 
 static void
-init_sstate (void)
+init_sstate(void)
 {
     struct sbdPackage sbdPackage;
     int i;
@@ -839,11 +836,11 @@ init_sstate (void)
     rusageUpdateRate = sbdPackage.rusageUpdateRate;
     rusageUpdatePercent = sbdPackage.rusageUpdatePercent;
     jobTerminateInterval = sbdPackage.jobTerminateInterval;
-    cgroup_mount = sbdPackage.cgroup_mount;
 
     /* Hard code for now
      */
-    cgroup_mount = strdup("/cgroup");
+    cpuset_mount = strdup("/cgroup/cpuset");
+    memory_mount = strdup("/cgroup/memory");
 
     for (i = 0; i < sbdPackage.nAdmins; i++)
 	FREEUP(sbdPackage.admins[i]);
@@ -971,112 +968,28 @@ isLSFAdmin(struct lsfAuth *auth)
 
 }
 
-/* cpus_init()
- *
- * Initialize the cpus_array[] data structure
- */
-static void
-init_cpus(void)
-{
-    FILE *fp;
-    char buf[PATH_MAX];
-    int l;
-    int i;
-
-    fp = fopen("/proc/cpuinfo", "r");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: there is no /proc/couinfo on this machine?", __func__);
-        return;
-    }
-
-    l = strlen("processor");
-    numCPUs = 0;
-    while ((fscanf(fp, "%s", buf)) != EOF) {
-        if (strncmp(buf, "processor", l) == 0)
-            ++numCPUs;
-    }
-
-    fclose(fp);
-
-    if (numCPUs == 0) {
-        ls_syslog(LOG_ERR, "\
-%s: gudness no CPUs on this host, check your /proc/cpuinfo",  __func__);
-        return;
-    }
-
-    array_cpus = calloc(numCPUs, sizeof(struct infoCPUs));
-    for (i = 0; i < numCPUs; i++)
-        array_cpus[i].numCPU = i;
-
-    qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
-
-    ls_syslog(LOG_INFO, "%s: This host has %d CPUs", __func__, numCPUs);
-}
-
-/* cpus_cmp()
- *
- * qsort() helper
- */
-int
-cmp_cpus(const void *c1, const void *c2)
-{
-    const struct infoCPUs *cpu1;
-    const struct infoCPUs *cpu2;
-
-    cpu1 = c1;
-    cpu2 = c2;
-
-    if (cpu1->numTasks > cpu2->numTasks)
-        return 1;
-    if (cpu1->numTasks < cpu2->numTasks)
-        return -1;
-    return 0;
-}
-
 /* init_ctrl_groups()
  */
-static int
+static void
 init_ctrl_groups(void)
 {
-    char memory[PATH_MAX];
-    char cpuset[PATH_MAX];
-    char buf[PATH_MAX];
-    int l;
-    int l2;
-    FILE *fp;
+    numCPUs = ls_get_numcpus();
 
-    /* cgroup_cpuset_mounted and
-     * cgroup_memory_mounted are initialized
-     * to false.
-     */
-    if (cgroup_mount == NULL)
-        return -1;
+    if (numCPUs <= 0) {
+        ls_syslog(LOG_INFO, "\
+%s: ohmygosh no CPUs on this machine? is /proc/cpuinfo all right?",
+                  __func__);
+            return;
+    }
 
-    sprintf(memory, "%s/memory", cgroup_mount);
-    sprintf(cpuset, "%s/cpuset", cgroup_mount);
+    ls_syslog(LOG_INFO, "%s: This machine has %d CPUs", __func__, numCPUs);
 
     cgroup_cpuset_mounted = cgroup_memory_mounted = false;
 
-
-    fp = fopen("/proc/self/mountinfo", "r");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: failed to open /proc/self/mountinfo: %m", __func__);
-        return -1;
-    }
-
-    l = strlen(memory);
-    l2 = strlen(cpuset);
-
-    while ((fscanf(fp, "%*s%*s%*s%*s%s", buf)) != EOF) {
-        if (strncmp(buf, "/cgroup/cpuset", l) == 0)
-            cgroup_cpuset_mounted = true;
-        if (strncmp(buf, "/cgroup/memory", l2) == 0)
-            cgroup_memory_mounted = true;
-    }
-
-    fclose(fp);
+    if (ls_check_mount(cpuset_mount))
+        cgroup_cpuset_mounted = true;
+    if (ls_check_mount(memory_mount))
+        cgroup_memory_mounted = true;
 
     if (! cgroup_cpuset_mounted)
         ls_syslog(LOG_ERR, "\
@@ -1085,70 +998,19 @@ init_ctrl_groups(void)
         ls_syslog(LOG_ERR, "\
 %s: /cgroup/memory does not appear to be mounted", __func__);
 
-
     if (cgroup_memory_mounted) {
-
-        sprintf(memory, "%s/memory/openlava", cgroup_mount);
-        if (mkdir(memory, 755 ) < 0 && errno != EEXIST) {
+        if (! ls_init_memory(memory_mount)) {
             ls_syslog(LOG_ERR, "\
-%s: failed mkdir() %s: %m", __func__, memory);
+%s: failed in ls_init_memory() %m", __func__);
+            cgroup_memory_mounted = false;
         }
     }
 
     if (cgroup_cpuset_mounted) {
-
-        sprintf(cpuset, "%s/cpuset/openlava", cgroup_mount);
-        if (mkdir(cpuset, 755 ) < 0 && errno != EEXIST) {
+        if (! ls_init_cpuset(cpuset_mount)) {
             ls_syslog(LOG_ERR, "\
-%s: failed mkdir() %s: %m", __func__, cpuset);
-            cgroup_cpuset_mounted = 0;
-            return -1;
+%s: failed in ls_init_cpuset() %m", __func__);
+            cgroup_cpuset_mounted = false;
         }
-
-        if (init_cpuset() < 0) {
-            cgroup_cpuset_mounted = 0;
-            return -1;
-        }
-
     }
-
-    return 0;
-}
-
-/* init_cpuset()
- *
- * Some initialization work has to be done before
- * attaching jobs to the cpuset.
- */
-static int
-init_cpuset(void)
-{
-    FILE *fp;
-    char buf[PATH_MAX];
-
-    sprintf(buf, "%s/cpuset/openlava/cpuset.mems", cgroup_mount);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: failed open %s: %m", __func__, buf);
-        return -1;
-    }
-
-    fprintf(fp, "0\n");
-    fclose(fp);
-
-    sprintf(buf, "%s/cpuset/openlava/cpuset.cpus", cgroup_mount);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: failed open %s: %m", __func__, buf);
-        return -1;
-    }
-
-    fprintf(fp, "0-%d\n", numCPUs - 1);
-    fclose(fp);
-
-    return 0;
 }

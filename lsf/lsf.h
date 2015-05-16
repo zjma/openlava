@@ -582,6 +582,16 @@ struct hostEntryLog {
     char    *window;
 };
 
+/* This data structure keeps track of the
+ * CPUs on the machine where sbatchd is running
+ * and how many tasks are allocated vis cgroup
+ * to each CPU.
+ */
+struct infoCPUs {
+    int numCPU;     /* CPU number */
+    int numTasks;   /* number of tasks on this CPU */
+};
+
 /* openlava error numbers
  */
 #define LSE_NO_ERR              0
@@ -974,6 +984,14 @@ extern struct hostent *Gethostbyname_(char *);
 extern struct hostent *Gethostbyaddr_(in_addr_t *, socklen_t, int);
 extern void (*Signal_(int, void (*)(int)))(int);
 extern int expSyntax_(char *);
+
+/* Cgroups
+ */
+extern int ls_get_numcpus(void);
+struct infoCPUs *ls_get_cpu_info(int *);
+extern bool_t ls_check_mount(const char *);
+extern bool_t ls_init_cpuset(const char *);
+extern bool_t ls_init_memory(const char *);
 
 #ifndef __CYGWIN__
 extern int optind;

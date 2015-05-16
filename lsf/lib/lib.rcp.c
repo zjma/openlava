@@ -283,7 +283,6 @@ equivalentXferFile(lsRcpXfer *lsXfer, char *szLocalFile, char *szRemoteFile,
 
     if (stat(szLocalFile, &stat_buf) < 0)
         return -1;
-    strcpy(szHost1, pszH);
 
     if (logclass & (LC_FILE))
         ls_syslog(LOG_DEBUG,

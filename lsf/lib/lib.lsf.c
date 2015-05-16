@@ -17,13 +17,7 @@
  *
  */
 
-#include <stdlib.h>
-#include <unistd.h>
-#include "lib.h"
-#include <ctype.h>
-#include <arpa/inet.h>
-#include <math.h>
-#include <limits.h>
+#include "../lsf.h"
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -43,6 +37,8 @@
     } \
 }
 #endif
+
+static int cmp_cpus(const void *, const void *);
 
 void
 ls_ruunix2lsf(struct rusage *rusage, struct lsfRusage *lsfRusage)
@@ -215,8 +211,6 @@ cleanRusage (struct rusage *rusage)
     rusage->ru_nsignals = -1;
     rusage->ru_nvcsw = -1;
     rusage->ru_nivcsw = -1;
-
-
 }
 
 /* ls_time()
@@ -231,4 +225,156 @@ ls_time(time_t t)
     sprintf(buf, "%.15s ", ctime(&t) + 4);
 
     return buf;
+}
+
+/* Here come the functions related to cgroup management
+ */
+
+/* ls_get_cpu_info()
+ */
+struct infoCPUs *
+ls_get_cpu_info(int *n)
+{
+    struct infoCPUs *array_cpus;
+    int i;
+
+    *n = ls_get_numcpus();
+
+    if (*n == 0)
+        return NULL;
+
+    array_cpus = calloc(*n, sizeof(struct infoCPUs));
+    for (i = 0; i < *n; i++)
+        array_cpus[i].numCPU = i;
+
+    qsort(array_cpus, *n, sizeof(struct infoCPUs), cmp_cpus);
+
+    return array_cpus;
+}
+
+/* ls_get_numcpus()
+ */
+int
+ls_get_numcpus(void)
+{
+    int l;
+    int n;
+    FILE *fp;
+    char buf[128];
+
+    fp = fopen("/proc/cpuinfo", "r");
+    if (fp == NULL)
+        return -1;
+
+    l = strlen("processor");
+    n = 0;
+    while ((fscanf(fp, "%s", buf)) != EOF) {
+        if (strncmp(buf, "processor", l) == 0)
+            ++n;
+    }
+
+    if (n == 0)
+        return false;
+
+    fclose(fp);
+    return n;
+}
+
+/* ls_check_mount()
+ */
+bool_t
+ls_check_mount(const char *path)
+{
+    FILE *fp;
+    int l;
+    char buf[PATH_MAX];
+
+    if (path == NULL)
+        return false;
+
+    fp = fopen("/proc/self/mountinfo", "r");
+    if (fp == NULL) {
+        return false;
+    }
+
+    l = strlen(path);
+    while ((fscanf(fp, "%*s%*s%*s%*s%s", buf)) != EOF) {
+        if (strncmp(buf, path, l) == 0) {
+            fclose(fp);
+            return true;
+        }
+    }
+
+    fclose(fp);
+    return false;
+}
+
+/* ls_init_cpuset()
+ */
+bool_t
+ls_init_cpuset(const char *path)
+{
+    char buf[PATH_MAX];
+    FILE *fp;
+    int n;
+
+    sprintf(buf, "%s/openlava", path);
+    if (mkdir(path, 755 ) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/openlava/cpuset.mems", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    fprintf(fp, "0\n");
+    fclose(fp);
+
+    sprintf(buf, "%s/openlava/cpuset.cpus", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    n = ls_get_numcpus();
+
+    fprintf(fp, "0-%d\n", n - 1);
+    fclose(fp);
+
+    return true;
+}
+
+/* ls_init_memory()
+ */
+bool_t
+ls_init_memory(const char *path)
+{
+    char buf[PATH_MAX];
+
+    sprintf(buf, "%s/openlava", path);
+    if (mkdir(path, 755 ) < 0 && errno != EEXIST)
+        return false;
+
+    return true;
+}
+
+/* cpus_cmp()
+ *
+ * qsort() helper
+ */
+static int
+cmp_cpus(const void *c1, const void *c2)
+{
+    const struct infoCPUs *cpu1;
+    const struct infoCPUs *cpu2;
+
+    cpu1 = c1;
+    cpu2 = c2;
+
+    if (cpu1->numTasks > cpu2->numTasks)
+        return 1;
+    if (cpu1->numTasks < cpu2->numTasks)
+        return -1;
+    return 0;
 }

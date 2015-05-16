@@ -337,7 +337,6 @@ struct sbdPackage {
     int    jobTerminateInterval;
     int    nAdmins;
     char   **admins;
-    char   *cgroup_mount;
 };
 
 struct jobSig {
