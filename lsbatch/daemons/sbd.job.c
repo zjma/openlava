@@ -315,7 +315,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 %s: Got job start ok from mbatchd for job <%s>",
               fname, lsb_jobid2str(jobSpecsPtr->jobId));
 
-    if (acctMapTo(jobCardPtr) < 0)  {
+   if (acctMapTo(jobCardPtr) < 0)  {
         jobSetupStatus(JOB_STAT_PEND, PEND_NO_MAPPING, jobCardPtr);
     }
 
@@ -1360,6 +1360,7 @@ send_results(struct jobCard *jp)
     char *sp, *jobStarter;
     int errFileError = FALSE;
     char ofileHost[MAXFILENAMELEN];
+    struct stat ostat;
     int ofIdx;
     char rcpMsg[MSGSIZE];
     LS_WAIT_T w_status;
@@ -1813,7 +1814,7 @@ Exited with exit code %d", WEXITSTATUS(w_status));
         else
             if (jp->maxRusage.swap > 0)
                 fprintf(notif, "    %s   :%10d KB\n\n", "Max Swap",
-                        jp->maxRusage.swap);
+                    jp->maxRusage.swap);
         if (jp->maxRusage.npids > 0)
             fprintf(notif, "    %s  :%10d\n", "Max Processes",
                     jp->maxRusage.npids);
@@ -1852,7 +1853,7 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
         } else {
 
             if ((output == mail) && (mailSizeLimit > 0)
-                && (outfileStat.st_size > mailSizeLimit*1024)) {
+                 && (outfileStat.st_size > mailSizeLimit*1024)) {
 
                 fprintf(output, "\n");
                 fprintf(output, "Output is larger than limit of %ld KB set by administrator.\n", mailSizeLimit);
@@ -1949,109 +1950,131 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
 
 
     ofileHost[0] = '\0';
+    if (jp->jobSpecs.nxf && output != mail && notif == output) {
+        char *host;
+        fstat(fileno(output), &ostat);
+        if ((host = ls_getmnthost(jp->jobSpecs.outFile)))
+            strcpy(ofileHost, host);
+    }
     ofIdx = -1;
 
     for (i = 0; i < jp->jobSpecs.nxf; i++) {
+        struct stat st;
+        char *host;
 
-        if (rcpFile(&jp->jobSpecs, jp->jobSpecs.xf+i,
-                    jp->jobSpecs.fromHost, XF_OP_EXEC2SUB, rcpMsg) == 0) {
-            if (rcpMsg[0] != '\0') {
-                sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 451,
-                                            "Copy file <%s> to <%s> on submission host <%s>: %s.\n"), /* catgets 451 */
-                        jp->jobSpecs.xf[i].execFn,
-                        jp->jobSpecs.xf[i].subFn,
-                        jp->jobSpecs.fromHost,
-                        rcpMsg);
-                strcat(ps, line);
-                withps = TRUE;
+        if (jp->jobSpecs.xf[i].options & XF_OP_EXEC2SUB) {
+
+            if (ofileHost[0] != '\0' &&
+                ofIdx == -1  ) {
+                stat(jp->jobSpecs.xf[i].execFn, &st);
+                if ((host = ls_getmnthost(jp->jobSpecs.xf[i].execFn)) &&
+                    ostat.st_dev == st.st_dev &&
+                    ostat.st_ino == st.st_ino &&
+                    !strcmp(host, ofileHost)) {
+                    ofIdx = i;
+                    continue;
+                }
             }
-            continue;
+
+            if (rcpFile(&jp->jobSpecs, jp->jobSpecs.xf+i,
+                        jp->jobSpecs.fromHost, XF_OP_EXEC2SUB, rcpMsg) == 0) {
+                if (rcpMsg[0] != '\0') {
+                    sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 451,
+                                                "Copy file <%s> to <%s> on submission host <%s>: %s.\n"), /* catgets 451 */
+                            jp->jobSpecs.xf[i].execFn,
+                            jp->jobSpecs.xf[i].subFn,
+                            jp->jobSpecs.fromHost,
+                            rcpMsg);
+                    strcat(ps, line);
+                    withps = TRUE;
+                }
+                continue;
+            }
+
+            sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 452,
+                                        "Unable to copy file <%s> to <%s> on submission host <%s>: %s.\n"), /* catgets 452 */
+                    jp->jobSpecs.xf[i].execFn,
+                    jp->jobSpecs.xf[i].subFn,
+                    jp->jobSpecs.fromHost,
+                    rcpMsg);
+            hasError = -1;
+            strcat(ps, line);
+            withps = TRUE;
         }
-
-        sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 452,
-                                    "Unable to copy file <%s> to <%s> on submission host <%s>: %s.\n"), /* catgets 452 */
-                jp->jobSpecs.xf[i].execFn,
-                jp->jobSpecs.xf[i].subFn,
-                jp->jobSpecs.fromHost,
-                rcpMsg);
-        hasError = -1;
-        strcat(ps, line);
-        withps = TRUE;
     }
-}
-if (withps) {
-    if (notif == output)
-        fprintf(notif, "\n\nPS:\n\n%s\n", ps);
-    else
-        fprintf(notif, "\n%s\n", ps);
-}
-
-
-
-if( !errorOpeningOutputFile && (output==notif) &&  ferror(output) ) {
-
-    sprintf(line,
-            "\nWARNING: writing to output file %s failed for job %s\nError message: %s",
-            jp->jobSpecs.outFile,
-            lsb_jobid2str(jp->jobSpecs.jobId),
-            strerror(errno));
-
-    if (jp->jobSpecs.options & SUB_MAIL_USER) {
-        merr_user(jp->jobSpecs.mailUser,
-                  jp->jobSpecs.fromHost, line,
-                  I18N_Warning);
-    } else {
-        merr_user(jp->jobSpecs.userName,
-                  jp->jobSpecs.fromHost,
-                  line,
-                  I18N_Warning);
-    }
-}
-
-
-mclose(output);
-if (errout != output)
-    mclose(errout);
-if (notif != output)
-    mclose(notif);
-
-if (ofIdx >= 0) {
-    if (rcpFile(&jp->jobSpecs, jp->jobSpecs.xf+ofIdx,
-                jp->jobSpecs.fromHost, XF_OP_EXEC2SUB, rcpMsg) < 0) {
-        sprintf(ps, _i18n_msg_get(ls_catd , NL_SETN, 454,
-                                  "We are unable to copy your output file <%s> to <%s> on submission host <%s> for job <%s>: %s.\n\n"), /* catgets 454 */
-                jp->jobSpecs.xf[ofIdx].execFn,
-                jp->jobSpecs.xf[ofIdx].subFn,
-                jp->jobSpecs.fromHost,
-                lsb_jobid2str(jp->jobSpecs.jobId),
-                rcpMsg);
-        hasError = -1;
-
-        if (jp->jobSpecs.options & SUB_MAIL_USER)
-            merr_user(jp->jobSpecs.mailUser,
-                      jp->jobSpecs.fromHost, ps,
-                      I18N_Warning);
+    if (withps) {
+        if (notif == output)
+            fprintf(notif, "\n\nPS:\n\n%s\n", ps);
         else
+            fprintf(notif, "\n%s\n", ps);
+    }
+
+
+
+    if( !errorOpeningOutputFile && (output==notif) &&  ferror(output) ) {
+
+        sprintf(line,
+                "\nWARNING: writing to output file %s failed for job %s\nError message: %s",
+                jp->jobSpecs.outFile,
+                lsb_jobid2str(jp->jobSpecs.jobId),
+                strerror(errno));
+
+        if (jp->jobSpecs.options & SUB_MAIL_USER) {
+            merr_user(jp->jobSpecs.mailUser,
+                      jp->jobSpecs.fromHost, line,
+                      I18N_Warning);
+        } else {
             merr_user(jp->jobSpecs.userName,
                       jp->jobSpecs.fromHost,
-                      ps,
+                      line,
                       I18N_Warning);
-    } else {
-        if (rcpMsg[0] != '\0') {
-            sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 456,
-                                        "%s: Copy output file <%s> to <%s> on submission host <%s> for job <%s>: %s"), /* catgets 456 */
-                    fname,
+        }
+    }
+
+
+    mclose(output);
+    if (errout != output)
+        mclose(errout);
+    if (notif != output)
+        mclose(notif);
+
+    if (ofIdx >= 0) {
+        if (rcpFile(&jp->jobSpecs, jp->jobSpecs.xf+ofIdx,
+                    jp->jobSpecs.fromHost, XF_OP_EXEC2SUB, rcpMsg) < 0) {
+            sprintf(ps, _i18n_msg_get(ls_catd , NL_SETN, 454,
+                                      "We are unable to copy your output file <%s> to <%s> on submission host <%s> for job <%s>: %s.\n\n"), /* catgets 454 */
                     jp->jobSpecs.xf[ofIdx].execFn,
                     jp->jobSpecs.xf[ofIdx].subFn,
                     jp->jobSpecs.fromHost,
                     lsb_jobid2str(jp->jobSpecs.jobId),
                     rcpMsg);
-            sbdSyslog(LOG_DEBUG, line);
+            hasError = -1;
+
+            if (jp->jobSpecs.options & SUB_MAIL_USER)
+                merr_user(jp->jobSpecs.mailUser,
+                          jp->jobSpecs.fromHost, ps,
+                          I18N_Warning);
+            else
+                merr_user(jp->jobSpecs.userName,
+                          jp->jobSpecs.fromHost,
+                          ps,
+                          I18N_Warning);
+        } else {
+            if (rcpMsg[0] != '\0') {
+                sprintf(line, _i18n_msg_get(ls_catd , NL_SETN, 456,
+                                            "%s: Copy output file <%s> to <%s> on submission host <%s> for job <%s>: %s"), /* catgets 456 */
+                        fname,
+                        jp->jobSpecs.xf[ofIdx].execFn,
+                        jp->jobSpecs.xf[ofIdx].subFn,
+                        jp->jobSpecs.fromHost,
+                        lsb_jobid2str(jp->jobSpecs.jobId),
+                        rcpMsg);
+                sbdSyslog(LOG_DEBUG, line);
+            }
         }
     }
-}
 
-return (hasError);
+    return (hasError);
 }
 
 struct jobCard *
