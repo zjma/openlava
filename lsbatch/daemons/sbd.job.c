@@ -4097,10 +4097,33 @@ setJobArrayEnv(char *jobName, int jobIndex)
     }
 
 }
+
 /* setup_cpuset()
  */
 static int
 setup_cpuset(struct jobCard *jc)
 {
+    int cpu_index;
+    char *cnt;
+    int cc;
+
+    qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
+    cpu_index = array_cpus[0].numCPU;
+
+    cnt = ls_make_job_container(cpuset_mount,
+                                (int)jc->jobSpecs.jobId);
+    if (cnt == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed mkdir() %s: cannot use cgroup %m", __func__, cnt);
+        return -1;
+    }
+
+    cc = ls_bind2cpu(cnt, cpu_index, jc->jobSpecs.jobPid);
+    if (cc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed bind pid %d to cpu %d container %s", __func__,
+                  jc->jobSpecs.jobPid, cpu_index, cnt);
+    }
+
     return 0;
 }

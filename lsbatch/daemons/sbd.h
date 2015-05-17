@@ -46,7 +46,8 @@ enum {
 };
 
 struct jobCard {
-    struct jobCard *forw,*back;
+    struct jobCard *forw;
+    struct jobCard *back;
     gid_t     execGid;
     char      execUsername[MAX_LSB_NAME_LEN];
     int       notReported;

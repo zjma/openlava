@@ -992,6 +992,8 @@ struct infoCPUs *ls_get_cpu_info(int *);
 extern bool_t ls_check_mount(const char *);
 extern bool_t ls_init_cpuset(const char *);
 extern bool_t ls_init_memory(const char *);
+extern int ls_bind2cpu(const char *, int, int);
+extern char *ls_make_job_container(const char *, int);
 
 #ifndef __CYGWIN__
 extern int optind;

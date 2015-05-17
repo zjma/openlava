@@ -66,6 +66,7 @@ char   *cpuset_mount = NULL;
 char   *memory_mount = NULL;
 bool_t cgroup_memory_mounted = false;
 bool_t cgroup_cpuset_mounted = false;
+struct infoCPUs *array_cpus;
 
 int    jobTerminateInterval = DEF_JTERMINATE_INTERVAL;
 char   psbdJobSpoolDir[MAXPATHLEN];
@@ -973,7 +974,7 @@ isLSFAdmin(struct lsfAuth *auth)
 static void
 init_ctrl_groups(void)
 {
-    numCPUs = ls_get_numcpus();
+    array_cpus = ls_get_cpu_info(&numCPUs);
 
     if (numCPUs <= 0) {
         ls_syslog(LOG_INFO, "\
@@ -984,6 +985,7 @@ init_ctrl_groups(void)
 
     ls_syslog(LOG_INFO, "%s: This machine has %d CPUs", __func__, numCPUs);
 
+    qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
     cgroup_cpuset_mounted = cgroup_memory_mounted = false;
 
     if (ls_check_mount(cpuset_mount))
@@ -1013,4 +1015,24 @@ init_ctrl_groups(void)
             cgroup_cpuset_mounted = false;
         }
     }
+}
+
+/* cpus_cmp()
+ *
+ * qsort() helper
+ */
+int
+cmp_cpus(const void *c1, const void *c2)
+{
+    const struct infoCPUs *cpu1;
+    const struct infoCPUs *cpu2;
+
+    cpu1 = c1;
+    cpu2 = c2;
+
+    if (cpu1->numTasks > cpu2->numTasks)
+        return 1;
+    if (cpu1->numTasks < cpu2->numTasks)
+        return -1;
+    return 0;
 }

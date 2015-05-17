@@ -38,8 +38,6 @@
 }
 #endif
 
-static int cmp_cpus(const void *, const void *);
-
 void
 ls_ruunix2lsf(struct rusage *rusage, struct lsfRusage *lsfRusage)
 {
@@ -247,8 +245,6 @@ ls_get_cpu_info(int *n)
     for (i = 0; i < *n; i++)
         array_cpus[i].numCPU = i;
 
-    qsort(array_cpus, *n, sizeof(struct infoCPUs), cmp_cpus);
-
     return array_cpus;
 }
 
@@ -319,7 +315,7 @@ ls_init_cpuset(const char *path)
     int n;
 
     sprintf(buf, "%s/openlava", path);
-    if (mkdir(path, 755 ) < 0 && errno != EEXIST)
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
         return false;
 
     sprintf(buf, "%s/openlava/cpuset.mems", path);
@@ -353,28 +349,73 @@ ls_init_memory(const char *path)
     char buf[PATH_MAX];
 
     sprintf(buf, "%s/openlava", path);
-    if (mkdir(path, 755 ) < 0 && errno != EEXIST)
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
         return false;
 
     return true;
 }
 
-/* cpus_cmp()
- *
- * qsort() helper
+/* ls_make_job_container()
  */
-static int
-cmp_cpus(const void *c1, const void *c2)
+char *
+ls_make_job_container(const char *path, int job_id)
 {
-    const struct infoCPUs *cpu1;
-    const struct infoCPUs *cpu2;
+    static char buf[PATH_MAX];
 
-    cpu1 = c1;
-    cpu2 = c2;
+    sprintf(buf, "%s/openlava/%d", path, job_id);
 
-    if (cpu1->numTasks > cpu2->numTasks)
-        return 1;
-    if (cpu1->numTasks < cpu2->numTasks)
+    if (mkdir(buf, 755) < 0) {
+        return NULL;
+    }
+
+    return buf;
+}
+
+/* ls_bind2cpus()
+ *
+ * The order in which these operations are performed
+ * is important. The tasks file has to be written
+ * at last otherwise it will just not work. At least
+ * on CentOS 6.
+ */
+int
+ls_bind2cpu(const char *path, int cpu, int pid)
+{
+    FILE *fp;
+    static char buf[PATH_MAX];
+
+    sprintf(buf, "%s/cpuset.cpus", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
         return -1;
+
+    if (fprintf(fp, "%d\n", cpu) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    sprintf(buf, "%s/cpuset.mems", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    fprintf(fp, "0\n");
+    fclose(fp);
+
+    sprintf(buf, "%s/tasks", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    if (fprintf(fp, "%d\n", pid) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
     return 0;
 }

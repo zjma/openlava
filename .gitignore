@@ -42,3 +42,4 @@ stest
 treetest
 compile
 examples/docker/docker_starter
+tests/tests
