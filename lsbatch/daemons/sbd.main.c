@@ -985,6 +985,10 @@ init_ctrl_groups(void)
 
     ls_syslog(LOG_INFO, "%s: This machine has %d CPUs", __func__, numCPUs);
 
+    if (cpuset_mount == NULL
+        && memory_mount == NULL)
+        return;
+
     qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
     cgroup_cpuset_mounted = cgroup_memory_mounted = false;
 
@@ -993,10 +997,10 @@ init_ctrl_groups(void)
     if (ls_check_mount(memory_mount))
         cgroup_memory_mounted = true;
 
-    if (! cgroup_cpuset_mounted)
+    if (cpuset_mount && !cgroup_cpuset_mounted)
         ls_syslog(LOG_ERR, "\
 %s: /cgroup/cpuset does not appear to be mounted", __func__);
-    if (! cgroup_memory_mounted)
+    if (memory_mount && !cgroup_memory_mounted)
         ls_syslog(LOG_ERR, "\
 %s: /cgroup/memory does not appear to be mounted", __func__);
 

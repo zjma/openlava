@@ -349,7 +349,7 @@ ls_init_memory(const char *path)
     char buf[PATH_MAX];
 
     sprintf(buf, "%s/openlava", path);
-    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+    if (mkdir(buf, 755) < 0 && errno != EEXIST)
         return false;
 
     return true;
