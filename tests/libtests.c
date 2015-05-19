@@ -526,6 +526,7 @@ submit_job(int runTime)
     req.command = cmd;
     req.nxf = 0;
     req.delOptions = 0;
+    req.options |= SUB_OUT_FILE;
     req.outFile = "/dev/null";
 
     jobId = lsb_submit(&req, &reply);
