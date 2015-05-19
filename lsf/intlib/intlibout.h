@@ -25,6 +25,7 @@
 #include "lsftcl.h"
 #include "bitset.h"
 #include "listset.h"
+#include "link.h"
 #include <ctype.h>
 
 #define MINPASSWDLEN_LS		(3)

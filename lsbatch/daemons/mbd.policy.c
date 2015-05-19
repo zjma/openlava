@@ -1605,7 +1605,7 @@ ckResReserve(struct hData *hD, struct resVal *resValPtr, int *resource,
         return canUse;
 
     for (jj = 0; jj < GET_INTNUM (allLsInfo->nRes); jj++)
-        rusage += resValPtr->rusgBitMaps[jj];
+        rusage += resValPtr->rusage_bit_map[jj];
 
     if (rusage == 0) {
         return canUse;
@@ -1617,7 +1617,7 @@ ckResReserve(struct hData *hD, struct resVal *resValPtr, int *resource,
         if (NOT_NUMERIC(allLsInfo->resTable[jj]))
             continue;
 
-        TEST_BIT(jj, resValPtr->rusgBitMaps, isSet);
+        TEST_BIT(jj, resValPtr->rusage_bit_map, isSet);
         if (isSet == 0) {
 
             continue;

@@ -180,12 +180,12 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
                           subReq->schedHostType);
                 return LSBE_BAD_SUBMISSION_HOST;
             }
-            strcpy (hostType, subReq->schedHostType);
+            strcpy(hostType, subReq->schedHostType);
         } else
-            strcpy (hostType, hinfo->hostType);
+            strcpy(hostType, hinfo->hostType);
 
     } else {
-        strcpy (hostType, hData->hostType);
+        strcpy(hostType, hData->hostType);
     }
 
     subReq->options2 &= ~(SUB2_HOST_NT | SUB2_HOST_UX);
@@ -197,7 +197,7 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
 
     newjob = initJData((struct jShared *) my_calloc(1, sizeof(struct jShared), "newJob"));
     newjob->jobId = nextId;
-    returnErr = checkJobParams (newjob, subReq, Reply, auth);
+    returnErr = checkJobParams(newjob, subReq, Reply, auth);
 
     if (returnErr == LSBE_NO_ERROR) {
 
@@ -5963,11 +5963,11 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
     }
 
     if (subReq->options & SUB_HOST) {
-        returnErr = chkAskedHosts (subReq->numAskedHosts,
-                                   subReq->askedHosts,
-                                   subReq->numProcessors, &numAskedHosts,
-                                   &askedHosts, &Reply->badReqIndx,
-                                   &askedOthPrio, 1);
+        returnErr = chkAskedHosts(subReq->numAskedHosts,
+                                  subReq->askedHosts,
+                                  subReq->numProcessors, &numAskedHosts,
+                                  &askedHosts, &Reply->badReqIndx,
+                                  &askedOthPrio, 1);
 
         if (returnErr != LSBE_NO_ERROR) {
             return (returnErr);
@@ -5976,7 +5976,7 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
         }
     }
 
-    now = time(0);
+    now = time(NULL);
     if (subReq->termTime && (now > subReq->termTime)) {
         FREEUP (askedHosts);
         return(LSBE_BAD_TIME);
@@ -6163,9 +6163,7 @@ checkResReq(char *resReq, int checkOptions)
     struct resVal *resValPtr = NULL;
     struct tclHostData tclHostData;
 
-    resValPtr = (struct resVal *)my_malloc (sizeof (struct resVal),
-                                            "checkResReq");
-    initResVal (resValPtr);
+    resValPtr = my_calloc(1, sizeof (struct resVal), __func__);
 
     if (checkOptions & USE_LOCAL)
         options = (PR_ALL | PR_BATCH | PR_DEFFROMTYPE);
@@ -6175,7 +6173,7 @@ checkResReq(char *resReq, int checkOptions)
     if (checkOptions & PARSE_XOR)
         options |= PR_XOR;
 
-    if (parseResReq (resReq, resValPtr, allLsInfo, options) != PARSE_OK) {
+    if (parseResReq(resReq, resValPtr, allLsInfo, options) != PARSE_OK) {
         goto error;
     }
 
@@ -6207,7 +6205,7 @@ checkResReq(char *resReq, int checkOptions)
     for (jj = 0; jj < allLsInfo->nRes; jj++) {
         if (NOT_NUMERIC(allLsInfo->resTable[jj]))
             continue;
-        TEST_BIT(jj, resValPtr->rusgBitMaps, isSet);
+        TEST_BIT(jj, resValPtr->rusage_bit_map, isSet);
         if (isSet == 0)
             continue;
         if (jj > allLsInfo->numIndx
@@ -7166,8 +7164,8 @@ rUsagesOk (struct resVal *jobResVal, struct resVal *queueResVal)
     }
 
     for (ldx = 0; ldx < allLsInfo->numIndx; ldx++) {
-        TEST_BIT(ldx, jobResVal->rusgBitMaps, jobBitSet);
-        TEST_BIT(ldx, queueResVal->rusgBitMaps, queueBitSet);
+        TEST_BIT(ldx, jobResVal->rusage_bit_map, jobBitSet);
+        TEST_BIT(ldx, queueResVal->rusage_bit_map, queueBitSet);
         if (!jobBitSet || !queueBitSet)
             continue;
 
@@ -7281,7 +7279,7 @@ shouldLockJob (struct jData *jData, int newStatus)
 }
 
 static void
-getReserveParams (struct resVal *resValPtr, int *duration, int *rusgBitMaps)
+getReserveParams (struct resVal *resValPtr, int *duration, int *rusage_bit_map)
 {
     int i;
 
@@ -7290,7 +7288,7 @@ getReserveParams (struct resVal *resValPtr, int *duration, int *rusgBitMaps)
             && resValPtr->duration < *duration)
             *duration = resValPtr->duration;
         for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++)
-            *rusgBitMaps += resValPtr->rusgBitMaps[i];
+            *rusage_bit_map += resValPtr->rusage_bit_map[i];
     }
 }
 
@@ -8322,7 +8320,7 @@ rusgMatch(struct resVal* resValPtr, const char *resName)
         if (NOT_NUMERIC(allLsInfo->resTable[ldx])) {
             continue;
         }
-        TEST_BIT(ldx, resValPtr->rusgBitMaps, isSet);
+        TEST_BIT(ldx, resValPtr->rusage_bit_map, isSet);
         if (isSet == 0) {
 
             continue;

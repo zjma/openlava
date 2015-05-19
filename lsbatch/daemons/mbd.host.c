@@ -1275,14 +1275,14 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
     float jackValue, orgnalLoad, duration, decay;
     struct  resVal *resValPtr;
     struct resourceInstance *instance;
-    static int *rusgBitMaps = NULL;
+    static int *rusage_bit_map = NULL;
     int adjForPreemptableResource = FALSE;
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
 
-    if (rusgBitMaps == NULL) {
-        rusgBitMaps = (int *) my_malloc
+    if (rusage_bit_map == NULL) {
+        rusage_bit_map = (int *) my_malloc
             (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
     }
 
@@ -1295,8 +1295,8 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
 
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
-        resAssign += resValPtr->rusgBitMaps[i];
-        rusgBitMaps[i] = 0;
+        resAssign += resValPtr->rusage_bit_map[i];
+        rusage_bit_map[i] = 0;
     }
     if (resAssign == 0)
         return;
@@ -1326,7 +1326,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
             if (NOT_NUMERIC(allLsInfo->resTable[ldx]))
                 continue;
 
-            TEST_BIT(ldx, resValPtr->rusgBitMaps, isSet);
+            TEST_BIT(ldx, resValPtr->rusage_bit_map, isSet);
             if (isSet == 0)
                 continue;
 
@@ -1389,12 +1389,12 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                     continue;
                 } else {
 
-                    TEST_BIT (ldx, rusgBitMaps, isSet)
+                    TEST_BIT (ldx, rusage_bit_map, isSet)
                         if ((isSet == TRUE) && !slotResourceReserve) {
 
                             continue;
                         }
-                    SET_BIT (ldx, rusgBitMaps);
+                    SET_BIT (ldx, rusage_bit_map);
                 }
             }
 
@@ -1520,7 +1520,7 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
     }
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
-        if (jobResVal->rusgBitMaps[i] == qResVal->rusgBitMaps[i])
+        if (jobResVal->rusage_bit_map[i] == qResVal->rusage_bit_map[i])
             continue;
         diffrent = TRUE;
     }
@@ -1529,7 +1529,7 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
 
     if (first == TRUE) {
         resVal.val = (float *) my_malloc(allLsInfo->nRes * sizeof(float), fname);
-        resVal.rusgBitMaps = (int *)
+        resVal.rusage_bit_map = (int *)
             my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
         first = FALSE;
     }
@@ -1538,7 +1538,7 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
     for (i = 0; i < allLsInfo->nRes; i++)
         resVal.val[i] = INFINIT_FLOAT;
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++)
-        resVal.rusgBitMaps[i] = 0;
+        resVal.rusage_bit_map[i] = 0;
     resVal.duration = INFINIT_INT;
     resVal.decay = INFINIT_FLOAT;
 
@@ -1548,13 +1548,13 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
         if (NOT_NUMERIC(allLsInfo->resTable[i]))
             continue;
 
-        TEST_BIT(i, jobResVal->rusgBitMaps, jobSet);
-        TEST_BIT(i, qResVal->rusgBitMaps, queueSet);
+        TEST_BIT(i, jobResVal->rusage_bit_map, jobSet);
+        TEST_BIT(i, qResVal->rusage_bit_map, queueSet);
         if (jobSet == 0 && queueSet == 0)
 
             continue;
         else {
-            SET_BIT (i, resVal.rusgBitMaps);
+            SET_BIT (i, resVal.rusage_bit_map);
             if (jobSet == 0 && queueSet != 0) {
                 resVal.val[i] = qResVal->val[i];
                 continue;
@@ -1644,7 +1644,7 @@ hasResReserve(struct resVal *resVal)
         return false;
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
-        if (resVal->rusgBitMaps[i] != 0)
+        if (resVal->rusage_bit_map[i] != 0)
             return true;
 
     }

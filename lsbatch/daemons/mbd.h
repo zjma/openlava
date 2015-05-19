@@ -186,9 +186,9 @@ extern struct objPRMO *pRMOPtr;
 #define GET_RES_RSRC_USAGE(resn, val, jResValPtr, qResValPtr) { \
       int jobSet = FALSE, queueSet = FALSE;                     \
       if (jResValPtr)                                           \
-          TEST_BIT(resn, jResValPtr->rusgBitMaps, jobSet);      \
+          TEST_BIT(resn, jResValPtr->rusage_bit_map, jobSet);      \
       if (qResValPtr)                                           \
-          TEST_BIT(resn, qResValPtr->rusgBitMaps, queueSet);    \
+          TEST_BIT(resn, qResValPtr->rusage_bit_map, queueSet);    \
       if (jobSet == 0 && queueSet == 0) {                       \
           val = -1.0;                                           \
       } else if (jobSet == 0 && queueSet != 0) {                \

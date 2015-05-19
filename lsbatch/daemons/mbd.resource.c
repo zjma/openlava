@@ -434,15 +434,15 @@ updSharedResourceByRUNJob(const struct jData* jp)
     float                      decay;
     struct resVal              *resValPtr;
     struct resourceInstance    *instance;
-    static int                 *rusgBitMaps =  NULL;
+    static int                 *rusage_bit_map =  NULL;
     int adjForPreemptableResource = FALSE;
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "\
 %s: Updating shared resource by job=%s", fname, lsb_jobid2str(jp->jobId));
 
-    if (rusgBitMaps == NULL) {
-        rusgBitMaps = (int *) my_malloc
+    if (rusage_bit_map == NULL) {
+        rusage_bit_map = (int *) my_malloc
 	    (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
     }
 
@@ -456,8 +456,8 @@ updSharedResourceByRUNJob(const struct jData* jp)
     }
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
-	resAssign += resValPtr->rusgBitMaps[i];
-	rusgBitMaps[i] = 0;
+	resAssign += resValPtr->rusage_bit_map[i];
+	rusage_bit_map[i] = 0;
     }
 
     if (resAssign == 0)
@@ -492,7 +492,7 @@ updSharedResourceByRUNJob(const struct jData* jp)
 	    if (NOT_NUMERIC(allLsInfo->resTable[ldx]))
 		continue;
 
-            TEST_BIT(ldx, resValPtr->rusgBitMaps, isSet);
+            TEST_BIT(ldx, resValPtr->rusage_bit_map, isSet);
 	    if (isSet == 0)
 	        continue;
 
@@ -540,7 +540,7 @@ adjustLoadValue:
 		continue;
 	    } else {
 
-		TEST_BIT (ldx, rusgBitMaps, isSet)
+		TEST_BIT (ldx, rusage_bit_map, isSet)
                     if (isSet == TRUE)
                         continue;
 	    }
@@ -590,7 +590,7 @@ adjustLoadValue:
 	    FREEUP (instance->value);
 	    instance->value = safeSave (loadString);
 
-	    SET_BIT (ldx, rusgBitMaps);
+	    SET_BIT (ldx, rusage_bit_map);
 
 	    if (logclass & LC_SCHED)
 		ls_syslog(LOG_DEBUG,"\
@@ -1065,7 +1065,7 @@ isReservePreemptResource(struct  resVal *resValPtr)
 
     FORALL_PRMPT_RSRCS(resn) {
 	int valSet = FALSE;
-	TEST_BIT(resn, resValPtr->rusgBitMaps, valSet);
+	TEST_BIT(resn, resValPtr->rusage_bit_map, valSet);
 	if ((valSet != 0) && (resValPtr->val[resn] > 0.0)) {
             return(1);
 	}

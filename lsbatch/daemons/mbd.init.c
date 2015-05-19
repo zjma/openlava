@@ -1212,7 +1212,7 @@ freeQData(struct qData *qp, int delete)
     FREEUP(qp->requeueEValues);
     FREEUP(qp->resReq);
     if (qp->resValPtr) {
-        FREEUP(qp->resValPtr->rusgBitMaps);
+        FREEUP(qp->resValPtr->rusage_bit_map);
         FREEUP(qp->resValPtr);
     }
     if (qp->uAcct)

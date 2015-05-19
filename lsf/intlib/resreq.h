@@ -60,7 +60,7 @@ struct resVal {
     float *val;
     int  nindex;
     int *indicies;
-    int  *rusgBitMaps;
+    int  *rusage_bit_map;
     int  duration;
     float decay;
     int  numHosts;
@@ -69,6 +69,12 @@ struct resVal {
     int  options;
     int  selectStrSize;
     char **xorExprs;
+    struct rusage_or *rusage_or;
+};
+
+struct rusage_or {
+    int *rusage_bit_map;
+    float *val;
 };
 
 extern int getValPair(char **resReq, int *val1, int *val2);
