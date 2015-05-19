@@ -37,7 +37,7 @@ extern int lsbStdoutDirect;
 static void shouldCopyFromLsbatch(struct jobCard *jp,
                                   int *cpyStdoutFromLsbatch,
                                   int *cpyStderrFromLsbatch );
-static int isLink(char * filename);
+static int isLink(char *filename);
 
 static void getJobTmpDir( char * tmpDirName, struct jobCard *jobCardPtr );
 static void createJobTmpDir(struct jobCard *jobCardPtr);
@@ -87,7 +87,8 @@ static void writePidInfoFile(const struct jobCard *,
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
-static int setup_cpuset(struct jobCard *);
+static int setup_cpuset_cgroup(struct jobCard *);
+static int setup_memory_cgroup(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -159,7 +160,9 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     }
 
     jobSpecsPtr->jobPid = pid;
-    setup_cpuset(jobCardPtr);
+
+    setup_cpuset_cgroup(jobCardPtr);
+    setup_memory_cgroup(jobCardPtr);
 
     if (jobSpecsPtr->options & SUB_RESTART)
         jobSpecsPtr->jobPGid = 0;
@@ -4098,10 +4101,10 @@ setJobArrayEnv(char *jobName, int jobIndex)
 
 }
 
-/* setup_cpuset()
+/* setup_cpuset_cgroup()
  */
 static int
-setup_cpuset(struct jobCard *jc)
+setup_cpuset_cgroup(struct jobCard *jc)
 {
     int cpu_index;
     char *cnt;
@@ -4114,7 +4117,7 @@ setup_cpuset(struct jobCard *jc)
                                 (int)jc->jobSpecs.jobId);
     if (cnt == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: failed mkdir() %s: cannot use cgroup %m", __func__, cnt);
+%s: failed mkdir() %s: cannot use cpuset cgroup %m", __func__, cnt);
         return -1;
     }
 
@@ -4123,6 +4126,34 @@ setup_cpuset(struct jobCard *jc)
         ls_syslog(LOG_ERR, "\
 %s: failed bind pid %d to cpu %d container %s", __func__,
                   jc->jobSpecs.jobPid, cpu_index, cnt);
+    }
+
+    return 0;
+}
+
+static int
+setup_memory_cgroup(struct jobCard *jc)
+{
+    char *cnt;
+    int mem_limit;
+    int cc;
+
+    mem_limit = jc->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curl;
+    if (mem_limit == INFINIT_INT || mem_limit == -1)
+        return 0;
+
+    cnt = ls_make_job_container(memory_mount,
+                                (int)jc->jobSpecs.jobId);
+    if (cnt == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed mkdir() %s: cannot use memory cgroup %m", __func__, cnt);
+        return -1;
+    }
+
+    cc = ls_constrain_mem(cnt, mem_limit, jc->jobSpecs.jobPid);
+    if (cc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed setting memlimit %d in %s", __func__, mem_limit, cnt);
     }
 
     return 0;

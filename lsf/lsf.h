@@ -242,7 +242,11 @@ struct connectEnt {
     int csock[2];
 };
 
+/* 32 bits for an integer
+ */
 #define INTEGER_BITS   32
+/* Get the number of integers based on i
+ */
 #define GET_INTNUM(i) ((i)/INTEGER_BITS + 1)
 
 #define LIM_UNAVAIL  0x00010000
@@ -994,6 +998,9 @@ extern bool_t ls_init_cpuset(const char *);
 extern bool_t ls_init_memory(const char *);
 extern int ls_bind2cpu(const char *, int, int);
 extern char *ls_make_job_container(const char *, int);
+extern int ls_constrain_mem(const char *, int, int);
+extern int ls_rm_mem_container(const char *, int);
+extern int ls_rm_cpuset_container(const char *, int);
 
 #ifndef __CYGWIN__
 extern int optind;

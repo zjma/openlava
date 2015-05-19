@@ -5984,11 +5984,11 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
     job->userName = safeSave (auth->lsfUserName);
     job->userId = auth->uid;
     job->jFlags = jFlag;
-    memcpy((char *)&job->shared->jobBill, (char *)subReq, sizeof(struct submitReq));
+    memcpy(&job->shared->jobBill, subReq, sizeof(struct submitReq));
 
     if ((subReq->options & SUB_HOST) && numAskedHosts) {
-        job->askedPtr = (struct askedHost *) my_calloc (numAskedHosts,
-                                                        sizeof(struct askedHost), fname);
+        job->askedPtr = my_calloc(numAskedHosts,
+                                  sizeof(struct askedHost), fname);
         for (i = 0; i < numAskedHosts; i++) {
             job->askedPtr[i].hData = askedHosts[i].hData;
             job->askedPtr[i].priority = askedHosts[i].priority;
@@ -6007,9 +6007,11 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
 
         useLocal = useLocal ? USE_LOCAL : 0;
         job->shared->resValPtr = checkResReq(subReq->resReq,
-                                             useLocal | CHK_TCL_SYNTAX | PARSE_XOR);
+                                             useLocal
+                                             | CHK_TCL_SYNTAX
+                                             | PARSE_XOR);
 
-        if( job->shared->resValPtr == NULL ) {
+        if (job->shared->resValPtr == NULL) {
             return (LSBE_BAD_RESREQ);
         }
     }

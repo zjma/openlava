@@ -402,7 +402,10 @@ ls_bind2cpu(const char *path, int cpu, int pid)
     if (fp == NULL)
         return -1;
 
-    fprintf(fp, "0\n");
+    if (fprintf(fp, "0\n") < 0) {
+        fclose(fp);
+        return -1;
+    }
     fclose(fp);
 
     sprintf(buf, "%s/tasks", path);
@@ -417,5 +420,57 @@ ls_bind2cpu(const char *path, int cpu, int pid)
     }
     fclose(fp);
 
+    return 0;
+}
+
+/* ls_constrain_mem()
+ *
+ * Constrain the memory of the given pid
+ */
+int
+ls_constrain_mem(const char *path, int mem_limit, int pid)
+{
+    FILE *fp;
+    static char buf[PATH_MAX];
+
+    sprintf(buf, "%s/memory.limit_in_bytes", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+    if (fprintf(fp, "%d\n", mem_limit) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    sprintf(buf, "%s/tasks", path);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    if (fprintf(fp, "%d\n", pid) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    return 0;
+}
+
+/* ls_rm_mem_container()
+ */
+int
+ls_rm_mem_container(const char *path,  int job_id)
+{
+    return 0;
+}
+
+/* ls_rm_cpuset_container()
+ */
+int
+ls_rm_cpuset_container(const char *path, int job_id)
+{
     return 0;
 }
