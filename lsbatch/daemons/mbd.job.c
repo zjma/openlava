@@ -7502,16 +7502,19 @@ shouldResume (struct jData *jp, int *resumeSig)
 }
 
 static int
-shouldResumeByLoad (struct jData *jp)
+shouldResumeByLoad(struct jData *jp)
 {
-    static char fname[] = "shouldResumeByLoad";
-    int resume, i, j, numHosts, lastReason = jp->newReason;
+    int resume;
+    int i;
+    int j;
+    int numHosts;
+    int lastReason = jp->newReason;
     struct tclHostData *tclHostData;
     struct thresholds thresholds;
     struct hostLoad *loads;
 
     if (logclass & (LC_SCHED | LC_EXEC))
-        ls_syslog(LOG_DEBUG3, "%s: job=%s; jStatus=%x; reasons=%x, subreasons=%d, numHosts=%d", fname, lsb_jobid2str(jp->jobId), jp->jStatus, jp->newReason, jp->subreasons, jp->numHostPtr);
+        ls_syslog(LOG_DEBUG3, "%s: job=%s; jStatus=%x; reasons=%x, subreasons=%d, numHosts=%d", __func__, lsb_jobid2str(jp->jobId), jp->jStatus, jp->newReason, jp->subreasons, jp->numHostPtr);
 
 
     if (!IS_SUSP (jp->jStatus))
@@ -7520,10 +7523,10 @@ shouldResumeByLoad (struct jData *jp)
     packJobThresholds(&thresholds, jp);
     numHosts = thresholds.nThresholds;
     loads = (struct hostLoad *)
-        my_malloc (numHosts * sizeof(struct hostLoad), fname);
+        my_malloc (numHosts * sizeof(struct hostLoad), __func__);
     if (jp->qPtr->resumeCondVal != NULL)
         tclHostData = (struct tclHostData *)
-            my_malloc (numHosts * sizeof (struct tclHostData), fname);
+            my_malloc (numHosts * sizeof (struct tclHostData), __func__);
     else
         tclHostData = NULL;
 
@@ -8271,10 +8274,9 @@ mbdRcvJobFile(int chfd, struct lenData *jf)
 float
 queueGetUnscaledRunTimeLimit(struct qData *qp)
 {
-    static char fname[] = "queueGetUnscaledRunTimeLimit";
     char *spec;
-    float             *cpuFactor;
-    float             one = 1;
+    float *cpuFactor;
+    float one = 1;
     int qLimit = QUEUE_LIMIT(qp, LSF_RLIMIT_RUN);
 
     if (qLimit < 0) {
@@ -8285,17 +8287,16 @@ queueGetUnscaledRunTimeLimit(struct qData *qp)
     } else if (qp->defaultHostSpec) {
         spec = qp->defaultHostSpec;
     } else {
-        ls_syslog(LOG_ERR,I18N(6542,
-                               "%s: queue <%s> doesn't have a hostSpec."), /* catgets 6542 */
-                  fname, qp->queue);
+        ls_syslog(LOG_ERR, "\
+%s: queue <%s> doesn't have a hostSpec.", __func__, qp->queue);
         spec = NULL;
     }
+
     if (spec != NULL) {
         if ((cpuFactor = getModelFactor(spec)) == NULL &&
             (cpuFactor = getHostFactor(spec)) == NULL ) {
-            ls_syslog(LOG_ERR,I18N(6543,
-                                   "%s: cannot get cpufactor of spec=(%s)"), /* catgets 6543 */
-                      fname, spec);
+            ls_syslog(LOG_ERR, "\
+%s: cannot get cpufactor of spec=(%s)", __func__, spec);
             cpuFactor = &one;
         }
     } else {
@@ -8325,8 +8326,8 @@ rusgMatch(struct resVal* resValPtr, const char *resName)
 
             continue;
         }
-        if ( 0 == strcmp(allLsInfo->resTable[ldx].name, resName) ) {
-            return (1);
+        if (strcmp(allLsInfo->resTable[ldx].name, resName) == 0) {
+            return 1;
         }
     }
     return 0;
@@ -8594,8 +8595,7 @@ static int checkSubHost(struct jData *job)
         return LSBE_BAD_SUBMISSION_HOST;
     }
 
-
-    select = (char *)calloc(1, len + 20);
+    select = calloc(1, len + 20);
     if (select == NULL) {
         return LSBE_NO_MEM;
     }

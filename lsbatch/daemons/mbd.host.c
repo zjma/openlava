@@ -1270,27 +1270,31 @@ runTimeSinceResume(const struct jData *jp)
 void
 adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
 {
-    static char fname[] = "adjLsbLoad";
-    int i, ldx, resAssign = 0;
-    float jackValue, orgnalLoad, duration, decay;
+    int i;
+    int ldx;
+    int resAssign = 0;
+    float jackValue;
+    float originalLoad;
+    float duration;
+    float decay;
     struct  resVal *resValPtr;
     struct resourceInstance *instance;
-    static int *rusage_bit_map = NULL;
+    static int *rusage_bit_map;
     int adjForPreemptableResource = FALSE;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
     if (rusage_bit_map == NULL) {
         rusage_bit_map = (int *) my_malloc
-            (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
+            (GET_INTNUM(allLsInfo->nRes) * sizeof (int), __func__);
     }
 
     if (!jpbw->numHostPtr || jpbw->hPtr == NULL)
         return;
 
-    if ((resValPtr
-         = getReserveValues (jpbw->shared->resValPtr, jpbw->qPtr->resValPtr)) == NULL)
+    if ((resValPtr = getReserveValues (jpbw->shared->resValPtr,
+                                       jpbw->qPtr->resValPtr)) == NULL)
         return;
 
 
@@ -1384,17 +1388,14 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                 load = getHRValue(allLsInfo->resTable[ldx].name,
                                   jpbw->hPtr[i], &instance);
                 if (load == -INFINIT_LOAD) {
-                    if (logclass & LC_TRACE)
-                        ls_syslog (LOG_DEBUG3, "%s: Host <%s> doesn't share resource <%s>", fname, jpbw->hPtr[i]->host, allLsInfo->resTable[ldx].name);
                     continue;
                 } else {
 
                     TEST_BIT (ldx, rusage_bit_map, isSet)
                         if ((isSet == TRUE) && !slotResourceReserve) {
-
-                            continue;
+                           continue;
                         }
-                    SET_BIT (ldx, rusage_bit_map);
+                    SET_BIT(ldx, rusage_bit_map);
                 }
             }
 
@@ -1402,7 +1403,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
             if (logclass & LC_SCHED)
                 ls_syslog(LOG_DEBUG1,"\
 %s: jobId=<%s>, hostName=<%s>, resource name=<%s>, the specified rusage of the load or instance <%f>, current lsbload or instance value <%f>, duration <%f>, decay <%f>",
-                          fname,
+                          __func__,
                           lsb_jobid2str(jpbw->jobId),
                           jpbw->hPtr[i]->host,
                           allLsInfo->resTable[ldx].name,
@@ -1457,7 +1458,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                 jackValue = -jackValue;
 
             if (ldx < allLsInfo->numIndx) {
-                orgnalLoad = jpbw->hPtr[i]->lsbLoad[ldx];
+                originalLoad = jpbw->hPtr[i]->lsbLoad[ldx];
                 jpbw->hPtr[i]->lsbLoad[ldx] += jackValue;
                 if (jpbw->hPtr[i]->lsbLoad[ldx] <= 0.0
                     && forResume == FALSE)
@@ -1467,8 +1468,8 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                     jpbw->hPtr[i]->lsbLoad[ldx] = 1.0;
                 load = jpbw->hPtr[i]->lsbLoad[ldx];
             } else {
-                orgnalLoad = atof (instance->value);
-                load = orgnalLoad + jackValue;
+                originalLoad = atof (instance->value);
+                load = originalLoad + jackValue;
                 if (load < 0.0 && forResume == FALSE)
                     load = 0.0;
                 FREEUP (instance->value);
@@ -1479,12 +1480,12 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
             if (logclass & LC_SCHED)
                 ls_syslog(LOG_DEBUG1,"\
 %s: JobId=<%s>, hostname=<%s>, resource name=<%s>, the amount by which the load or the instance has been adjusted <%f>, original load or instance value <%f>, runTime=<%d>, sinceresume=<%d>, value of the load or the instance after the adjustment <%f>, factor <%f>",
-                          fname,
+                          __func__,
                           lsb_jobid2str(jpbw->jobId),
                           jpbw->hPtr[i]->host,
                           allLsInfo->resTable[ldx].name,
                           jackValue,
-                          orgnalLoad,
+                          originalLoad,
                           jpbw->runTime,
                           runTimeSinceResume(jpbw),
                           load,
@@ -1496,10 +1497,10 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
 struct resVal *
 getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
 {
-    static char fname[]= "getReserveValues";
     static int first = TRUE;
     static struct resVal resVal;
-    int i, diffrent = FALSE;
+    int i;
+    int diffrent = FALSE;
 
     if (jobResVal == NULL && qResVal == NULL)
         return (NULL);
@@ -1528,9 +1529,9 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
         return (jobResVal);
 
     if (first == TRUE) {
-        resVal.val = (float *) my_malloc(allLsInfo->nRes * sizeof(float), fname);
-        resVal.rusage_bit_map = (int *)
-            my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
+        resVal.val = my_calloc(allLsInfo->nRes, sizeof(float), __func__);
+        resVal.rusage_bit_map = my_calloc(GET_INTNUM(allLsInfo->nRes),
+                                          sizeof (int), __func__);
         first = FALSE;
     }
 
@@ -1539,6 +1540,7 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
         resVal.val[i] = INFINIT_FLOAT;
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++)
         resVal.rusage_bit_map[i] = 0;
+
     resVal.duration = INFINIT_INT;
     resVal.decay = INFINIT_FLOAT;
 
@@ -1551,7 +1553,6 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
         TEST_BIT(i, jobResVal->rusage_bit_map, jobSet);
         TEST_BIT(i, qResVal->rusage_bit_map, queueSet);
         if (jobSet == 0 && queueSet == 0)
-
             continue;
         else {
             SET_BIT (i, resVal.rusage_bit_map);

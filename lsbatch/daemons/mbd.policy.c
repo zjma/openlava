@@ -1592,122 +1592,106 @@ allInOne(struct jData *jp)
 }
 
 static int
-ckResReserve(struct hData *hD, struct resVal *resValPtr, int *resource,
+ckResReserve(struct hData *hPtr,
+             struct resVal *resValPtr,
+             int *resource,
              struct jData *jp)
 {
-    int jj, isSet, useVal, rusage = 0;
-    int canUse = hD->numCPUs;
+    int cc;
+    int isSet;
+    int useVal;
+    int rusage = 0;
+    int canUse;
 
-    INC_CNT(PROF_CNT_ckResReserve);
+    canUse = hPtr->numCPUs;
 
     *resource = 0;
     if (resValPtr == NULL)
         return canUse;
 
-    for (jj = 0; jj < GET_INTNUM (allLsInfo->nRes); jj++)
-        rusage += resValPtr->rusage_bit_map[jj];
+    for (cc = 0; cc < GET_INTNUM (allLsInfo->nRes); cc++)
+        rusage += resValPtr->rusage_bit_map[cc];
 
-    if (rusage == 0) {
+    if (rusage == 0)
         return canUse;
-    }
-    for (jj = 0; jj < allLsInfo->nRes; jj++) {
 
-        INC_CNT(PROF_CNT_loopckResReserve);
+    for (cc = 0; cc < allLsInfo->nRes; cc++) {
 
-        if (NOT_NUMERIC(allLsInfo->resTable[jj]))
+        if (NOT_NUMERIC(allLsInfo->resTable[cc]))
             continue;
 
-        TEST_BIT(jj, resValPtr->rusage_bit_map, isSet);
-        if (isSet == 0) {
-
+        TEST_BIT(cc, resValPtr->rusage_bit_map, isSet);
+        if (isSet == 0)
             continue;
-        }
 
-        *resource = jj;
+        *resource = cc;
 
-        if (resValPtr->val[jj] >= INFINIT_LOAD
-            || resValPtr->val[jj] < 0.01)
+        if (resValPtr->val[cc] >= INFINIT_LOAD
+            || resValPtr->val[cc] < 0.01)
             continue;
-        if (jj < allLsInfo->numIndx) {
-            if (fabs(hD->lsfLoad[jj] - INFINIT_LOAD) < 0.001 * INFINIT_LOAD) {
 
+        /* Built in resource
+         */
+        if (cc < allLsInfo->numIndx) {
+
+            if (fabs(hPtr->lsfLoad[cc] - INFINIT_LOAD) < 0.001 * INFINIT_LOAD)
                 return 0;
-            }
 
-            if (allLsInfo->resTable[jj].orderType == INCR) {
+            if (allLsInfo->resTable[cc].orderType == INCR) {
 
-                if (hD->loadStop[jj] < INFINIT_LOAD) {
-                    useVal = (int)((hD->loadStop[jj]
-                                    - hD->lsfLoad[jj])/ resValPtr->val[jj]);
+                if (hPtr->loadStop[cc] < INFINIT_LOAD) {
+                    useVal = (int)((hPtr->loadStop[cc]
+                                    - hPtr->lsfLoad[cc])/ resValPtr->val[cc]);
                     if (useVal < 0)
                         useVal = 0;
                 } else {
-                    useVal = hD->numCPUs;
+                    useVal = hPtr->numCPUs;
                 }
+
             } else {
 
-                if (hD->loadStop[jj] >= INFINIT_LOAD || hD->loadStop[jj] <= -INFINIT_LOAD)
-                    useVal = (int) (hD->lsbLoad[jj]/ resValPtr->val[jj]);
+                if (hPtr->loadStop[cc] >= INFINIT_LOAD
+                    || hPtr->loadStop[cc] <= -INFINIT_LOAD)
+                    useVal = (int) (hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
                 else {
-                    useVal = (int) ((hD->lsbLoad[jj] - hD->loadStop[jj])/resValPtr->val[jj]);
+                    useVal = (int) ((hPtr->lsbLoad[cc]
+                                     - hPtr->loadStop[cc])/resValPtr->val[cc]);
                     if (useVal < 0)
                         useVal = 0;
                 }
             }
-            if ((jj == MEM)
-                && (((int) (hD->leftRusageMem/resValPtr->val[MEM])) == 0)){
+
+            if ((cc == MEM)
+                && (((int) (hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
 
                 if (logclass & LC_SCHED)
-                    ls_syslog(LOG_DEBUG, "ckResReserve: Host <%s> doesn't have enough memory for rusage. leftRusageMem is %f, reserve memory is %f", hD->host, hD->leftRusageMem, resValPtr->val[MEM]);
-
+                    ls_syslog(LOG_DEBUG, "\
+%s: Host %s not enough memory for rusage. left is %f, reserve %f",
+                              hPtr->host, hPtr->leftRusageMem, resValPtr->val[MEM]);
                 return 0;
             }
 
         } else {
-
-            float rVal;
+            /* Shared resource
+             */
+            float value;
             struct resourceInstance *instance;
-            rVal = getUsablePRHQValue(jj,hD,jp->qPtr,&instance);
-            if (rVal == -INFINIT_LOAD) {
 
-                if (logclass & LC_SCHED)
-                    ls_syslog (LOG_DEBUG2, "ckResReserve: Host <%s> doesn't have the resource <%s> specified", hD->host, allLsInfo->resTable[jj].name);
+            value = getHRValue(allLsInfo->resTable[cc].name,
+                               hPtr,
+                               &instance);
+            if (value == -INFINIT_LOAD)
                 return 0;
-            } else if (rVal == INFINIT_LOAD) {
 
-                if (logclass & LC_SCHED)
-                    ls_syslog (LOG_DEBUG2, "ckResReserve: Host <%s> doesn't have the resource <%s> available", hD->host, allLsInfo->resTable[jj].name);
+            if (value < resValPtr->val[cc]
+                && allLsInfo->resTable[cc].orderType != INCR)
                 return 0;
-            }
 
-            if (isItPreemptResourceIndex(jj)) {
-
-                if (rVal >= resValPtr->val[jj] && !JOB_PREEMPT_WAIT(jp)) {
-                    rVal -= getReservedByWaitPRHQValue(jj,hD,jp->qPtr);
-                }
-            }
-
-            if (slotResourceReserve) {
-                if (rVal < jp->shared->jobBill.numProcessors*resValPtr->val[jj]
-                    && allLsInfo->resTable[jj].orderType != INCR) {
-                    useVal = rVal;
-                } else {
-
-                    useVal = hD->numCPUs;
-                }
-            } else {
-                if (rVal < resValPtr->val[jj]
-                    && allLsInfo->resTable[jj].orderType != INCR) {
-
-                    return 0;
-                } else {
-
-                    useVal = hD->numCPUs;
-                }
-            }
+                useVal = hPtr->numCPUs;
         }
+
         if (useVal < canUse)
-            canUse = useVal;
+             canUse = useVal;
         if (canUse <= 0)
             return 0;
     }

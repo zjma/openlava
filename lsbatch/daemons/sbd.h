@@ -245,11 +245,7 @@ extern int status_job(mbdReqType, struct jobCard *, int, sbdReplyType);
 extern void sbdSyslog(int, char *);
 extern void jobSetupStatus(int, int, struct jobCard *);
 extern int msgSupervisor(struct lsbMsg *, struct clientNode *);
-#ifdef INTER_DAEMON_AUTH
-extern int getSbdAuth(struct lsfAuth *);
-#endif
 extern int sendUnreportedStatus (struct chunkStatusReq *chunkStatusReq);
-
 extern struct jobCard *addJob(struct jobSpecs *, int);
 extern void refreshJob(struct jobSpecs *);
 extern sbdReplyType job_exec(struct jobCard *jobCardPtr, int);

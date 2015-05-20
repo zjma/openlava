@@ -1211,16 +1211,6 @@ extern int                   do_runJobReq(XDR *,
 extern int                  getQUsable (struct qData *);
 extern void                 allocateRemote(struct jData *, int);
 extern void                 setExecHostsAcceptInterval(struct jData *);
-#if defined(INTER_DAEMON_AUTH)
-extern int authDaemonRequest(int chfd,
-                             XDR *xdrs,
-                             struct LSFHeader *reqHdr,
-                             struct sockaddr_in *from_host,
-                             char *client,
-                             char *server);
-#endif
-
-
 extern int                  requeueEParse (struct requeueEStruct **,
                                            char *, int *);
 extern int                  fill_requeueHist(struct rqHistory **,int *,

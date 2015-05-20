@@ -1,4 +1,5 @@
-/* $Id: mbd.resource.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -384,7 +385,8 @@ copyResource (struct lsbShareResourceInfoReply *reply, struct sharedResource *re
 }
 
 float
-getHRValue(char *resName, struct hData *hPtr,
+getHRValue(char *resName,
+           struct hData *hPtr,
 	   struct resourceInstance **instance)
 {
     int i;
@@ -400,15 +402,15 @@ getHRValue(char *resName, struct hData *hPtr,
         return (atof (hPtr->instances[i]->value));
     }
     ls_syslog(LOG_ERR, I18N(7704,"%s, instance name not found."), fname);/*catgets 7704 */
-    return (-INFINIT_LOAD);
+    return -INFINIT_LOAD;
 
 }
 
 void
-resetSharedResource()
+resetSharedResource(void)
 {
-    int         i;
-    int         j;
+    int i;
+    int j;
 
     for (i = 0; i < numResources; i++) {
 
@@ -424,26 +426,25 @@ resetSharedResource()
 void
 updSharedResourceByRUNJob(const struct jData* jp)
 {
-    static char fname[] = "updSharedResourceByRUNJob";
-    int                        i;
-    int                        ldx;
-    int                        resAssign = 0;
-    float                      jackValue;
-    float                      originalLoad;
-    float                      duration;
-    float                      decay;
-    struct resVal              *resValPtr;
-    struct resourceInstance    *instance;
-    static int                 *rusage_bit_map =  NULL;
+    int i;
+    int ldx;
+    int resAssign = 0;
+    float jackValue;
+    float originalLoad;
+    float duration;
+    float decay;
+    struct resVal *resValPtr;
+    struct resourceInstance *instance;
+    static int *rusage_bit_map;
     int adjForPreemptableResource = FALSE;
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "\
-%s: Updating shared resource by job=%s", fname, lsb_jobid2str(jp->jobId));
+%s: Updating shared resource by job=%s", __func__, lsb_jobid2str(jp->jobId));
 
     if (rusage_bit_map == NULL) {
-        rusage_bit_map = (int *) my_malloc
-	    (GET_INTNUM(allLsInfo->nRes) * sizeof (int), fname);
+        rusage_bit_map = my_calloc(GET_INTNUM(allLsInfo->nRes),
+                                   sizeof (int), __func__);
     }
 
     if (!jp->numHostPtr || jp->hPtr == NULL) {
@@ -548,7 +549,7 @@ adjustLoadValue:
 	    if (logclass & LC_SCHED)
 		ls_syslog(LOG_DEBUG,"\
 %s: jobId=<%s>, hostName=<%s>, resource name=<%s>, the specified rusage of the load or instance <%f>, current lsbload or instance value <%f>, duration <%f>, decay <%f>",
-			  fname,
+			  __func__,
 			  lsb_jobid2str(jp->jobId),
 			  jp->hPtr[i]->host,
 			  allLsInfo->resTable[ldx].name,
@@ -595,7 +596,7 @@ adjustLoadValue:
 	    if (logclass & LC_SCHED)
 		ls_syslog(LOG_DEBUG,"\
 %s: JobId=<%s>, hostname=<%s>, resource name=<%s>, the amount by which the load or the instance has been adjusted <%f>, original load or instance value <%f>, runTime=<%d>, value of the load or the instance after the adjustment <%f>, factor <%f>",
-			  fname,
+			  __func__,
 			  lsb_jobid2str(jp->jobId),
 			  jp->hPtr[i]->host,
 			  allLsInfo->resTable[ldx].name,
@@ -653,12 +654,11 @@ freePreemptResource(struct preemptResource *pRPtr)
 void
 newPRMO(char *nameList)
 {
-    static char fname[] = "newPRMO";
     NAMELIST *nameListPtr;
     int i, index, addedNum = 0;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG3, "%s: Entering ..." , fname);
+        ls_syslog(LOG_DEBUG3, "%s: Entering ..." , __func__);
 
     if (pRMOPtr != NULL) {
 	delPRMO();
@@ -679,10 +679,10 @@ newPRMO(char *nameList)
     if (nameListPtr->listSize <= 0) {
 	return;
     }
-    pRMOPtr = (struct objPRMO *) my_malloc(sizeof (struct objPRMO), fname);
+    pRMOPtr = (struct objPRMO *) my_malloc(sizeof (struct objPRMO), __func__);
     pRMOPtr->numPreemptResources = 0;
     pRMOPtr->pResources = (struct preemptResource *)
-	my_malloc(nameListPtr->listSize * sizeof (struct preemptResource), fname);
+	my_malloc(nameListPtr->listSize * sizeof (struct preemptResource), __func__);
 
 
     for (i=0; i<nameListPtr->listSize; i++) {
@@ -1196,7 +1196,6 @@ findQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
 static struct qPRValues *
 addQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
 {
-    static char fname[] = "addQPRValues";
     struct preemptResourceInstance *pRIPtr;
     struct qPRValues *temp;
     int i, pos;
@@ -1220,12 +1219,12 @@ addQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
 
     if (pRIPtr->nQPRValues == 0)
         temp = (struct qPRValues *)
-                     my_malloc (sizeof (struct qPRValues), fname);
+                     my_malloc (sizeof (struct qPRValues), __func__);
     else
         temp = (struct qPRValues *) realloc (pRIPtr->qPRValues,
                      (pRIPtr->nQPRValues + 1) *sizeof (struct qPRValues));
     if (temp == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "realloc");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__, "realloc");
         mbdDie(MASTER_MEM);
     }
     pRIPtr->qPRValues = (struct qPRValues *) temp;
