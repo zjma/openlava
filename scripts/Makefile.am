@@ -1,5 +1,5 @@
 #
-# Copyright (C) openlava foundation
+# Copyright (C) 2015 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
@@ -9,6 +9,6 @@ include $(top_srcdir)/common.mk
 # mpi and openmpi systems.
  
 bin_SCRIPTS = lam-mpirun impi-mpirun mpich-mpirun openmpi-mpirun \
-	esync
+	esync 
 
 EXTRA_DIST = $(bin_SCRIPTS)
