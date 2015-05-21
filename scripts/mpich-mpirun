@@ -1,46 +1,25 @@
 #!/bin/sh
 #
-#  Copyright (c) 2011 openlava foundation
+#  Copyright (c) 2015 OpenLava Project
 #  Copyright (c) 2006 Platform Computing
 #
 # This script is a wrapper for MPICH mpirun
 # it generates the machine file based on the hosts
-# given to it by openlava.
+# given to it by OpenLava.
 #
 
-usage() {
-	cat <<USEEOF
-USAGE:  $0
-	This command is a wrapper for mpirun.  It can
-	only be run within Lava using bsub e.g.
-		bsub -n # "$0 -np # {my mpi command and args}"
-
-        The wrapper will automatically generate the
-	machinefile used by mpirun.
-
-	NOTE:  The list of hosts cannot exceed 4KBytes.	
-USEEOF
-}
+MPIRUN=`which mpirun`
 
 if [ x"${LSB_JOBFILENAME}" = x -o x"${LSB_HOSTS}" = x ]; then
-    usage
-    exit -1
+    ${MPIRUN} $*
+    exit $?
 fi
     
 MYARGS=$*
 WORKDIR=`dirname ${LSB_JOBFILENAME}`
-MACHFILE=${WORKDIR}/mpi_machines
-ARGLIST=${WORKDIR}/mpi_args
+MACHFILE=${WORKDIR}/mpi_machines.${LSB_JOBID}
 
-# Check if mpirun is in the PATH
-T=`which mpirun`
-if [ $? -ne 0 ]; then
-    echo "Error:  mpirun is not in your PATH."
-    exit -2
-fi
-
-echo "${MYARGS}" > ${ARGLIST}
-T=`grep -- -machinefile ${ARGLIST} |wc -l`
+T=`echo "${MYARGS}" | grep -- -machinefile |wc -l`
 if [ $T -gt 0 ]; then
     echo "Error:  Do not provide the machinefile for mpirun."
     echo "        It is generated automatically for you."
@@ -48,10 +27,8 @@ if [ $T -gt 0 ]; then
 fi
 
 # Make the MPICH machine file
-echo "${LSB_HOSTS}" > ${MACHFILE}.lst
-tr '\/ ' '\r\n' < ${MACHFILE}.lst > ${MACHFILE}
+echo "${LSB_HOSTS}" | tr '\/ ' '\r\n' > ${MACHFILE}
 
-MPIRUN=`which --skip-alias mpirun`
-${MPIRUN} -machinefile ${MACHFILE} ${MYARGS}
+${MPIRUN} -machinefile ${MACHFILE} -launcher ssh ${MYARGS}
 
 exit $?

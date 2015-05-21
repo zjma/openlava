@@ -1,20 +1,19 @@
 #!/bin/sh
 #
 #  Copyright (c) 2015 OpenLava Project
-#  Copyright (c) 2007 Platform Computing
 #
-# This script is a wrapper for Open MPI mpirun
+# This script is a wrapper for Intel MPI mpirun
 # it generates the machine file based on the hosts
 # given to it by OpenLava.
-#
 
+#
 MPIRUN=`which mpirun`
 
 if [ x"${LSB_JOBFILENAME}" = x -o x"${LSB_HOSTS}" = x ]; then
     ${MPIRUN} $*
     exit $?
 fi
-
+    
 MYARGS=$*
 WORKDIR=`dirname ${LSB_JOBFILENAME}`
 MACHFILE=${WORKDIR}/mpi_machines.${LSB_JOBID}
@@ -26,9 +25,9 @@ if [ $T -gt 0 ]; then
     exit -3
 fi
 
-# Make the Open MPI machine file
+# Make the Intel MPI machine file
 echo "${LSB_HOSTS}" | tr '\/ ' '\r\n' > ${MACHFILE}
 
-${MPIRUN} -x LD_LIBRARY_PATH -machinefile ${MACHFILE} ${MYARGS}
+${MPIRUN} -machinefile ${MACHFILE} -bootstrap ssh ${MYARGS}
 
 exit $?
