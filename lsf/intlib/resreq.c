@@ -55,7 +55,7 @@ static int getKeyEntry (char *);
 static int getTimeVal(char **, float *);
 void freeResVal (struct resVal *);
 void initResVal (struct resVal *);
-static link_t *get_or_entries(const char *);
+static link_t *get_rusage_entries(const char *);
 
 extern char isanumber_(char *);
 
@@ -573,7 +573,10 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     float value;
     char *token;
     link_t *link;
-    struct rusage_or *r;
+    linkiter_t iter;
+    struct _rusage_ *r;
+    char *s;
+    int *rusage_bit_map;
 
     if ((i = strlen(usageReq)) == 0)
         return PARSE_OK;
@@ -584,21 +587,17 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     if (m == i)
         return PARSE_OK;
 
-    link = get_or_entries(usageReq);
-    if (link) {
-        m = LINK_NUM_ENTRIES(link);
-        resVal->rusage_or = calloc(m, sizeof(struct rusage_or));
-        for (i = 0; i < m; i++) {
-            resVal->rusage_or[i].val = calloc(lsInfo->nRes, sizeof(float));
-            resVal->rusage_or[i].rusage_bit_map
-                = calloc (GET_INTNUM(lsInfo->nRes), sizeof(int));
-        }
-    }
+    resVal->rl = make_link();
+    link = get_rusage_entries(usageReq);
 
-    do {
+    i = 0;
+    traverse_init(link, &iter);
+    while ((s = traverse_link(&iter))) {
+
+        rusage_bit_map =  calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
 
         resVal->genClass = 0;
-        while ((token = getNextToken(&usageReq)) != NULL) {
+        while ((token = getNextToken(&s)) != NULL) {
 
             if (token[0] == '-')
                 token++;
@@ -606,14 +605,14 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
             entry = getKeyEntry(token);
             if (entry > 0) {
                 if (entry != KEY_DURATION && entry != KEY_DECAY)
-                    return PARSE_BAD_NAME;
+                    goto pryc;
 
                 if (usageReq[0] == '=') {
                     int returnValue;
                     if (entry == KEY_DURATION)
-                        returnValue =  getTimeVal(&usageReq, &value);
+                        returnValue =  getTimeVal(&s, &value);
                     else
-                        returnValue = getVal(&usageReq, &value);
+                        returnValue = getVal(&s, &value);
                     if (returnValue < 0 || value < 0.0)
                         return PARSE_BAD_VAL;
                     if (entry == KEY_DURATION)
@@ -632,8 +631,8 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
             if (!(lsInfo->resTable[entry].flags & RESF_DYNAMIC)
                 && (lsInfo->resTable[entry].valueType != LS_NUMERIC)) {
                 if (usageReq[0] == '=') {
-                    if (getVal(&usageReq, &value) < 0 || value < 0.0)
-                        return PARSE_BAD_VAL;
+                    if (getVal(&s, &value) < 0 || value < 0.0)
+                        goto pryc;
                 }
                 continue;
             }
@@ -641,19 +640,50 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
             if (entry < MAXSRES)
                 resVal->genClass |= 1 << entry;
 
-            SET_BIT(entry, resVal->rusage_bit_map);
+            SET_BIT(entry, rusage_bit_map);
 
-            if (usageReq[0] == '=') {
-                if (getVal(&usageReq, &value) < 0 || value < 0.0)
-                    return PARSE_BAD_VAL;
-                resVal->val[entry] = value;
+            if (s[0] == '=') {
+                if (getVal(&s, &value) < 0 || value < 0.0)
+                    goto pryc;
             }
         }
 
-    } while (link && (r = pop_link(link)));
+        r = calloc(1, sizeof(struct _rusage_));
+        r->bitmap = rusage_bit_map;
+        r->val = calloc(lsInfo->nRes, sizeof(float));
+        r->val[entry] = value;
+        enqueue_link(resVal->rl, r);
+
+        if (i == 0) {
+            /* The entry 0 is both in the link and
+             * in the resVal.
+             */
+            resVal->rusage_bit_map = rusage_bit_map;
+            resVal->val[entry] = value;
+        }
+        ++i;
+    } /* while (s = traverse_link()) */
 
     resVal->options |= PR_RUSAGE;
     return PARSE_OK;
+
+    while ((s = pop_link(link)))
+        _free_(s);
+    fin_link(link);
+
+pryc:
+
+    while ((s = pop_link(link)))
+        _free_(s);
+    fin_link(link);
+    while ((r = pop_link(resVal->rl))) {
+        _free_(r->bitmap);
+        _free_(r->val);
+        _free_(r);
+    }
+    fin_link(resVal->rl);
+
+    return PARSE_BAD_NAME;
 }
 
 static int
@@ -1064,22 +1094,25 @@ getVal(char **resReq, float *val)
     return 0;
 }
 
-/* get_or_entries()
+/* get_rusage_entries()
  */
 static link_t *
-get_or_entries(const char *s)
+get_rusage_entries(const char *s)
 {
     char *p;
     char *ss;
     char *z;
     link_t *l;
 
-    if (! strstr(s, "||"))
-        return NULL;
-
     l = make_link();
 
+    /* Return an empty link
+     */
     ss = strdup(s);
+    if (! strstr(ss, "||")) {
+        enqueue_link(l, ss);
+        return l;
+    }
 
     while ((p = strstr(ss, "||"))) {
         *p = 0;

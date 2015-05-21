@@ -206,8 +206,9 @@ static int getLsbUsable(void);
 static struct candHost *getJUsable(struct jData *, int *, int *);
 static void addReason(struct jData *jp, int hostId, int aReason);
 static int allInOne(struct jData *jp);
-static int ckResReserve(struct hData *hD, struct resVal *resValPtr,
-                        int *resource, struct jData *jp);
+static int ckResReserve(struct hData *,
+                        struct resVal *,
+                        int *resource);
 
 static int getPeerCand(struct jData *jobp);
 static int getPeerCand1(struct jData *jobp, struct jData *jpbw);
@@ -1443,8 +1444,9 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
 
         if (!hReason && jp->shared->resValPtr) {
             int resource;
-            int num = ckResReserve (jUsable[i], jp->shared->resValPtr,
-                                    &resource, jp);
+            int num = ckResReserve(jUsable[i],
+                                   jp->shared->resValPtr,
+                                   &resource);
             if (num < 1) {
                 hReason = resource + PEND_HOST_JOB_RUSAGE;
             }
@@ -1452,8 +1454,9 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
         }
         if (!hReason && jp->qPtr->resValPtr) {
             int resource;
-            int num = ckResReserve (jUsable[i], jp->qPtr->resValPtr,
-                                    &resource, jp);
+            int num = ckResReserve(jUsable[i],
+                                   jp->qPtr->resValPtr,
+                                   &resource);
             if (num < 1) {
                 hReason = resource + PEND_HOST_QUE_RUSAGE;
             }
@@ -1591,112 +1594,140 @@ allInOne(struct jData *jp)
     return FALSE;
 }
 
+/* ckResReserve()
+ *
+ * Little two state machine to decide if the
+ * job's rusage on the host is ok or !ok.
+ *
+ */
 static int
 ckResReserve(struct hData *hPtr,
              struct resVal *resValPtr,
-             int *resource,
-             struct jData *jp)
+             int *resource)
 {
     int cc;
-    int isSet;
-    int useVal;
-    int rusage = 0;
-    int canUse;
+    int is_set;
+    int use_val;
+    int rusage;
+    int can_use;
+    linkiter_t iter;
+    struct _rusage_ *r;
+    bool_t state;
 
-    canUse = hPtr->numCPUs;
+    can_use = hPtr->numCPUs;
 
     *resource = 0;
     if (resValPtr == NULL)
-        return canUse;
+        return can_use;
 
+    rusage = 0;
     for (cc = 0; cc < GET_INTNUM (allLsInfo->nRes); cc++)
         rusage += resValPtr->rusage_bit_map[cc];
 
     if (rusage == 0)
-        return canUse;
+        return hPtr->numCPUs;
 
-    for (cc = 0; cc < allLsInfo->nRes; cc++) {
+    traverse_init(resValPtr->rl, &iter);
+    while ((r = traverse_link(&iter))) {
 
-        if (NOT_NUMERIC(allLsInfo->resTable[cc]))
-            continue;
+        resValPtr->rusage_bit_map = r->bitmap;
+        resValPtr->val = r->val;
 
-        TEST_BIT(cc, resValPtr->rusage_bit_map, isSet);
-        if (isSet == 0)
-            continue;
-
-        *resource = cc;
-
-        if (resValPtr->val[cc] >= INFINIT_LOAD
-            || resValPtr->val[cc] < 0.01)
-            continue;
-
-        /* Built in resource
+        /* state = ok
          */
-        if (cc < allLsInfo->numIndx) {
+        state = 1;
+        for (cc = 0; cc < allLsInfo->nRes; cc++) {
 
-            if (fabs(hPtr->lsfLoad[cc] - INFINIT_LOAD) < 0.001 * INFINIT_LOAD)
-                return 0;
+            if (NOT_NUMERIC(allLsInfo->resTable[cc]))
+                continue;
 
-            if (allLsInfo->resTable[cc].orderType == INCR) {
+            TEST_BIT(cc, resValPtr->rusage_bit_map, is_set);
+            if (is_set == 0)
+                continue;
 
-                if (hPtr->loadStop[cc] < INFINIT_LOAD) {
-                    useVal = (int)((hPtr->loadStop[cc]
-                                    - hPtr->lsfLoad[cc])/ resValPtr->val[cc]);
-                    if (useVal < 0)
-                        useVal = 0;
-                } else {
-                    useVal = hPtr->numCPUs;
-                }
+            *resource = cc;
 
-            } else {
+            if (resValPtr->val[cc] >= INFINIT_LOAD
+                || resValPtr->val[cc] < 0.01)
+                continue;
 
-                if (hPtr->loadStop[cc] >= INFINIT_LOAD
-                    || hPtr->loadStop[cc] <= -INFINIT_LOAD)
-                    useVal = (int) (hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
-                else {
-                    useVal = (int) ((hPtr->lsbLoad[cc]
-                                     - hPtr->loadStop[cc])/resValPtr->val[cc]);
-                    if (useVal < 0)
-                        useVal = 0;
-                }
-            }
-
-            if ((cc == MEM)
-                && (((int) (hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
-
-                if (logclass & LC_SCHED)
-                    ls_syslog(LOG_DEBUG, "\
-%s: Host %s not enough memory for rusage. left is %f, reserve %f",
-                              hPtr->host, hPtr->leftRusageMem, resValPtr->val[MEM]);
-                return 0;
-            }
-
-        } else {
-            /* Shared resource
+            /* Built in resource
              */
-            float value;
-            struct resourceInstance *instance;
+            if (cc < allLsInfo->numIndx) {
 
-            value = getHRValue(allLsInfo->resTable[cc].name,
-                               hPtr,
-                               &instance);
-            if (value == -INFINIT_LOAD)
-                return 0;
+                if (fabs(hPtr->lsfLoad[cc] - INFINIT_LOAD) < 0.001 * INFINIT_LOAD) {
+                    /* state = !ok
+                     */
+                    state = 0;
+                    break;
+                }
 
-            if (value < resValPtr->val[cc]
-                && allLsInfo->resTable[cc].orderType != INCR)
-                return 0;
+                if (allLsInfo->resTable[cc].orderType == INCR) {
 
-                useVal = hPtr->numCPUs;
+                    if (hPtr->loadStop[cc] < INFINIT_LOAD) {
+                        use_val = (int)((hPtr->loadStop[cc]
+                                         - hPtr->lsfLoad[cc])/ resValPtr->val[cc]);
+                        if (use_val < 0) {
+                            /* state = !ok
+                             */
+                            state = 0;
+                            break;
+                        }
+
+                    } else {
+
+                        if (hPtr->loadStop[cc] >= INFINIT_LOAD
+                            || hPtr->loadStop[cc] <= -INFINIT_LOAD)
+                            use_val = (int)(hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
+                        else {
+                            use_val = (int)((hPtr->lsbLoad[cc]
+                                             - hPtr->loadStop[cc])/resValPtr->val[cc]);
+                            if (use_val < 0) {
+                                /* state = !ok
+                                 */
+                                state = 0;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (cc == MEM
+                        && (((int)(hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
+                        state = 0;
+                        break;
+                    }
+
+                } else {
+                    /* Shared resource
+                     */
+                    float value;
+                    struct resourceInstance *instance;
+
+                    value = getHRValue(allLsInfo->resTable[cc].name,
+                                       hPtr,
+                                       &instance);
+                    if (value == -INFINIT_LOAD) {
+                        state = 0;
+                        break;
+                    }
+
+                    if (value < resValPtr->val[cc]
+                        && allLsInfo->resTable[cc].orderType != INCR) {
+                        state = 0;
+                        break;
+                    }
+
+                    use_val = hPtr->numCPUs;
+                }
+            }
         }
-
-        if (useVal < canUse)
-             canUse = useVal;
-        if (canUse <= 0)
-            return 0;
+        /* All requested rusage are in state ok
+         */
+        if (state == 1)
+            return hPtr->numCPUs;
     }
 
-    return canUse;
+    return 0;
 }
 
 static void
@@ -2794,8 +2825,9 @@ candHostOk (struct jData *jp, int indx, int *numAvailSlots,
 
     if (!rtReason && jp->qPtr->resValPtr != NULL) {
         int resource;
-        int num = ckResReserve (hp->hData, jp->qPtr->resValPtr,
-                                &resource, jp);
+        int num = ckResReserve(hp->hData,
+                               jp->qPtr->resValPtr,
+                               &resource);
         if (num < 1) {
             rtReason = resource + PEND_HOST_QUE_RUSAGE;
         } else {
@@ -2807,8 +2839,9 @@ candHostOk (struct jData *jp, int indx, int *numAvailSlots,
     }
     if (!rtReason && jp->shared->resValPtr != NULL) {
         int resource;
-        int num = ckResReserve (hp->hData, jp->shared->resValPtr,
-                                &resource, jp);
+        int num = ckResReserve(hp->hData,
+                               jp->shared->resValPtr,
+                               &resource);
         if (num < 1) {
             rtReason = resource + PEND_HOST_JOB_RUSAGE;
         } else  {

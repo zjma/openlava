@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -20,15 +20,7 @@
 #ifndef _RES_REQ_H_
 #define _RES_REQ_H_
 
-#if 0
-/* Use ctype.h here... isdigit() isalpha() ispunct()
- */
-#define IS_DIGIT(s)  ( (s) >= '0' && (s) <= '9')
-#define IS_LETTER(s) ( ((s) >= 'a' && (s) <= 'z') || \
-		       ((s) >= 'A' && (s) <= 'Z'))
-#define IS_VALID_OTHER(s) ((s) == '_'|| (s) == '~')
-#endif
-
+#include "link.h"
 #define WILDCARD_STR  "any"
 #define LOCAL_STR     "local"
 
@@ -69,11 +61,11 @@ struct resVal {
     int  options;
     int  selectStrSize;
     char **xorExprs;
-    struct rusage_or *rusage_or;
+    link_t *rl;
 };
 
-struct rusage_or {
-    int *rusage_bit_map;
+struct _rusage_ {
+    int *bitmap;
     float *val;
 };
 
