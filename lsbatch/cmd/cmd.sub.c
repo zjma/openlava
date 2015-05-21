@@ -152,7 +152,7 @@ F:Dn|D:Sn|S:Cn|C:Mn|M:on|o:nn|n:un|u:Pn|P:Ln|L:Xn|X:Zsn|Zs:Z:";
     } else if (operate == CMD_BSUB) {
         req->options = 0;
         template = "E:T:a:w:f:k:R:m:J:L:u:is:i:o:e:Zs|n:q:b:t:sp:s:c:v:p:\
-W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K";
+W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K|";
     }
 
     req->options2 = 0;
