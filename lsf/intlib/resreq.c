@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
- * Copyright (C) 2007 Platform Computing Inc
+ * Copyright (C) 2007-2015 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -27,6 +26,8 @@ struct sections {
     char   *span;
 };
 
+enum syntaxType {OLD, NEW, EITHER};
+
 static int parseSection(char *, struct sections *);
 static int parseSelect(char * ,
                        struct resVal *,
@@ -44,13 +45,17 @@ static int parseUsage(char * ,
                       struct lsInfo *);
 static int parseSpan (char *,
                       struct resVal *);
-static int resToClass(char * ,
-                      struct resVal *,
-                      struct lsInfo *);
+static int resToClassNew(char * ,
+                         struct resVal *,
+                         struct lsInfo *);
+static int resToClassOld(char * ,
+                         struct resVal *,
+                         struct lsInfo *);
 static int setDefaults(struct resVal *,
                        struct lsInfo *,
                        int);
 static int getVal(char **, float *);
+static enum syntaxType getSyntax(char *);
 static int getKeyEntry (char *);
 static int getTimeVal(char **, float *);
 void freeResVal (struct resVal *);
@@ -95,12 +100,13 @@ hTab keyNameTbl = {NULL, 0, 0};
 void
 initParse(struct lsInfo *lsInfo)
 {
-    int i;
-    int *indx;
-    hEnt *hashEntPtr;
+    static char   fname[] = "initParse()";
+    int           i;
+    int           *indx;
+    hEnt          *hashEntPtr;
 
     if (logclass & (LC_TRACE | LC_SCHED))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", fname);
 
     if (!h_TabEmpty_(&resNameTbl)) {
         h_freeRefTab_(&resNameTbl);
@@ -193,7 +199,7 @@ getKeyEntry(char *key)
 
     x = ent->hData;
 
-    return *x;
+    return(*x);
 }
 
 int
@@ -202,13 +208,14 @@ parseResReq(char *resReq,
             struct lsInfo *lsInfo,
             int options)
 {
-    int cc;
-    struct sections reqSect;
+    static char       fname[] = "parseResReq()";
+    int               cc;
+    struct sections   reqSect;
 
     if (logclass & (LC_TRACE | LC_SCHED))
-        ls_syslog(LOG_DEBUG3, "%s: resReq=%s", __func__, resReq);
+        ls_syslog(LOG_DEBUG3, "%s: resReq=%s", fname, resReq);
 
-    initResVal(resVal);
+    initResVal (resVal);
 
     ALLOC_STRING(resVal->selectStr,
                  resVal->selectStrSize,
@@ -266,7 +273,7 @@ parseResReq(char *resReq,
             return cc;
     }
 
-    return PARSE_OK;
+    return(PARSE_OK);
 }
 
 static int
@@ -286,7 +293,7 @@ parseSection(char *resReq, struct sections *section)
 #define FILTER_SECT     3
 #define SPAN_SECT       4
 
-    static char   *keywords[] =  {
+    static char   *keywords[]= {
         "select",
         "order",
         "rusage",
@@ -366,23 +373,24 @@ parseSection(char *resReq, struct sections *section)
 }
 
 static int
-parseSelect(char *resReq, struct resVal *resVal,
-            struct lsInfo *lsInfo, bool_t parseXor, int options)
+parseSelect(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo, bool_t parseXor, int options)
 {
+    static char fname[] = "parseSelect";
     int cc;
-    char *expr;
-    char *countPtr;
-    int i;
-    int numXorExprs;
+    enum syntaxType syntax;
+    char *expr, *countPtr;
+    int i, numXorExprs;
     struct resVal tmpResVal;
     char *resReq2 = NULL;
 
     if (logclass & (LC_TRACE | LC_SCHED))
-        ls_syslog(LOG_DEBUG3, "%s: resReq=%s", __func__, resReq);
+        ls_syslog(LOG_DEBUG3, "%s: resReq=%s", fname, resReq);
+
+
 
     if (parseXor && resReq[0] != '\0') {
 
-	countPtr = malloc(strlen(resReq)+1);
+	countPtr = (char *)malloc(strlen(resReq)+1);
 	if (countPtr == NULL) {
 	    return(PARSE_BAD_MEM);
 	}
@@ -401,7 +409,8 @@ parseSelect(char *resReq, struct resVal *resVal,
 	free(countPtr);
 
 	if (logclass & (LC_TRACE |LC_SCHED))
-	    ls_syslog(LOG_DEBUG3,"%s: numXorExprs = %d", __func__, numXorExprs);
+	    ls_syslog(LOG_DEBUG3,"%s: numXorExprs = %d", fname, numXorExprs);
+
 
         if (numXorExprs > 1) {
 
@@ -411,7 +420,7 @@ parseSelect(char *resReq, struct resVal *resVal,
 		return(PARSE_BAD_MEM);
 
 
-            resReq2 = malloc(strlen(resReq) + numXorExprs * 4 - 1);
+            resReq2 = (char *)malloc(strlen(resReq) + numXorExprs * 4 - 1);
 	    if ( resReq2== NULL)
 		return (PARSE_BAD_MEM);
 	    resReq2[0] = '\0';
@@ -430,11 +439,7 @@ parseSelect(char *resReq, struct resVal *resVal,
 		    FREEUP(resReq2);
 		    return (PARSE_BAD_MEM);
 		}
-		if ((cc = parseSelect(expr,
-                                      &tmpResVal,
-                                      lsInfo,
-                                      FALSE,
-                                      options)) != PARSE_OK) {
+		if ((cc = parseSelect(expr, &tmpResVal, lsInfo, FALSE, options)) != PARSE_OK) {
 		    for (i--;i>=0; i--) {
 			FREEUP(resVal->xorExprs[i]);
 		    }
@@ -449,8 +454,7 @@ parseSelect(char *resReq, struct resVal *resVal,
 
 		strcpy(resVal->xorExprs[i], tmpResVal.selectStr);
 		if (logclass & (LC_TRACE | LC_SCHED))
-		    ls_syslog(LOG_DEBUG3,"\
-%s: xorExprs[%d] = %s", __func__, i, resVal->xorExprs[i]);
+		    ls_syslog(LOG_DEBUG3,"%s: xorExprs[%d] = %s", fname, i, resVal->xorExprs[i]);
                 if (i == 0 ) {
                     sprintf(resReq2, "(%s)", expr);
 		} else {
@@ -461,7 +465,7 @@ parseSelect(char *resReq, struct resVal *resVal,
 	    }
 	    resVal->xorExprs[i] = NULL;
 	    if (logclass & (LC_TRACE | LC_SCHED))
-		ls_syslog(LOG_DEBUG3,"%s: new selectStr=%s", __func__, resReq2);
+		ls_syslog(LOG_DEBUG3,"%s: new selectStr=%s", fname, resReq2);
             resReq = resReq2;
 	} else {
 	    if (numXorExprs == 1) {
@@ -476,26 +480,54 @@ parseSelect(char *resReq, struct resVal *resVal,
 	}
     }
 
-    if ((cc = resToClass(resReq, resVal, lsInfo)) != PARSE_OK) {
-        resVal->selectStr[0] = '\0';
-        FREEUP(resReq2);
-        return cc;
+    syntax = getSyntax(resReq);
+    switch(syntax) {
+        case OLD:
+            if ((cc =resToClassOld(resReq, resVal, lsInfo)) != PARSE_OK) {
+                resVal->selectStr[0] = '\0';
+                FREEUP(resReq2);
+                return cc;
+            }
+            break;
+        case NEW:
+            if ((cc =resToClassNew(resReq, resVal, lsInfo)) != PARSE_OK) {
+                resVal->selectStr[0] = '\0';
+                FREEUP(resReq2);
+                return cc;
+            }
+            break;
+        case EITHER:
+            if ((cc =resToClassOld(resReq, resVal, lsInfo)) != PARSE_OK)  {
+
+                if (cc == PARSE_BAD_NAME || cc == PARSE_BAD_VAL) {
+                    resVal->selectStr[0] = '\0';
+                    FREEUP(resReq2);
+                    return cc;
+                }
+                if ( (cc =resToClassNew(resReq, resVal, lsInfo)) != PARSE_OK) {
+                    resVal->selectStr[0] = '\0';
+                    FREEUP(resReq2);
+                    return cc;
+                }
+            }
+            break;
+        default:
+            FREEUP(resReq2);
+            return PARSE_BAD_EXP;
     }
 
     FREEUP(resReq2);
     return PARSE_OK;
+
 }
 
 static int
 parseOrder(char *orderReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
-    int i;
-    int m;
-    int entry;
-    char *token;
-    char negate;
+    int i, m, entry;
+    char *token, negate;
 
-    if ((i = strlen(orderReq)) == 0)
+    if ((i=strlen(orderReq)) == 0)
         return PARSE_OK;
 
     for(m=0; m<i; m++)
@@ -533,15 +565,13 @@ parseOrder(char *orderReq, struct resVal *resVal, struct lsInfo *lsInfo)
 static int
 parseFilter(char *filter, struct resVal *resVal, struct lsInfo *lsInfo)
 {
-    int i;
-    int m;
-    int entry;
+    int i, m, entry;
     char *token;
 
-    if ((i = strlen(filter)) == 0)
+    if ((i=strlen(filter)) == 0)
         return PARSE_OK;
 
-    for (m = 0; m < i; m++)
+    for(m=0; m<i; m++)
         if (filter[m] != ' ')
             break;
 
@@ -564,6 +594,8 @@ parseFilter(char *filter, struct resVal *resVal, struct lsInfo *lsInfo)
     return(PARSE_OK);
 }
 
+/* parseUsage()
+ */
 static int
 parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
@@ -577,6 +609,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     struct _rusage_ *r;
     char *s;
     int *rusage_bit_map;
+    float *val;
 
     if ((i = strlen(usageReq)) == 0)
         return PARSE_OK;
@@ -595,6 +628,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     while ((s = traverse_link(&iter))) {
 
         rusage_bit_map =  calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
+        val = calloc(lsInfo->nRes, sizeof(float));
 
         resVal->genClass = 0;
         while ((token = getNextToken(&s)) != NULL) {
@@ -645,13 +679,16 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
             if (s[0] == '=') {
                 if (getVal(&s, &value) < 0 || value < 0.0)
                     goto pryc;
+                val[entry] = value;
             }
         }
 
+        /* Save the current rusage block
+         */
         r = calloc(1, sizeof(struct _rusage_));
         r->bitmap = rusage_bit_map;
         r->val = calloc(lsInfo->nRes, sizeof(float));
-        r->val[entry] = value;
+        r->val = val;
         enqueue_link(resVal->rl, r);
 
         if (i == 0) {
@@ -687,13 +724,10 @@ pryc:
 }
 
 static int
-parseSpan(char *usageReq, struct resVal *resVal)
+parseSpan (char *usageReq, struct resVal *resVal)
 {
-    int i;
-    int m;
-    int entry;
-    int val1;
-    int val2;
+    int i, m, entry;
+    int val1, val2;
     char *token;
 
     if ((i = strlen(usageReq)) == 0)
@@ -706,9 +740,9 @@ parseSpan(char *usageReq, struct resVal *resVal)
         return PARSE_OK;
 
     while ((token = getNextToken(&usageReq)) != NULL) {
-
         if (token[0] == '-')
             token++;
+
 
         entry = getKeyEntry (token);
         if (entry >= 0 && entry < KEY_HOSTS)
@@ -731,7 +765,32 @@ parseSpan(char *usageReq, struct resVal *resVal)
         }
     }
     resVal->options |= PR_SPAN;
-    return PARSE_OK;
+    return(PARSE_OK);
+}
+
+static enum syntaxType
+getSyntax(char *resReq)
+{
+    char *sp;
+
+    if (strchr(resReq,':') != NULL)
+        return (OLD);
+
+    if (strchr(resReq,' ') != NULL)
+        return(NEW);
+
+    if ( (strchr(resReq,'(') != NULL) || (strchr(resReq,')') != NULL) ||
+         (strchr(resReq,'|') != NULL) || (strchr(resReq,'!') != NULL) ||
+         (strchr(resReq,'>') != NULL) || (strchr(resReq,'<') != NULL) ||
+         (strchr(resReq,'&') != NULL) || (strchr(resReq,'+') != NULL) ||
+         (strchr(resReq,'*') != NULL) || (strchr(resReq,'/') != NULL) )
+        return (NEW);
+
+
+    if (((sp=strchr(resReq,'=')) != NULL) && (*++sp == '='))
+        return(NEW);
+
+    return (EITHER);
 }
 
 static int
@@ -739,12 +798,13 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
 {
     int i;
 
-    if (strcmp(value, WILDCARD_STR) == 0
-        || strcmp(value, LOCAL_STR) == 0 )
+
+    if (strcmp(value, WILDCARD_STR) == 0 ||
+        strcmp(value, LOCAL_STR) == 0 )
         return 0;
 
     if (strcmp(lsInfo->resTable[nentry].name,"type") == 0) {
-        for(i = 0; i < lsInfo->nTypes; i++)
+        for(i=0; i < lsInfo->nTypes; i++)
             if (strcmp(lsInfo->hostTypes[i], value) == 0)
                 break;
         if (i == lsInfo->nTypes)
@@ -754,7 +814,7 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
     }
 
     if (strcmp(lsInfo->resTable[nentry].name,"model") == 0) {
-        for(i = 0; i < lsInfo->nModels; i++)
+        for(i=0; i < lsInfo->nModels; i++)
             if (strcmp(lsInfo->hostModels[i], value) == 0)
                 break;
         if (i == lsInfo->nModels)
@@ -775,11 +835,12 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
             return -1;
     }
     return 0;
+
 }
 
 
 static int
-resToClass(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
+resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
     int i;
     int s;
@@ -789,8 +850,7 @@ resToClass(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     int hasQuote;
     char res[MAXLSFNAMELEN], val[MAXLSFNAMELEN];
     char tmpbuf[MAXLSFNAMELEN*2];
-    char *sp;
-    char *op;
+    char *sp, *op;
 
     len = strlen(resReq);
 
@@ -918,8 +978,7 @@ resToClass(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                             val[i++] = resReq[s++];
                     } else {
 
-                        while(resReq[s] && resReq[s] != '\''
-                              && i < MAXLSFNAMELEN)
+                        while(resReq[s] && resReq[s] != '\'' && i < MAXLSFNAMELEN)
                             val[i++] = resReq[s++];
 
                         if (i - 1 == MAXLSFNAMELEN)
@@ -938,8 +997,8 @@ resToClass(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                         return PARSE_BAD_VAL;
                     }
 
-                    sprintf(tmpbuf,"[%s \"%s\" \"%s\"]",
-                            lsInfo->resTable[entry].name, op, val);
+                    sprintf(tmpbuf,"[%s \"%s\" \"%s\"]",lsInfo->resTable[entry].name
+                            ,op,val);
                     sp[t] = '\0';
                     strcat(sp,tmpbuf);
                     t += strlen(tmpbuf);
@@ -954,6 +1013,130 @@ resToClass(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     resVal->options |= PR_SELECT;
 
     return PARSE_OK;
+}
+
+/* Old pre 2.0 resource request format long time obsolete
+ */
+static int
+resToClassOld(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
+{
+    int i, m, entry;
+    char *token;
+    char tmpbuf[MAXLINELEN];
+    float value;
+    char  negate, valueSpecified;
+    int t;
+
+    if ((i=strlen(resReq)) == 0)
+        return PARSE_OK;
+
+    for (m=0; m<i; m++)
+	if (resReq[m] != ' ')
+	    break;
+
+    if (m == i)
+	return PARSE_OK;
+
+    if (resReq[0] == ':' || resReq[0] == '=')
+        return PARSE_BAD_EXP;
+
+    strcpy(resVal->selectStr, "expr ");
+    t = strlen(resVal->selectStr);
+
+    while ((token = getNextToken(&resReq)) != NULL) {
+
+        negate = FALSE;
+
+        if (t >= (resVal->selectStrSize - MAXLSFNAMELEN))
+            return PARSE_BAD_EXP;
+
+        if (isdigit(token[0]))
+            return(PARSE_BAD_EXP);
+
+        if (token[0] == '-') {
+            if (token[1] == '\0') {
+                sprintf(tmpbuf,"[type \"eq\" \"%s\"] &&", WILDCARD_STR);
+                strcat(resVal->selectStr, tmpbuf);
+                t += strlen(tmpbuf);
+                continue;
+            }
+            token++;
+            negate = TRUE;
+        }
+
+        entry = getResEntry(token);
+	if (entry < 0)
+            return(PARSE_BAD_NAME);
+
+        if (lsInfo->resTable[entry].valueType == LS_BOOLEAN) {
+ 	    if (negate)
+                sprintf(tmpbuf,"!%s()&&",lsInfo->resTable[entry].name);
+	    else
+                sprintf(tmpbuf,"%s()&&",lsInfo->resTable[entry].name);
+            strcat(resVal->selectStr, tmpbuf);
+            t += strlen(tmpbuf);
+            continue;
+        }
+
+        if (negate)
+            return(PARSE_BAD_EXP);
+
+        if (lsInfo->resTable[entry].valueType == LS_NUMERIC) {
+
+            valueSpecified = FALSE;
+            if (resReq[0] == '=') {
+                if (getVal(&resReq, &value) < 0 || value < 0.0)
+                    return (PARSE_BAD_VAL);
+
+                if (lsInfo->resTable[entry].flags & RESF_DYNAMIC)
+                    resVal->val[entry] = value;
+                valueSpecified = TRUE;
+            }
+
+            if (!valueSpecified && entry == IT) {
+                valueSpecified = TRUE;
+ 		value = IDLETIME;
+                resVal->val[entry] = value;
+     	    }
+
+
+            if (valueSpecified) {
+                if (lsInfo->resTable[entry].orderType == INCR)
+                    sprintf(tmpbuf,"%s()<=%6.2f&&",lsInfo->resTable[entry].name,value);
+                else
+                    sprintf(tmpbuf,"%s()>=%6.2f&&",lsInfo->resTable[entry].name,value);
+            } else {
+                sprintf(tmpbuf,"%s()&&",lsInfo->resTable[entry].name);
+            }
+            strcat(resVal->selectStr, tmpbuf);
+            t += strlen(tmpbuf);
+            continue;
+        }
+
+        if (lsInfo->resTable[entry].valueType == LS_STRING) {
+
+            if(resReq[0] != '=')
+                return(PARSE_BAD_EXP);
+
+	    if ((token = getNextToken(&resReq)) == NULL)
+                return(PARSE_BAD_EXP) ;
+
+
+            if (validValue(token, lsInfo, entry) < 0)
+                return (PARSE_BAD_VAL);
+
+            sprintf(tmpbuf,"[%s \"eq\" \"%s\"]&&",lsInfo->resTable[entry].name,token);
+            strcat(resVal->selectStr, tmpbuf);
+            t += strlen(tmpbuf);
+            continue;
+        }
+    }
+    sprintf(tmpbuf,"1");
+    strcat(resVal->selectStr, tmpbuf);
+
+    resVal->options |= PR_SELECT;
+    return(PARSE_OK);
+
 }
 
 static int
@@ -995,7 +1178,8 @@ setDefaults(struct resVal *resVal, struct lsInfo *lsInfo, int options)
     for(i = 0; i < resVal->nindex; i++)
         resVal->indicies[i] = i;
 
-    resVal->rusage_bit_map = calloc (GET_INTNUM(lsInfo->nRes), sizeof(int));
+    resVal->rusage_bit_map =
+        calloc (GET_INTNUM(lsInfo->nRes), sizeof(int));
     if (resVal->rusage_bit_map == NULL) {
 	lserrno = LSE_MALLOC;
 	freeResVal (resVal);
@@ -1048,10 +1232,11 @@ initResVal (struct resVal *resVal)
 
     resVal->val = NULL;
     resVal->indicies = NULL;
-    resVal->rusage_bit_map = NULL;
-    resVal->selectStr = NULL;
+    resVal->rusage_bit_map= NULL;
+    resVal->selectStr= NULL;
     resVal->selectStrSize= 0;
     resVal->xorExprs = NULL;
+
 }
 
 

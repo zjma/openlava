@@ -1673,59 +1673,58 @@ ckResReserve(struct hData *hPtr,
                             state = 0;
                             break;
                         }
+                    }
+                } else {
 
-                    } else {
-
-                        if (hPtr->loadStop[cc] >= INFINIT_LOAD
-                            || hPtr->loadStop[cc] <= -INFINIT_LOAD)
-                            use_val = (int)(hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
-                        else {
-                            use_val = (int)((hPtr->lsbLoad[cc]
-                                             - hPtr->loadStop[cc])/resValPtr->val[cc]);
-                            if (use_val < 0) {
-                                /* state = !ok
-                                 */
-                                state = 0;
-                                break;
-                            }
+                    if (hPtr->loadStop[cc] >= INFINIT_LOAD
+                        || hPtr->loadStop[cc] <= -INFINIT_LOAD)
+                        use_val = (int)(hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
+                    else {
+                        use_val = (int)((hPtr->lsbLoad[cc]
+                                         - hPtr->loadStop[cc])/resValPtr->val[cc]);
+                        if (use_val < 0) {
+                            /* state = !ok
+                             */
+                            state = 0;
+                            break;
                         }
                     }
-
-                    if (cc == MEM
-                        && (((int)(hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
-                        state = 0;
-                        break;
-                    }
-
-                } else {
-                    /* Shared resource
-                     */
-                    float value;
-                    struct resourceInstance *instance;
-
-                    value = getHRValue(allLsInfo->resTable[cc].name,
-                                       hPtr,
-                                       &instance);
-                    if (value == -INFINIT_LOAD) {
-                        state = 0;
-                        break;
-                    }
-
-                    if (value < resValPtr->val[cc]
-                        && allLsInfo->resTable[cc].orderType != INCR) {
-                        state = 0;
-                        break;
-                    }
-
-                    use_val = hPtr->numCPUs;
                 }
+                if (cc == MEM
+                    && (((int)(hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
+                    state = 0;
+                    break;
+                }
+            } else {
+                /* Shared resource
+                 */
+                float value;
+                struct resourceInstance *instance;
+
+                value = getHRValue(allLsInfo->resTable[cc].name,
+                                   hPtr,
+                                   &instance);
+                if (value == -INFINIT_LOAD) {
+                    state = 0;
+                    break;
+                }
+
+                if (value < resValPtr->val[cc]
+                    && allLsInfo->resTable[cc].orderType != INCR) {
+                    state = 0;
+                    break;
+                }
+
+                use_val = hPtr->numCPUs;
             }
-        }
+        } /* for (cc = 0; cc < allLsInfo->nres; cc ++) */
+
         /* All requested rusage are in state ok
          */
         if (state == 1)
             return hPtr->numCPUs;
-    }
+
+    } /* while (all rusage blocks */
 
     return 0;
 }
