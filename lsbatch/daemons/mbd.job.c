@@ -3919,7 +3919,7 @@ switchJobArray(struct jobSwitchReq *switchReq,
 
     }
 
-    return(cc);
+    return cc;
 
 }
 
@@ -4226,7 +4226,7 @@ moveJobArray(struct jobMoveReq *moveReq,
         moveReq->position = savePosition;
     }
 
-    return(cc);
+    return cc;
 
 }
 
@@ -5662,7 +5662,7 @@ cleanup:
     else {
         freeSubmitReq(tempSub);
         FREEUP (tempSub);
-        return (NULL);
+        return NULL;
     }
 }
 
@@ -6244,7 +6244,7 @@ error:
     if (logclass & (LC_EXEC) && resReq)
         ls_syslog(LOG_DEBUG1, "%s: parseResReq(%s) failed",
                   fname, resReq);
-    return (NULL);
+    return NULL;
 
 }
 void
@@ -6955,7 +6955,7 @@ getZombieJob (LS_LONG_INT jobId)
             continue;
         return (jData);
     }
-    return (NULL);
+    return NULL;
 
 }
 

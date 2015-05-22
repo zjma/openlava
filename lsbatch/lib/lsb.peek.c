@@ -42,13 +42,13 @@ lsb_peekjob (LS_LONG_INT jobid)
     
     if (jobid <= 0) {
         lsberrno = LSBE_BAD_ARG;
-        return(NULL);
+        return NULL;
     }
 
     jobPeekReq.jobId = jobid;
 
     if (authTicketTokens_(&auth, NULL) == -1) {
-	return (NULL);
+	return NULL;
     }
 
     
@@ -61,14 +61,14 @@ lsb_peekjob (LS_LONG_INT jobid)
 		       &auth)) {
         lsberrno = LSBE_XDR;
 	xdr_destroy(&xdrs);
-	return(NULL);
+	return NULL;
     }
 
     
     if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, 
                        &hdr, NULL, NULL, NULL)) == -1) {
 	xdr_destroy(&xdrs);
-	return (NULL);
+	return NULL;
     }
 
     xdr_destroy(&xdrs);
@@ -88,7 +88,7 @@ lsb_peekjob (LS_LONG_INT jobid)
 	    if (cc) {
 		free(reply_buf);
 	    }
-	    return(NULL);
+	    return NULL;
         }
 	xdr_destroy(&xdrs);
 	if (cc) {
@@ -96,12 +96,12 @@ lsb_peekjob (LS_LONG_INT jobid)
 	}
 	
 	if (getUser(lsfUserName, MAXLINELEN) != 0) {
-	    return(NULL);
+	    return NULL;
 	}
 
 	if ((pw = getpwnam(lsfUserName)) == NULL) {
 	    lsberrno = LSBE_SYS_CALL;
-	    return(NULL);
+	    return NULL;
 	}
 
 	if (logclass & LC_EXEC) {
@@ -144,11 +144,11 @@ lsb_peekjob (LS_LONG_INT jobid)
                           }
                      }
                      if (pid == -1) {
-                        return (NULL);
+                        return NULL;
                      }
                      
                      if (waitpid(pid, &status, 0) == -1) {
-                         return (NULL);
+                         return NULL;
                      }
                      if (WEXITSTATUS(status) == TRUE) {
                         sprintf(fnBuf, "%s/%s", pSpoolDirUnix,jobPeekReply.outFile);
@@ -166,6 +166,6 @@ lsb_peekjob (LS_LONG_INT jobid)
 
     if (cc)
     free(reply_buf);
-    return(NULL);
+    return NULL;
 
 } 

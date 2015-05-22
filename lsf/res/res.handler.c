@@ -1974,7 +1974,7 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
 
 
     if (pid < 0)
-        return (NULL);
+        return NULL;
 
     if (pid == 0) {
 
@@ -3290,7 +3290,7 @@ notify_client(int s, int rpid, resAck ack, struct sigStatusUsage *sigStatRu)
     if ((rc = writeEncodeMsg_(s, reqBuf, reqBufSize, &reqHdr,
                               (char *) &st, NB_SOCK_WRITE_FIX, xdr_niosStatus, 0)) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "writeEncodeMsg_");
-        return (rc);
+        return rc;
     }
     if (debug>1) {
         printf("client is notified for task <%d>\n", rpid);
@@ -3560,14 +3560,14 @@ copyArray(char **from)
         ;
 
     if ((p = (char **) malloc((size + 1) * sizeof(char *))) == NULL)
-        return (NULL);
+        return NULL;
 
     for (i = 0; i < size; i++) {
         if ((p[i] = putstr_(from[i])) == NULL) {
             for (i--; i >= 0; i--)
                 free(p[i]);
             free(p);
-            return (NULL);
+            return NULL;
         }
     }
 
@@ -3807,7 +3807,7 @@ notify_sigchild(struct child *cp)
         }
     }
 
-    return(rc);
+    return rc;
 
 }
 

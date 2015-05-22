@@ -53,7 +53,7 @@ bqc (int argc, char *argv[], int opCode)
     for (i = 0; i < numQueues; i++) {
         ctrlQueue (queueInfo[i].queue, opCode);
     }
-    return (exitrc);
+    return exitrc;
 }
 static int
 ctrlQueue (char *queue, int opCode)

@@ -1708,7 +1708,7 @@ addUnixGrp (struct group *unixGrp, char *grpName,
     if (gp->memberTab.numEnts == 0 && gp->numGroups == 0) {
         freeGrp (gp);
         *ngroups -= 1;
-        return (NULL);
+        return NULL;
     }
     return (gp);
 

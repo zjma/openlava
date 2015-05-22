@@ -38,7 +38,7 @@ setCreate(const int size,
     if (!set) {
         bitseterrno = LS_BITSET_ERR_NOMEM;
         ls_syslog(LOG_ERR,"%s %s", fname, setPerror(bitseterrno));
-        return (NULL);
+        return NULL;
     }
 
     set->setDescription = putstr_(caller);
@@ -62,7 +62,7 @@ setCreate(const int size,
     set->bitmask = calloc(set->setWidth, sizeof(unsigned int));
     if (!set->bitmask) {
         bitseterrno = LS_BITSET_ERR_NOMEM;
-        return(NULL);
+        return NULL;
     }
 
     if (directFunction)
@@ -145,7 +145,7 @@ setDup(LS_BITSET_T *set)
     if (! set2) {
         bitseterrno = LS_BITSET_ERR_NOMEM;
         ls_syslog(LOG_ERR,"%s %s", __func__, setPerror(bitseterrno));
-        return (NULL);
+        return NULL;
     }
 
     memcpy((void *)set2, (void *)set, sizeof(LS_BITSET_T));
@@ -422,7 +422,7 @@ setEnlarge(LS_BITSET_T *set, unsigned int newSize)
         realloc(set->bitmask, sizeof(unsigned int)*set->setWidth);
     if (set->bitmask == NULL) {
         bitseterrno = LS_BITSET_ERR_NOMEM;
-        return (NULL);
+        return NULL;
     }
 
     memset(set->bitmask + oldWidth, 0,
@@ -550,13 +550,13 @@ setIteratorCreate(LS_BITSET_T *set)
     if (!SET_IS_VALID(set)) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd,NL_SETN,5300,"%s: expected a non-NULL set pointer but got a NULL one"), fname);
         bitseterrno = LS_BITSET_ERR_BADARG;
-        return (NULL);
+        return NULL;
     }
 
     iter = calloc(1, sizeof(LS_BITSET_ITERATOR_T));
     if (!iter) {
         bitseterrno = LS_BITSET_ERR_NOMEM;
-        return (NULL);
+        return NULL;
     }
     iter->set = set;
     iter->setCurrentBit = 0;
@@ -827,7 +827,7 @@ setObserverAttach(LS_BITSET_OBSERVER_T *observer, LS_BITSET_T *set)
                                (LIST_ENTRY_T *)set->observers,
                                (LIST_ENTRY_T *)observer);
     if (rc < 0)
-        return(rc);
+        return rc;
 
     observer->set = set;
     return 0;

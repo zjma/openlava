@@ -324,7 +324,7 @@ lsRGetpidAsync_(int taskid, int *pid)
     char host[MAXHOSTNAMELEN];
 
     if ((tid = tid_find(taskid)) == NULL) {
-        return(NULL);
+        return NULL;
     }
 
     s = tid->sock;
@@ -335,7 +335,7 @@ lsRGetpidAsync_(int taskid, int *pid)
         if (ackReturnCode_(s) < 0) {
             closesocket(s);
             _lostconnection_(host);
-            return (NULL);
+            return NULL;
         }
     }
 
@@ -346,7 +346,7 @@ lsRGetpidAsync_(int taskid, int *pid)
 		 sizeof(buf), xdr_resGetpid, 0, 0, NULL) == -1) {
         closesocket(s);
         _lostconnection_(host);
-        return (NULL);
+        return NULL;
     }
 
 
@@ -360,7 +360,7 @@ lsRGetpidAsync_(int taskid, int *pid)
 
     if (request != NULL)
         if (lsQueueDataAppend_((char *)request, requestQ))
-            return(NULL);
+            return NULL;
 
     return (void *)request;
 

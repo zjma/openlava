@@ -161,7 +161,7 @@ getEchkpntVar(const char *pVariableName) {
 		    return(pTableItem->m_pVarPair->m_pValue);
 		}
 	}
-	return(NULL);
+	return NULL;
 }
 
 
@@ -374,7 +374,7 @@ insertVarToTable_(const char *pVariableName, const char *pVariableValue){
 	}else{
 		char *pValue = pTableItem->m_pVarPair->m_pValue;
 		if (strcmp(pValue,pVariableValue) == 0){
-			return(2);
+			return 2;
 		}
 		pTableItem->m_pVarPair->m_pValue = putstr_(pVariableValue);
 		

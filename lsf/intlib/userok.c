@@ -56,7 +56,7 @@ auth_user(u_long in, u_short local, u_short remote)
                           _i18n_msg_get(ls_catd, NL_SETN, 5801,
                                         "%s: LSF_ID_PORT in lsf.conf must be positive number"),/* catgets 5801 */
                           fname);
-                return(NULL);
+                return NULL;
             }
             id_port = htons(id_port);
         } else {
@@ -66,7 +66,7 @@ auth_user(u_long in, u_short local, u_short remote)
                           _i18n_msg_get(ls_catd, NL_SETN, 5802,
                                         "%s: %s(%s/tcp) failed: %m"), /* catgets 5802 */
                           fname, "getservbyname", "ident");
-                return (NULL);
+                return NULL;
             }
             id_port = svp->s_port;
         }

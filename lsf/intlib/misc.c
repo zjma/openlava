@@ -227,7 +227,7 @@ safe_calloc(unsigned number, unsigned size)
     void *start_address;
 
     if (!number) {
-        return(NULL);
+        return NULL;
     }
     start_address= (void *) calloc(number, size);
     return(start_address);

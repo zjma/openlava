@@ -568,9 +568,9 @@ checkThresholdCond (char *resReq)
         if (logclass & (LC_EXEC) && resReq)
             ls_syslog(LOG_DEBUG1, "%s: parseResReq(%s) failed",
                       fname, resReq);
-        return (NULL);
+        return NULL;
     }
-    return (resValPtr);
+    return resValPtr;
 
 }
 
@@ -580,7 +580,7 @@ getResMaps(int nRes, char **resource)
     int i, *temp, resNo;
 
     if (nRes < 0)
-        return (NULL);
+        return NULL;
 
     temp = (int *) my_malloc (GET_INTNUM(allLsInfo->nRes) * sizeof (int),
                          "getResMaps");

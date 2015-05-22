@@ -198,7 +198,7 @@ findMyCluster(char *CName, struct sharedConf *mySharedConf)
 
     if ((lhost = ls_getmyhostname()) == NULL) {
         ls_perror("ls_getmyhostname");
-	return (NULL);
+	return NULL;
     }
 
 

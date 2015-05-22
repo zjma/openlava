@@ -56,7 +56,7 @@ getEchkpntMethodDir(char *pChkpnt_Cmd,const char *pMethodDir, const char *pProgr
 		sprintf(logMesgBuf,"%s : parameter pProgramName is NULL\n",fname);
 		fprintf(stderr,"%s",logMesgBuf);
 		logMesg(logMesgBuf);
-		return(NULL);
+		return NULL;
 	}
 	
 	if (pChkpnt_Cmd == NULL){
@@ -85,7 +85,7 @@ getEchkpntMethodDir(char *pChkpnt_Cmd,const char *pMethodDir, const char *pProgr
 			sprintf(logMesgBuf,"%s : can't get the LSF_SERVERDIR value\n",fname);
 			fprintf(stderr,"%s",logMesgBuf);
 			logMesg(logMesgBuf);
-			return(NULL);
+			return NULL;
 		}
 	}
 

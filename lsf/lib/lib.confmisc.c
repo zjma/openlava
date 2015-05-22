@@ -107,7 +107,7 @@ getBeginLine(FILE *fp, int *LineNum)
     for (;;) {
         sp = getNextLineC_(fp, LineNum, TRUE);
         if (! sp)
-            return (NULL);
+            return NULL;
 	
         wp = getNextWord_(&sp);
         if (wp && (strcasecmp(wp, "begin") == 0))
@@ -370,12 +370,12 @@ getBeginLine_conf(struct lsConf *conf, int *LineNum)
     char *wp;
     
     if (conf == NULL)
-	return (NULL);
+	return NULL;
 
     for (;;) {
         sp = getNextLineC_conf(conf, LineNum, TRUE);
         if (sp == NULL)
-            return (NULL);
+            return NULL;
 	
         wp = getNextWord_(&sp);
         if (wp && (strcasecmp(wp, "begin") == 0))

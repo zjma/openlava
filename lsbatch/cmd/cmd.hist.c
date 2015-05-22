@@ -62,7 +62,7 @@ sysHist(int argc, char **argv, int opCode)
             }
             break;
 	default:
-	    return(-2);
+	    return -2;
 	}
     }
 
@@ -81,12 +81,12 @@ sysHist(int argc, char **argv, int opCode)
     case MBD_HIST:
     case SYS_HIST:
         if (argc > optind)
-            return(-2);
+            return -2;
 	break;
 
     default:
 	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1052, "Unknown operation code\n"))); /* catgets  1052  */
-	return(-2);
+	return -2;
     }
 
     return (searchEventFile(&req, &eventFound));

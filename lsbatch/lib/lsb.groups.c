@@ -51,12 +51,12 @@ getGrpInfo(char **groups, int *numGroups, int options)
 
     if (numGroups != NULL && *numGroups < 0) {
         lsberrno = LSBE_BAD_ARG;
-        return (NULL);
+        return NULL;
     }
 
     if (*numGroups < 0 || *numGroups > MAX_GROUPS) {
         lsberrno = LSBE_BAD_ARG;
-        return (NULL);
+        return NULL;
     }
 
 
@@ -103,7 +103,7 @@ getGrpInfo(char **groups, int *numGroups, int options)
                    &reply) < 0) {
 
         *numGroups = reply.numGroups;
-        return(NULL);
+        return NULL;
     }
 
     *numGroups = reply.numGroups;

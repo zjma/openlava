@@ -2010,20 +2010,20 @@ acctMapGet(int *fail, char *lsfUserName)
     struct stat statbuf;
 
     if ((pw = getpwnam(lsfUserName)) == NULL)
-        return (NULL);
+        return NULL;
 
     strcpy(hostfn, pw->pw_dir);
     strcat(hostfn,"/.lsfhosts");
 
     if ((fp=fopen(hostfn, "r")) == NULL)
-        return(NULL);
+        return NULL;
 
 
     if ((fstat(fileno(fp), &statbuf) < 0) ||
         (statbuf.st_uid != 0 && statbuf.st_uid != pw->pw_uid) ||
         (statbuf.st_mode & 066)) {
         fclose(fp);
-        return(NULL);
+        return NULL;
     }
 
     maplen =256;
@@ -2031,7 +2031,7 @@ acctMapGet(int *fail, char *lsfUserName)
     if (!map) {
         lsberrno = LSBE_NO_MEM;
         *fail=1;
-        return(NULL);
+        return NULL;
     }
     map[0]='\0';
     len =0;
@@ -2054,7 +2054,7 @@ acctMapGet(int *fail, char *lsfUserName)
                 lsberrno = LSBE_NO_MEM;
                 free(map);
                 *fail=1;
-                return(NULL);
+                return NULL;
             }
             map = newmap;
         }
@@ -3571,13 +3571,13 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
     if (access(filename, F_OK) != 0) {
         PRINT_ERRMSG3(errMsg, I18N_FUNC_S_FAIL,
                       __func__, "access", filename);
-        return (NULL);
+        return NULL;
     }
 
     if (socketpair (AF_UNIX, SOCK_STREAM, 0, childIoFd) < 0) {
         PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL, __func__, "socketpair");
         lsberrno = LSBE_SYS_CALL;
-        return (NULL);
+        return NULL;
     }
     optArgc = 0;
 
@@ -3585,7 +3585,7 @@ parseOptFile_ (char *filename, struct submit *req, char **errMsg)
     if (pid < 0) {
         lsberrno = LSBE_SYS_CALL;
         PRINT_ERRMSG2(errMsg, I18N_FUNC_FAIL_M, __func__, "fork");
-        return(NULL);
+        return NULL;
     } else if (pid == 0) {
 
         char childLine[MAXLINELEN*4];
@@ -3678,7 +3678,7 @@ parentErr:
         ls_syslog(LOG_DEBUG, "%s: parent malloc faild!", __func__);
     FREEUP (lineBuf);
     close(childIoFd[0]);
-    return (NULL);
+    return NULL;
 }
 
 

@@ -282,15 +282,15 @@ my_getopt(int nargc, char **nargv, char *ostr, char **errMsg)
     int i, num_arg;
 
     if ((optName = nargv[optind]) == NULL)
-        return (NULL);
+        return NULL;
     if (optind >= nargc || *optName != '-')
-        return (NULL);
+        return NULL;
     if (optName[1] && *++optName == '-') {
         ++optind;
-        return(NULL);
+        return NULL;
     }
     if (ostr == NULL)
-        return(NULL);
+        return NULL;
     strcpy (svstr, ostr);
     num_arg = 0;
     optarg = NULL;

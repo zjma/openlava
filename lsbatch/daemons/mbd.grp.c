@@ -141,7 +141,7 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	    if (g == NULL) {
 		FREEUP(groupInfoEnt);
 		lsberrno = LSBE_NO_MEM;
-		return (NULL);
+		return NULL;
 	    }
 	    memcpy(groupInfoEnt + i, g, sizeof(struct groupInfoEnt));
 	}
@@ -201,7 +201,7 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	    if (g == NULL){
 		lsberrno = LSBE_NO_MEM;
 		FREEUP(groupInfoEnt);
-		return (NULL);
+		return NULL;
 	    }
 
 	    memcpy(groupInfoEnt + j, g, sizeof(struct groupInfoEnt));
@@ -554,7 +554,7 @@ void *
 getuDataByIndex(int index)
 {
     if (index > uDataPtrTb->_size_)
-	return (NULL);
+	return NULL;
 
     return ((struct uData *)uDataPtrTb->_base_[index]);
 }
@@ -861,7 +861,7 @@ uDataTableGetNextEntry(UDATA_TABLE_T *this)
 
     if (i == this->_cur_) {
 	i = 0;
-	return (NULL);
+	return NULL;
     } else {
 	return (this->_base_[i++]);
     }

@@ -89,7 +89,7 @@ ls_placeofhosts(char *resreq,
 
     if (!listsize || !hostlist) {
         lserrno = LSE_BAD_ARGS;
-        return (NULL);
+        return NULL;
     }
 
     if (!numhosts)

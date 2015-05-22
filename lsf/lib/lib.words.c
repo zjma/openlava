@@ -94,7 +94,7 @@ getNextWordSet(char **line, const char *set)
 
     if (wordp == word)
 
-        return(NULL);
+        return NULL;
 
 
     *wordp = '\0';
@@ -125,7 +125,7 @@ getNextValueQ_(char **line, char ch1, char ch2)
         sp = getNextWord_(line);
         if (sp == NULL) {
             lserrno = LSE_CONF_SYNTAX;
-            return (NULL);
+            return NULL;
         }
     } else
         sp++;
@@ -143,7 +143,7 @@ getNextValueQ_(char **line, char ch1, char ch2)
 
     if (value == NULL) {
         lserrno = LSE_MALLOC;
-        return (NULL);
+        return NULL;
     }
     strcpy(value, sp);
     sp = strchr(value, ch2);
@@ -248,7 +248,7 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
     line = calloc(1, MAXLINELEN);
     if (line == NULL) {
         lserrno = LSE_MALLOC;
-        return (NULL);
+        return NULL;
     }
 
 
@@ -330,7 +330,7 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
         return(line);
     }
 
-    return(NULL);
+    return NULL;
 }
 
 char *

@@ -1571,7 +1571,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
     if (*numJUsable == 0) {
         if (logclass & (LC_SCHED | LC_PEND))
             ls_syslog(LOG_DEBUG1, "%s: Got no eligible host for job %s; numReasons=%d", fname, lsb_jobid2str(jp->jobId), jp->numReasons);
-        return (NULL);
+        return NULL;
     }
 
     if (logclass & LC_SCHED) {
@@ -3810,11 +3810,11 @@ orderByStatus (struct candHost *hosts, int j, bool_t orderByClosedFull)
 
 
     if (LSB_HOST_OK(status2) && LSB_HOST_OK(status1))
-        return (2);
+        return 2;
 
     if (orderByClosedFull && LSB_HOST_FULL(status2)
         && LSB_HOST_FULL(status1)) {
-        return (2);
+        return 2;
     }
 
     return (1);

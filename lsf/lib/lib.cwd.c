@@ -31,7 +31,7 @@ mygetwd_(char *path)
 	   strncpy(path, temp_buff, MAXFILENAMELEN);
 	   return(path);
 	} else
-	   return(NULL);
+	   return NULL;
     }
 
     if (stat(pwd, &pwdstat) == 0 && stat(".", &dotstat) == 0) {
@@ -45,6 +45,6 @@ mygetwd_(char *path)
         strncpy(path, temp_buff, MAXFILENAMELEN);
 	return(path);
     } else
-       return(NULL);
+       return NULL;
 } 
 

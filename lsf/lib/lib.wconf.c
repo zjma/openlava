@@ -43,7 +43,7 @@ ls_getconf ( char *fname )
 	ls_syslog(LOG_ERR, "%s: %s.", "ls_getconf", 
 		  I18N(6000, "Null filename")); /* catgets 6000 */
 	lserrno = LSE_NO_FILE;
-	return (NULL);
+	return NULL;
     }
 
     conf = (struct lsConf *) malloc (sizeof(struct lsConf));
@@ -51,7 +51,7 @@ ls_getconf ( char *fname )
 	ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "ls_getconf", 
 		  "malloc", sizeof (struct lsConf));
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
 
     conf->confhandle = NULL;	        
@@ -62,14 +62,14 @@ ls_getconf ( char *fname )
     if (blockStack==NULL) {		
 	ls_freeconf(conf);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     } 
     ptrStack = initStack();	
     if (ptrStack==NULL) {		
     	freeStack(blockStack);
 	ls_freeconf(conf);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
     defsize = 5;
     defNames = (char **) malloc (defsize*sizeof(char *));
@@ -458,7 +458,7 @@ ls_getconf ( char *fname )
 		  "malloc", sizeof(struct confHandle));
     	fclose (fp);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
     len = strlen(fname);
     conf->confhandle->rootNode = rootNode;
@@ -468,7 +468,7 @@ ls_getconf ( char *fname )
 		  "malloc", (len+1) * sizeof(char));
     	fclose (fp);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
     strcpy ( conf->confhandle->fname, fname );
     conf->confhandle->curNode = rootNode;
@@ -494,7 +494,7 @@ Error:
         if (fp)
 	   fclose (fp);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
     conf->confhandle->rootNode = rootNode;
     conf->confhandle->fname = NULL;
@@ -504,7 +504,7 @@ Error:
     ls_freeconf(conf);
     if (fp)
        fclose (fp);
-    return (NULL);
+    return NULL;
 } 
 
 static struct confNode *
@@ -514,7 +514,7 @@ newNode(void)
 
     node = (struct confNode *)malloc(sizeof(struct confNode));
     if (node == NULL)
-	return (NULL);
+	return NULL;
     node->leftPtr = NULL;
     node->rightPtr = NULL;
     node->fwPtr = NULL;
@@ -533,12 +533,12 @@ initStack(void)
    
    stack= (struct pStack *)malloc(sizeof(struct pStack ));
    if (stack == NULL)
-       return (NULL);
+       return NULL;
  
    stack->top=-1;
    stack->nodes = (struct confNode **) malloc(5*sizeof(struct confNode *));
    if (stack->nodes == NULL)
-       return (NULL);
+       return NULL;
    stack->size = 5;
    return (stack);
 } 
@@ -568,7 +568,7 @@ struct confNode *
 popStack(struct pStack *stack)
 {
    if (stack == NULL || stack->top < 0)
-      return (NULL);
+      return NULL;
    return (stack->nodes[stack->top--]);
 } 
  
@@ -737,7 +737,7 @@ getNextLineC_conf(struct lsConf *conf, int *LineCount, int confFormat)
     int		isUNCPath = 0;
 
     if (conf == NULL)
-	return (NULL);
+	return NULL;
 
     FREEUP(longLine);		
 
@@ -745,7 +745,7 @@ getNextLineC_conf(struct lsConf *conf, int *LineCount, int confFormat)
 	do {
     	    line = readNextLine ( conf, LineCount );	
     	    if (line == NULL)
-	        return (NULL);
+	        return NULL;
 
 				
 	    toBeContinue = 0;
@@ -753,7 +753,7 @@ getNextLineC_conf(struct lsConf *conf, int *LineCount, int confFormat)
 	    len = strlen(line)+1;
     	    myLine = (char *) malloc (len*sizeof(char));
 	    if (myLine==NULL)
-		return (NULL);
+		return NULL;
 
 	    sp = line;
 	    cp = myLine;
@@ -828,7 +828,7 @@ getNextLineC_conf(struct lsConf *conf, int *LineCount, int confFormat)
 	do {
     	    line = readNextLine ( conf, LineCount );	
     	    if (line == NULL)
-	        return (NULL);
+	        return NULL;
 	} while (line[0]=='\0');
 	return (line);
     }
@@ -841,11 +841,11 @@ readNextLine(struct lsConf *conf, int *lineNum)
     char	*line;
 
     if (conf == NULL)
-	return (NULL);
+	return NULL;
 
     node = conf->confhandle->curNode;
     if (node == NULL)
-	return (NULL);
+	return NULL;
 
     if (node->cond) {			
     	if ( node->tag != NODE_PASED ) {

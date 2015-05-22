@@ -86,7 +86,7 @@ lsQueueDataAppend_(char *data, struct lsQueue *head)
     rc =lsQueueEntryAppend_(entry, head);
     entry->data = data;
 
-    return(rc);
+    return rc;
 }     
 
 struct lsQueueEntry *
@@ -141,7 +141,7 @@ lsQueueDataAddFront_(char *data, struct lsQueue *head)
     rc =lsQueueEntryAddFront_(entry, head);
     entry->data = data;
 
-    return(rc);
+    return rc;
 } 
 
 void
@@ -230,7 +230,7 @@ lsQueueSearch_(int hint, char *val, struct lsQueue *head)
     int rc;
 
     if (head->compare == NULL) 
-        return (NULL);
+        return NULL;
 
     start = head->start;
     found = FALSE;

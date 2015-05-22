@@ -2792,9 +2792,9 @@ getLoginShell (char *jfData, char *jobFile, struct hostent *hp, int readFile)
 
     if (!readFile) {
         if (jfData == NULL)
-            return (NULL);
+            return NULL;
         if ((sp = strstr(jfData, "\n# LOGIN_SHELL ")) == NULL)
-            return (NULL);
+            return NULL;
 
         sp += strlen("\n# LOGIN_SHELL ");
         while (*sp != '\n') {
@@ -2830,7 +2830,7 @@ getLoginShell (char *jfData, char *jobFile, struct hostent *hp, int readFile)
 
         if ((sp = strstr(line, "# LOGIN_SHELL ")) == NULL) {
             FCLOSEUP(&fp);
-            return (NULL);
+            return NULL;
         }
         sp += strlen("# LOGIN_SHELL ");
         while (*sp != '\n') {
@@ -2842,7 +2842,7 @@ getLoginShell (char *jfData, char *jobFile, struct hostent *hp, int readFile)
         return (shellPath);
     }
     FCLOSEUP(&fp);
-    return (NULL);
+    return NULL;
 
 }
 
@@ -3286,7 +3286,7 @@ postJobSetup(struct jobCard *jp)
                       lsb_jobid2str(jp->jobSpecs.jobId), "initPaths");
             chuser(jp->jobSpecs.execUid);
         }
-        return (-2);
+        return -2;
     }
 
     return 0;
@@ -3984,7 +3984,7 @@ getJobVersion (struct jobSpecs *jobSpecs)
 
     if (jobSpecs->numEnv <= 0)
 
-        return (2);
+        return 2;
 
     for (i = 0; i < jobSpecs->numEnv; i++) {
         if ((sp = strstr (jobSpecs->env[i], "LSF_VERSION=")) == NULL)

@@ -398,7 +398,7 @@ yyalloc(struct mallocList  **head, int size)
         entry = (struct mallocList  *)malloc(sizeof(struct mallocList));
         if (!entry) {
             free(space);
-            return(NULL);
+            return NULL;
         }
         entry->space = space;
         entry->next = *head;

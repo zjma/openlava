@@ -358,7 +358,7 @@ parseJobArrayIndex(char *jobName)
 
     index = strchr(jobName, '[');
     if (!index)
-        return(NULL);
+        return NULL;
     yybuff = index;
     if (idxparse(&idxList, &maxJLimit)) {
         freeIdxList(idxList);
@@ -366,7 +366,7 @@ parseJobArrayIndex(char *jobName)
 	    fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
         else
 	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1014, "%s: Bad job array index list.\n")), jobName); /* catgets  1014  */
-        return(NULL);
+        return NULL;
     }
 
 
@@ -379,28 +379,28 @@ parseJobArrayIndex(char *jobName)
 		    idx->start, idx->end,
 		    I18N(1015, "Job Array index invalid range"));/* catgets 1015 */
             freeIdxList(idxList);
-            return(NULL);
+            return NULL;
         }
         if ((idx->start <= 0) || (idx->start > LSB_MAX_ARRAY_IDX))  {
 	    fprintf(stderr, "%d: %s.\n",
 		   idx->start,
 		   I18N(1016, "Job Array index out of valid range")); /* catgets  1016  */
             freeIdxList(idxList);
-            return(NULL);
+            return NULL;
         }
         if ((idx->end <= 0) || (idx->end > LSB_MAX_ARRAY_IDX))  {
 	    fprintf(stderr, "%d: %s.\n",
 		    idx->end,
 		    I18N(1016, "Job Array index out of valid range"));
             freeIdxList(idxList);
-            return(NULL);
+            return NULL;
         }
         if ((idx->step <= 0) || (idx->step > LSB_MAX_ARRAY_IDX))  {
 	    fprintf(stderr, "%d: %s.\n",
 		    idx->step,
 		    I18N(1018, "Job Array index step out of valid range"));  /* catgets  1018  */
             freeIdxList(idxList);
-            return(NULL);
+            return NULL;
         }
 
     }

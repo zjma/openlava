@@ -58,7 +58,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
     else {
         if ((infoReq.names = malloc(sizeof(char *))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
 	alloc = TRUE;
         infoReq.names[0] = "";
@@ -71,7 +71,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
     cc = sizeof(struct infoReq) + cc * MAXHOSTNAMELEN + cc + 100;
     if ((request_buf = malloc (cc)) == NULL) {
         lsberrno = LSBE_NO_MEM;
-        return(NULL);
+        return NULL;
     }
     xdrmem_create(&xdrs, request_buf, cc, XDR_ENCODE);
 
@@ -80,7 +80,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
         xdr_destroy(&xdrs);
         free (request_buf);
         lsberrno = LSBE_XDR;
-        return(NULL);
+        return NULL;
     }
 
 
@@ -88,7 +88,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
 		       NULL, NULL, NULL)) == -1) {
         xdr_destroy(&xdrs);
         free (request_buf);
-        return (NULL);
+        return NULL;
     }
     xdr_destroy(&xdrs);
     free (request_buf);
@@ -102,7 +102,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
             xdr_destroy(&xdrs);
 	    if (cc)
 		free(reply_buf);
-	    return(NULL);
+	    return NULL;
         }
         xdr_destroy(&xdrs);
 	if (cc)
@@ -112,7 +112,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
 
     if (cc)
 	free(reply_buf);
-    return(NULL);
+    return NULL;
 
 }
 

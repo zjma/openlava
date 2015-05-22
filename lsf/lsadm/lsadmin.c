@@ -270,7 +270,7 @@ lsadminDebug(int argc, char **argv, int opCode)
     else if (opCode == LIM_TIMING || opCode == RES_TIMING)
         strcpy (opt, "ol:f:");
     else
-        return (-2);
+        return -2;
     linux_optind = 1;
     linux_opterr = 1;
     if (strstr(argv[0],"lsadmin")) {

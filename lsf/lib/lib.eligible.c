@@ -34,7 +34,7 @@ ls_resreq(char *task)
     static char resreq[MAXLINELEN];
 
     if (!ls_eligible(task, resreq, LSF_LOCAL_MODE))
-       return(NULL);
+       return NULL;
     else
        return(resreq);
 

@@ -858,7 +858,7 @@ ls_niowrite(char *buf, int len)
         writeBuf.socks = socks_bit;
         writeBuf.empty = FALSE;
         flush_buffer();
-        return(cc);
+        return cc;
     }
 }
 
@@ -1081,7 +1081,7 @@ ls_nioread(int tid, char *buf, int len)
     }
     conn[index].sock.rcount -= cc;
 
-    return(cc);
+    return cc;
 }
 
 int
@@ -2040,7 +2040,7 @@ READ_RETRY:
     conn[connIndex].rbuf->bcount += cc;
     conn[connIndex].rbuf->bp += cc;
 
-    return(cc);
+    return cc;
 }
 
 int
@@ -2617,7 +2617,7 @@ sendHeartbeat(void)
     }
 
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
-    return(cc);
+    return cc;
 }
 
 

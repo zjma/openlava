@@ -1245,7 +1245,7 @@ getResPairs(struct hData *hPtr)
     struct resPair *resPairs = NULL;
 
     if (hPtr->numInstances <= 0)
-        return (NULL);
+        return NULL;
     resPairs = (struct resPair *) my_malloc
         (hPtr->numInstances * sizeof (struct resPair), "getResPairs");
 
@@ -1503,21 +1503,21 @@ getReserveValues(struct resVal *jobResVal, struct resVal *qResVal)
     int diffrent = FALSE;
 
     if (jobResVal == NULL && qResVal == NULL)
-        return (NULL);
+        return NULL;
 
     if (jobResVal == NULL && qResVal != NULL) {
 
         if (hasResReserve (qResVal) == TRUE)
             return (qResVal);
         else
-            return (NULL);
+            return NULL;
     }
     if (jobResVal != NULL && qResVal == NULL) {
 
         if (hasResReserve (jobResVal) == TRUE)
             return (jobResVal);
         else
-            return (NULL);
+            return NULL;
     }
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {

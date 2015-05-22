@@ -160,7 +160,7 @@ treeLexNext(struct jgTreeNode *node)
     struct jgTreeNode *parent;
 
     if (node == NULL)
-        return(NULL);
+        return NULL;
     if (node->child)
         return(node->child) ;
     if (node->right)
@@ -171,14 +171,14 @@ treeLexNext(struct jgTreeNode *node)
             return(parent->right) ;
         parent = parent->parent;
     }
-    return(NULL) ;
+    return NULL ;
 }
 
 struct jgTreeNode *
 treeNextSib(struct jgTreeNode *node)
 {
     if (node == NULL)
-        return(NULL);
+        return NULL;
     if (node->right)
         return(node->right);
     while (node->parent) {
@@ -186,7 +186,7 @@ treeNextSib(struct jgTreeNode *node)
         if (node->right)
             return(node->right);
     }
-    return(NULL);
+    return NULL;
 }
 
 
@@ -292,7 +292,7 @@ struct jgTreeNode *
 treeClip(struct jgTreeNode *node)
 {
     if ( !node )
-        return(NULL);
+        return NULL;
     if (node->left)
         node->left->right = node->right;
     else if (node->parent)
@@ -447,13 +447,13 @@ findTreeNode(struct jgTreeNode *node, char *name)
     struct jgTreeNode  *nPtr;
 
     if (!node)
-        return(NULL);
+        return NULL;
 
     for (nPtr = node; nPtr;   nPtr = nPtr->right) {
         if (strcmp(name, nPtr->name) == 0)
             return(nPtr);
     }
-    return(NULL);
+    return NULL;
 }
 
 void
@@ -510,12 +510,12 @@ parentOfJob(char * group_spec)
 
     if (!group_spec){
         lsberrno = LSBE_JGRP_NULL;
-        return(NULL);
+        return NULL;
     }
 
     if (strlen(group_spec) >= MAXPATHLEN) {
         lsberrno = LSBE_NO_MEM;
-        return(NULL);
+        return NULL;
     }
 
     strcpy(parentStr, group_spec);

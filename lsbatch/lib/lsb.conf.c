@@ -286,13 +286,13 @@ lsb_readparam(struct lsConf *conf)
     if (conf == NULL) {
         ls_syslog(LOG_ERR, I18N_NULL_POINTER,  __func__, "conf");
         lsberrno = LSBE_CONF_FATAL;
-        return (NULL);
+        return NULL;
     }
 
     if (conf->confhandle == NULL) {
         ls_syslog(LOG_ERR, I18N_NULL_POINTER, __func__,  "confhandle");
         lsberrno = LSBE_CONF_FATAL;
-        return (NULL);
+        return NULL;
     }
 
     if (pConf) {
@@ -303,7 +303,7 @@ lsb_readparam(struct lsConf *conf)
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                       sizeof(struct paramConf));
             lsberrno = LSBE_CONF_FATAL;
-            return (NULL);
+            return NULL;
         }
         pConf->param = NULL;
     }
@@ -312,7 +312,7 @@ lsb_readparam(struct lsConf *conf)
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                   sizeof(struct parameterInfo));
         lsberrno = LSBE_CONF_FATAL;
-        return (NULL);
+        return NULL;
     }
 
     initParameterInfo(pConf->param);
@@ -345,7 +345,7 @@ lsb_readparam(struct lsConf *conf)
                     paramok = TRUE;
                 else if (lsberrno == LSBE_NO_MEM) {
                     lsberrno = LSBE_CONF_FATAL;
-                    return (NULL);
+                    return NULL;
                 }
                 continue;
             }
@@ -973,7 +973,7 @@ lsb_readuser_ex (struct lsConf *conf, int options,
     if (conf == NULL) {
         ls_syslog(LOG_ERR, I18N_NULL_POINTER,  __func__, "conf");
         lsberrno = LSBE_CONF_FATAL;
-        return (NULL);
+        return NULL;
     }
 
     if (sharedConf != NULL)
@@ -982,11 +982,11 @@ lsb_readuser_ex (struct lsConf *conf, int options,
     if (conf && conf->confhandle == NULL) {
         ls_syslog(LOG_ERR, I18N_NULL_POINTER, __func__,  "confhandle");
         lsberrno = LSBE_CONF_FATAL;
-        return (NULL);
+        return NULL;
     }
     if (handleUserMem()) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __func__,  "handleUserMem");
-        return (NULL);
+        return NULL;
     }
 
     fname = conf->confhandle->fname;
@@ -1009,7 +1009,7 @@ lsb_readuser_ex (struct lsConf *conf, int options,
                     lsberrno = LSBE_CONF_FATAL;
                     freeWorkUser(TRUE);
                     freeUConf(uConf, FALSE);
-                    return (NULL);
+                    return NULL;
                 }
                 for ( i = 0; i < numofugroups; i ++ ) {
                     initGroupInfo (&uConf->ugroups[i]);
@@ -1026,7 +1026,7 @@ lsb_readuser_ex (struct lsConf *conf, int options,
                     lsberrno = LSBE_CONF_FATAL;
                     freeWorkUser(TRUE);
                     freeUConf(uConf, FALSE);
-                    return (NULL);
+                    return NULL;
                 }
                 for ( i = 0; i < numofusers; i ++ ) {
                     initUserInfo(&uConf->users[i]);
@@ -1051,7 +1051,7 @@ lsb_readuser_ex (struct lsConf *conf, int options,
                         lsberrno = LSBE_CONF_FATAL;
                         freeWorkUser(TRUE);
                         freeUConf(uConf, FALSE);
-                        return (NULL);
+                        return NULL;
                     }
                 }
                 continue;
@@ -1063,7 +1063,7 @@ lsb_readuser_ex (struct lsConf *conf, int options,
                         lsberrno = LSBE_CONF_FATAL;
                         freeWorkUser(TRUE);
                         freeUConf(uConf, FALSE);
-                        return (NULL);
+                        return NULL;
                     }
                 }
                 continue;
@@ -1588,7 +1588,7 @@ static struct groupInfoEnt *
 addGroup (struct groupInfoEnt **groups, char *gname, int *ngroups, int type)
 {
     if (groups == NULL || ngroups == NULL)
-        return (NULL);
+        return NULL;
 
     if ( type == 0 ) {
         if ((groups[*ngroups] = (struct groupInfoEnt *) malloc
@@ -1596,14 +1596,14 @@ addGroup (struct groupInfoEnt **groups, char *gname, int *ngroups, int type)
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "addGroup", "malloc",
                       sizeof(struct groupInfoEnt));
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         initGroupInfo ( groups[*ngroups] );
         groups[*ngroups]->group = putstr_ ( gname );
         if (groups[*ngroups]->group == NULL) {
             FREEUP(groups[*ngroups]);
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         *ngroups += 1;
         return (groups[*ngroups - 1]);
@@ -1614,7 +1614,7 @@ addGroup (struct groupInfoEnt **groups, char *gname, int *ngroups, int type)
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "addGroup", "malloc",
                       sizeof(struct groupInfoEnt));
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         initGroupInfo ( groups[*ngroups-1] );
         groups[*ngroups-1]->group = putstr_ ( gname );
@@ -1622,7 +1622,7 @@ addGroup (struct groupInfoEnt **groups, char *gname, int *ngroups, int type)
             FREEUP(groups[*ngroups-1]);
             groups[*ngroups-1] = groups[*ngroups];
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         *ngroups += 1;
         return (groups[*ngroups - 2]);
@@ -1638,12 +1638,12 @@ addUnixGrp (struct group *unixGrp, char *gname,
     struct passwd *pw = NULL;
 
     if (unixGrp == NULL)
-        return (NULL);
+        return NULL;
 
     if (numofugroups >= MAX_GROUPS) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5131,
                                          "addUnixGrp: File %s at line %d: numofugroups <%d> is equal to or greater than MAX_GROUPS <%d>; ignoring the group <%s>"), fname, lineNum, numofugroups, MAX_GROUPS, unixGrp->gr_name); /* catgets 5131 */
-        return (NULL);
+        return NULL;
     }
     if (gname == NULL)
         gp = addGroup (usergroups, unixGrp->gr_name, &numofugroups, type);
@@ -1651,13 +1651,13 @@ addUnixGrp (struct group *unixGrp, char *gname,
         gp = addGroup (usergroups, gname, &numofugroups, type);
 
     if ( gp == NULL && lsberrno == LSBE_NO_MEM )
-        return (NULL);
+        return NULL;
 
     while (unixGrp->gr_mem[++i] != NULL)  {
         if ((pw = getpwnam(unixGrp->gr_mem[i]))) {
             if  (!addMember (gp, unixGrp->gr_mem[i], USER_GRP, fname, lineNum,
                              section, CONF_EXPAND, TRUE) && lsberrno == LSBE_NO_MEM) {
-                return (NULL);
+                return NULL;
             }
             if (logclass & LC_TRACE)
                 ls_syslog(LOG_DEBUG, "addUnixGrp: addMember %s successful",
@@ -1674,7 +1674,7 @@ addUnixGrp (struct group *unixGrp, char *gname,
     if (gp->memberList == NULL) {
         freeGroupInfo ( gp );
         numofugroups -= 1;
-        return (NULL);
+        return NULL;
     }
     return (gp);
 }
@@ -1922,7 +1922,7 @@ getGrpData (struct groupInfoEnt **groups, char *name, int num)
     int i;
 
     if (name==NULL || groups==NULL)
-        return (NULL);
+        return NULL;
 
     for (i = 0; i < num; i++) {
         if (groups[i] && groups[i]->group) {
@@ -1931,7 +1931,7 @@ getGrpData (struct groupInfoEnt **groups, char *name, int num)
         }
     }
 
-    return (NULL);
+    return NULL;
 
 }
 
@@ -1941,14 +1941,14 @@ getUserData (char *name)
     int i;
 
     if (name == NULL)
-        return (NULL);
+        return NULL;
 
     for (i = 0; i < numofusers; i++) {
         if (strcmp (name, users[i]->user) == 0)
             return (users[i]);
     }
 
-    return (NULL);
+    return NULL;
 
 }
 
@@ -1959,14 +1959,14 @@ getHostData (char *name)
     int i;
 
     if (name == NULL)
-        return (NULL);
+        return NULL;
 
     for (i = 0; i < numofhosts; i++) {
         if (equalHost_(name, hosts[i]->host))
             return (hosts[i]);
     }
 
-    return (NULL);
+    return NULL;
 
 }
 
@@ -1976,14 +1976,14 @@ getQueueData (char *name)
     int i;
 
     if (name == NULL)
-        return (NULL);
+        return NULL;
 
     for (i = 0; i < numofqueues; i++) {
         if (strcmp (name, queues[i]->queue) == 0)
             return (queues[i]);
     }
 
-    return (NULL);
+    return NULL;
 
 }
 
@@ -2168,7 +2168,7 @@ expandGrp(char *word, int *num, int grouptype)
     char        **list = NULL, **tempList;
 
     if (word == NULL || num == NULL)
-        return (NULL);
+        return NULL;
 
     if ( grouptype == USER_GRP )
         gp = getUGrpData ( word );
@@ -2180,13 +2180,13 @@ expandGrp(char *word, int *num, int grouptype)
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "expandGrp",
                       "malloc", sizeof(char *));
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         if ((list[0] = putstr_(word)) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "expandGrp",
                       "malloc", strlen(word)+1);
             lsberrno = LSBE_NO_MEM;
-            return (NULL);
+            return NULL;
         }
         n = 1;
     } else {
@@ -2197,14 +2197,14 @@ expandGrp(char *word, int *num, int grouptype)
                 ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "expandGrp",
                           "myrealloc", sizeof(char *));
                 lsberrno = LSBE_NO_MEM;
-                return (NULL);
+                return NULL;
             }
             list = tempList;
             if ((list[0] = putstr_("all")) == NULL) {
                 ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "expandGrp",
                           "malloc", strlen("all")+1);
                 lsberrno = LSBE_NO_MEM;
-                return (NULL);
+                return NULL;
             }
             n = 1;
 
@@ -2225,21 +2225,21 @@ expandGrp(char *word, int *num, int grouptype)
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,  "expandGrp",
                               "myrealloc", (n+1)*sizeof(char *));
                     lsberrno = LSBE_NO_MEM;
-                    return (NULL);
+                    return NULL;
                 }
                 list = tempList;
                 if ((list[n] = putstr_(str)) == NULL) {
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M,  "expandGrp",
                               "malloc", strlen(str)+1);
                     lsberrno = LSBE_NO_MEM;
-                    return (NULL);
+                    return NULL;
                 }
                 n++;
             } else {
                 sub_num = 0;
                 sub_list = expandGrp ( str, &sub_num, grouptype );
                 if (sub_list == NULL && lsberrno == LSBE_NO_MEM)
-                    return (NULL);
+                    return NULL;
                 if ( sub_num ) {
                     if (!strcmp(sub_list[0], "all")) {
 
@@ -2249,7 +2249,7 @@ expandGrp(char *word, int *num, int grouptype)
                                       "expandGrp", "myrealloc",
                                       sizeof(char *));
                             lsberrno = LSBE_NO_MEM;
-                            return (NULL);
+                            return NULL;
                         }
                         list = tempList;
                         if ((list[0] = putstr_("all")) == NULL) {
@@ -2257,7 +2257,7 @@ expandGrp(char *word, int *num, int grouptype)
                                       "expandGrp", "malloc",
                                       strlen("all")+1);
                             lsberrno = LSBE_NO_MEM;
-                            return (NULL);
+                            return NULL;
                         }
                         n = 1;
 
@@ -2270,7 +2270,7 @@ expandGrp(char *word, int *num, int grouptype)
                                   "expandGrp", "realloc",
                                   (n+sub_num)*sizeof(char *));
                         lsberrno = LSBE_NO_MEM;
-                        return (NULL);
+                        return NULL;
                     }
                     for ( i = 0; i < sub_num; i ++ )
                         list[n+i] = sub_list[i];
@@ -5800,7 +5800,7 @@ parseSigActCmd (struct queueInfoEnt *qp, char *linep, char *fname,
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5409,
                                                  "%s:File %s %s at line %d: wrong KEYWORD"), __func__, fname, section, *lineNum); /* catgets 5409 */
             lsberrno = LSBE_CONF_WARNING;
-            return(-2);
+            return -2;
         }
 
         while (isspace(*linep)) linep++;
@@ -6140,7 +6140,7 @@ errorCleanup:
     freeUnixGrp(grretentry);
     grretentry= NULL;
 
-    return(NULL);
+    return NULL;
 }
 
 
@@ -6193,7 +6193,7 @@ copyUnixGrp (struct group *unixGrp)
 errorCleanup:
     freeUnixGrp(unixGrpCopy);
     unixGrpCopy = NULL;
-    return(NULL);
+    return NULL;
 
 }
 

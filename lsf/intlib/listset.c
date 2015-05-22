@@ -61,7 +61,7 @@ listSetUnion(struct listSet *set1, struct listSet *set2)
     if (!(setHead = listSetAlloc(-1))) {
         listSetFree(set1);
         listSetFree(set2);
-        return(NULL);
+        return NULL;
     }
     setPtr = setHead;
     while (set1 && set2) {
@@ -149,13 +149,13 @@ listSetDuplicate(struct listSet *set)
     struct listSet *setPtr, *setHead;
 
     if (!(setHead = listSetAlloc(-1))) {
-        return(NULL);
+        return NULL;
     }
     setPtr = setHead;
     while (set) {
         if (!(setPtr->next = listSetAlloc(set->elem))) {
             listSetFree(setHead);
-            return(NULL);
+            return NULL;
         }
         setPtr = setPtr->next;
         set = set->next;
@@ -221,13 +221,13 @@ listSetInsert(long elem, struct listSet *set)
 
     if (!set) {
         if (!(ptr = listSetAlloc(elem)))
-            return(NULL);
+            return NULL;
         return(ptr);
     }
 
     if (set->elem > elem) {
         if (!(ptr = listSetAlloc(elem)))
-            return(NULL);
+            return NULL;
 	ptr->next = set;
         return(ptr);
     }
@@ -239,7 +239,7 @@ listSetInsert(long elem, struct listSet *set)
 
     ptmp = ptr->next;
     if (!(ptr->next = listSetAlloc(elem)))
-        return(NULL);
+        return NULL;
     ptr->next->next = ptmp;
 
     return(set);
@@ -252,7 +252,7 @@ listSetSub(struct listSet *set1, struct listSet *set2)
 
     if (!set1) {
         listSetFree(set2);
-        return(NULL);
+        return NULL;
     }
 
     if (!set2)
@@ -306,7 +306,7 @@ listSetAlloc(long elem)
     }
     else {
         if (!(ptr = (struct listSet *)safe_calloc(1, sizeof(struct listSet))))
-            return(NULL);
+            return NULL;
     }
     ptr->elem = elem;
     ptr->next = NULL;
@@ -367,7 +367,7 @@ listSetSelect(long start, long end, struct listSet *set)
 
     if (start > end) {
         listSetFree(set);
-        return(NULL);
+        return NULL;
     }
     ptr = set;
     while (ptr && ptr->elem <= end) {
@@ -381,7 +381,7 @@ listSetSelect(long start, long end, struct listSet *set)
 
     if ( (low  && (! low->next)) || (! up)) {
          listSetFree(set);
-         return(NULL);
+         return NULL;
     }
     else {
         listSetFree(up->next);
@@ -405,7 +405,7 @@ listSetIteratorCreate(void)
 
     iter = calloc(1, sizeof(struct listSetIterator));
     if (!iter) {
-	return(NULL);
+	return NULL;
     }
 
     return(iter);
@@ -438,7 +438,7 @@ listSetIteratorGetNext(struct listSetIterator *iter)
 
 
     if (iter->pos == NULL) {
-	return(NULL);
+	return NULL;
     }
 
     elem_addr = &(iter->pos->elem);
@@ -451,7 +451,7 @@ listSetIteratorGetNext(struct listSetIterator *iter)
 long *
 listSetIteratorEnd(struct listSetIterator *iter)
 {
-    return(NULL);
+    return NULL;
 
 }
 

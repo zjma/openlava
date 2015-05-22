@@ -576,7 +576,7 @@ read_startjob(struct eventRec *log)
         jobId = (Req.options & OPT_ARRAY_INFO) ? log->eventLog.jobStartLog.jobId : LSB_JOBID(log->eventLog.jobStartLog.jobId, log->eventLog.jobStartLog.idx);
 
     if( (ent = chekMemb(&jobIdHT, jobId)) == NULL) {
-        return(NULL);
+        return NULL;
     }
     jobRecord = (struct jobRecord *) ent->hData;
     if (log->type == EVENT_JOB_EXECUTE) {
@@ -1541,7 +1541,7 @@ createJobRec(int jobId)
     newjobRecord->currentStatus = 0;
     if (addJob(newjobRecord) == -1) {
         freeJobRecord(newjobRecord);
-        return(NULL);
+        return NULL;
     }
     return(newjobRecord);
 }

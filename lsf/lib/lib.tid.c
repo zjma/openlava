@@ -111,7 +111,7 @@ tid_find(int taskid)
 	if (p1->rtid == taskid) {
 	    if (p1->sock == -1) {
 		lserrno = LSE_LOSTCON;
-		return (NULL);
+		return NULL;
 	    }
 	    return (p1);
 	}
@@ -119,7 +119,7 @@ tid_find(int taskid)
     }
 
     lserrno = LSE_RES_INVCHILD;
-    return(NULL);
+    return NULL;
 } 
 
 struct tid *
@@ -137,7 +137,7 @@ tidFindIgnoreConn_(int taskid)
     }
 
     lserrno = LSE_RES_INVCHILD;
-    return(NULL);
+    return NULL;
 } 
 
 

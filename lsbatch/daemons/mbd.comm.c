@@ -140,7 +140,7 @@ start_ajob (struct jData *jDataPtr,
         free (request_buf);
         freeJobSpecs (&jobSpecs);
         free(jf.data);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     sbdNode.jData = jDataPtr;
@@ -229,7 +229,7 @@ switch_job (struct jData *jDataPtr, int options)
         xdr_destroy(&xdrs);
         free (request_buf);
         freeJobSpecs (&jobSpecs);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     sbdNode.jData = jDataPtr;
@@ -312,7 +312,7 @@ signal_job (struct jData *jp,
     if (! xdr_encodeMsg(&xdrs, (char *)&jobSig, &hdr, xdr_jobSig, 0, auth)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs);
-        return(ERR_FAIL);
+        return ERR_FAIL;
     }
 
 
@@ -479,7 +479,7 @@ probe_slave(struct hData *hData, char sendJobs)
                 freeJobSpecs (&sbdPackage.jobs[i]);
             if (sbdPackage.jobs)
                 free (sbdPackage.jobs);
-            return (ERR_FAIL);
+            return ERR_FAIL;
         }
         sockPtr = &socket;
     } else {
@@ -491,7 +491,7 @@ probe_slave(struct hData *hData, char sendJobs)
         if (!xdr_LSFHeader(&xdrs, &hdr)) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_LSFHeader");
             xdr_destroy(&xdrs);
-            return (ERR_FAIL);
+            return ERR_FAIL;
         }
         sockPtr = NULL;
     }
@@ -568,7 +568,7 @@ rebootSbd (char *host)
     if (!xdr_encodeMsg(&xdrs, NULL, &hdr, NULL, 0, auth)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     if ((hData = getHostData(host)) == NULL) {
@@ -576,7 +576,7 @@ rebootSbd (char *host)
                                          "%s: Failed to get hData of host <%s>"), /* catgets 5414 */
                   fname,
                   host);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     reply = callSBD(host,
@@ -626,14 +626,14 @@ shutdownSbd (char *host)
     if (!xdr_encodeMsg(&xdrs, (char *)NULL, &hdr, NULL, 0, auth)) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
         xdr_destroy(&xdrs);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     if ((hData = getHostData(host)) == NULL) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5417,
                                          "%s: Failed to get hData of host <%s>"), /* catgets 5417 */
                   fname, host);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     reply = callSBD(host,
@@ -706,7 +706,7 @@ callSBD(char *toHost,
             if (lsberrno != LSBE_CONN_REFUSED
                 && lsberrno != LSBE_CONN_TIMEOUT
                 && !(lsberrno == LSBE_LSLIB && lserrno == LSE_TIME_OUT)) {
-                return (ERR_FAIL);
+                return ERR_FAIL;
             }
             if (equalHost_(toHost, lastHost)) {
                 *cnt = *cnt + 1;
@@ -800,7 +800,7 @@ callSbdDebug(struct debugReq *pdebug)
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5424,
                                          "%s: Failed to get hData of host <%s>"), /* catgets 5424 */
                   fname, pdebug->hostName);
-        return (ERR_FAIL);
+        return ERR_FAIL;
     }
 
     reply = callSBD(pdebug->hostName,

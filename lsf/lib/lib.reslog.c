@@ -1,4 +1,5 @@
-/* $Id: lib.reslog.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,8 +42,7 @@ ls_putacctrec(FILE *log_fp, struct lsfAcctRec *acctRec)
 
     return 0;
 
-} 
-
+}
 
 struct lsfAcctRec *
 ls_getacctrec(FILE *log_fp, int *lineNum)
@@ -53,7 +53,7 @@ ls_getacctrec(FILE *log_fp, int *lineNum)
     char *line;
     static struct lsfAcctRec *acctRec = NULL;
 
-    if (acctRec != NULL) {  
+    if (acctRec != NULL) {
         free(acctRec);
         acctRec = NULL;
     }
@@ -62,7 +62,7 @@ ls_getacctrec(FILE *log_fp, int *lineNum)
 
     if ((line = getNextLine_(log_fp, FALSE)) == NULL) {
         lserrno = LSE_EOF;
-        return(NULL);        
+        return NULL;
     }
 
     len = strlen(line)*sizeof(char);
@@ -70,7 +70,7 @@ ls_getacctrec(FILE *log_fp, int *lineNum)
 
     if (acctRec == NULL) {
         lserrno = LSE_MALLOC;
-        return(NULL);        
+        return NULL;
     }
 
     acctRec->username = (char *) acctRec + sar;
@@ -81,13 +81,13 @@ ls_getacctrec(FILE *log_fp, int *lineNum)
 
     if ((cc = sscanf(line, "%d%n", &acctRec->pid, &ccount)) != 1) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, acctRec->username)) < 0) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
@@ -97,40 +97,39 @@ ls_getacctrec(FILE *log_fp, int *lineNum)
 
     if (cc != 3) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, acctRec->fromHost)) < 0) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, acctRec->execHost)) < 0) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, acctRec->cwd)) < 0) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((ccount = stripQStr(line, acctRec->cmdln)) < 0) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
     line += ccount + 1;
 
     if ((cc = str2lsfRu(line, &acctRec->lsfRu, &ccount)) != 19) {
         lserrno = LSE_ACCT_FORMAT;
-        return(NULL);
+        return NULL;
     }
 
-    return(acctRec);
-
-}  
+    return acctRec;
+}
 

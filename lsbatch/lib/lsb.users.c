@@ -44,7 +44,7 @@ lsb_userinfo (char **users, int *numUsers)
     }
     if (numReq < 0) {
         lsberrno = LSBE_BAD_ARG;
-        return (NULL);
+        return NULL;
     }
 
     if (userInfoReq.names)
@@ -54,19 +54,19 @@ lsb_userinfo (char **users, int *numUsers)
 	userInfoReq.numNames = 0;
         if ((userInfoReq.names = (char **)malloc (sizeof(char *))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
         userInfoReq.names[0] = "";
         cc = 1;
     }
     else if (numReq == 1 && users == NULL) {
         if (getUser(lsfUserName, MAXLINELEN) != 0) {
-            return (NULL);
+            return NULL;
         }
         userInfoReq.numNames = 1;
         if ((userInfoReq.names = (char **)malloc (sizeof(char *))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
         userInfoReq.names[0] = lsfUserName;
         cc = 1;
@@ -75,7 +75,7 @@ lsb_userinfo (char **users, int *numUsers)
         if ((userInfoReq.names = (char **) calloc
                                  (numReq, sizeof(char*))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
         userInfoReq.numNames = numReq;
         for (i = 0; i < numReq; i++) {
@@ -84,7 +84,7 @@ lsb_userinfo (char **users, int *numUsers)
             else {
                 free (userInfoReq.names);
                 lsberrno = LSBE_BAD_USER;                        *numUsers = i;
-                return (NULL);
+                return NULL;
             }
         }
         cc = numReq;
@@ -96,7 +96,7 @@ lsb_userinfo (char **users, int *numUsers)
     cc = sizeof(struct infoReq) + cc * MAXHOSTNAMELEN + cc + 100;
     if ((request_buf = malloc (cc)) == NULL) {
         lsberrno = LSBE_NO_MEM;
-	return(NULL);
+	return NULL;
     }
     xdrmem_create(&xdrs, request_buf, cc, XDR_ENCODE);
 
@@ -107,7 +107,7 @@ lsb_userinfo (char **users, int *numUsers)
         xdr_destroy(&xdrs);
         free (request_buf);
         lsberrno = LSBE_XDR;
-        return(NULL);
+        return NULL;
     }
 
 
@@ -115,7 +115,7 @@ lsb_userinfo (char **users, int *numUsers)
                             &reply_buf, &hdr, NULL, NULL, NULL)) == -1) {
         xdr_destroy(&xdrs);
         free (request_buf);
-        return (NULL);
+        return NULL;
     }
     xdr_destroy(&xdrs);
     free (request_buf);
@@ -129,14 +129,14 @@ lsb_userinfo (char **users, int *numUsers)
             xdr_destroy(&xdrs);
 	    if (cc)
 		free(reply_buf);
-	    return(NULL);
+	    return NULL;
         }
         xdr_destroy(&xdrs);
 	if (cc)
 	    free(reply_buf);
         if (lsberrno == LSBE_BAD_USER) {
             *numUsers = reply->badUser;
-            return (NULL);
+            return NULL;
         }
         *numUsers = reply->numUsers;
 	return(reply->users);
@@ -144,7 +144,7 @@ lsb_userinfo (char **users, int *numUsers)
 
     if (cc)
 	free(reply_buf);
-    return(NULL);
+    return NULL;
 
 }
 

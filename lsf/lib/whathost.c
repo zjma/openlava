@@ -50,10 +50,10 @@ char *ls_getmnthost(char *file)
     struct stat statb;
 
     if (stat(file, &statb) < 0) {
-        return (NULL);
+        return NULL;
     }
 
-    return (NULL);
+    return NULL;
 
 } 
 

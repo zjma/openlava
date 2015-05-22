@@ -45,7 +45,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
     }
     if (numReq < 0) {
         lsberrno = LSBE_BAD_ARG;
-        return(NULL);
+        return NULL;
     }
 
     FREEUP (hostInfoReq.names);
@@ -53,7 +53,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
         hostInfoReq.numNames = 0;
         if ((hostInfoReq.names = (char **) malloc (sizeof(char *))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
 
         hostInfoReq.numNames = 0;
@@ -73,7 +73,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
         hostInfoReq.numNames = 1;
         if ((hostInfoReq.names = (char **) malloc (sizeof(char *))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
         TIMEIT(0, (hostInfoReq.names[0] = ls_getmyhostname()), "ls_getmyhostname");
         hostInfoReq.numNames = 1;
@@ -83,7 +83,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
         if ((hostInfoReq.names = (char **) calloc
              (numReq, sizeof(char*))) == NULL) {
             lsberrno = LSBE_NO_MEM;
-            return(NULL);
+            return NULL;
         }
         for (i = 0; i < numReq; i++) {
             if (ls_isclustername(hosts[i]) <= 0)
@@ -102,7 +102,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
                     free (hostInfoReq.names);
                     lsberrno = LSBE_BAD_HOST;
                     *numHosts = i;
-                    return (NULL);
+                    return NULL;
                 }
             }
             cc = numReq;
@@ -114,7 +114,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
     if (resReq != NULL) {
         if (strlen(resReq) > MAXLINELEN -1) {
             lsberrno = LSBE_BAD_RESREQ;
-            return(NULL);
+            return NULL;
         } else {
             hostInfoReq.resReq = resReq;
             hostInfoReq.options |= SORT_HOST;
@@ -127,7 +127,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
     cc = sizeof(struct infoReq) + cc * MAXHOSTNAMELEN + cc + 100;
     if ((request_buf = malloc (cc)) == NULL) {
         lsberrno = LSBE_NO_MEM;
-        return(NULL);
+        return NULL;
     }
     xdrmem_create(&xdrs, request_buf, cc, XDR_ENCODE);
 
@@ -137,7 +137,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
         xdr_destroy(&xdrs);
         free (request_buf);
         lsberrno = LSBE_XDR;
-        return(NULL);
+        return NULL;
     }
 
 
@@ -145,7 +145,7 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
     if (cc == -1) {
         xdr_destroy(&xdrs);
         free (request_buf);
-        return (NULL);
+        return NULL;
     }
     xdr_destroy(&xdrs);
     free (request_buf);
@@ -161,14 +161,14 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
             xdr_destroy(&xdrs);
             if (cc)
                 free(reply_buf);
-            return(NULL);
+            return NULL;
         }
         xdr_destroy(&xdrs);
         if (cc)
             free(reply_buf);
         if (lsberrno == LSBE_BAD_HOST) {
             *numHosts = reply.badHost;
-            return (NULL);
+            return NULL;
         }
         *numHosts = reply.numHosts;
         return(reply.hosts);
@@ -176,6 +176,6 @@ lsb_hostinfo_ex(char **hosts, int *numHosts, char *resReq, int options)
 
     if (cc)
         free(reply_buf);
-    return(NULL);
+    return NULL;
 
 }

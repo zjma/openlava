@@ -202,7 +202,7 @@ listSetSub(struct listSet *set1, struct listSet *set2)
  
     if (!set1) {
         listSetFree(set2);
-        return(NULL);
+        return NULL;
     }
 
     if (!set2)

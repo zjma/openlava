@@ -88,12 +88,12 @@ addMembStr(struct hTab *tabPtr, char *memberStr)
     if (tabPtr && memberStr) {
         ent = h_addEnt_(tabPtr, memberStr, &new);
         if (!new) {
-            return(NULL);
+            return NULL;
         }
         else
 	    return(ent);
     }
-    return(NULL);
+    return NULL;
 }
 
 char
@@ -177,7 +177,7 @@ getNextSortIntList(struct sortIntList *header,
 
     nextPtr = current->forw;
     if (nextPtr == header)
-	return(NULL);
+	return NULL;
     *value = nextPtr->value;
     return(nextPtr);
 

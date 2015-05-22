@@ -494,7 +494,7 @@ Error:
     freeStackDep(operatorStack, TRUE);
     freeStackDep(operandStack, TRUE);
     FREEUP(nodeList);
-    return(NULL);
+    return NULL;
 }
 
 int
@@ -979,7 +979,7 @@ static struct dptNode *
 popStackDep(struct Stack *stack)
 {
    if (stack->top < 0)
-      return(NULL);
+      return NULL;
    return(stack->nodes[stack->top--]);
 }
 
@@ -1024,7 +1024,7 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
     idxList = parseJobArrayIndex(jobp, &error, &maxJLimit);
 
     if (error != LSBE_NO_ERROR)
-       return(NULL);
+       return NULL;
 
     if (idxList) {
         (*jobIdx) = (struct jobIdx *)my_malloc(sizeof (struct jobIdx),

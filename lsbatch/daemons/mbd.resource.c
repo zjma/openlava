@@ -1156,7 +1156,7 @@ findPRInstance(int index, struct hData *hPtr)
     }
 
     if (pRPtr == NULL) {
-	return(NULL);
+	return NULL;
     }
 
     for (i = 0; i < pRPtr->numInstances; i++) {
@@ -1167,7 +1167,7 @@ findPRInstance(int index, struct hData *hPtr)
 	}
     }
 
-    return(NULL);
+    return NULL;
 
 }
 
@@ -1178,7 +1178,7 @@ findQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
     int i;
 
     if ((pRIPtr = findPRInstance(index, hPtr)) == NULL) {
-	return(NULL);
+	return NULL;
     }
 
     for (i = 0; i < pRIPtr->nQPRValues; i++) {
@@ -1189,7 +1189,7 @@ findQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
 	    return(&(pRIPtr->qPRValues[i]));
 	}
     }
-    return(NULL);
+    return NULL;
 
 }
 
@@ -1201,7 +1201,7 @@ addQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
     int i, pos;
 
     if ((pRIPtr = findPRInstance(index, hPtr)) == NULL) {
-	return(NULL);
+	return NULL;
     }
 
 

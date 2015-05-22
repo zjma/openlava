@@ -50,7 +50,7 @@ bhc (int argc, char *argv[], int opCode)
             fFlag = TRUE;
             break;
         default:
-            return(-2);
+            return -2;
         }
     }
     switch (opCode) {
@@ -110,7 +110,7 @@ bhc (int argc, char *argv[], int opCode)
 
         ctrlHost (hostInfo[i].host, hostInfo[i].hStatus, opCode);
     }
-    return (exitrc);
+    return exitrc;
 
 }
 
@@ -175,7 +175,7 @@ getHostList(int *numHosts, char **inputHosts)
 						  sizeof(struct hostInfoEnt)))
 	== NULL) {
 	perror("calloc");
-	return (NULL);
+	return NULL;
     }
 
     if (inputHosts) {

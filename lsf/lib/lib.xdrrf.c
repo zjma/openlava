@@ -34,7 +34,7 @@ lsRecvMsg_(int sock, char *buf, int bufLen, struct LSFHeader *hdr,
 
     if ((cc = readDecodeHdr_(sock, buf, readFunc, &xdrs, hdr)) < 0) {
 	xdr_destroy(&xdrs);
-	return (cc);
+	return cc;
     }
 
     if (hdr->length == 0 || data == NULL) {
@@ -47,7 +47,7 @@ lsRecvMsg_(int sock, char *buf, int bufLen, struct LSFHeader *hdr,
     if ((cc = readDecodeMsg_(sock, buf, hdr, readFunc, &xdrs, data,
 			      xdrFunc, NULL))	< 0) {
 	xdr_destroy(&xdrs);
-	return (cc);
+	return cc;
     }
 
     return 0;
@@ -84,7 +84,7 @@ int lsSendMsg_ (int s, int opCode, int hdrLength, char *data, char *reqBuf,
 	XDR_GETPOS(&xdrs)) {
         xdr_destroy(&xdrs);
 	lserrno = LSE_MSG_SYS;
-        return (-2);
+        return -2;
     }
 
     xdr_destroy(&xdrs);

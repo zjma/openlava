@@ -252,7 +252,7 @@ b_accept_(int s, struct sockaddr *addr, socklen_t *addrlen)
     cc = accept(s, addr, addrlen);
     sigprocmask(SIG_SETMASK, &oldMask, NULL);
 
-    return (cc);
+    return cc;
 
 }  /* b_accept_() */
 

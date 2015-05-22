@@ -61,7 +61,7 @@ parseJobArrayIndex(char *job_name, int *error, int *maxJLimit)
     index = strchr(job_name, '[');
     *error = LSBE_NO_ERROR;
     if (!index)
-        return(NULL);
+        return NULL;
     yybuff = index;
 
     *maxJLimit = INFINIT_INT;
@@ -72,7 +72,7 @@ parseJobArrayIndex(char *job_name, int *error, int *maxJLimit)
             *error = LSBE_NO_MEM;
         else
             *error = LSBE_BAD_JOB;
-        return(NULL);
+        return NULL;
     }
 
     for (idx = idxList; idx; idx = idx->next) {
@@ -105,7 +105,7 @@ parseJobArrayIndex(char *job_name, int *error, int *maxJLimit)
         return(idxList);
     else {
         freeIdxList(idxList);
-        return(NULL);
+        return NULL;
     }
 }
 

@@ -50,13 +50,13 @@ limCtrl(int argc, char **argv, int opCode)
         switch (optName[0]) {
             case 'v':
                 if (opCode == LIM_CMD_SHUTDOWN)
-                    return(-2);
+                    return -2;
                 break;
             case 'f':
                 fFlag = 1;
                 break;
             default:
-                return(-2);
+                return -2;
         }
     }
     exitrc = 0;

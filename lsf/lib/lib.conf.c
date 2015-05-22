@@ -192,7 +192,7 @@ ls_readshared (char *fname)
     if (fname == NULL) {
         ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5050, "%s: filename is NULL")), /* catgets 5050 */ "ls_readshared");
         lserrno = LSE_NO_FILE;
-        return (NULL);
+        return NULL;
     }
 
     lsinfo.nRes = 0;
@@ -207,7 +207,7 @@ ls_readshared (char *fname)
             == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "ls_readshared", "malloc");
             lserrno = LSE_MALLOC;
-            return (NULL);
+            return NULL;
         }
         sConf->lsinfo = &lsinfo;
         sConf->clusterName = NULL;
@@ -224,14 +224,14 @@ ls_readshared (char *fname)
 
     if ( initResTable() < 0 ) {
         lserrno = LSE_MALLOC;
-        return (NULL);
+        return NULL;
     }
     fp = fopen(fname, "r");
     if (fp == NULL) {
 
         ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5052, "%s: Can't open configuration file <%s>.")) /* catgets 5052 */ , "ls_readshared", fname);  /* catgets 5052 */
         lserrno = LSE_NO_FILE;
-        return (NULL);
+        return NULL;
     }
 
     for (;;) {
@@ -885,13 +885,13 @@ ls_readcluster_ex(char *fname, struct lsInfo *info, int lookupAdmins)
     if (fname== NULL) {
         ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5050, "%s: filename is NULL")), "ls_readcluster");
         lserrno = LSE_NO_FILE;
-        return (NULL);
+        return NULL;
     }
 
     if (info == NULL) {
         ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5100, "%s: LSF information is NULL")),  /* catgets 5100 */ "ls_readcluster");
         lserrno = LSE_NO_FILE;
-        return (NULL);
+        return NULL;
     }
 
 
@@ -900,7 +900,7 @@ ls_readcluster_ex(char *fname, struct lsInfo *info, int lookupAdmins)
              malloc (sizeof (struct clusterConf))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "ls_readcluster", "malloc");
             lserrno = LSE_MALLOC;
-            return (NULL);
+            return NULL;
         }
         cConf->clinfo = NULL;
         cConf->hosts = NULL;
@@ -942,7 +942,7 @@ ls_readcluster_ex(char *fname, struct lsInfo *info, int lookupAdmins)
                        (info->nRes * sizeof(struct resItem))) == NULL ) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, "ls_readcluster",  "malloc");
         lserrno = LSE_MALLOC;
-        return (NULL);
+        return NULL;
     }
 
     for (i=0,j=0; i < info->nRes; i++) {
@@ -965,7 +965,7 @@ ls_readcluster_ex(char *fname, struct lsInfo *info, int lookupAdmins)
 
         ls_syslog(LOG_INFO, I18N_FUNC_S_FAIL, "ls_readcluster", "fopen", fname);
         lserrno = LSE_NO_FILE;
-        return (NULL);
+        return NULL;
     }
 
     for (;;) {
@@ -975,7 +975,7 @@ ls_readcluster_ex(char *fname, struct lsInfo *info, int lookupAdmins)
             if (cConf->numHosts) {
                 FREEUP(myinfo.resTable);
                 if (Error)
-                    return (NULL);
+                    return NULL;
                 else
                     return (cConf);
             } else {
@@ -1799,20 +1799,20 @@ parsewindow(char *linep, char *fname, int *lineNum, char *section)
     char        *sp, *windows, *word, *save;
 
     if ( linep == NULL )
-        return (NULL);
+        return NULL;
 
     sp = linep;
 
     windows = putstr_ ( sp );
     if (windows == NULL)
-        return (NULL);
+        return NULL;
 
     *windows = '\0';
     while ((word = getNextWord_(&sp)) != NULL) {
         save = putstr_ (word);
         if (save == NULL) {
             FREEUP(windows);
-            return (NULL);
+            return NULL;
         }
         if ( validWindow(word, section) < 0 ) {
             ls_syslog(LOG_ERR, (_i18n_msg_get(ls_catd,NL_SETN,5165, "File %s section %s at line %d: Bad time expression <%s>; ignored.")), fname, section, *lineNum, save);   /* catgets 5165 */
@@ -2417,12 +2417,12 @@ addResource (char *resName, int nHosts, char **hosts, char *value,
     struct lsSharedResourceInfo *resInfo;
 
     if (resName == NULL || hosts == NULL)
-        return (NULL);
+        return NULL;
 
     if ((resInfo = (struct lsSharedResourceInfo *)
          myrealloc(cConf->shareRes, sizeof (struct lsSharedResourceInfo) * (cConf->numShareRes + 1))) == NULL) {
         ls_syslog (LOG_ERR, I18N_FUNC_FAIL_M, "addHostResource", "myrealloc");
-        return (NULL);
+        return NULL;
     }
 
     cConf->shareRes = resInfo;
@@ -2430,14 +2430,14 @@ addResource (char *resName, int nHosts, char **hosts, char *value,
 
     if ((resInfo[nRes].resourceName = putstr_(resName)) == NULL) {
         ls_syslog (LOG_ERR, I18N_FUNC_FAIL_M, "addHostResource", "malloc");
-        return (NULL);
+        return NULL;
     }
 
     resInfo[nRes].nInstances = 0;
     resInfo[nRes].instances = NULL;
     if (addHostInstance (resInfo + nRes, nHosts, hosts, value) < 0) {
         free(resInfo[nRes].resourceName);
-        return (NULL);
+        return NULL;
     }
 
     cConf->numShareRes++;

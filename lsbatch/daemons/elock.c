@@ -73,7 +73,7 @@ getElock(void)
 
     if ((myhostnm = ls_getmyhostname()) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getmyhostname");
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
 
     sprintf(lockfile, "%s/logdir/%s",
@@ -103,7 +103,7 @@ access:
         if (fd < 0) {
             ls_syslog(LOG_ERR, "\
 %s: Can't open existing lock file <%s>: %m", fname, lockfile);
-            return(MASTER_FATAL);
+            return MASTER_FATAL;
         }
         i = 0;
         while ( ((cc = read(fd, &buf[i], 1)) == 1) &&
@@ -131,7 +131,7 @@ access:
 
         if (stat(lockfile, &statbuf) < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "stat", lockfile);
-            return(MASTER_FATAL);
+            return MASTER_FATAL;
         }
         lastmodtime = statbuf.st_mtime;
         retry = 0;
@@ -149,7 +149,7 @@ access:
             if (mastername == NULL) {
                 ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8246,
                                                  "%s: Can't get master host name: %M"),fname); /* catgets 8246 */
-                return(MASTER_FATAL);
+                return MASTER_FATAL;
             }
 
             if (! equalHost_(mastername, myhostnm)) {
@@ -163,7 +163,7 @@ access:
                 if (errno == ENOENT)
                     goto access;
                 ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "stat", lockfile);
-                return(MASTER_FATAL);
+                return MASTER_FATAL;
             }
             if ( statbuf.st_mtime == lastmodtime ) {
                 if (retry > 4) {
@@ -188,7 +188,7 @@ access:
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8251,
                                          "%s: Failed in opening lock file <%s>: %m"), /* catgets 8251 */
                   fname, lockfile);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
 }
 
@@ -243,7 +243,7 @@ touchElock(void)
     if (lock_fd < 0) {
         chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "open", lockfile);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
     else if (lseek(lock_fd, 0, SEEK_SET) != 0)
     {
@@ -251,7 +251,7 @@ touchElock(void)
         ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "lseek",
                   lockfile,
                   lock_fd);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
     else if ((cc = read(lock_fd, buf, 1)) != 1)
     {
@@ -264,7 +264,7 @@ touchElock(void)
         else
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "read",
                       lockfile);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
     else if (lseek(lock_fd, 0, SEEK_SET) != 0)
     {
@@ -272,7 +272,7 @@ touchElock(void)
         ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "lseek",
                   lockfile,
                   lock_fd);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
     else if ((cc = write(lock_fd, buf, 1)) != 1)
     {
@@ -284,7 +284,7 @@ touchElock(void)
         else
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "write",
                       lockfile);
-        return(MASTER_FATAL);
+        return MASTER_FATAL;
     }
 
     if (close(lock_fd) != 0) {

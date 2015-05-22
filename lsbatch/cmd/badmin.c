@@ -173,11 +173,11 @@ breconfig(int argc, char **argv, int configFlag)
                 fFlag = 1;
                 break;
             default:
-                return(-2);
+                return -2;
         }
     }
     if ( optind < argc ) {
-        return(-2);
+        return -2;
     }
 
     if (!vFlag && !fFlag) {
@@ -292,7 +292,7 @@ badminDebug(int nargc, char *nargv[], int opCode)
     else if (opCode == MBD_TIMING || opCode == SBD_TIMING)
         strcpy (opt, "ol:f:");
     else
-        return (-2);
+        return -2;
     linux_optind = 1;
     linux_opterr = 1;
     if (strstr(nargv[0],"badmin")) {

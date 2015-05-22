@@ -71,7 +71,7 @@ runEsub_(struct lenData *ed, char *path)
     }
 
     if (runEClient_(ed, myargv) == -1)
-	return (-2);
+	return -2;
 
     return 0;
 }

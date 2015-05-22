@@ -3319,7 +3319,7 @@ readJobInfoFile (struct jData *jp, int *len)
                   fname,
                   "open",
                   logFn);
-        return (NULL);
+        return NULL;
     }
     fstat(fd, &st);
 
@@ -3334,7 +3334,7 @@ readJobInfoFile (struct jData *jp, int *len)
                   logFn);
         close(fd);
         free(buf);
-        return (NULL);
+        return NULL;
     }
     close(fd);
     chuser(batchId);
@@ -4238,7 +4238,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
     tmpBuf = (char *) malloc(datalen + strlen(jstr) + 1);
     if (tmpBuf == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "malloc", "tmpBuf");
-        return(NULL);
+        return NULL;
     }
     memset((char *)tmpBuf, 0, datalen + strlen(jstr) + 1);
 
@@ -4251,7 +4251,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "malloc",
                       "jstr_header");
             FREEUP(tmpBuf);
-            return(NULL);
+            return NULL;
         } else {
             strcpy(jstr_header, jstr);
         }
@@ -4267,7 +4267,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
                 ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname,
                           "malloc","jstr_header");
                 FREEUP(tmpBuf);
-                return(NULL);
+                return NULL;
             } else {
                 memset(jstr_header, '\0', (ptr1-jstr)+sizeof(char));
                 strncpy(jstr_header, jstr, (ptr1-jstr));
@@ -4283,7 +4283,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "strstr", "CMDSTART");
         FREEUP(jstr_header);
         FREEUP(tmpBuf);
-        return(NULL);
+        return NULL;
     }
 
     ptr1 = strchr(ptr1, '\n');
@@ -4292,7 +4292,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "strstr", "CMDSTART");
         FREEUP(jstr_header);
         FREEUP(tmpBuf);
-        return(NULL);
+        return NULL;
     }
 
 
@@ -4323,7 +4323,7 @@ instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "strstr","WAITCLEANCMD");
         FREEUP(jstr_header);
         FREEUP(tmpBuf);
-        return(NULL);
+        return NULL;
     }
 
     strncat(tmpBuf, ptr1, ptr2-ptr1);

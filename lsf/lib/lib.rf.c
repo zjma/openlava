@@ -74,7 +74,7 @@ rhConnect(char *host)
 
     if ((hp = Gethostbyname_(host)) == NULL) {
 	lserrno = LSE_BAD_HOST;
-	return (NULL);
+	return NULL;
     }
 
     if ((rh = (struct rHosts *)rhFind(hp->h_name))) {
@@ -85,11 +85,11 @@ rhConnect(char *host)
     argv[0] = RF_SERVERD;
     argv[1] = NULL;
     if ((tid = ls_rtask(host, argv, REXF_TASKPORT | rxFlags)) < 0) {
-	return (NULL);
+	return NULL;
     }
 
     if ((sock = ls_conntaskport(tid)) < 0)
-	return (NULL);
+	return NULL;
 
 
 
@@ -98,7 +98,7 @@ rhConnect(char *host)
     if ((hname = putstr_(hp->h_name)) == NULL) {
 	closesocket(sock);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
 
     if (nrh >= maxnrh) {
@@ -119,7 +119,7 @@ rhConnect(char *host)
 	    if (rhTerminate(lrurh->hname) < 0) {
 		closesocket(sock);
 		free(hname);
-		return (NULL);
+		return NULL;
 	    }
 	}
     }
@@ -128,7 +128,7 @@ rhConnect(char *host)
 	free(hname);
 	closesocket(sock);
 	lserrno = LSE_MALLOC;
-	return (NULL);
+	return NULL;
     }
 
     rh->sock = sock;
@@ -146,7 +146,7 @@ allocRH(void)
     struct rHosts *rh, *tmp;
 
     if ((rh = (struct rHosts *) malloc(sizeof(struct rHosts))) == NULL) {
-	return (NULL);
+	return NULL;
     }
 
     tmp = rHosts;
@@ -167,7 +167,7 @@ rhFind(char *host)
 	    return (rh);
     }
 
-    return (NULL);
+    return NULL;
 }
 
 
@@ -561,7 +561,7 @@ ls_rgetmnthost(char *host, char *fn)
     struct stringLen fnStr;
 
     if ((rh = rhConnect(host)) == NULL)
-	return (NULL);
+	return NULL;
 
     hostStr.len = MAXHOSTNAMELEN;
     hostStr.name = hostname;
@@ -571,18 +571,18 @@ ls_rgetmnthost(char *host, char *fn)
     if (lsSendMsg_(rh->sock, RF_GETMNTHOST, 0, (char *) &fnStr, buf,
 		   sizeof(struct LSFHeader) + MAXFILENAMELEN,
 		   xdr_stringLen, SOCK_WRITE_FIX, NULL) < 0) {
-	return (NULL);
+	return NULL;
     }
 
     if (lsRecvMsg_(rh->sock, buf, MSGSIZE, &hdr,
 		   (char *) &hostStr, xdr_stringLen, SOCK_READ_FIX) < 0) {
-	return (NULL);
+	return NULL;
     }
 
     if (hdr.opCode < 0) {
 	errno = errnoDecode_(ABS(hdr.opCode));
 	lserrno = LSE_FILE_SYS;
-	return (NULL);
+	return NULL;
     }
 
     return (hostname);

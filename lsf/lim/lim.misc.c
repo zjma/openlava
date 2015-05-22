@@ -226,11 +226,11 @@ shortLsInfoDup(struct shortLsInfo *src)
     struct shortLsInfo     *shortLInfo;
 
     if (src->nRes == 0 && src->nTypes == 0 && src->nModels == 0)
-        return (NULL);
+        return NULL;
 
     shortLInfo = calloc(1, sizeof(struct shortLsInfo));
     if (shortLInfo == NULL)
-        return (NULL);
+        return NULL;
 
     shortLInfo->nRes = src->nRes;
     shortLInfo->nTypes = src->nTypes;
@@ -242,7 +242,7 @@ shortLsInfoDup(struct shortLsInfo *src)
 
     if (!memp) {
         FREEUP(shortLInfo);
-        return(NULL);
+        return NULL;
     }
 
     currp = memp;

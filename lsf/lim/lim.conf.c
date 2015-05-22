@@ -3184,21 +3184,21 @@ addResource (char *resName, int nHosts, char **hosts, char *value,
     struct sharedResource *temp, **temp1;
 
     if (resName == NULL || hosts == NULL)
-        return (NULL);
+        return NULL;
 
     if ((temp = (struct sharedResource *)
          malloc (sizeof (struct sharedResource))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (NULL);
+        return NULL;
     }
     if ((temp->resourceName = putstr_(resName)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        return (NULL);
+        return NULL;
     }
     temp->numInstances = 0;
     temp->instances = NULL;
     if (addHostInstance (temp, nHosts, hosts, value, resourceMap) < 0)
-        return (NULL);
+        return NULL;
 
     if (numHostResources == 0)
         temp1 = (struct sharedResource **) malloc (sizeof (struct sharedResource *));
@@ -3211,7 +3211,7 @@ addResource (char *resName, int nHosts, char **hosts, char *value,
         for (i = 0; i < numHostResources; i++)
             freeSharedRes (hostResources[i]);
         FREEUP (hostResources);
-        return (NULL);
+        return NULL;
     }
     hostResources = temp1;
     hostResources[numHostResources] = temp;
@@ -3601,7 +3601,7 @@ isInHostList (struct sharedResource  *sharedResource,  char *hostName)
     int i, j;
 
     if (sharedResource->numInstances <= 0)
-        return (NULL);
+        return NULL;
 
     for (i=0; i <sharedResource->numInstances; i++) {
         if (sharedResource->instances[i]->nHosts <= 0
@@ -3612,7 +3612,7 @@ isInHostList (struct sharedResource  *sharedResource,  char *hostName)
                 return (sharedResource->instances[i]);
         }
     }
-    return (NULL);
+    return NULL;
 }
 
 struct sharedResource *
@@ -4477,7 +4477,7 @@ getExtResourcesDef(char *resName)
 
     ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5453,
                                      "%s: external resource object is current not support in this platform"), fname); /* catgets 5453 */
-    return(NULL);
+    return NULL;
 }
 
 
@@ -4489,7 +4489,7 @@ getExtResourcesLoc(char *resName)
 
     ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5454,
                                      "%s: external resource object is current not support in this platform"), fname); /* catgets 5454 */
-    return(NULL);
+    return NULL;
 }
 
 

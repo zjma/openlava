@@ -130,7 +130,7 @@ str2lsfRu(char *line, struct lsfRusage *lsfRu, int *ccount)
         &(lsfRu->ru_ioch), &(lsfRu->ru_msgsnd), &(lsfRu->ru_msgrcv),
         &(lsfRu->ru_nsignals), &(lsfRu->ru_nvcsw), &(lsfRu->ru_nivcsw),
         &(lsfRu->ru_exutime), ccount);
-    return (cc);
+    return cc;
 }
 
 

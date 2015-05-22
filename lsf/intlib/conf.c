@@ -110,7 +110,7 @@ getBeginLine(FILE *fp, int *LineNum)
     for (;;) {
         sp = getNextLineC_(fp, LineNum, TRUE);
         if (! sp)
-            return (NULL);
+            return NULL;
 
         wp = getNextWord_(&sp);
         if (wp && (strcasecmp(wp, "begin") == 0))

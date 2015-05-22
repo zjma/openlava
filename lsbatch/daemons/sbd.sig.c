@@ -131,7 +131,7 @@ jobSigStart (struct jobCard *jp, int sigValue,
                 jp->actStatus = ACT_NO;
                 if ((cc = jobsig(jp, SIGKILL, TRUE)) >= 0)
                     jp->jobSpecs.jStatus &= ~JOB_STAT_MIG;
-                return (cc);
+                return cc;
             case SIG_TERM_USER:
 	    case SIG_KILL_REQUEUE:
             case SIG_TERM_FORCE:
@@ -194,7 +194,7 @@ jobSigStart (struct jobCard *jp, int sigValue,
                         jp->jobSpecs.jStatus |= JOB_STAT_MIG;
                     if (logFlag) jobSigLog (jp, 0);
                 }
-                return (cc);
+                return cc;
             case SIG_SUSP_USER:
                 return (jRunSuspendAct(jp, sigValue,
                                        JOB_STAT_USUSP, SUSP_USER_STOP, 0, logFlag));
@@ -225,7 +225,7 @@ jobSigStart (struct jobCard *jp, int sigValue,
                         jp->jobSpecs.jStatus |= JOB_STAT_SIGNAL;
                         if (logFlag) jobSigLog (jp, 0);
                     }
-                    return (cc);
+                    return cc;
                 }
             case SIG_TERM_USER:
 	    case SIG_KILL_REQUEUE:
@@ -290,7 +290,7 @@ jobSigStart (struct jobCard *jp, int sigValue,
                         jp->jobSpecs.jStatus |= JOB_STAT_MIG;
                     if (logFlag) jobSigLog (jp, 0);
                 }
-                return (cc);
+                return cc;
 
             case SIG_SUSP_USER:
                 SET_STATE(jp->jobSpecs.jStatus, JOB_STAT_USUSP);
@@ -396,7 +396,7 @@ terminateAct(struct jobCard *jp, int sigValue,
             jp->jobSpecs.jStatus |= JOB_STAT_SIGNAL;
             if (logFlag) jobSigLog (jp, 0);
         }
-        return (cc);
+        return cc;
     }
 }
 
@@ -426,7 +426,7 @@ jRunSuspendAct(struct jobCard *jp, int sigValue,
             jp->jobSpecs.lastSSuspTime = now;
             jp->notReported++;
         }
-        return (cc);
+        return cc;
     }
 
 
@@ -439,7 +439,7 @@ jRunSuspendAct(struct jobCard *jp, int sigValue,
             jp->jobSpecs.lastSSuspTime = now;
             jp->notReported++;
         }
-        return (cc);
+        return cc;
     } else {
         if ((cc = jobact(jp, sigValue, actCmd, 0, TRUE)) >= 0) {
             jp->actStatus = ACT_START;
@@ -453,7 +453,7 @@ jRunSuspendAct(struct jobCard *jp, int sigValue,
 	    jp->jSupStatus = JSUPER_STAT_SUSP;
 	}
 
-        return (cc);
+        return cc;
     }
 
 }
@@ -535,7 +535,7 @@ resumeJob (struct jobCard *jp, int sigValue, int suspendReasons,
             jp->jobSpecs.reasons = 0;
             jp->notReported++;
         }
-        return (cc);
+        return cc;
     }
 
 
@@ -545,7 +545,7 @@ resumeJob (struct jobCard *jp, int sigValue, int suspendReasons,
             jp->jobSpecs.reasons = 0;
             jp->notReported++;
         }
-        return (cc);
+        return cc;
     } else {
         if ((cc = jobact(jp, sigValue, actCmd, 0, TRUE)) >= 0) {
             jp->actStatus = ACT_START;
@@ -553,7 +553,7 @@ resumeJob (struct jobCard *jp, int sigValue, int suspendReasons,
 
             if (logFlag) jobSigLog (jp, 0);
         }
-        return (cc);
+        return cc;
     }
 
 }
@@ -1837,7 +1837,7 @@ getEchkpntDir(char *name)
         if ((echkpnt_dir = daemonParams[LSF_SERVERDIR].paramValue) == NULL) {
             perror(_i18n_msg_get(ls_catd , NL_SETN, 927,
                                  "Can't access echkpnt()")); /* catgets 927 */
-            return(NULL);
+            return NULL;
         }
 
 
@@ -1848,7 +1848,7 @@ getEchkpntDir(char *name)
     if (access(echpnt_path, X_OK) < 0) {
         perror(_i18n_msg_get(ls_catd , NL_SETN, 928,
                              "Can't access echkpnt()/erestart()")); /* catgets 928 */
-        return(NULL);
+        return NULL;
     }
     return(echpnt_path);
 

@@ -338,7 +338,7 @@ getLSFAdmin(void)
     }
     if ((clusterInfo = ls_clusterinfo(NULL, NULL, NULL, 0, 0)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_clusterinfo");
-        return (NULL);
+        return NULL;
     }
 
     lsfUserName = (clusterInfo->nAdmins == 0 ? clusterInfo->managerName :
@@ -347,7 +347,7 @@ getLSFAdmin(void)
     if ((pw = getpwnam(lsfUserName)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
                   fname, "getpwnam", lsfUserName);
-        return (NULL);
+        return NULL;
     }
 
     strcpy(admin, lsfUserName);
