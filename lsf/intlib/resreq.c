@@ -215,7 +215,7 @@ parseResReq(char *resReq,
     if (logclass & (LC_TRACE | LC_SCHED))
         ls_syslog(LOG_DEBUG3, "%s: resReq=%s", fname, resReq);
 
-    initResVal (resVal);
+    initResVal(resVal);
 
     ALLOC_STRING(resVal->selectStr,
                  resVal->selectStrSize,
@@ -627,6 +627,8 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     traverse_init(link, &iter);
     while ((s = traverse_link(&iter))) {
 
+        /* Allocate for each element of the link
+         */
         rusage_bit_map =  calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
         val = calloc(lsInfo->nRes, sizeof(float));
 
@@ -687,26 +689,29 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
          */
         r = calloc(1, sizeof(struct _rusage_));
         r->bitmap = rusage_bit_map;
-        r->val = calloc(lsInfo->nRes, sizeof(float));
         r->val = val;
         enqueue_link(resVal->rl, r);
 
         if (i == 0) {
             /* The entry 0 is both in the link and
-             * in the resVal.
+             * in the resVal. The default values
+             * were allocated in setDefaults()
              */
+            _free_(resVal->rusage_bit_map);
+            _free_(resVal->val);
             resVal->rusage_bit_map = rusage_bit_map;
-            resVal->val[entry] = value;
+            resVal->val = val;
         }
         ++i;
     } /* while (s = traverse_link()) */
 
     resVal->options |= PR_RUSAGE;
-    return PARSE_OK;
 
     while ((s = pop_link(link)))
         _free_(s);
     fin_link(link);
+
+    return PARSE_OK;
 
 pryc:
 
@@ -1208,20 +1213,28 @@ setDefaults(struct resVal *resVal, struct lsInfo *lsInfo, int options)
 void
 freeResVal(struct resVal *resVal)
 {
+    struct _rusage_ *r;
+
     if (resVal == NULL)
 	return;
 
-    FREEUP (resVal->val);
-    FREEUP (resVal->indicies);
-    FREEUP (resVal->selectStr);
+    FREEUP(resVal->indicies);
+    FREEUP(resVal->selectStr);
     resVal->selectStrSize = 0;
-    FREEUP (resVal->rusage_bit_map);
+
     if (resVal->xorExprs) {
         int i;
 	for (i = 0; resVal->xorExprs[i]; i++)
 	    FREEUP(resVal->xorExprs[i]);
 	FREEUP(resVal->xorExprs);
     }
+
+    while ((r = pop_link(resVal->rl))) {
+        _free_(r->bitmap);
+        _free_(r->val);
+        _free_(r);
+    }
+    fin_link(resVal->rl);
 }
 
 void
@@ -1233,10 +1246,10 @@ initResVal (struct resVal *resVal)
     resVal->val = NULL;
     resVal->indicies = NULL;
     resVal->rusage_bit_map= NULL;
-    resVal->selectStr= NULL;
-    resVal->selectStrSize= 0;
+    resVal->selectStr = NULL;
+    resVal->selectStrSize = 0;
     resVal->xorExprs = NULL;
-
+    resVal->rl = NULL;
 }
 
 
@@ -1286,6 +1299,7 @@ get_rusage_entries(const char *s)
 {
     char *p;
     char *ss;
+    char *ss0;
     char *z;
     link_t *l;
 
@@ -1293,7 +1307,7 @@ get_rusage_entries(const char *s)
 
     /* Return an empty link
      */
-    ss = strdup(s);
+    ss0 = ss = strdup(s);
     if (! strstr(ss, "||")) {
         enqueue_link(l, ss);
         return l;
@@ -1308,6 +1322,7 @@ get_rusage_entries(const char *s)
 
     z = strdup(ss);
     enqueue_link(l, z);
+    _free_(ss0);
 
     return l;
 }

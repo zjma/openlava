@@ -841,8 +841,8 @@ lsbFreeResVal (struct resVal **resVal)
 
    if (resVal == NULL || *resVal == NULL)
        return;
-   freeResVal (*resVal);
-   FREEUP (*resVal);
+   freeResVal(*resVal);
+   FREEUP(*resVal);
 }
 
 void

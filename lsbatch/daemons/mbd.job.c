@@ -6237,7 +6237,7 @@ checkResReq(char *resReq, int checkOptions)
         || (resValPtr->pTile < 1))
         goto error;
 
-    return (resValPtr);
+    return resValPtr;
 
 error:
     lsbFreeResVal(&resValPtr);
@@ -6420,7 +6420,7 @@ freeJData(struct jData *jPtr)
         FREEUP(jPtr->runRusage.pgid);
 
     if (jPtr->newSub) {
-        freeSubmitReq (jPtr->newSub);
+        freeSubmitReq(jPtr->newSub);
         FREEUP(jPtr->newSub);
     }
     if (jPtr->shared->numRef <= 1)
