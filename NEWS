@@ -14,6 +14,8 @@ Release notes for OpenLava versions
 -- Fix hostID bug which prevented queue JL/H from working properly.
 -- Allow comma as separator together with colon when rusage is
    specified. e.g -R rusage[mem=1,vcs=2]
+-- Fix the bug which prevented bsub -K from working.
+-- Add script for Intel MPI.
 
 3.0
 ====
