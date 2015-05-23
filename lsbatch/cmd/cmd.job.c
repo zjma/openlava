@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -371,7 +371,7 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 
 
     int                 i = 0;
-    NAMELIST  *hostList = NULL;
+    struct nameList  *hostList = NULL;
 
 
     if (lsbParams[LSB_SHORT_HOSTLIST].paramValue && job->numExHosts > 1
@@ -506,9 +506,8 @@ prtJobReserv(struct jobInfoEnt *job)
 {
     char prline[MAXLINELEN];
 
-
-    int                 i = 0;
-    NAMELIST  *hostList = NULL;
+    int i = 0;
+    struct nameList  *hostList = NULL;
 
     if (lsbParams[LSB_SHORT_HOSTLIST].paramValue && job->numExHosts > 1
          && strcmp(lsbParams[LSB_SHORT_HOSTLIST].paramValue, "1") == 0) {
@@ -517,7 +516,6 @@ prtJobReserv(struct jobInfoEnt *job)
             exit(99);
         }
     }
-
 
     if (job->numExHosts > 0 && job->reserveTime > 0) {
 	if (job->numExHosts > 1)

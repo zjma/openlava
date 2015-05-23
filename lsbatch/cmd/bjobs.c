@@ -387,7 +387,7 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
     static struct loadIndexLog *loadIndex = NULL;
     char *exec_host = "";
     char *jobName, *pos;
-    NAMELIST  *hostList = NULL;
+    struct nameList  *hostList = NULL;
     char tmpBuf[MAXLINELEN];
     int i = 0;
 

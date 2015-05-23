@@ -101,7 +101,6 @@ extern int readNextPacket(char **, int, struct LSFHeader *, int);
 extern void closeSession(int);
 extern void upperStr(char *, char *);
 extern char* getUnixSpoolDir(char *);
-extern char* getNTSpoolDir(char *);
 extern char *getMasterName(void);
 extern ushort get_mbd_port (void);
 extern ushort get_sbd_port (void);

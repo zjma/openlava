@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1377,22 +1377,21 @@ struct hostConf {
     struct groupInfoEnt *hgroups;
 };
 
-typedef struct lsbSharedResourceInstance {
+struct lsbSharedResourceInstance {
     char *totalValue;
     char *rsvValue;
     int  nHosts;
     char **hostList;
+};
 
-} LSB_SHARED_RESOURCE_INST_T;
-
-typedef struct lsbSharedResourceInfo {
+struct lsbSharedResourceInfo {
     char *resourceName;
     int  nInstances;
-    LSB_SHARED_RESOURCE_INST_T  *instances;
-} LSB_SHARED_RESOURCE_INFO_T;
+    struct lsbSharedResourceInstance *instances;
+};
 
 struct queueConf {
-    int       numQueues;
+    int numQueues;
     struct queueInfoEnt *queues;
 };
 
@@ -1412,23 +1411,22 @@ struct queueConf {
 #define  IS_POST_FINISH(s) ( IS_POST_DONE(s) || IS_POST_ERR(s) )
 
 extern int lsberrno;
-
 extern int lsb_mbd_version;
 
 #define PRINT_SHORT_NAMELIST  0x01
 #define PRINT_LONG_NAMELIST   0x02
 #define PRINT_MCPU_HOSTS      0x04
 
-typedef struct nameList {
-    int    listSize;
+struct nameList {
+    int listSize;
     char **names;
-    int   *counter;
-} NAMELIST;
+    int *counter;
+};
 
-extern NAMELIST * lsb_parseShortStr(char *, int);
-extern NAMELIST * lsb_parseLongStr(char *);
-extern char * lsb_printNameList(NAMELIST *, int );
-extern NAMELIST * lsb_compressStrList(char **, int );
+extern struct nameList * lsb_parseShortStr(char *, int);
+extern struct nameList * lsb_parseLongStr(char *);
+extern char * lsb_printNameList(struct nameList *, int );
+extern struct nameList * lsb_compressStrList(char **, int );
 extern char * lsb_splitName(char *, unsigned int *);
 
 

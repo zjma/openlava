@@ -752,7 +752,7 @@ setJobEnv(struct jobCard *jp)
 
 
     {
-        NAMELIST *hostList;
+        struct nameList *hostList;
         hostList = lsb_compressStrList(jp->jobSpecs.toHosts,
                                        jp->jobSpecs.numToHosts);
         putEnv("LSB_MCPU_HOSTS",
@@ -1640,7 +1640,7 @@ send_results(struct jobCard *jp)
                                      "Job was executed on host(s) <%s>, in queue <%s>, as user <%s>.\n"), /* catgets 420 */
                 myhostnm, jp->jobSpecs.queue, jp->execUsername);
     else {
-        NAMELIST *hostList;
+        struct nameList *hostList;
         char str[MAXLINELEN];
         hostList = lsb_compressStrList(jp->jobSpecs.toHosts,
                                        jp->jobSpecs.numToHosts);

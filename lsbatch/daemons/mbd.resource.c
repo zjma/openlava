@@ -654,7 +654,7 @@ freePreemptResource(struct preemptResource *pRPtr)
 void
 newPRMO(char *nameList)
 {
-    NAMELIST *nameListPtr;
+    struct nameList *nameListPtr;
     int i, index, addedNum = 0;
 
     if (logclass & LC_TRACE)
@@ -667,7 +667,6 @@ newPRMO(char *nameList)
     if ((nameList == NULL) || (nameList[0] == '\0')) {
 	return;
     }
-
 
     if ((nameListPtr = lsb_parseLongStr(nameList)) == NULL) {
 	return;
