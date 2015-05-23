@@ -30,12 +30,13 @@ done(const char *test)
     printf("test %s DONE\n", test);
 }
 
-static LS_LONG_INT submit_job(int);
+static LS_LONG_INT submit_job(int, char *);
 static int wait_for_job(LS_LONG_INT, int);
 static int kill_job(LS_LONG_INT, int);
 static int get_job_status(LS_LONG_INT);
 static struct queueInfoEnt *get_queues(int *);
 static void ssleep(int);
+static int wait_for_job_run(LS_LONG_INT, int);
 
 /*
  * test0()
@@ -339,7 +340,7 @@ test9(int n)
 
     printf("I am %s number %d\n", __func__, n);
 
-    jobID = submit_job(60);
+    jobID = submit_job(60, NULL);
     if (wait_for_job(jobID, 10) < 0) {
         lsb_perror(" wait_for_job()");
         failed(__func__);
@@ -362,7 +363,7 @@ test10(int n)
 
     printf("I am %s number %d\n", __func__, n);
 
-    jobID = submit_job(3600);
+    jobID = submit_job(3600, NULL);
     kill_job(jobID, SIGKILL);
     ssleep(10);
     status = get_job_status(jobID);
@@ -391,7 +392,7 @@ test11(int n)
 
     printf("I am %s number %d\n", __func__, n);
 
-    jobID = submit_job(3600);
+    jobID = submit_job(3600, NULL);
     kill_job(jobID, SIGSTOP);
     ssleep(10);
     status = get_job_status(jobID);
@@ -436,6 +437,8 @@ test12(int n)
 {
     struct queueInfoEnt *ent;
     int num;
+    int cc;
+    LS_LONG_INT jobID;
 
     printf("I am %s number %d\n", __func__, n);
     /* need at least 2 queues
@@ -452,12 +455,38 @@ test12(int n)
         return 0;
     }
 
+    /* submit a job to one queue
+     */
+    jobID = submit_job(300, ent[0].queue);
+    if (jobID < 0) {
+        failed(__func__);
+        return -1;
+    }
+
+    /* wait for the job to start
+     */
+    cc = wait_for_job_run(jobID, 60);
+    if (cc < 0) {
+        failed(__func__);
+        return -1;
+    }
+
+    /* switch it
+     */
+    if (lsb_switchjob(jobID, ent[1].queue) < 0) {
+        lsb_perror("lsb_switchjob");
+        failed(__func__);
+        return -1;
+    }
+
     done(__func__);
     return 0;
 }
+
 int
 test13(int n)
 {
+    printf("I am %s number %d\n", __func__, n);
     return 0;
 }
 int
@@ -497,7 +526,7 @@ test20(int n)
 }
 
 static LS_LONG_INT
-submit_job(int runTime)
+submit_job(int runTime, char *queue)
 {
     int i;
     int jobId;
@@ -506,6 +535,9 @@ submit_job(int runTime)
     char cmd[128];
 
     memset(&req, 0, sizeof(struct submit));
+
+    if (queue)
+        req.queue = queue;
     req.options = 0;
     req.maxNumProcessors = 1;
     req.options2 = 0;
@@ -638,7 +670,7 @@ ssleep(int s)
     time_t start;
 
     start = time(NULL);
-    printf(" wait");
+    printf("wait");
     while (1) {
         sleep(1);
         printf(".");
@@ -662,4 +694,23 @@ get_queues(int *num)
     }
 
     return ent;
+}
+
+static int
+wait_for_job_run(LS_LONG_INT jobID, int tm)
+{
+    int status;
+    time_t start;
+
+    start = time(NULL);
+    printf("wait");
+znovu:
+    status = get_job_status(jobID);
+    if (IS_START(status))
+        return 0;
+    if (time(NULL) - start > tm)
+        return -1;
+    printf(".");
+    sleep(2);
+    goto znovu;
 }

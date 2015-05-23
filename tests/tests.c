@@ -43,6 +43,8 @@ main(int argc, char **argv)
     gettimeofday(&tv, NULL);
     setbuf(stdout, NULL);
 
+    /* Initialize the batch library for once
+     */
     if (lsb_init(NULL) < 0) {
         lsb_perror("lsb_init()");
         return -1;

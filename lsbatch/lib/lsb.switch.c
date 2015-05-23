@@ -1,4 +1,5 @@
-/* $Id: lsb.switch.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,15 +17,10 @@
  *
  */
 
-#include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-#include <pwd.h>
-
 #include "lsb.h"
 
-int 
-lsb_switchjob (LS_LONG_INT jobId, char *queue)
+int
+lsb_switchjob(LS_LONG_INT jobId, char *queue)
 {
     struct jobSwitchReq jobSwitchReq;
     char request_buf[MSGSIZE];
@@ -35,26 +31,22 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
     struct LSFHeader hdr;
     struct lsfAuth auth;
 
-
     if (jobId <= 0 || queue == 0) {
 	lsberrno = LSBE_BAD_ARG;
 	return -1;
     }
+
     if (queue && (strlen (queue) >= MAX_LSB_NAME_LEN - 1)) {
         lsberrno = LSBE_BAD_QUEUE;
         return -1;
     }
 
-
     if (authTicketTokens_(&auth, NULL) == -1)
 	return -1;
-    
+
     jobSwitchReq.jobId = jobId;
     strcpy (jobSwitchReq.queue, queue);
 
-
-    
-    
     mbdReqtype = BATCH_JOB_SWITCH;
     xdrmem_create(&xdrs, request_buf, MSGSIZE, XDR_ENCODE);
     initLSFHeader_(&hdr);
@@ -65,10 +57,11 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
         return -1;
     }
 
-    
-    if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, 
-                       &hdr, NULL, NULL, NULL)) == -1)
-    {
+    if ((cc = callmbd(NULL,
+                      request_buf,
+                      XDR_GETPOS(&xdrs),
+                      &reply_buf,
+                       &hdr, NULL, NULL, NULL)) == -1) {
 	xdr_destroy(&xdrs);
 	return -1;
     }
@@ -80,7 +73,6 @@ lsb_switchjob (LS_LONG_INT jobId, char *queue)
 
     if (lsberrno == LSBE_NO_ERROR)
         return 0;
-    else
-	return -1;
 
-} 
+    return -1;
+}
