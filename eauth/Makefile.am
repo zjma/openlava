@@ -8,7 +8,7 @@ AM_CPPFLAGS += -I$(top_srcdir)/lsf
 
 sbin_PROGRAMS = eauth
 eauth_SOURCES = eauth.c
-eauth_LDADD = ../lsf/lib/liblsf.la ../lsf/intlib/liblsfint.la -lnsl
+eauth_LDADD = ../lsf/lib/.libs/liblsf.a ../lsf/intlib/.libs/liblsfint.a -lnsl
 if SOLARIS
 eauth_LDADD += -lsocket -lnsl
 endif

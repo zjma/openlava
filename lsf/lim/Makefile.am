@@ -20,7 +20,7 @@ else
 lim_SOURCES += lim.linux.c
 endif
 
-lim_LDADD =  ../lib/liblsf.la ../intlib/liblsfint.la -lnsl
+lim_LDADD =  ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
 if SOLARIS
 lim_LDADD += -lsocket -lnsl
 endif

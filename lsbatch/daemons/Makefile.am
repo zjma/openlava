@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2015 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
@@ -15,17 +15,10 @@ mbd.policy.c mbd.grp.c mbd.jarray.c mbd.log.c mbd.requeue.c mbd.window.c \
 elock.c misc.c mail.c daemons.c daemons.xdr.c \
 mbd.h daemonout.h daemons.h jgrp.h proxy.h mbd.profcnt.def 
 
-# Leave for future reference.
-#if SCHED_EXPERIMENTAL
-#mbatchd_SOURCES += mbd.epolicy.c
-#else
-#mbatchd_SOURCES += mbd.policy.c
-#endif
-
-mbatchd_LDADD = ../lib/liblsbatch.la \
-                ../../lsf/lib/liblsf.la \
-                ../../lsf/intlib/liblsfint.la \
-		../../lsf/intlib/libtools.la -lm -lnsl
+mbatchd_LDADD = ../lib/.libs/liblsbatch.a \
+                ../../lsf/lib/.libs/liblsf.a \
+                ../../lsf/intlib/.libs/liblsfint.a \
+		../../lsf/intlib/.libs/libtools.a -lm -lnsl
 if !CYGWIN
 mbatchd_LDADD += -lnsl
 endif
@@ -35,9 +28,9 @@ sbatchd_SOURCES = sbd.comm.c sbd.file.c sbd.job.c sbd.main.c \
                   elock.c mail.c misc.c daemons.c daemons.xdr.c \
                   sbd.h daemonout.h daemons.h 
 
-sbatchd_LDADD = ../lib/liblsbatch.la \
-                ../../lsf/lib/liblsf.la \
-                ../../lsf/intlib/liblsfint.la -lm -lnsl
+sbatchd_LDADD = ../lib/.libs/liblsbatch.a \
+                ../../lsf/lib/.libs/liblsf.a \
+                ../../lsf/intlib/.libs/liblsfint.a -lm -lnsl
 if !CYGWIN
 sbatchd_LDADD += -lnsl
 endif
@@ -49,8 +42,11 @@ endif
 lib_LTLIBRARIES = libfairshare.la libpreempt.la
 libfairshare_la_SOURCES = libfairshare.c fairshare.h 
 libfairshare_la_LDFLAGS = -no-undefined -version-info 0:1
-libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/libtools.la
+libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/libtools.la \
+	$(top_builddir)/lsf/lib/liblsf.la
 
 libpreempt_la_SOURCES = libpreempt.c preempt.h
 libpreempt_la_LDFLAGS = -no-undefined -version-info 0:1
-libpreempt_la_LIBADD =  $(top_builddir)/lsf/intlib/libtools.la
+libpreempt_la_LIBADD =  $(top_builddir)/lsf/intlib/libtools.la \
+	$(top_builddir)/lsf/lib/liblsf.la $(top_builddir)/lsbatch/lib/liblsbatch.la
+

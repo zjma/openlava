@@ -13,7 +13,7 @@ pim_SOURCES += pim.solaris.c
 else
 pim_SOURCES += pim.linux.c
 endif
-pim_LDADD = ../lib/liblsf.la ../intlib/liblsfint.la -lnsl
+pim_LDADD = ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
 
 if SOLARIS
 pim_LDADD += -lnsl -lsocket
