@@ -393,15 +393,18 @@ getHRValue(char *resName,
     static char fname[]="getHRValue()";
 
     for (i = 0; i < hPtr->numInstances; i++) {
-        if (strcmp (hPtr->instances[i]->resName, resName) != 0)
+
+        if (strcmp(hPtr->instances[i]->resName, resName) != 0)
             continue;
+
         *instance = hPtr->instances[i];
         if (strcmp(hPtr->instances[i]->value, "-") == 0) {
-            return (INFINIT_LOAD);
+            return INFINIT_LOAD;
         }
-        return (atof (hPtr->instances[i]->value));
+        return atof (hPtr->instances[i]->value);
     }
-    ls_syslog(LOG_ERR, I18N(7704,"%s, instance name not found."), fname);/*catgets 7704 */
+
+    ls_syslog(LOG_ERR, "%s, instance name not found.", __func__);
     return -INFINIT_LOAD;
 
 }
