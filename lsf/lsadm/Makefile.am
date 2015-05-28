@@ -10,7 +10,7 @@ bin_PROGRAMS = lsadmin
 
 lsadmin_SOURCES = lsadmin.c startup.c cmd.limcontrol.c \
                    cmd.rescontrol.c lsadmin.h
-lsadmin_LDADD =  ../lib/liblsf.la ../intlib/liblsfint.la -lnsl
+lsadmin_LDADD =  ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
 if SOLARIS
 lsadmin_LDADD += -lsocket -lnsl
 endif

@@ -30,7 +30,7 @@ pimme_SOURCES = pimme.c
 qstring_SOURCES = qstring.c
 
 readevent_SOURCES = readevent.c
-readevent_LDADD = ../lsbatch/lib/liblsbatch.la ../lsf/lib/liblsf.la -lnsl
+readevent_LDADD = ../lsbatch/lib/.libs/liblsbatch.a ../lsf/lib/.libs/liblsf.a -lnsl
 if SOLARIS
 readevent_LDADD += -lsocket -lnsl
 endif

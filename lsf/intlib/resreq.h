@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014 David Bigagli
+ *
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -21,6 +23,9 @@
 #define _RES_REQ_H_
 
 #include "link.h"
+
+#define IS_VALID_OTHER(s) ((s) == '_'|| (s) == '~')
+
 #define WILDCARD_STR  "any"
 #define LOCAL_STR     "local"
 

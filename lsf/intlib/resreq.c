@@ -852,172 +852,218 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     int t;
     int len;
     int entry;
+    int hasFunction = FALSE;
     int hasQuote;
-    char res[MAXLSFNAMELEN], val[MAXLSFNAMELEN];
-    char tmpbuf[MAXLSFNAMELEN*2];
-    char *sp, *op;
+    char res[MAXLINELEN];
+    char val[MAXLINELEN];
+    char tmpbuf[MAXLINELEN*2];
+    char *sp;
+    char *op;
 
     len = strlen(resReq);
 
     sp = resVal->selectStr;
-    strcpy(sp, "expr ");
-    s = 0;
-    t = strlen(sp);
+    strcpy(sp,"expr ");
+    s = 0;		/* Index into source string */
+    t = strlen(sp);	/* Index into target string */
 
     while (s < len) {
-
         if (t >= (resVal->selectStrSize - MAXLSFNAMELEN))
             return PARSE_BAD_EXP;
 
+        /* Skip spaces */
         if (resReq[s] == ' ') {
             s++;
             continue;
         }
-
-        if (resReq[s] == '(' || resReq[s] == ')' || resReq[s] == '=' ||
-            resReq[s] == '!' || resReq[s] == '>' || resReq[s] == '<' ||
-            resReq[s] == '|' || resReq[s] == '&' || resReq[s] == '+' ||
-            resReq[s] == '-' || resReq[s] == '*' || resReq[s] == '/' ||
-            resReq[s] == '.' || isdigit(resReq[s])) {
+        /* Copy reserved characters and numbers into target string */
+        if ( resReq[s] == '(' || resReq[s] == ')' || resReq[s] == '=' ||
+             resReq[s] == '!' || resReq[s] == '>' || resReq[s] == '<' ||
+             resReq[s] == '|' || resReq[s] == '&' || resReq[s] == '+' ||
+             resReq[s] == '-' || resReq[s] == '*' || resReq[s] == '/' ||
+             resReq[s] == '.' || isdigit(resReq[s])) {
 
             sp[t++] = resReq[s++];
+	    if( t >= resVal->selectStrSize ) {
+		/* ensure we don't go beyond the bounds of the buffer */
+		return(PARSE_BAD_VAL);
+	    }
             continue;
         }
 
-        if (! isalpha(resReq[s]))
-            return PARSE_BAD_EXP;
-
-        if (isalpha(resReq[s])) {
+        if (isalpha(resReq[s])) { /* Check for a resource name */
 
             i = 0;
-            while (isalnum(resReq[s])
-                   || ispunct(resReq[s]))
+            while (isalpha(resReq[s])
+                   || isdigit(resReq[s])
+                   || IS_VALID_OTHER(resReq[s])) {
                 res[i++] = resReq[s++];
+		if (i >= MAXLINELEN) {
+		    /* ensure we don't go beyond the bounds of the buffer */
+		    return(PARSE_BAD_VAL);
+		}
+	    }
             res[i] = '\0';
 
             entry = getResEntry(res);
 
             if (entry < 0) {
-                if (strncmp ("defined", res, strlen (res)) == 0) {
+                if (strncmp ("defined", res, strlen(res)) == 0) {
                     while (resReq[s] == ' ')
                         s++;
                     if (resReq[s] != '(')
                         return (PARSE_BAD_EXP);
                     i = 0;
 		    s++;
-                    while (isalnum(resReq[s])
-                           || ispunct(resReq[s]))
+                    while (isalpha(resReq[s])
+                           || isdigit(resReq[s])
+                           || IS_VALID_OTHER(resReq[s])) {
                         res[i++] = resReq[s++];
+			if (i >= MAXLINELEN) {
+			    /* ensure we don't go beyond the bounds of
+			     * the buffer
+			     */
+			    return(PARSE_BAD_VAL);
+			}
+		    }
                     res[i] = '\0';
                     entry = getResEntry(res);
                     if (entry < 0)
                         return PARSE_BAD_NAME;
-		    sprintf(tmpbuf,"[%s \"%s\" ]",
-                            "defined", lsInfo->resTable[entry].name);
+		    if ((snprintf(tmpbuf, MAXLINELEN*2, "[%s \"%s\" ]",
+                                  "defined",
+                                  lsInfo->resTable[entry].name)
+			   >= MAXLINELEN*2)
+		       || (strlen(tmpbuf) + t >= resVal->selectStrSize)) {
+			/* ensure we don't go beyond the
+			 * bounds of the buffer
+			 */
+			return(PARSE_BAD_VAL);
+		    }
                     sp[t] = '\0';
                     strcat(sp,tmpbuf);
                     t += strlen(tmpbuf);
                     while (resReq[s] == ' ')
-                        s++;
+                           s++;
                     if (resReq[s] != ')')
-                        return PARSE_BAD_EXP;
+                        return (PARSE_BAD_EXP);
                     s++;
                     continue;
                 }
                 return PARSE_BAD_NAME;
             }
-
             switch(lsInfo->resTable[entry].valueType) {
+	    case LS_NUMERIC:
+            case LS_BOOLEAN:
+                strcat(res,"()");
+                sp[t] = '\0';
+                strcat(sp,res);
+                t += strlen(res);
+		break;
+	    case LS_STRING:
+                /* Skip spaces */
+                while(resReq[s] == ' ')
+                    s++;
 
-                case LS_NUMERIC:
-                case LS_BOOLEAN:
-                    strcat(res,"()");
-                    sp[t] = '\0';
-                    strcat(sp,res);
-                    t += strlen(res);
-                    break;
-                case LS_STRING:
+                /* Should have at least a operator and value */
+                if (resReq[s] == '\0' || resReq[s+1] == '\0')
+                    return(PARSE_BAD_EXP);
 
-                    while(resReq[s] == ' ')
-                        s++;
+                /* Get the operator */
+                op = NULL;
+                if (resReq[s] == '=' && resReq[s+1] == '=') {
+                    op = "eq";
+                    s += 2;
+                } else if (resReq[s] == '!' && resReq[s+1] == '=') {
+                    op = "ne";
+                    s += 2;
+                } else if (resReq[s] == '>' && resReq[s+1] == '=') {
+                    op = "ge";
+                    s += 2;
+                } else if (resReq[s] == '<' && resReq[s+1] == '=') {
+                    op = "le";
+                    s += 2;
+                } else if (resReq[s] == '<') {
+                    op = "lt";
+                    s += 1;
+                } else if (resReq[s] == '>') {
+                    op = "gt";
+                    s += 1;
+                } else { /* Not a valid operator */
+                    return -1;
+                }
 
-                    if (resReq[s] == '\0' || resReq[s+1] == '\0')
-                        return PARSE_BAD_EXP;
-
-
-                    op = NULL;
-                    if (resReq[s] == '=' && resReq[s+1] == '=') {
-                        op = "eq";
-                        s += 2;
-                    } else if (resReq[s] == '!' && resReq[s+1] == '=') {
-                        op = "ne";
-                        s += 2;
-                    } else if (resReq[s] == '>' && resReq[s+1] == '=') {
-                        op = "ge";
-                        s += 2;
-                    } else if (resReq[s] == '<' && resReq[s+1] == '=') {
-                        op = "le";
-                        s += 2;
-                    } else if (resReq[s] == '<') {
-                        op = "lt";
-                        s += 1;
-                    } else if (resReq[s] == '>') {
-                        op = "gt";
-                        s += 1;
-                    } else {
-                        return -1;
-                    }
-
-                    while(resReq[s] == ' ')
-                        s++;
-
-                    if (resReq[s] == '\''){
-                        hasQuote = TRUE;
-                        s++;
-                    } else
-                        hasQuote = FALSE;
-                    i = 0;
-                    if (!hasQuote){
-                        while(isalnum(resReq[s])
-                              || ispunct(resReq[s]))
-                            val[i++] = resReq[s++];
-                    } else {
-
-                        while(resReq[s] && resReq[s] != '\'' && i < MAXLSFNAMELEN)
-                            val[i++] = resReq[s++];
-
-                        if (i - 1 == MAXLSFNAMELEN)
-                            return PARSE_BAD_VAL;
-
-                        if (resReq[s] == '\'')
-                            s++;
-                    }
-
-                    val[i] = '\0';
-                    if (i == 0) {
-                        return PARSE_BAD_VAL;
-                    }
-
-                    if (validValue(val, lsInfo, entry) < 0) {
-                        return PARSE_BAD_VAL;
-                    }
-
-                    sprintf(tmpbuf,"[%s \"%s\" \"%s\"]",lsInfo->resTable[entry].name
-                            ,op,val);
-                    sp[t] = '\0';
-                    strcat(sp,tmpbuf);
-                    t += strlen(tmpbuf);
+                while (resReq[s] == ' ')
+                    s++;
+                /* Get the value */
+                if (resReq[s] == '\''){
+                    hasQuote = TRUE;
+                    s++; /* skip over quote */
+                } else
+                    hasQuote = FALSE;
+                i = 0;
+                if (!hasQuote){
+                    while(isalpha(resReq[s])
+                          || isdigit(resReq[s])
+                          || IS_VALID_OTHER(resReq[s])) {
+                        val[i++] = resReq[s++];
+			if (i >= MAXLINELEN) {
+			    /* ensure we don't go beyond the bounds of
+			     * the buffer
+			     */
+			    return(PARSE_BAD_VAL);
+			}
+		    }
+                } else {
+                    while(resReq[s] && resReq[s] != '\'' && i < MAXLINELEN) {
+                        val[i++] = resReq[s++];
+			if (i >= MAXLINELEN) {
+			    /* ensure we don't go beyond the bounds of
+			     * the buffer
+			     */
+			    return(PARSE_BAD_VAL);
+			}
+		    }
+                    if (resReq[s] == '\'')
+                         s++; /* skip over quote */
+                }
+                val[i] = '\0';
+                if (i == 0) { 	/* No value given */
+                    return(PARSE_BAD_VAL);
+                }
+                /* Check if the value is valid for this resource */
+                if (validValue(val, lsInfo, entry) < 0) {
+                    return(PARSE_BAD_VAL);
+                }
+                /* Now combine them all together */
+                if ((snprintf(tmpbuf,
+                              MAXLINELEN * 2,
+                              "[%s \"%s\" \"%s\"]",
+                              lsInfo->resTable[entry].name,
+                              op,
+                              val) >= MAXLINELEN*2)
+                    || (strlen(tmpbuf) + t >= resVal->selectStrSize)) {
+		    /* ensure we don't go beyond the bounds of
+		     * the buffer
+		     */
+		    return(PARSE_BAD_VAL);
+		}
+                sp[t] = '\0';
+                strcat(sp,tmpbuf);
+                t += strlen(tmpbuf);
                 default:
                     break;
             }
-        } else {
+	    hasFunction = FALSE;
+        } else { 	/* Character we don't recognize */
             return (PARSE_BAD_EXP);
         }
+
     }
     sp[t] = '\0';
     resVal->options |= PR_SELECT;
+    return(PARSE_OK);
 
-    return PARSE_OK;
 }
 
 /* Old pre 2.0 resource request format long time obsolete

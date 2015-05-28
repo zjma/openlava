@@ -7,6 +7,7 @@ LSF_SERVERDIR=@prefix@/sbin
 LSF_BINDIR=@prefix@/bin
 LSB_SHAREDIR=@prefix@/work
 LSF_ENVDIR=@prefix@/etc
+LSF_LIBDIR=@prefix@/lib
 
 # Configuration directories
 LSF_CONFDIR=@prefix@/etc

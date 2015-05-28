@@ -10,11 +10,11 @@ sbin_PROGRAMS = echkpnt erestart
 
 echkpnt_SOURCES = echkpnt.c echkpnt.env.c echkpnt.lib.c \
 	echkpnt.lib.h echkpnt.env.h
-echkpnt_LDADD = ../lsf/lib/liblsf.la -lnsl
+echkpnt_LDADD = ../lsf/lib/.libs/liblsf.a -lnsl
 
 erestart_SOURCES = erestart.c echkpnt.env.c echkpnt.lib.c \
 	echkpnt.lib.h echkpnt.env.h
-erestart_LDADD = ../lsf/lib/liblsf.la -lnsl
+erestart_LDADD = ../lsf/lib/.libs/liblsf.a -lnsl
 if SOLARIS
 echkpnt_LDADD += -lsocket -lnsl
 erestart_LDADD += -lsocket -lnsl

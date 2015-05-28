@@ -16,6 +16,13 @@ Release notes for OpenLava versions
    specified. e.g -R rusage[mem=1,vcs=2]
 -- Fix the bug which prevented bsub -K from working.
 -- Add script for Intel MPI.
+-- Fix mbatchd core dump if the preemption plugin cannot be loaded.
+-- Link daemons and commands statically so there is no need to
+   set LD_LIBRARY_PATH in the environment.
+-- Add LSF_LIBDIR in the lsf.conf.in template.
+-- Fix mbatchd core dump when replying partially cleaned job arrays.
+-- Modify the resource requirement parser to handle compact syntax,
+   like select[swp>1].
 
 3.0
 ====

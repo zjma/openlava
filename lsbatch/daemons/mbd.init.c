@@ -3745,6 +3745,7 @@ load_preempt_plugin(struct qData *qPtr)
 %s: gudness cannot open %s: %s", __func__, buf, dlerror());
         _free_(qPtr->prmSched->name);
         _free_(qPtr->prmSched);
+        qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
     }
 
@@ -3755,6 +3756,7 @@ load_preempt_plugin(struct qData *qPtr)
                   __func__, buf, dlerror());
         dlclose(p->handle);
         free(qPtr->prmSched);
+        qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
     }
 
@@ -3765,6 +3767,7 @@ load_preempt_plugin(struct qData *qPtr)
                   __func__, buf, dlerror());
         dlclose(p->handle);
         free(qPtr->prmSched);
+        qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
     }
 
