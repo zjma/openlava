@@ -4567,9 +4567,13 @@ offJobList(struct jData *jp, int listno)
     listRemoveEntry((LIST_T *)jDataList[listno], (LIST_ENTRY_T *)jp);
 
     /* If leaving PJL adjust the queue's last job
+     * We have to check for the job status as well
+     * as we can get here from removeJob() while
+     * replying lsb.events. This is true for job arrays.
      */
-    if (listno == PJL) {
-        set_queue_last_job((LIST_T *)jDataList[listno], jp);
+    if (listno == PJL
+        || IS_PEND(jp->jStatus)) {
+        set_queue_last_job((LIST_T *)jDataList[PJL], jp);
     }
 }
 
@@ -8737,6 +8741,10 @@ set_queue_last_job(LIST_T *list, struct jData *jPtr)
     /* We skip the case in which the job in front of me has
      * different priority and the job back has the same priority
      * as this test would be redundant.
+     *
+     * jPtr->forw->qPtr->priority != jPtr->qPtr->priority
+     * && jPtr->back->qPtr->priority == jPtr->qPtr->priority
+     *
      */
 
     return 0;

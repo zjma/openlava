@@ -14,6 +14,7 @@ Release notes for openlava versions
 -- Link daemons and commands statically so there is no need to
    set LD_LIBRARY_PATH in the environment.
 -- Add LSF_LIBDIR in the lsf.conf.in template.
+-- Fix mbatchd core dump when replying partially cleaned job arrays.
 
 3.0
 ====
