@@ -266,11 +266,6 @@ Reading configuration from %s/lsf.conf\n", env_dir);
         return -1;
     }
 
-    if (showTypeModel) {
-        printTypeModel();
-        return 0;
-    }
-
     masterMe = (myHostPtr->hostNo == 0);
     myHostPtr->hostInactivityCount = 0;
 
@@ -1134,14 +1129,26 @@ initLiStruct(void)
 static void
 printTypeModel(void)
 {
-    printf("Host Type          : %s\n",
-           allInfo.hostTypes[myHostPtr->hTypeNo]);
-    printf("Host Architecture  : %s\n",
+    char *model;
+    struct cpu_info cpu;
+
+    printf("%-19s : %s %s\n", "Host Type",
+           allInfo.hostTypes[myHostPtr->hModelNo],
            allInfo.hostArchs[myHostPtr->hModelNo]);
-    printf("Host Model         : %s\n",
-           allInfo.hostModels[myHostPtr->hModelNo]);
-    printf("CPU Factor         : %.1f\n",
-           allInfo.cpuFactor[myHostPtr->hModelNo]);
+    model = getHostModel();
+    printf("%-19s : %s\n", "Host Architecture", model);
+
+    if (get_cpu_info(&cpu) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: get_cpu_info() failed, cannot determine system cpu details: %M",
+                  __func__);
+        return;
+    }
+
+    printf("%-19s : %d\n", "Socket(s)", cpu.sockets);
+    printf("%-19s : %d\n", "Core(s) per socket", cpu.cores);
+    printf("%-19s : %d\n", "Thread(s) per core", cpu.threads);
+    printf("%-19s : %d\n", "CPU(s)", cpu.cores);
 }
 
 /* initMiscLiStruct()

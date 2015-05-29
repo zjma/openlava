@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
- *
- * $Id: lim.linux.h 397 2007-11-26 19:04:00Z mblack $
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -384,4 +382,56 @@ getHostModel(void)
     }
 
     return model;
+}
+
+/* get_cpu_info()
+ */
+int
+get_cpu_info(struct cpu_info *cpu)
+{
+    char *cmd = "/usr/bin/lscpu";
+    FILE *fp;
+    struct timeval t;
+    char buf[256];
+
+    t.tv_sec = 5;
+    t.tv_usec = 0;
+
+    fp = ls_popen(cmd, "r", &t);
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Ohmygosh ls_peopen() failed, no cpu info: %M", __func__);
+        return -1;
+    }
+
+    while ((fgets(buf, sizeof(buf), fp))) {
+        /* Find sockets
+         */
+        if (strstr(buf, "Socket(s):")) {
+            sscanf(buf, "%*s%d", &cpu->sockets);
+            continue;
+        }
+        /* Find cores per socket
+         */
+        if (strstr(buf, "Core(s) per socket:")) {
+            sscanf(buf, "%*s%*s%*s%d", &cpu->cores);
+            continue;
+        }
+        /* Find thread per core
+         */
+        if (strstr(buf, "Thread(s) per core:")) {
+            sscanf(buf, "%*s%*s%*s%d", &cpu->threads);
+            continue;
+        }
+        /* find cpus logical and physical
+         */
+        if (strstr(buf, "CPU(s):")) {
+            sscanf(buf, "%*s%d", &cpu->cpus);
+            continue;
+        }
+    }
+
+    ls_pclose(fp);
+
+    return 0;
 }
