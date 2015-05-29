@@ -834,6 +834,8 @@ extern int     ls_rkill(int, int);
 extern int     ls_startserver(char *, char **, int);
 extern int     ls_conntaskport(int);
 extern char    **ls_placereq(char *, int *, int, char *);
+extern FILE    *ls_popen(const char *, const char *, struct timeval *);
+extern int     ls_pclose(FILE *);
 extern char    **ls_placeofhosts(char *resreq, int *numhosts,
                                  int options, char *fromhost, char **hostlist,
                                  int listsize);
