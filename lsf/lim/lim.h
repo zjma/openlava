@@ -292,10 +292,14 @@ struct minSLimConfData {
 /* Information about the system CPU
  */
 struct cpu_info {
+    char *arch;
+    char *model;
     int sockets;
     int cpus;
     int cores;
     int threads;
+    int numa_nodes;
+    float bogo_mips;
 };
 
 extern struct sharedResourceInstance *sharedResourceHead ;

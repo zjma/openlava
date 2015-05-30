@@ -29,6 +29,7 @@ static unsigned long long int maxswap;
 static int numcpus;
 
 static int getmeminfo(void);
+static char *get_host_model(void);
 
 /* numCPUs()
  */
@@ -40,8 +41,8 @@ numCPUs(void)
     fp = fopen("/proc/cpuinfo","r");
     if (fp == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: fopen() failed on proc/cpuinfo: %m", __FUNCTION__);
-        ls_syslog(LOG_ERR, "%s: assuming one CPU only", __FUNCTION__);
+%s: fopen() failed on proc/cpuinfo: %m", __func__);
+        ls_syslog(LOG_ERR, "%s: assuming one CPU only", __func__);
         numcpus = 1;
         return numcpus;
     }
@@ -74,7 +75,7 @@ queuelength(float *r15s, float *r1m, float *r15m)
     cc = fscanf(fp, "%f %f %f", r15s, r1m, r15m);
     if (cc != 3) {
         ls_syslog(LOG_ERR, "\
-%s: failed fcanf()/proc/loadavg %m", __FUNCTION__);
+%s: failed fcanf()/proc/loadavg %m", __func__);
         return -1;
     }
     fclose(fp);
@@ -159,7 +160,7 @@ freetmp(void)
     int tmp;
 
     if (statvfs("/tmp", &fs) < 0) {
-        ls_syslog(LOG_ERR, "%s: statfs() /tmp failed: %m", __FUNCTION__);
+        ls_syslog(LOG_ERR, "%s: statfs() /tmp failed: %m", __func__);
         return 0;
     }
 
@@ -195,7 +196,7 @@ paging(void)
     pagein = pageout = 0;
     if ((fp = fopen("/proc/vmstat", "r")) == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: fopen() failed /proc/vmstat: %m", __FUNCTION__);
+%s: fopen() failed /proc/vmstat: %m", __func__);
         return -1;
     }
 
@@ -267,7 +268,7 @@ getmeminfo(void)
 
     if ((fp = fopen("/proc/meminfo", "r")) == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: open() failed /proc/meminfo: %m", __FUNCTION__);
+%s: open() failed /proc/meminfo: %m", __func__);
         mem = swap = 0.0;
         return -1;
     }
@@ -392,7 +393,7 @@ get_cpu_info(struct cpu_info *cpu)
     char *cmd = "/usr/bin/lscpu";
     FILE *fp;
     struct timeval t;
-    char buf[256];
+    char tmp[256];
 
     t.tv_sec = 5;
     t.tv_usec = 0;
@@ -405,6 +406,13 @@ get_cpu_info(struct cpu_info *cpu)
     }
 
     while ((fgets(buf, sizeof(buf), fp))) {
+        /* Determine architecture
+         */
+        if (strstr(buf, "Architecture:")) {
+            sscanf(buf, "%*s%s", tmp);
+            cpu->arch = strdup(tmp);
+            continue;
+        }
         /* Find sockets
          */
         if (strstr(buf, "Socket(s):")) {
@@ -423,15 +431,69 @@ get_cpu_info(struct cpu_info *cpu)
             sscanf(buf, "%*s%*s%*s%d", &cpu->threads);
             continue;
         }
-        /* find cpus logical and physical
+        /* Find cpus logical and physical
          */
         if (strstr(buf, "CPU(s):")) {
             sscanf(buf, "%*s%d", &cpu->cpus);
+            continue;
+        }
+        /* Find bogomips
+         */
+        if (strstr(buf, "BogoMIPS:")) {
+            sscanf(buf, "%*s%f", &cpu->bogo_mips);
+            continue;
+        }
+        /* Find NUMA nodes
+         */
+        if (strstr(buf, "NUMA node(s):")) {
+            sscanf(buf, "%*s%*s%d", &cpu->numa_nodes);
             continue;
         }
     }
 
     ls_pclose(fp);
 
+    cpu->model = get_host_model();
+    if (cpu->model == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to read cpu model", __func__);
+        return -1;
+    }
+
     return 0;
+}
+
+/* get_host_model()
+ */
+static char *
+get_host_model(void)
+{
+    FILE *fp;
+    char *p;
+    char *p2;
+
+    fp = fopen("/proc/cpuinfo", "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: fopen() failed on proc/cpuinfo: %m cannot determine host model",
+                  __func__);
+        return NULL;
+    }
+
+    while ((fgets(buf, sizeof(buf), fp))) {
+        if ((p = strstr(buf, "model name"))) {
+            p = strchr(buf, ':');
+            /* skip : and leading space
+             */
+            p = p + 2;
+            p2 = strdup(p);
+            p = strchr(p2, '\n');
+            *p = 0;
+            fclose(fp);
+            return p2;
+        }
+    }
+
+    fclose(fp);
+    return NULL;
 }

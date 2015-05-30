@@ -1129,26 +1129,30 @@ initLiStruct(void)
 static void
 printTypeModel(void)
 {
-    char *model;
-    struct cpu_info cpu;
+    struct cpu_info *cpu;
 
-    printf("%-19s : %s %s\n", "Host Type",
-           allInfo.hostTypes[myHostPtr->hModelNo],
-           allInfo.hostArchs[myHostPtr->hModelNo]);
-    model = getHostModel();
-    printf("%-19s : %s\n", "Host Architecture", model);
+    cpu = calloc(1, sizeof(struct cpu_info));
 
-    if (get_cpu_info(&cpu) < 0) {
+    if (get_cpu_info(cpu) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: get_cpu_info() failed, cannot determine system cpu details: %M",
                   __func__);
+        _free_(cpu);
         return;
     }
 
-    printf("%-19s : %d\n", "Socket(s)", cpu.sockets);
-    printf("%-19s : %d\n", "Core(s) per socket", cpu.cores);
-    printf("%-19s : %d\n", "Thread(s) per core", cpu.threads);
-    printf("%-19s : %d\n", "CPU(s)", cpu.cores);
+    printf("%-19s : %s\n", "Architecture", cpu->arch);
+    printf("%-19s : %s\n", "CPU model", cpu->model);
+    printf("%-19s : %d\n", "Socket(s)", cpu->sockets);
+    printf("%-19s : %d\n", "Core(s) per socket", cpu->cores);
+    printf("%-19s : %d\n", "Thread(s) per core", cpu->threads);
+    printf("%-19s : %d\n", "CPU(s)", cpu->cores);
+    printf("%-19s : %d\n", "NUMA node(s)", cpu->numa_nodes);
+    printf("%-19s : %4.2f\n", "BogoMIPS", cpu->bogo_mips);
+
+    _free_(cpu->arch);
+    _free_(cpu->model);
+    _free_(cpu);
 }
 
 /* initMiscLiStruct()
