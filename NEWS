@@ -17,6 +17,8 @@ Release notes for openlava versions
 -- Fix mbatchd core dump when replying partially cleaned job arrays.
 -- Modify the resource requirement parser to handle compact syntax,
    like select[swp>1].
+-- Implement lim -t to print the architecture, model, cores, sockets
+   number of cpus and bogomips of the machine where lim is running.
 
 3.0
 ====
