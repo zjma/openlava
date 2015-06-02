@@ -150,7 +150,7 @@ struct builtIn builtInRes[] = {
      "Host name",
      LS_STRING,  NA, TYPE2, 0
     },
-    {"nslots",
+    {"slots",
      "Available slots (MBD resource)",
      LS_NUMERIC, DECR, RESF_BUILTIN, 0
     },
