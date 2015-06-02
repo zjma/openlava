@@ -304,12 +304,12 @@ enum valueType {LS_BOOLEAN, LS_NUMERIC, LS_STRING, LS_EXTERNAL};
 #define EXTERNAL LS_EXTERNAL
 enum orderType {INCR, DECR, NA};
 
-#define RESF_BUILTIN     0x01
-#define RESF_DYNAMIC     0x02
-#define RESF_GLOBAL      0x04
-#define RESF_SHARED      0x08
-#define RESF_EXTERNAL    0x10
-#define RESF_RELEASE     0x20
+#define RESF_BUILTIN     0x01 /* builtin vs configured resource */
+#define RESF_DYNAMIC     0x02 /* dynamic vs static value */
+#define RESF_GLOBAL      0x04 /* resource defined in all clusters */
+#define RESF_SHARED      0x08 /* shared resource for some hosts */
+#define RESF_EXTERNAL    0x10 /* external resource */
+#define RESF_RELEASE     0x20 /* releasable if job suspended */
 #define RESF_DEFINED_IN_RESOURCEMAP  0x40
 
 #define true TRUE
