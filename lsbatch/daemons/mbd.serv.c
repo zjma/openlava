@@ -1986,45 +1986,35 @@ static void
 initSubmit(int *first, struct submitReq *subReq,
            struct submitMbdReply *submitReply)
 {
-    static char             fname[] = "initSubmit";
-
 
     if (*first == TRUE) {
-
-        subReq->fromHost = (char *) my_malloc(MAXHOSTNAMELEN, fname);
-        subReq->jobFile = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->inFile = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->outFile = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->errFile = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->inFileSpool = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->commandSpool = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->cwd = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->subHomeDir = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->chkpntDir = (char *) my_malloc(MAXFILENAMELEN, fname);
-        subReq->hostSpec = (char *) my_malloc(MAXHOSTNAMELEN, fname);
-        submitReply->badJobName = (char *) my_malloc(MAX_CMD_DESC_LEN, fname);
+        subReq->fromHost = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->jobFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->inFile =  my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->outFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->errFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->inFileSpool = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->commandSpool = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->cwd = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->subHomeDir = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->chkpntDir = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->hostSpec = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        submitReply->badJobName = my_calloc(MAX_CMD_DESC_LEN, sizeof(char), __func__);
         *first = FALSE;
     } else {
         FREEUP(subReq->chkpntDir);
         FREEUP(submitReply->badJobName);
-        subReq->chkpntDir = (char *) my_malloc(MAXFILENAMELEN, fname);
-        submitReply->badJobName = (char *) my_malloc(MAX_CMD_DESC_LEN, fname);
+        subReq->chkpntDir = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        submitReply->badJobName = my_calloc(MAX_CMD_DESC_LEN, sizeof(char), __func__);
     }
-
 
     subReq->askedHosts = NULL;
     subReq->numAskedHosts = 0;
-
-
     subReq->nxf = 0;
     subReq->xf = NULL;
-
-
     submitReply->jobId = 0;
     submitReply->queue = "";
-
     strcpy (submitReply->badJobName, "");
-
 }
 
 static int
