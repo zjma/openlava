@@ -5575,8 +5575,8 @@ getMergeSubReq (struct jData *jpbw, struct modifyReq *req, int *errorCode)
     pwUser.pw_name = jpbw->userName;
     pwUser.pw_uid = jpbw->userId;
 
-    tempSub = (struct submitReq *) my_malloc (sizeof (struct submitReq),
-                                              "getMergeSubReq");
+    tempSub = my_calloc (1, sizeof (struct submitReq),
+                         "getMergeSubReq");
     initSubmitReq(tempSub);
     if (IS_PEND (jpbw->jStatus)) {
         oldReq = &jpbw->shared->jobBill;
@@ -5587,7 +5587,7 @@ getMergeSubReq (struct jData *jpbw, struct modifyReq *req, int *errorCode)
             oldReq = &jpbw->shared->jobBill;
     }
 
-    returnCode = mergeSubReq (tempSub, oldReq, req, &pwUser);
+    returnCode = mergeSubReq(tempSub, oldReq, req, &pwUser);
 
     if (req->submitReq.options2 & SUB2_JOB_CMD_SPOOL) {
 
@@ -6497,9 +6497,16 @@ freeSubmitReq(struct submitReq *jobBill)
     FREEUP(jobBill->jobFile);
 }
 
+/* mergeSubReq()
+ *
+ * to: targer submitReq
+ * old: is the submitReq of the job
+ * req: is teh new requested submitReq
+ *
+ */
 static int
-mergeSubReq (struct submitReq *to, struct submitReq *old,
-             struct modifyReq *req, const struct passwd* pwUser)
+mergeSubReq(struct submitReq *to, struct submitReq *old,
+            struct modifyReq *req, const struct passwd* pwUser)
 {
     static char fname[] = "mergeSubReq";
     int i;
@@ -6575,6 +6582,13 @@ mergeSubReq (struct submitReq *to, struct submitReq *old,
     } else if ((old->options & SUB_HOST) && !(delOptions & SUB_HOST)) {
         to->options |= SUB_HOST;
         copyHosts (to, old);
+    }
+
+    if (old->options & SUB_USER_GROUP) {
+        to->options = SUB_USER_GROUP;
+        to->userGroup = strdup(old->userGroup);
+    } else {
+        to->userGroup = strdup("");
     }
 
 #define mergeStrField(fname, fmask) {                                   \
@@ -7259,6 +7273,7 @@ initSubmitReq(struct submitReq *jobBill)
     jobBill->niosPort = 0;
     jobBill->maxNumProcessors = 1;
     jobBill->userPriority = -1;
+    jobBill->userGroup = NULL;
 }
 
 

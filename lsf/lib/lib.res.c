@@ -1,4 +1,5 @@
-/* $Id: lib.res.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -202,15 +203,64 @@ sendCmdBill_ (int s, resCmd cmd, struct resCmdBill *cmdmsg, int *retsock,
 
 }
 
+/* ls_popen()
+ *
+ * Implements popen() with a timeout
+ */
 FILE *
-ls_popen(int s, char *command, char *type)
+ls_popen(const char *cmd, const char *type, struct timeval *t)
 {
-    return((FILE *)0);
+    FILE *fp;
+    struct stat buf;
+    int s;
+    int cc;
+    fd_set rmask;
+
+    if (stat(cmd, &buf) < 0)
+        return NULL;
+
+    fp = popen(cmd, type);
+    if (fp == NULL)
+        return NULL;
+
+    s = fileno(fp);
+    io_nonblock_(s);
+
+znovu:
+    FD_ZERO(&rmask);
+    FD_SET(s, &rmask);
+
+    cc = select(s + 1, &rmask, NULL, NULL, t);
+    if (cc < 0 && errno == EINTR)
+        goto znovu;
+    if (cc < 0) {
+        pclose(fp);
+        lserrno = LSE_SELECT_SYS;
+        return NULL;
+    }
+    if (cc == 0) {
+        pclose(fp);
+        lserrno = LSE_TIME_OUT;
+        return NULL;
+    }
+
+    io_block_(s);
+    return fp;
 }
 
+/* ls_pclose()
+ *
+ * Closes a stream opened by ls_popen(). If a differnt
+ * FILE object is passed the behaviour is undefined.
+ */
 int
-ls_pclose(FILE *stream)
+ls_pclose(FILE *fp)
 {
+    if (! fp)
+        return -1;
+
+    pclose(fp);
+
     return 0;
 }
 

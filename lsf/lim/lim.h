@@ -289,6 +289,18 @@ struct minSLimConfData {
     struct  sharedResourceInstance *sharedResHead;
 };
 
+/* Information about the system CPU
+ */
+struct cpu_info {
+    char *arch;
+    char *model;
+    int sockets;
+    int cpus;
+    int cores;
+    int threads;
+    int numa_nodes;
+    float bogo_mips;
+};
 
 extern struct sharedResourceInstance *sharedResourceHead ;
 
@@ -524,4 +536,5 @@ extern int logAddHost(struct hostEntry *);
 extern int logRmHost(struct hostEntry *);
 extern int addHostByTab(hTab *);
 extern int lim_system(const char *);
+extern int get_cpu_info(struct cpu_info *);
 #endif

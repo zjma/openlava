@@ -3618,7 +3618,7 @@ replay_modifyjob2(char *filename, int lineNum)
     struct lsfAuth          auth;
     int                     j;
 
-    (void)memset((void *)&auth, '\0', sizeof (auth));
+    memset((void *)&auth, '\0', sizeof (auth));
 
     jobModLog = &logPtr->eventLog.jobModLog;
 

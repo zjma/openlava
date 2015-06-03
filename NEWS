@@ -23,6 +23,10 @@ Release notes for OpenLava versions
 -- Fix mbatchd core dump when replying partially cleaned job arrays.
 -- Modify the resource requirement parser to handle compact syntax,
    like select[swp>1].
+-- Implement lim -t to print the architecture, model, cores, sockets
+   number of cpus and bogomips of the machine where lim is running.
+-- Fix the bug in which sbatchd was logging post exec failure even if
+   the post exec ran fine.
 
 3.0
 ====
