@@ -292,7 +292,7 @@ static void exchangeHostPos(struct candHost *, int, int);
 static int notDefaultOrder (struct resVal *);
 static int isQAskedHost (struct hData *, struct jData *);
 static int totalBackfillSlots(LIST_T *);
-static float getNumericLoadValue(const struct hData *hp, int lidx);
+static float getNumericLoadValue(struct hData *, int);
 static void  getRawLsbLoad (int, struct candHost *);
 static int handleFirstHost(struct jData *, int, struct candHost * );
 static int needHandleFirstHost(struct jData *);
@@ -3576,29 +3576,34 @@ notOrdered(int increasing, int lidx,
 }
 
 static float
-getNumericLoadValue(const struct hData *hp, int lidx)
+getNumericLoadValue(struct hData *hPtr, int lidx)
 {
     int i;
-    static char fname[]="getNumericLoadValue()";
-
 
     if (NOT_NUMERIC(allLsInfo->resTable[lidx])) {
-        ls_syslog(LOG_ERR, I18N(7243,"%s, instance is not of numeric type."), fname); /*catgets 7243*/
+        ls_syslog(LOG_ERR, "\
+%s: host %s instance %s is not of numeric type",
+                  __func__, hPtr->host, allLsInfo->resTable[lidx].name);
         return (-INFINIT_LOAD);
     }
 
-    if ( !(allLsInfo->resTable[lidx].flags & RESF_SHARED) ) {
-        return hp->lsbLoad[lidx];
+    /* Sort by free MXJ
+     */
+    if (allLsInfo->resTable[lidx].flags & RESF_MBD_MXJ) {
+        return hPtr->maxJobs - (hPtr->numRUN + hPtr->numSSUSP + hPtr->numUSUSP);
     }
 
+    if ( !(allLsInfo->resTable[lidx].flags & RESF_SHARED) ) {
+        return hPtr->lsbLoad[lidx];
+    }
 
-    for (i = 0; i < hp->numInstances; i++) {
-        if ( !(strcmp(hp->instances[i]->resName,
+    for (i = 0; i < hPtr->numInstances; i++) {
+        if ( !(strcmp(hPtr->instances[i]->resName,
                       allLsInfo->resTable[lidx].name))) {
-            if (strcmp(hp->instances[i]->value, "-") == 0) {
+            if (strcmp(hPtr->instances[i]->value, "-") == 0) {
                 return (INFINIT_LOAD);
             }
-            return (atof (hp->instances[i]->value));
+            return (atof(hPtr->instances[i]->value));
         }
     }
 

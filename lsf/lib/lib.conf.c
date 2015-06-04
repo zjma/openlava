@@ -151,8 +151,8 @@ struct builtIn builtInRes[] = {
      LS_STRING,  NA, TYPE2, 0
     },
     {"slots",
-     "Available slots (MBD resource)",
-     LS_NUMERIC, DECR, RESF_BUILTIN, 0
+     "Available slots (MBD slots resource)",
+     LS_NUMERIC, DECR, RESF_MBD_MXJ, 0
     },
     { NULL,
       NULL,

@@ -310,6 +310,7 @@ enum orderType {INCR, DECR, NA};
 #define RESF_SHARED      0x08 /* shared resource for some hosts */
 #define RESF_EXTERNAL    0x10 /* external resource */
 #define RESF_RELEASE     0x20 /* releasable if job suspended */
+#define RESF_MBD_MXJ     0x40 /* MBD slots */
 #define RESF_DEFINED_IN_RESOURCEMAP  0x40
 
 #define true TRUE
