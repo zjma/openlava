@@ -18,6 +18,8 @@
 
 #include "tests.h"
 
+static char buf[BUFSIZ];
+
 static inline void
 failed(const char *test)
 {
@@ -37,6 +39,7 @@ static int get_job_status(LS_LONG_INT);
 static struct queueInfoEnt *get_queues(int *);
 static void ssleep(int);
 static int wait_for_job_run(LS_LONG_INT, int);
+static void strip_bra(char *);
 
 /*
  * test0()
@@ -483,16 +486,100 @@ test12(int n)
     return 0;
 }
 
+/* Test13
+ *
+ * Submit a job in hold modify it and release it
+ *
+ */
 int
 test13(int n)
 {
+    FILE *fp;
+    char jobid[24];
+    static char lbuf[128];
+
     printf("I am %s number %d\n", __func__, n);
+
+    sprintf(buf, "bsub -H -o /dev/null -R \"order[mem:r1m]\" sleep 120");
+
+    fp = popen(buf, "r");
+    if (fp == NULL) {
+        lsb_perror("bsub");
+        failed(__func__);
+        return -1;
+    }
+
+    if (fscanf(fp, "%*s%s", jobid) != 1) {
+        perror("fscanf()");
+        failed(__func__);
+        return -1;
+    }
+
+    strip_bra(jobid);
+    pclose(fp);
+
+    sprintf(buf, "bmod -R \"order[mem]\" %s", jobid);
+
+    fp = popen(buf, "r");
+    if (fp == NULL) {
+        lsb_perror("bsub");
+        failed(__func__);
+        return -1;
+    }
+
+    fgets(lbuf, sizeof(lbuf), fp);
+    if (! strstr(lbuf, "Parameters of job")) {
+        pclose(fp);
+        failed(__func__);
+        return -1;
+    }
+    pclose(fp);
+
+    sprintf(buf, "bkill %s", jobid);
+    system(buf);
+
+    done(__func__);
     return 0;
 }
+
+/* test14
+ *
+ * Test mbd up after reconfig
+ *
+ */
 int
 test14(int n)
 {
-    return 0;
+    FILE *fp;
+    char lbuf[256];
+
+    printf("I am %s number %d\n", __func__, n);
+
+    sprintf(buf, "badmin reconfig");
+    system(buf);
+
+    ssleep(15);
+
+    sprintf(buf, "bparams");
+    fp = popen(buf, "r");
+    if (fp == NULL) {
+        perror("popen()");
+        pclose(fp);
+        failed(__func__);
+        return -1;
+    }
+
+    while (fgets(lbuf, sizeof(lbuf), fp)) {
+        if (strstr(lbuf, "Job Dispatch Interval:")) {
+            pclose(fp);
+            done(__func__);
+            return 0;
+        }
+    }
+
+    pclose(fp);
+    failed(__func__);
+    return -1;
 }
 int
 test15(int n)
@@ -713,4 +800,16 @@ znovu:
     printf(".");
     sleep(2);
     goto znovu;
+}
+
+static void
+strip_bra(char *p)
+{
+    int i;
+
+    for (i = 0; p[i]; i++) {
+        if (p[i] == '>'
+            || p[i] == '<')
+            p[i] = ' ';
+    }
 }

@@ -18,6 +18,12 @@
 
 #include "tests.h"
 
+static void
+usage(void)
+{
+    fprintf(stderr, "usage: tests [-n test_number]\n");
+}
+
 /* Array of testing functions.
  */
 int (*funtest[])(int) =
@@ -40,6 +46,26 @@ main(int argc, char **argv)
     struct timeval tv;
     struct timeval tv2;
 
+    ok = not_ok = 0;
+    num = -1;
+    while ((cc = getopt(argc, argv, "hn:")) != EOF) {
+        switch (cc) {
+            case 'h':
+                usage();
+                return -1;
+            case 'n':
+                num = atoi(optarg);
+                break;
+        }
+    }
+
+    num2 = sizeof(funtest)/sizeof(funtest[0]);
+    num2 = num2 - 2; /* account for NULL and 0 */
+    if (num > num2) {
+        printf("We have only %d tests\n", num2);
+        return -1;
+    }
+
     gettimeofday(&tv, NULL);
     setbuf(stdout, NULL);
 
@@ -47,19 +73,6 @@ main(int argc, char **argv)
      */
     if (lsb_init(NULL) < 0) {
         lsb_perror("lsb_init()");
-        return -1;
-    }
-
-    ok = not_ok = 0;
-    num = -1;
-    if (argv[1]) {
-        num = atoi(argv[1]);
-    }
-
-    num2 = sizeof(funtest)/sizeof(funtest[0]);
-    num2 = num2 - 2; /* account for NULL and 0 */
-    if (num > num2) {
-        printf("We have only %d tests\n", num2);
         return -1;
     }
 
