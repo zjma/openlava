@@ -384,28 +384,6 @@ doacceptconn(void)
     putEauthClientEnvVar("user");
     putEauthServerEnvVar("res");
 
-#ifdef INTER_DAEMON_AUTH
-
-    {
-        char *aux_file;
-
-        aux_file = tempnam(NULL, ".auxr");
-        if (aux_file) {
-            putEauthAuxDataEnvVar(aux_file);
-            free(aux_file);
-        }
-        else {
-
-            char aux_file_buf[64];
-
-            sprintf(aux_file_buf, "/tmp/.auxres_%lul", time(0));
-            putEauthAuxDataEnvVar(aux_file_buf);
-        }
-        putenv("LSF_RES_REAL_UID=");
-        putenv("LSF_RES_REAL_GID=");
-    }
-#endif
-
     if (!userok(s, &from, hostp->h_name, &local, &auth, debug)) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5113,
                                          "%s: Permission denied %s(%d)@%s"), /* catgets 5113 */
@@ -468,10 +446,10 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     child_res = TRUE;
     child_go = TRUE;
 
-    cli_ptr = (struct client *) malloc(sizeof(struct client));
+    cli_ptr = calloc(1, sizeof(struct client));
     if (cli_ptr == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        sendReturnCode(s,RESE_NOMEM);
+        ls_syslog(LOG_ERR, "%s: calloc() failed %m", __func__);
+        sendReturnCode(s, RESE_NOMEM);
         goto doAcceptFail;
     }
 
@@ -497,7 +475,6 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     }
 
 
-
     if ((cli_ptr->hostent.h_name = putstr_(hostp->h_name)) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "putstr_",
                   hostp->h_name);
@@ -509,9 +486,9 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     }
 
     num = 0;
-    for (i=0; hostp->h_aliases[i] != NULL; i++)
+    for (i = 0; hostp->h_aliases[i] != NULL; i++)
         num++;
-    cli_ptr->hostent.h_aliases = (char **) calloc(num+1, sizeof (char **));
+    cli_ptr->hostent.h_aliases = calloc(num + 1, sizeof (char **));
     if (cli_ptr->hostent.h_aliases == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "calloc");
         sendReturnCode(s,RESE_NOMEM);
@@ -522,7 +499,7 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
         goto doAcceptFail;
     }
 
-    for (i=0; i<num; i++)
+    for (i = 0; i < num; i++)
         if ((cli_ptr->hostent.h_aliases[i] = putstr_(hostp->h_aliases[i]))
             == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "putstr_",
@@ -554,7 +531,7 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
     }
 
     cli_ptr->tty = defaultTty;
-    if ((cli_ptr->env = (char **)calloc(5, sizeof(char *))) == NULL) {
+    if ((cli_ptr->env = calloc(5, sizeof(char *))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "calloc");
         sendReturnCode(s,RESE_NOMEM);
         for (i=0; i<num; i++)
@@ -582,17 +559,17 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
 
     cli_ptr->env[4] = NULL;
 
-    for(i=0; i<4; i++) {
+    for(i = 0; i < 4; i++) {
         if (cli_ptr->env[i] == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
             sendReturnCode(s,RESE_NOMEM);
-            for(i=0; i<4; i++) {
+            for(i = 0; i < 4; i++) {
                 if (cli_ptr->env[i])
                     free(cli_ptr->env[i]);
             }
 
             free(cli_ptr->env);
-            for (i=0; i<num; i++)
+            for (i = 0; i < num; i++)
                 free(cli_ptr->hostent.h_aliases[i]);
             free(cli_ptr->hostent.h_aliases);
             free(cli_ptr->username);

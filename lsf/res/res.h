@@ -33,19 +33,6 @@
 
 typedef gid_t GETGROUPS_T;
 
-#ifdef PROJECT_CST
-#  undef _LS_VERSION_
-#  ifdef __STDC__
-#    ifdef DATE
-#      define _LS_VERSION_ ("LSF 2.2c, " DATE "\nCopyright 1992-1996 Platform Computing Corporation\n")
-#    else
-#      define _LS_VERSION_ ("LSF 2.2c, " __DATE__ "\nCopyright 1992-1996 Platform Computing Corporation\n")
-#    endif
-#  else
-#    define _LS_VERSION_ ("LSF 2.2c \nCopyright 1992-1996 Platform Computing Corporation\n")
-#  endif
-#endif
-
 #include <stdlib.h>
 #include "resout.h"
 
@@ -309,9 +296,5 @@ extern int resSignal(struct child *chld, struct resSignal sig);
 
 extern void dumpClient(struct client *, char * );
 extern void dumpChild(struct child *, int, char *);
-
-
-
-#define UTMP_CHECK_CODE "sbdRes"
 
 #endif
