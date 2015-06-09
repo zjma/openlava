@@ -122,8 +122,8 @@ static void periodic(void);
 static void usage(char *);
 static void initSignals(void);
 static void houseKeeping(void);
-static void blockSignals(void);
-static void unblockSignals(void);
+static void block_sig_chld(void);
+static void unblock_sig_chld(void);
 
 static void
 usage (char *cmd)
@@ -336,6 +336,25 @@ main(int argc, char **argv)
 
     maxfd = FD_SETSIZE;
 
+    /*
+     * Following loop is completely event driven.  Sleep on various
+     * file descriptors until some of them is ready for i/o: either
+     * there are input coming and I_BUF is empty; or there are output data
+     * needs to be written out and their output fd is ready for written.
+     *
+     * Description:
+     *
+     * search through the clients list and children list, if their
+     * fd is ready for i/o, do it. If nothing happened, or i/o is too busy
+     * that none fd is ready for i/o, just sleep (by select)
+     *
+     * Driver routines include:
+     *   - dochild_stdio, handling I/O on children's stdin/out.
+     *   - dochild_remsock, handling I/O on children's remote socket.
+     *   - doclient, handling I/O event on client sockets.
+     *   - doacceptconn, handling I/O event (connecting req.) on
+     *     accept_sock.
+     */
     for (;;) {
     loop:
         didSomething = 0;
@@ -368,7 +387,7 @@ main(int argc, char **argv)
 %s: Application Res is exiting.....", fname);
 	    }
 
-	    millisleep_(5000);
+            ls_syslog(LOG_ERR, "%s: child going", __func__);
 
 	    if (sbdMode) {
 		close(1);
@@ -386,7 +405,7 @@ main(int argc, char **argv)
 	    fflush(stdout);
         }
 
-	unblockSignals();
+	unblock_sig_chld();
 
 	FD_ZERO(&rm);
 	FD_ZERO(&wm);
@@ -396,8 +415,9 @@ main(int argc, char **argv)
 	memcpy(&em, &exceptmask, sizeof(fd_set));
 
 	if (res_interrupted > 0) {
-	    blockSignals();
+	    block_sig_chld();
 	    res_interrupted = 0;
+            ls_syslog(LOG_ERR, "%s: 0 interrupted %d", __func__, res_interrupted);
 	    continue;
 	}
 
@@ -406,9 +426,11 @@ main(int argc, char **argv)
 
 	nready = select(maxfd, &readmask, &writemask, &exceptmask, &tv);
 	selectError = errno;
+        ls_syslog(LOG_ERR, "\
+%s: 0 interrupted %d nready %d", __func__, res_interrupted, nready);
+	block_sig_chld();
 
-	blockSignals();
-	if (nready == 0 && !child_res) {
+	if (nready == 0) {
 	    periodic();
 	    continue;
 	}
@@ -544,7 +566,7 @@ main(int argc, char **argv)
 }
 
 static void
-initSignals()
+initSignals(void)
 {
     Signal_(SIGCHLD, (SIGFUNCTYPE) child_handler);
     Signal_(SIGINT,  (SIGFUNCTYPE) term_handler);
@@ -768,7 +790,6 @@ houseKeeping(void)
     for (i = 0; i < child_cnt; i++) {
 
 
-
         if ( (children[i]->std_out.buffer.bcount == 0)
 	     && FD_IS_VALID(children[i]->std_out.fd) ) {
             if (children[i]->std_out.retry) {
@@ -901,7 +922,7 @@ houseKeeping(void)
 }
 
 static void
-unblockSignals(void)
+unblock_sig_chld(void)
 {
     sigset_t sigMask;
 
@@ -911,7 +932,7 @@ unblockSignals(void)
 }
 
 static void
-blockSignals(void)
+block_sig_chld(void)
 {
     sigset_t sigMask;
 

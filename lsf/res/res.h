@@ -296,5 +296,5 @@ extern int resSignal(struct child *chld, struct resSignal sig);
 
 extern void dumpClient(struct client *, char * );
 extern void dumpChild(struct child *, int, char *);
-
+extern void hang(void);
 #endif

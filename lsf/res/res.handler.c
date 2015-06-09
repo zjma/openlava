@@ -1586,7 +1586,7 @@ resControl(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs,
                     maxfds = sysconf(_SC_OPEN_MAX);
                     while (i < maxfds)
                         close(i++);
-                    millisleep_(5000);
+                    millisleep_(500);
                     execvp(daemon_path, restart_argv);
                     ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp",
                               daemon_path);
@@ -1917,14 +1917,11 @@ static struct child *
 doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         int taskSock, int server, resAck *ack)
 {
-    static char fname[] = "doRexec";
     int pty[2], sv[2], info[2], errSock[2];
     int pid = -1;
     struct sigStatusUsage *sigStatRu = NULL;
     char pty_name[sizeof(PTY_TEMPLATE)];
     struct child *child_ptr;
-
-
 
     if (cmdmsg->options & REXF_USEPTY) {
         int echoOff = FALSE;
@@ -1953,6 +1950,10 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
     if (pid < 0)
         return NULL;
 
+    ls_syslog(LOG_INFO, "\
+%s sbdMode %d pid %d getuid() %d geteuid() %d",
+              __func__, sbdMode, pid, getuid(), geteuid());
+
     if (pid == 0) {
 
 
@@ -1970,14 +1971,14 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         } else {
             if (Myhost) {
                 if (setCliEnv(cli_ptr, "HOSTNAME", Myhost) < 0) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "setenv",
-                              "HOSTNAME", Myhost);
+                    ls_syslog(LOG_ERR, "\
+%s: setenv HOSTNAME failed %m", __func__, Myhost);
                 }
             }
             if (myHostType) {
                 if (setCliEnv(cli_ptr, "HOSTTYPE", myHostType) < 0) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "setenv",
-                              "HOSTTYPE", myHostType);
+                    ls_syslog(LOG_ERR, "\
+%s: setenv HOSTTYPE failed %m", __func__, myHostType);
                 }
             }
 
@@ -1990,18 +1991,12 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         exit(-1);
     }
 
+    child_ptr = calloc(1, sizeof(struct child));
 
-
-    if (debug > 1)
-        ls_syslog(LOG_DEBUG, "%s: Parent ...", fname);
-
-
-    child_ptr = (struct child *)malloc(sizeof(struct child));
-
-    sigStatRu = (struct sigStatusUsage *) malloc(sizeof(struct sigStatusUsage));
+    sigStatRu = calloc(1, sizeof(struct sigStatusUsage));
     if (child_ptr == (struct child *) NULL ||
         sigStatRu == (struct sigStatusUsage *) NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc(child or sigStatusUsage)");
+        ls_syslog(LOG_ERR, "%s: calloc() failed %m", __func__);
         if (cmdmsg->options & REXF_USEPTY) {
             close(pty[0]);
         } else {
@@ -2083,8 +2078,7 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         child_ptr->cwd = putstr_(cmdmsg->cwd);
     else {
         child_ptr->cwd = NULL;
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5182,
-                                         "%s: cwd is null"), fname); /* catgets 5182 */
+        ls_syslog(LOG_ERR, "%s: cwd is null", __func__);
     }
 
     child_ptr->dpTime = time(NULL);
@@ -2097,7 +2091,7 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
 
     if (logclass & LC_TRACE) {
         ls_syslog(LOG_DEBUG,"\
-%s: Child with pid=<%d> executed", fname, pid);
+%s: Child with pid=<%d> executed", __func__, pid);
         dumpChild(child_ptr, -1, "child just built");
     }
 
@@ -2108,7 +2102,7 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         fflush(stdout);
     }
 
-    return (child_ptr);
+    return child_ptr;
 }
 
 
@@ -3553,33 +3547,24 @@ copyArray(char **from)
 
 }
 
-
 void
 child_handler(void)
 {
-    static char fname[] = "child_handler";
-
-    child_handler_ext();
-
     res_interrupted = 1;
-    if (debug > 1) {
-        printf("%s: Masks Reset: \n", fname);
-        display_masks(&readmask, &writemask, &exceptmask);
-    }
+    ls_syslog(LOG_ERR, "%s: interrupted %d", __func__, res_interrupted);
 }
 
 void
 child_handler_ext(void)
 {
-    static char       fname[] = "child_handler_ext";
-    int               pid;
-    LS_WAIT_T         status;
-    struct rusage     ru;
-    int               i;
-    int               child_exit;
-    int               wait_flags;
+    int pid;
+    LS_WAIT_T status;
+    struct rusage ru;
+    int i;
+    int child_exit;
+    int wait_flags;
 
-    memset( (char*)&ru, 0, sizeof( ru ));
+    memset(&ru, 0, sizeof(ru));
 
     if (debug>1)
         fputs("SIGCHLD: child_handler_ext\n", stdout);
@@ -3588,18 +3573,22 @@ child_handler_ext(void)
         wait_flags = WNOHANG;
     else
         wait_flags = WNOHANG|WUNTRACED;
-    while ((pid=wait3(&status, wait_flags, &ru)) > 0) {
-        if(logclass & LC_TRACE) {
+
+    while ((pid = wait3(&status, wait_flags, &ru)) > 0) {
+
+        ls_syslog(LOG_ERR, "%s: pid %d going ...", __func__, pid);
+
+        if (logclass & LC_TRACE) {
             ls_syslog(LOG_DEBUG,"\
-%s: pid=<%d> status=<%x> exitcode=<%d> stopped=<%d> signaled=<%d> \
+%s: pid=<%d> status=<%x> exitcode=<%d> stopped=<%d> signaled=<%d>       \
 coredumped=<%d> exited=<%d>",
-                      fname, pid, LS_STATUS(status),
+                      __func__, pid, LS_STATUS(status),
                       WEXITSTATUS(status), WIFSTOPPED(status),
                       WIFSIGNALED(status), WCOREDUMP(status),
                       WIFEXITED(status));
         }
 
-        if (debug>1) {
+        if (debug > 1) {
             if (child_res == TRUE)
                 printf("child res received a signal\n");
             printf("status of the child <%d> is %x\n", pid, LS_STATUS(status));
@@ -3615,17 +3604,15 @@ coredumped=<%d> exited=<%d>",
                 printf("child exit(%d)\n", WEXITSTATUS(status));
         }
 
-        {
-            for (i = 0; i < child_cnt && children[i]->pid != pid ; )
-                i++;
+        for (i = 0; i < child_cnt && children[i]->pid != pid ; )
+            i++;
 
-            if (i == child_cnt) {
-                continue;
-            }
+        if (i == child_cnt) {
+            continue;
         }
 
         children[i]->wait = status;
-        if ( WIFSTOPPED(status) ) {
+        if (WIFSTOPPED(status)) {
             child_exit = 0;
         } else {
             children[i]->running = 0;
@@ -3637,23 +3624,15 @@ coredumped=<%d> exited=<%d>",
         if (FD_IS_VALID(children[i]->std_out.fd) && child_exit)
             children[i]->std_out.retry = 1;
 
-        if ( child_exit ) {
+        if (child_exit) {
             children[i]->sigStatRu->ru = ru;
 
             if (resLogOn == 1) {
                 long mcpuTime = 1000 *(ru.ru_utime.tv_sec + ru.ru_stime.tv_sec)
                     + ru.ru_utime.tv_usec / 1000.0
                     + ru.ru_stime.tv_usec / 1000.0;
-                if (debug > 1)
-                    ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5288,
-                                                       "%s: mcpuTime %lu, resLogcpuTime %d")), /* catgets 5288 */ "child_handler_ext",
-                              mcpuTime, resLogcpuTime);
-
-
-                if (resLogcpuTime == 0 || mcpuTime > resLogcpuTime) {
+                if (resLogcpuTime == 0 || mcpuTime > resLogcpuTime)
                     resAcctWrite(children[i]);
-
-                }
             }
 
             lastChildExitStatus = WEXITSTATUS(status);
@@ -3662,7 +3641,7 @@ coredumped=<%d> exited=<%d>",
                 if (logclass & LC_TRACE) {
                     ls_syslog(LOG_DEBUG,"\
 %s: Res in sdbMod no SBD_FLAG_TERM exiting, lastChildExitStatus=<%d>",
-                              fname, lastChildExitStatus);
+                              __func__, lastChildExitStatus);
                 }
                 exit(lastChildExitStatus);
             }
@@ -3678,12 +3657,9 @@ coredumped=<%d> exited=<%d>",
                       "child status inside the child_handler_ext");
         }
 
-
         if (FD_NOT_VALID(children[i]->remsock.fd) && client_cnt == 0)
             unlink_child(children[i]);
-
     }
-
 
     if ( pid == -1 && errno == ECHILD ) {
         for (i=0; i<child_cnt; i++)
@@ -3694,8 +3670,7 @@ coredumped=<%d> exited=<%d>",
             }
     }
 
-
-    if( pid == 0 && is_resumed == TRUE ) {
+    if (pid == 0 && is_resumed == TRUE) {
 
         if (sbdMode && (sbdFlags & SBD_FLAG_TERM)) {
 
@@ -3705,11 +3680,7 @@ coredumped=<%d> exited=<%d>",
 
         is_resumed = FALSE;
     }
-
-
 }
-
-
 
 static int
 notify_sigchild(struct child *cp)
@@ -3733,8 +3704,6 @@ notify_sigchild(struct child *cp)
 
     sru->ss = *(int *)&cp->wait;
     pStatus = (LS_WAIT_T *)&sru->ss;
-
-
 
     if (WIFSIGNALED(*pStatus))
         SETTERMSIG(*pStatus, sig_encode(WTERMSIG(sru->ss)));
@@ -3788,12 +3757,9 @@ notify_sigchild(struct child *cp)
 
 }
 
-
 void
 term_handler(int signum)
 {
-    static char fname[] = "term_handler";
-
     if (sbdMode) {
         if (sbdFlags & SBD_FLAG_TERM) {
             int i;
@@ -3801,7 +3767,7 @@ term_handler(int signum)
             if (logclass & LC_TRACE) {
                 ls_syslog(LOG_DEBUG,"\
 %s: Res in sbdMode and SBD_FLAG_TERM is killing signal <%d> chld_cnt=<%d>",
-                          fname, signum, child_cnt);
+                          __func__, signum, child_cnt);
             }
 
             for (i = 0; i < child_cnt; i++)
@@ -3811,11 +3777,9 @@ term_handler(int signum)
         return;
     }
 
-    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5252,
-                                     "%s: Received signal %d, exiting"), /* catgets 5252 */
-              fname, signum);
-    exit(0);
+    ls_syslog(LOG_ERR,"%s: Received signal %d, exiting", __func__, signum);
 
+    exit(0);
 }
 
 void
@@ -4505,7 +4469,6 @@ lsbJobStart(char **jargv, u_short retPort, char *host, int usePty)
 %s: Starting a batch job", fname);
     }
 
-
     sigemptyset(&sigMask);
     sigaddset(&sigMask, SIGCHLD);
     sigaddset(&sigMask, SIGINT);
@@ -4595,9 +4558,7 @@ lsbJobStart(char **jargv, u_short retPort, char *host, int usePty)
         cmdBill.options |= REXF_STDERR;
     }
 
-
-
-    memset((char *) &cli, 0, sizeof(struct client));
+    memset(&cli, 0, sizeof(struct client));
 
     if ((cli.username = getenv("LSFUSER")) == NULL) {
 
@@ -4996,7 +4957,7 @@ changeEUid(uid_t uid)
 
 
 void
-dumpClient(struct client* client, char* why)
+dumpClient(struct client *client, char *why)
 {
     static char fname[] = "dumpClient()";
 
@@ -5007,13 +4968,11 @@ dumpClient(struct client* client, char* why)
               client->username, client->hostent.h_name);
 }
 void
-dumpChild(struct child* child, int operation, char* why)
+dumpChild(struct child *child, int operation, char *why)
 {
-    static char fname[] = "dumpChild()";
-
     ls_syslog(LOG_DEBUG,"\
 %s: %s: Operation=<%d> on child=<%x> child->pid=<%d> child->rpid=<%d> backClient=<%x> refcnt=<%d> stdio=<%d> remsock.fd=<%d> remsock.rcount/remsock.wcount=<%d/%d> rexflag=<%d> server=<%d> c_eof=<%d> running=<%d> sigchild=<%d> endstdin=<%d> i_buf.bcount=<%d> std_out.endFlag=<%d> std_out.retry=<%d> std_out.buffer.bcount=<%d> std_out.bytes=<%d> std_err.endFlag=<%d> std_err.retry=<%d> std_err.buffer.bcount=<%d> std_err.bytes=<%d> sent_eof=<%d> sent_status=<%d> child->username=<%s> child->fromhost=<%s> ",
-              fname, why, operation,
+              __func__, why, operation,
               child,
               child->pid,
               child->rpid,
@@ -5809,5 +5768,21 @@ cleanUpKeptPids(void)
 
     listSetIteratorDetach(&iter);
     listSetFree(pidSet);
+
+}
+
+void
+hang(void)
+{
+    int cc;
+    int i;
+
+    cc = 1;
+    i = 0;
+    while (cc) {
+        ls_syslog(LOG_ERR, "\
+%s: attachme attachme... %d", __func__, i++);
+        sleep(2);
+    }
 
 }
