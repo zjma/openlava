@@ -368,8 +368,6 @@ main(int argc, char **argv)
 %s: Application Res is exiting.....", fname);
 	    }
 
-	    millisleep_(5000);
-
 	    if (sbdMode) {
 		close(1);
 		close(2);
