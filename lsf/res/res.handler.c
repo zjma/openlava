@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1610,7 +1610,7 @@ resControl(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs,
                     maxfds = sysconf(_SC_OPEN_MAX);
                     while (i < maxfds)
                         close(i++);
-                    millisleep_(5000);
+                    millisleep_(1000);
                     lsfExecvp(daemon_path, restart_argv);
                     ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp",
                               daemon_path);

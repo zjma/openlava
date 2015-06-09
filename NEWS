@@ -21,6 +21,7 @@ Release notes for openlava versions
    number of cpus and bogomips of the machine where lim is running.
 -- Fix the bug in which sbatchd was logging post exec failure even if
    the post exec ran fine.
+-- Reduce or remove sleep times in res.
 
 3.0
 ====
