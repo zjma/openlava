@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -160,20 +161,20 @@ typedef struct relaylinebuf {
 } RelayLineBuf;
 
 typedef struct channel {
-        int        fd;
-        RelayBuf   *rbuf;
-        int        rcount;
-        RelayBuf   *wbuf;
-        int        wcount;
+    int        fd;
+    RelayBuf   *rbuf;
+    int        rcount;
+    RelayBuf   *wbuf;
+    int        wcount;
 } Channel;
 
 typedef struct nioschannel {
-        int            fd;
-        RelayBuf       *rbuf;
-        int            rcount;
-        RelayLineBuf   *wbuf;
-        int            wcount;
-        int            opCode;
+    int            fd;
+    RelayBuf       *rbuf;
+    int            rcount;
+    RelayLineBuf   *wbuf;
+    int            wcount;
+    int            opCode;
 } niosChannel;
 
 
@@ -196,7 +197,6 @@ struct niosConnect {
 
 struct niosStatus {
     resAck ack;
-
     struct sigStatusUsage {
 	int ss;
 	struct rusage ru;
@@ -216,9 +216,9 @@ struct resSignal {
 #define LS_WEXITSTATUS(x)  (((*(int *)&x)>>8)&0xFF)
 #define LS_WSTOPSIG(x)     (((*(int *)&x)>>8)&0xFF)
 #define LS_WIFSTOPPED(x)   ((int)((*(int *)&x)&0xFF) == 0177 && \
-				(int)((*(int *)&x)&0xFF00) != 0)
-#define LS_WIFSIGNALED(x)       ((int)((*(int *)&x)&0xFF) > 0 && \
-                                    (int)((*(int *)&x)&0xFF00) == 0)
+                            (int)((*(int *)&x)&0xFF00) != 0)
+#define LS_WIFSIGNALED(x)       ((int)((*(int *)&x)&0xFF) > 0 &&        \
+                                 (int)((*(int *)&x)&0xFF00) == 0)
 #else
 #define SETTERMSIG(x,y) (x).w_termsig = (y)
 #define SETSTOPSIG(x,y) (x).w_stopsig = (y)

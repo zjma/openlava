@@ -20,20 +20,12 @@
 #ifndef _RES_H_
 #define _RES_H_
 
-#include <stdio.h>
-#include <rpc/types.h>
-#include <rpc/xdr.h>
-
 #include "../lsf.h"
 
 #include "../intlib/intlibout.h"
 #include "../lib/lproto.h"
 #include "../lib/lib.xdr.h"
 #include "rescom.h"
-
-typedef gid_t GETGROUPS_T;
-
-#include <stdlib.h>
 #include "resout.h"
 
 
@@ -81,8 +73,8 @@ extern int restart_argc;
 extern char ** restart_argv;
 extern char *env_dir;
 
-#define MAXCLIENTS_HIGHWATER_MARK	100
-#define MAXCLIENTS_LOWWATER_MARK	1
+#define MAXCLIENTS_HIGHWATER_MARK       100
+#define MAXCLIENTS_LOWWATER_MARK        1
 
 
 #define DOREAD  0
@@ -90,14 +82,14 @@ extern char *env_dir;
 #define DOEXCEPTION 2
 #define DOSTDERR 3
 
-#define PTY_TEMPLATE		"/dev/ptyXX"
+#define PTY_TEMPLATE            "/dev/ptyXX"
 
-#define PTY_SLAVE_INDEX		(sizeof(PTY_TEMPLATE) - 6)
-#define PTY_ALPHA_INDEX		(sizeof(PTY_TEMPLATE) - 3)
-#define PTY_DIGIT_INDEX		(sizeof(PTY_TEMPLATE) - 2)
+#define PTY_SLAVE_INDEX         (sizeof(PTY_TEMPLATE) - 6)
+#define PTY_ALPHA_INDEX         (sizeof(PTY_TEMPLATE) - 3)
+#define PTY_DIGIT_INDEX         (sizeof(PTY_TEMPLATE) - 2)
 
-#define PTY_FIRST_ALPHA		'p'
-# define PTY_LAST_ALPHA		'v'
+#define PTY_FIRST_ALPHA         'p'
+# define PTY_LAST_ALPHA         'v'
 
 #define   BUFSTART(x)    ((char *) ((x)->buf) + sizeof(struct LSFHeader))
 
@@ -105,61 +97,57 @@ extern char *env_dir;
 
 
 typedef struct ttystruct  {
-        struct termios attr;
-        struct winsize  ws;
+    struct termios attr;
+    struct winsize  ws;
 #    if defined(hpux) || defined(__hpux)
-        struct ltchars hp_ltchars;
+    struct ltchars hp_ltchars;
 #    endif
 } ttyStruct;
 
 
 struct client   {
-        int             client_sock;
-        int             ruid;
-        int             gid;
-        char            *username;
-        char            *clntdir;
-	char            *homedir;
-        ttyStruct       tty;
-        char            **env;
-        int             ngroups;
-        GETGROUPS_T	groups[NGROUPS_MAX];
-	struct           hostent hostent;
-	struct lenData   eexec;
+    int client_sock;
+    int ruid;
+    int gid;
+    char *username;
+    char *clntdir;
+    char *homedir;
+    ttyStruct tty;
+    char **env;
+    int ngroups;
+    gid_t groups[NGROUPS_MAX];
+    struct hostent hostent;
+    struct lenData eexec;
 };
 
 struct child  {
-        struct client   *backClnPtr;
-	int             rpid;
-        int             pid;
-
-        int             refcnt;
-	int             info;
-	int             stdio;
-        outputChannel   std_out;
-        outputChannel   std_err;
-
-	niosChannel     remsock;
-	int             rexflag;
-        char            server;
-        char            c_eof;
-        char            running;
-	char            sigchild;
-        LS_WAIT_T	wait;
-	struct sigStatusUsage *sigStatRu;
-	int             endstdin;
-	RelayBuf        i_buf;
-	int             stdin_up;
-
-        char            slavepty[sizeof(PTY_TEMPLATE)];
-
-	char 		**cmdln;
-	time_t		dpTime;
-	char            *cwd;
-	char            username[MAXLSFNAMELEN];
-	char            fromhost[MAXHOSTNAMELEN];
-	int    	        sent_eof;
-	int    	        sent_status;
+    struct client *backClnPtr;
+    int rpid;
+    int pid;
+    int refcnt;
+    int info;
+    int stdio;
+    outputChannel std_out;
+    outputChannel std_err;
+    niosChannel remsock;
+    int rexflag;
+    char server;
+    char c_eof;
+    char running;
+    char sigchild;
+    LS_WAIT_T   wait;
+    struct sigStatusUsage *sigStatRu;
+    int endstdin;
+    RelayBuf i_buf;
+    int stdin_up;
+    char slavepty[sizeof(PTY_TEMPLATE)];
+    char **cmdln;
+    time_t dpTime;
+    char *cwd;
+    char username[MAXLSFNAMELEN];
+    char fromhost[MAXHOSTNAMELEN];
+    int sent_eof;
+    int sent_status;
 };
 
 struct resChildInfo {
@@ -173,13 +161,11 @@ struct resChildInfo {
 };
 
 typedef struct taggedConn {
-	niosChannel  sock;
-	int          rtag;
-	int          wtag;
-
-
-        int          *task_duped;
-	int          num_duped;
+    niosChannel sock;
+    int rtag;
+    int wtag;
+    int *task_duped;
+    int num_duped;
 } taggedConn_t;
 
 typedef struct resNotice {
@@ -201,9 +187,9 @@ extern int currentRESSN;
 #define LSF_AUTH           2
 #define LSF_LOGDIR         3
 #define LSF_ROOT_REX       4
-#define LSF_LIM_PORT	   5
-#define LSF_RES_PORT	   6
-#define LSF_ID_PORT	   7
+#define LSF_LIM_PORT       5
+#define LSF_RES_PORT       6
+#define LSF_ID_PORT        7
 #define LSF_USE_HOSTEQUIV  8
 #define LSF_RES_ACCTDIR    9
 #define LSF_RES_ACCT       10
@@ -218,7 +204,7 @@ extern int currentRESSN;
 #define LSF_LIBDIR         19
 #define LSF_RES_TIMEOUT    20
 #define LSF_RES_NO_LINEBUF 21
-#define LSF_MLS_LOG   	   22
+#define LSF_MLS_LOG        22
 
 #define LSB_UTMP           0
 
@@ -265,15 +251,15 @@ extern int b_write_fix(int, char *, int);
 extern int lsbJobStart(char **, u_short, char *, int);
 
 extern void childAcceptConn(int, struct passwd *, struct lsfAuth *,
-			    struct resConnect *, struct hostent *);
+                            struct resConnect *, struct hostent *);
 
 extern void resChild(char *, char *);
 extern int  resParent(int, struct passwd *, struct lsfAuth *,
-			    struct resConnect *, struct hostent *);
+                      struct resConnect *, struct hostent *);
 extern bool_t isLSFAdmin(const char *);
 
 extern bool_t xdr_resChildInfo(XDR  *, struct resChildInfo *,
-			       struct LSFHeader *);
+                               struct LSFHeader *);
 
 extern void rfServ_(int);
 

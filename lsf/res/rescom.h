@@ -1,4 +1,5 @@
-/* $Id: rescom.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,27 +20,26 @@
 #ifndef _RESCOM_H_
 #define _RESCOM_H_
 
-
 typedef enum {
-    RES2NIOS_CONNECT,         
-    RES2NIOS_STATUS,          
-    RES2NIOS_STDOUT,          
-    RES2NIOS_EOF,             
-    RES2NIOS_REQUEUE,         
-    RES2NIOS_NEWTASK,         
-    RES2NIOS_STDERR           
+    RES2NIOS_CONNECT,
+    RES2NIOS_STATUS,
+    RES2NIOS_STDOUT,
+    RES2NIOS_EOF,
+    RES2NIOS_REQUEUE,
+    RES2NIOS_NEWTASK,
+    RES2NIOS_STDERR
 } resNiosCmd;
 
 typedef enum {
-    NIOS2RES_SIGNAL,          
-    NIOS2RES_STDIN,           
-    NIOS2RES_EOF,             
-    NIOS2RES_TIMEOUT,         
-    NIOS2RES_SETTTY,          
-    NIOS2RES_HEARTBEAT       
+    NIOS2RES_SIGNAL,
+    NIOS2RES_STDIN,
+    NIOS2RES_EOF,
+    NIOS2RES_TIMEOUT,
+    NIOS2RES_SETTTY,
+    NIOS2RES_HEARTBEAT
 } niosResCmd;
 
-#endif 
+#endif
 
 
 

@@ -137,6 +137,7 @@ int
 main(int argc, char **argv)
 {
     static char fname[] = "res/main";
+    int cc;
     int nready;
     int maxfd;
     int i;
@@ -154,12 +155,53 @@ main(int argc, char **argv)
 
     saveDaemonDir_(argv[0]);
 
-    for (i = 1; i < argc; i++) {
-	if (strcmp(argv[i], "-d") == 0 && argv[i+1] != NULL) {
-	    pathname = argv[i+1];
-	    putEnv("LSF_ENVDIR",pathname);
-	    break;
-	}
+    restart_argc = argc;
+    restart_argv = argv;
+
+    while ((cc = getopt(argc, argv, "12PioeVj:d:m:p:")) != EOF) {
+
+        switch (cc) {
+            case 'd':
+                pathname = optarg;
+                break;
+            case '1':
+                debug = 1;
+                break;
+            case '2':
+                debug = 2;
+                break;
+            case 'j':
+                lsbJobStarter = optarg;
+                break;
+            case 'P':
+                sbdPty = TRUE;
+                break;
+            case 'i':
+                sbdFlags |= SBD_FLAG_STDIN;
+                break;
+            case 'o':
+                sbdFlags |= SBD_FLAG_STDOUT;
+                break;
+            case 'e':
+                sbdFlags |= SBD_FLAG_STDERR;
+                break;
+            case 'm':
+                sbdClHost = optarg;
+                sbdMode = TRUE;
+                break;
+            case 'p':
+                sbdClPort = atoi(optarg);
+                sbdMode = TRUE;
+                break;
+            case 'V':
+                fputs(_LS_VERSION_, stderr);
+                return 0;
+        }
+    }
+
+    if (argc > optind) {
+        sbdMode = TRUE;
+        sbdArgv = &argv[optind];
     }
 
     if (pathname == NULL) {
@@ -167,100 +209,16 @@ main(int argc, char **argv)
 	    pathname = LSETCDIR;
     }
 
+    if (ls_readconfenv(resConfParams, NULL) < 0
+        || initenv_(resParams, pathname) < 0) {
 
-    if (argc > 1) {
-        if (!strcmp(argv[1],"-V")) {
-            fputs(_LS_VERSION_, stderr);
-            exit(0);
-        }
-    }
-
-    if ((ls_readconfenv(resConfParams, NULL) < 0) ||
-        (initenv_(resParams, pathname) < 0) ) {
         if ((sp = getenv("LSF_LOGDIR")) != NULL)
             resParams[LSF_LOGDIR].paramValue = sp;
         ls_openlog("res", resParams[LSF_LOGDIR].paramValue, (debug > 1),
                    resParams[LSF_LOG_MASK].paramValue);
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM, fname, "initenv_",
-		  pathname);
-        ls_syslog(LOG_ERR, I18N_Exiting);
-        exit(-1);
-    }
-
-    restart_argc = argc;
-    restart_argv = argv;
-
-    for (i = 1; i < argc; i++) {
-
-	if (strcmp(argv[i], "-d") == 0 && argv[i+1] != NULL) {
-	    pathname = argv[i+1];
-	    i++;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-1") == 0) {
-	    debug = 1;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-2") == 0) {
-	    debug = 2;
-	    continue;
-	}
-
-
-	if (strcmp(argv[i], "-PTY_FIX") == 0) {
-	    printf("PTY_FIX");
-	    exit(0);
-	}
-
-
-	if ( (strcmp(argv[i], "-j") == 0) && (argv[i+1] != NULL) ) {
-	    lsbJobStarter = argv[++i];
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-P") == 0) {
-	    sbdPty = TRUE;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-i") == 0) {
-	    sbdFlags |= SBD_FLAG_STDIN;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-o") == 0) {
-	    sbdFlags |= SBD_FLAG_STDOUT;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-e") == 0) {
-	    sbdFlags |= SBD_FLAG_STDERR;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-m") == 0 && argv[i+1] != NULL) {
-	    sbdClHost = argv[i+1];
-	    i++;
-	    sbdMode = TRUE;
-	    continue;
-	}
-
-	if (strcmp(argv[i], "-p") == 0 && argv[i+1] != NULL) {
-	    sbdClPort = atoi(argv[i+1]);
-	    i++;
-	    sbdMode = TRUE;
-	    continue;
-	}
-
-	if (argv[i][0] != '-') {
-	    sbdMode = TRUE;
-	    sbdArgv = argv + i;
-	    break;
-	}
-
-        usage(argv[0]);
+        ls_syslog(LOG_ERR, "%s: failed in initenv_(%s)", pathname);
+        ls_syslog(LOG_ERR, "res: exiting");
+        return -1;
     }
 
     if (sbdMode) {
@@ -285,9 +243,8 @@ main(int argc, char **argv)
     if (resParams[LSF_SERVERDIR].paramValue == NULL) {
 	ls_openlog("res", resParams[LSF_LOGDIR].paramValue, (debug > 1),
 		   resParams[LSF_LOG_MASK].paramValue);
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5001,
-					 "LSF_SERVERDIR not defined in %s/lsf.conf: %M; res exiting"), /* catgets 5001 */
-		  pathname);
+	ls_syslog(LOG_ERR, "\
+%s: LSF_SERVERDIR not defined in %s/lsf.conf: %M; res exiting", __func__, pathname);
 	resExit_(-1);
     }
 
@@ -363,7 +320,7 @@ main(int argc, char **argv)
             if (children[i]->backClnPtr == NULL
 		&& !FD_IS_VALID(conn2NIOS.sock.fd)
 		&& children[i]->running == 0) {
-                delete_child (children[i]);
+                delete_child(children[i]);
             }
         }
 
