@@ -1950,10 +1950,6 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
     if (pid < 0)
         return NULL;
 
-    ls_syslog(LOG_INFO, "\
-%s sbdMode %d pid %d getuid() %d geteuid() %d",
-              __func__, sbdMode, pid, getuid(), geteuid());
-
     if (pid == 0) {
 
 
@@ -1990,6 +1986,10 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         }
         exit(-1);
     }
+
+    ls_syslog(LOG_INFO, "\
+%s sbdMode %d pid %d getuid() %d geteuid() %d",
+              __func__, sbdMode, pid, getuid(), geteuid());
 
     child_ptr = calloc(1, sizeof(struct child));
 
@@ -2043,9 +2043,9 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
     }
 
     child_ptr->remsock.fd = retsock;
-    child_ptr->remsock.rbuf = (RelayBuf *)NULL;
+    child_ptr->remsock.rbuf = NULL;
     child_ptr->remsock.rcount = 0;
-    child_ptr->remsock.wbuf = (RelayLineBuf *)NULL;
+    child_ptr->remsock.wbuf = NULL;
     child_ptr->stdin_up = 1;
     child_ptr->remsock.wcount = 0;
 
@@ -2056,7 +2056,6 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
     if (cmdmsg->options & REXF_STDERR) {
         child_ptr->refcnt++;
     }
-
     child_ptr->server = server;
     child_ptr->c_eof = cli_ptr->tty.attr.c_cc[VEOF];
     child_ptr->running = 1;
