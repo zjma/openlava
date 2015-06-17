@@ -345,15 +345,10 @@ my_getopt(int nargc, char **nargv, char *ostr, char **errMsg)
 int
 putEnv(char *env, char *val)
 {
-
-    char *buf;
-
-    buf = malloc(strlen(env) + strlen(val) + 4);
-    if (buf == NULL)
-        return (-1);
-
-    sprintf(buf, "%s=%s", env, val);
-    return putenv(buf);
+    /* putenv() leaks memory, setenv()
+     * does not.
+     */
+    return setenv(env, val, 0);
 }
 
 void
