@@ -3121,14 +3121,9 @@ initHostNode(void)
     hPtr->resBitMaps = calloc(GET_INTNUM(allInfo.nRes), sizeof (int));
     hPtr->DResBitMaps = calloc(GET_INTNUM(allInfo.nRes), sizeof (int));
     hPtr->status = calloc((1 + GET_INTNUM(allInfo.numIndx)), sizeof (int));
-    /* Allocate the size of nres because if user attempts
-     * to lsload -R "order[mamxmem]" or any other resources
-     * whose index is > 11 the sort machine access invalid
-     * memory.
-     */
-    hPtr->loadIndex = calloc(allInfo.nRes, sizeof (float));
-    hPtr->uloadIndex =  calloc(allInfo.nRes, sizeof (float));
-    hPtr->busyThreshold =  calloc(allInfo.nRes, sizeof (float));
+    hPtr->loadIndex = calloc(allInfo.numIndx, sizeof (float));
+    hPtr->uloadIndex =  calloc(allInfo.numIndx, sizeof (float));
+    hPtr->busyThreshold =  calloc(allInfo.numIndx, sizeof (float));
 
     for (i = 0; i < allInfo.numIndx; i++) {
         hPtr->loadIndex[i]  = INFINIT_LOAD;
