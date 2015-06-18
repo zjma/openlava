@@ -125,7 +125,7 @@ struct builtIn builtInRes[] = {
     },
     {"cpuf",
      "CPU factor",
-     LS_NUMERIC, DECR, TYPE2, 0
+     LS_NUMERIC, DECR, TYPE2|RESF_MBD_CPUF, 0
     },
     {"type",
      "Host type",

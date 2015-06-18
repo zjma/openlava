@@ -22,6 +22,8 @@ Release notes for openlava versions
 -- Fix the bug in which sbatchd was logging post exec failure even if
    the post exec ran fine.
 -- Reduce or remove sleep times in res.
+-- Implement sorting by MXJ in mbatchd.
+-- Implement sorting by cpu factor in mbatchd.
 
 3.0
 ====

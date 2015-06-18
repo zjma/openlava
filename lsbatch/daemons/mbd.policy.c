@@ -3593,6 +3593,12 @@ getNumericLoadValue(struct hData *hPtr, int lidx)
         return hPtr->maxJobs - (hPtr->numRUN + hPtr->numSSUSP + hPtr->numUSUSP);
     }
 
+    /* Sort by cpu factor
+     */
+    if (allLsInfo->resTable[lidx].flags & RESF_MBD_CPUF) {
+        return hPtr->cpuFactor;
+    }
+
     if ( !(allLsInfo->resTable[lidx].flags & RESF_SHARED) ) {
         return hPtr->lsbLoad[lidx];
     }
