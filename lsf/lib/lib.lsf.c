@@ -305,135 +305,25 @@ ls_check_mount(const char *path)
     return false;
 }
 
-/* ls_init_cpuset()
- */
-bool_t
-ls_init_cpuset(const char *path)
-{
-    char buf[PATH_MAX];
-    FILE *fp;
-    int n;
-
-    sprintf(buf, "%s/openlava", path);
-    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
-        return false;
-
-    sprintf(buf, "%s/openlava/cpuset.mems", path);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL)
-        return -1;
-
-    fprintf(fp, "0\n");
-    fclose(fp);
-
-    sprintf(buf, "%s/openlava/cpuset.cpus", path);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL)
-        return -1;
-
-    n = ls_get_numcpus();
-
-    fprintf(fp, "0-%d\n", n - 1);
-    fclose(fp);
-
-    return true;
-}
-
-/* ls_init_memory()
- */
-bool_t
-ls_init_memory(const char *path)
-{
-    char buf[PATH_MAX];
-
-    sprintf(buf, "%s/openlava", path);
-    if (mkdir(buf, 755) < 0 && errno != EEXIST)
-        return false;
-
-    return true;
-}
-
-/* ls_make_job_container()
- */
-char *
-ls_make_job_container(const char *path, int job_id)
-{
-    static char buf[PATH_MAX];
-
-    sprintf(buf, "%s/openlava/%d", path, job_id);
-
-    if (mkdir(buf, 755) < 0) {
-        return NULL;
-    }
-
-    return buf;
-}
-
-/* ls_bind2cpus()
- *
- * The order in which these operations are performed
- * is important. The tasks file has to be written
- * at last otherwise it will just not work. At least
- * on CentOS 6.
- */
-int
-ls_bind2cpu(const char *path, int cpu, int pid)
-{
-    FILE *fp;
-    static char buf[PATH_MAX];
-
-    sprintf(buf, "%s/cpuset.cpus", path);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL)
-        return -1;
-
-    if (fprintf(fp, "%d\n", cpu) < 0) {
-        fclose(fp);
-        return -1;
-    }
-    fclose(fp);
-
-    sprintf(buf, "%s/cpuset.mems", path);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL)
-        return -1;
-
-    if (fprintf(fp, "0\n") < 0) {
-        fclose(fp);
-        return -1;
-    }
-    fclose(fp);
-
-    sprintf(buf, "%s/tasks", path);
-
-    fp = fopen(buf, "a");
-    if (fp == NULL)
-        return -1;
-
-    if (fprintf(fp, "%d\n", pid) < 0) {
-        fclose(fp);
-        return -1;
-    }
-    fclose(fp);
-
-    return 0;
-}
-
 /* ls_constrain_mem()
  *
  * Constrain the memory of the given pid
  */
 int
-ls_constrain_mem(const char *path, int mem_limit, int pid)
+ls_constrain_mem(const char *root, int mem_limit, pid_t pid)
 {
     FILE *fp;
     static char buf[PATH_MAX];
 
-    sprintf(buf, "%s/memory.limit_in_bytes", path);
+    sprintf(buf, "%s/memory/openlava", root);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/memory/openlava/%d", root, pid);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/memory/openlava/%d/memory.limit_in_bytes", root, pid);
 
     fp = fopen(buf, "a");
     if (fp == NULL)
@@ -444,7 +334,7 @@ ls_constrain_mem(const char *path, int mem_limit, int pid)
     }
     fclose(fp);
 
-    sprintf(buf, "%s/tasks", path);
+    sprintf(buf, "%s/memory/openlava/%d/tasks", root, pid);
 
     fp = fopen(buf, "a");
     if (fp == NULL)
@@ -462,15 +352,14 @@ ls_constrain_mem(const char *path, int mem_limit, int pid)
 /* ls_rm_mem_container()
  */
 int
-ls_rm_mem_container(const char *path,  int job_id)
+ls_rmcgroup_mem(const char *root,  pid_t pid)
 {
-    return 0;
-}
+    static char buf[PATH_MAX];
 
-/* ls_rm_cpuset_container()
- */
-int
-ls_rm_cpuset_container(const char *path, int job_id)
-{
+    sprintf(buf, "%s/memory/openlava/%d", root, pid);
+
+    if (rmdir(buf) < 0)
+        return -1;
+
     return 0;
 }

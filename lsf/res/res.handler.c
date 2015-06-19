@@ -112,6 +112,7 @@ static void set_rlimit(int, struct rlimit *);
 static int addCliEnv(struct client *, char *, char *);
 static int setCliEnv(struct client *, char *, char *);
 static int resUpdatetty(struct LSFHeader);
+static int setup_mem_cgroup(struct lsfLimit *, pid_t);
 
 typedef enum {
     PTY_BAD,
@@ -2088,6 +2089,10 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
         fflush(stdout);
     }
 
+    /* setup cgroup memory
+     */
+    setup_mem_cgroup(cmdmsg->lsfLimits, pid);
+
     return child_ptr;
 }
 
@@ -3055,12 +3060,13 @@ delete_client(struct client *cli_ptr)
     return;
 }
 
-
 void
 delete_child(struct child *cp)
 {
     static char fname[] = "delete_child";
-    int i, j;
+    int i;
+    int j;
+    uid_t uid;
 
     if (debug>1) {
         printf("delete_child(%d)\n",cp->rpid);
@@ -3101,8 +3107,6 @@ delete_child(struct child *cp)
         }
     }
 
-
-
     if (FD_IS_VALID(cp->std_err.fd)) {
         FD_CLR(cp->std_err.fd, &readmask);
         CLOSE_IT(cp->std_err.fd);
@@ -3123,9 +3127,14 @@ delete_child(struct child *cp)
                   fname, cp, child_cnt);
     }
 
-    free(cp);
+    ls_syslog(LOG_DEBUG, "%s: good bye %d", __func__, cp->pid);
 
-    return;
+    uid = geteuid();
+    setEUid(0);
+    ls_rmcgroup_mem("/cgroup", cp->pid);
+    setEUid(uid);
+
+    free(cp);
 }
 
 static void
@@ -5780,4 +5789,28 @@ set_rlimit(int rlim, struct rlimit *limit)
 %s: limit %d failed: %m: soft %u hard %u",
                   __func__, rlim, limit->rlim_cur, limit->rlim_max);
     }
+}
+
+/* setup_mem_cgroup()
+ */
+static int
+setup_mem_cgroup(struct lsfLimit *lsflimits, pid_t pid)
+{
+    struct rlimit rlimit;
+    uid_t uid;
+    int cc;
+
+    rlimitDecode_(&lsflimits[LSF_RLIMIT_RSS], &rlimit, LSF_RLIMIT_RSS);
+
+    cc = 0;
+    uid = geteuid();
+    setEUid(0);
+
+    if (ls_constrain_mem("/cgroup", rlimit.rlim_cur, pid) < 0) {
+        ls_syslog(LOG_ERR, "%s: failed for pid %d: %m", __func__, pid);
+        cc = -1;
+    }
+    setEUid(uid);
+
+    return cc;
 }

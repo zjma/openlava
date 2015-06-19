@@ -26,7 +26,6 @@
 extern void do_sbdDebug(XDR *xdrs, int chfd, struct LSFHeader *reqHdr);
 static void sinit(void);
 static void init_sstate(void);
-static void init_ctrl_groups(void);
 static void processMsg(struct clientNode *);
 static void clientIO(struct Masks *);
 static void houseKeeping(void);
@@ -814,8 +813,6 @@ sinit(void)
         ls_syslog(LOG_ERR, "%s: chanInit_ Failed to init channel", __func__);
         die(SLAVE_FATAL);
     }
-
-    init_ctrl_groups();
 }
 
 static void
@@ -967,58 +964,6 @@ isLSFAdmin(struct lsfAuth *auth)
 
     return false;
 
-}
-
-/* init_ctrl_groups()
- */
-static void
-init_ctrl_groups(void)
-{
-    array_cpus = ls_get_cpu_info(&numCPUs);
-
-    if (numCPUs <= 0) {
-        ls_syslog(LOG_INFO, "\
-%s: ohmygosh no CPUs on this machine? is /proc/cpuinfo all right?",
-                  __func__);
-            return;
-    }
-
-    ls_syslog(LOG_INFO, "%s: This machine has %d CPUs", __func__, numCPUs);
-
-    if (cpuset_mount == NULL
-        && memory_mount == NULL)
-        return;
-
-    qsort(array_cpus, numCPUs, sizeof(struct infoCPUs), cmp_cpus);
-    cgroup_cpuset_mounted = cgroup_memory_mounted = false;
-
-    if (ls_check_mount(cpuset_mount))
-        cgroup_cpuset_mounted = true;
-    if (ls_check_mount(memory_mount))
-        cgroup_memory_mounted = true;
-
-    if (cpuset_mount && !cgroup_cpuset_mounted)
-        ls_syslog(LOG_ERR, "\
-%s: /cgroup/cpuset does not appear to be mounted", __func__);
-    if (memory_mount && !cgroup_memory_mounted)
-        ls_syslog(LOG_ERR, "\
-%s: /cgroup/memory does not appear to be mounted", __func__);
-
-    if (cgroup_memory_mounted) {
-        if (! ls_init_memory(memory_mount)) {
-            ls_syslog(LOG_ERR, "\
-%s: failed in ls_init_memory() %m", __func__);
-            cgroup_memory_mounted = false;
-        }
-    }
-
-    if (cgroup_cpuset_mounted) {
-        if (! ls_init_cpuset(cpuset_mount)) {
-            ls_syslog(LOG_ERR, "\
-%s: failed in ls_init_cpuset() %m", __func__);
-            cgroup_cpuset_mounted = false;
-        }
-    }
 }
 
 /* cpus_cmp()
