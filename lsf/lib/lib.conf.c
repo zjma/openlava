@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -55,7 +55,7 @@ static int validWindow(char *, char *);
 int builtInRes_ID[] = {
     1300, 1301, 1302, 1303, 1304, 1305, 1306, 1307, 1308, 1309,
     1310, 1311, 1312, 1313, 1314, 1315, 1316, 1317, 1318, 1319,
-    1320, 1321
+    1320, 1321, 1322
 };
 
 struct builtIn builtInRes[] = {
@@ -125,7 +125,7 @@ struct builtIn builtInRes[] = {
     },
     {"cpuf",
      "CPU factor",
-     LS_NUMERIC, DECR, TYPE2, 0
+     LS_NUMERIC, DECR, TYPE2|RESF_MBD_CPUF, 0
     },
     {"type",
      "Host type",
@@ -149,6 +149,10 @@ struct builtIn builtInRes[] = {
     {"hname",
      "Host name",
      LS_STRING,  NA, TYPE2, 0
+    },
+    {"slots",
+     "Available slots (MBD slots resource)",
+     LS_NUMERIC, DECR, RESF_MBD_MXJ, 0
     },
     { NULL,
       NULL,

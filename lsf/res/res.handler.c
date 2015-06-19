@@ -1586,6 +1586,7 @@ resControl(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs,
                     maxfds = sysconf(_SC_OPEN_MAX);
                     while (i < maxfds)
                         close(i++);
+
                     millisleep_(500);
                     execvp(daemon_path, restart_argv);
                     ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "execvp",

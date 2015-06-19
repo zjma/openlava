@@ -1,6 +1,6 @@
 Release notes for OpenLava versions
 
-4.0pre1
+3.1pre1
 =======
 
 -- Removed obsolete mls code and infrastructure simplifying user
@@ -27,6 +27,9 @@ Release notes for OpenLava versions
    number of cpus and bogomips of the machine where lim is running.
 -- Fix the bug in which sbatchd was logging post exec failure even if
    the post exec ran fine.
+-- Reduce or remove sleep times in res.
+-- Implement sorting by MXJ in mbatchd.
+-- Implement sorting by cpu factor in mbatchd.
 
 3.0
 ====

@@ -786,8 +786,9 @@ print_node(struct tree_node_ *n, struct tree_ *t)
 
     s = n->data;
 
-    printf("%s: node %s shares %d dshares %4.2f\n",
-           __func__, n->name, s->shares, s->dshares);
+    if (0)
+        printf("%s: node %s shares %d dshares %4.2f\n",
+               __func__, n->name, s->shares, s->dshares);
 
     return -1;
 }
