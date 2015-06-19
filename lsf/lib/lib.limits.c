@@ -22,9 +22,9 @@
 #include "lib.h"
 #include "lproto.h"
 #include <sys/utsname.h>
-#define NL_SETN   23   
-static int SHIFT_32 = 32;	
-				
+#define NL_SETN   23
+static int SHIFT_32 = 32;
+
 
 void
 rlimitEncode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
@@ -48,7 +48,7 @@ rlimitEncode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 	if (!softok) {
 	    lsflimit->rlim_curl = 0xffffffff & rlimit->rlim_cur;
 	    lsflimit->rlim_curh = rlimit->rlim_cur >> SHIFT_32;
-	} 
+	}
 	if (!hardok) {
 	    lsflimit->rlim_maxl = 0xffffffff & rlimit->rlim_max;
 	    lsflimit->rlim_maxh = rlimit->rlim_max >> SHIFT_32;
@@ -57,14 +57,14 @@ rlimitEncode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 	if (!softok) {
 	    lsflimit->rlim_curl = rlimit->rlim_cur;
 	    lsflimit->rlim_curh = 0;
-	} 
+	}
 	if (!hardok) {
 	    lsflimit->rlim_maxl = rlimit->rlim_max;
 	    lsflimit->rlim_maxh = 0;
 	}
     }
 
-    if (logclass & LC_TRACE) 
+    if (logclass & LC_TRACE)
 	ls_syslog(LOG_DEBUG3, "rlimitEncode_: limit %d rlim_cur %ld %x rlim_max %ld %x curl %d %x curh %d %x maxl %d %x maxh %d %x rlim_inf %d %x\r",
 		  limit, rlimit->rlim_cur, (unsigned int)rlimit->rlim_cur,
 		  rlimit->rlim_max, (unsigned int)rlimit->rlim_max,
@@ -73,8 +73,8 @@ rlimitEncode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 		  lsflimit->rlim_maxl, lsflimit->rlim_maxl,
 		  lsflimit->rlim_maxh, lsflimit->rlim_maxh,
 		  RLIM_INFINITY, RLIM_INFINITY);
-		  
-} 
+
+}
 
 void
 rlimitDecode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
@@ -112,7 +112,7 @@ rlimitDecode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 	    else
 		rlimit->rlim_cur = lsflimit->rlim_curl;
 	}
-	
+
 	if (!hardok) {
 	    if ((lsflimit->rlim_maxh > 0) || (lsflimit->rlim_maxl & 0x80000000))
 		rlimit->rlim_max = RLIM_INFINITY;
@@ -120,8 +120,8 @@ rlimitDecode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 		rlimit->rlim_max = lsflimit->rlim_maxl;
 	}
     }
-    
-    if (logclass & LC_TRACE) 
+
+    if (logclass & LC_TRACE)
 	ls_syslog(LOG_DEBUG3, "rlimitDecode_: limit %d rlim_cur %ld %x rlim_max %ld %x curl %d %x curh %d %x maxl %d %x maxh %d %x rlim_inf %d %x\r",
 		  limit, rlimit->rlim_cur, (unsigned int)rlimit->rlim_cur,
 		  rlimit->rlim_max, (unsigned int)rlimit->rlim_max,
@@ -139,8 +139,8 @@ rlimitDecode_(struct lsfLimit *lsflimit, struct rlimit *rlimit, int limit)
 	if (rlimit->rlim_max > sys_max)
 	    rlimit->rlim_max = sys_max;
     }
-    
-#endif 
-} 
+
+#endif
+}
 
 

@@ -107,22 +107,8 @@ extern int initLimSock_(void);
 
 static short is_resumed = FALSE;
 
-#define SET_RLIMIT(rlim, limit,loglevel)                                \
-    if (setrlimit(rlim, &limit) < 0 && getuid() == 0) {                 \
-        if (loglevel == LOG_INFO && errno == EINVAL) {                  \
-            ls_syslog(loglevel,_i18n_msg_get(ls_catd , NL_SETN, 5299,   \
-                                             "setrlimit(Resource Limit %d) failed: %m: soft %f hard %f , may be larger than the kernel allowed limit\n"), \
-                      rlim, (double)limit.rlim_cur, (double)limit.rlim_max); \
-        }else{                                                          \
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5100,   \
-                                             "setrlimit(Resouce Limit %d) failed: %m: soft %f hard %f infi=%f\n"), \
-                      rlim, (double) limit.rlim_cur,                    \
-                      (double) limit.rlim_max, (double) RLIM_INFINITY); \
-        }                                                               \
-    } /* catgets 5100 */
-
 static void setlimits(struct lsfLimit *);
-static void mysetlimits(struct lsfLimit *);
+static void set_rlimit(int, struct rlimit *);
 static int addCliEnv(struct client *, char *, char *);
 static int setCliEnv(struct client *, char *, char *);
 static int resUpdatetty(struct LSFHeader);
@@ -4314,13 +4300,10 @@ child_channel_clear(struct child *chld, outputChannel *channel)
 
 }
 
+/* setlimits()
+ */
 static void
-setlimits (struct lsfLimit *lsfLimits)
-{
-    mysetlimits(lsfLimits);
-}
-static void
-mysetlimits (struct lsfLimit *lsfLimits)
+setlimits(struct lsfLimit *lsfLimits)
 {
     struct rlimit rlimit;
 
@@ -4329,7 +4312,7 @@ mysetlimits (struct lsfLimit *lsfLimits)
     if (resParams[LSF_RES_RLIMIT_UNLIM].paramValue != NULL)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "cpu") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
-    SET_RLIMIT(RLIMIT_CPU, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_CPU, &rlimit);
     ls_syslog(LOG_DEBUG, "CPU limit, max=%d, min=%d",
               rlimit.rlim_max, rlimit.rlim_cur);
 #endif
@@ -4339,7 +4322,7 @@ mysetlimits (struct lsfLimit *lsfLimits)
     if (resParams[LSF_RES_RLIMIT_UNLIM].paramValue != NULL)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "fsize") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
-    SET_RLIMIT(RLIMIT_FSIZE, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_FSIZE, &rlimit);
 #endif
 
 #ifdef  RLIMIT_DATA
@@ -4348,7 +4331,7 @@ mysetlimits (struct lsfLimit *lsfLimits)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "data") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
 
-    SET_RLIMIT(RLIMIT_DATA, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_DATA, &rlimit);
 #endif
 
 #ifdef  RLIMIT_STACK
@@ -4357,7 +4340,7 @@ mysetlimits (struct lsfLimit *lsfLimits)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "stack") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
 
-    SET_RLIMIT(RLIMIT_STACK, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_STACK, &rlimit);
 #endif
 
 #ifdef  RLIMIT_CORE
@@ -4365,22 +4348,22 @@ mysetlimits (struct lsfLimit *lsfLimits)
     if (resParams[LSF_RES_RLIMIT_UNLIM].paramValue != NULL)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "core") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
-    SET_RLIMIT(RLIMIT_CORE, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_CORE, &rlimit);
 #endif
 
 #ifdef  RLIMIT_RSS
     rlimitDecode_(&lsfLimits[LSF_RLIMIT_RSS], &rlimit, LSF_RLIMIT_RSS);
-    SET_RLIMIT(RLIMIT_RSS, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_RSS, &rlimit);
 #endif
 
 #ifdef  RLIMIT_NOFILE
     rlimitDecode_(&lsfLimits[LSF_RLIMIT_NOFILE], &rlimit, LSF_RLIMIT_NOFILE);
-    SET_RLIMIT(RLIMIT_NOFILE, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_NOFILE, &rlimit);
 #endif
 
 #ifdef RLIMIT_OPEN_MAX
     rlimitDecode_(&lsfLimits[LSF_RLIMIT_OPEN_MAX], &rlimit, LSF_RLIMIT_OPEN_MAX);
-    SET_RLIMIT(RLIMIT_OPEN_MAX, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_OPEN_MAX, &rlimit);
 #endif
 
 #ifdef RLIMIT_VMEM
@@ -4388,7 +4371,7 @@ mysetlimits (struct lsfLimit *lsfLimits)
     if (resParams[LSF_RES_RLIMIT_UNLIM].paramValue != NULL)
         if (strstr(resParams[LSF_RES_RLIMIT_UNLIM].paramValue, "vmem") != NULL)
             rlimit.rlim_max = RLIM_INFINITY;
-    SET_RLIMIT(RLIMIT_VMEM, rlimit,LOG_ERR);
+    set_rlimit(RLIMIT_VMEM, &rlimit);
 #endif
 
 }
@@ -5785,4 +5768,16 @@ hang(void)
         sleep(2);
     }
 
+}
+
+/* set_rlimit()
+ */
+static void
+set_rlimit(int rlim, struct rlimit *limit)
+{
+    if (setrlimit(rlim, limit) < 0 && getuid() == 0) {
+        ls_syslog(LOG_ERR, "\
+%s: limit %d failed: %m: soft %u hard %u",
+                  __func__, rlim, limit->rlim_cur, limit->rlim_max);
+    }
 }
