@@ -390,7 +390,6 @@ getHRValue(char *resName,
 	   struct resourceInstance **instance)
 {
     int i;
-    static char fname[]="getHRValue()";
 
     for (i = 0; i < hPtr->numInstances; i++) {
 
