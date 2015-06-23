@@ -212,13 +212,10 @@ init_log(void)
 
     getElogLock();
 
-    chuser(managerId);
-
     sprintf(infoDir, "%s/logdir/info",
             daemonParams[LSB_SHAREDIR].paramValue);
 
     if (mkdir(infoDir, 0700) == -1 && errno != EEXIST) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, infoDir);
         mbdDie(MASTER_FATAL);
     }
@@ -229,15 +226,12 @@ init_log(void)
             daemonParams[LSB_SHAREDIR].paramValue);
 
     if (mkdir(infoDir, 0700) == -1 && errno != EEXIST) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, infoDir);
         mbdDie(MASTER_FATAL);
     }
 
     stat(elogFname, &ebuf);
     log_fp = fopen(elogFname, "r");
-
-    chuser(batchId);
 
     if (log_fp != NULL) {
 
@@ -2094,15 +2088,12 @@ openEventFile(const char *fname)
     long pos;
     sigset_t newmask, oldmask;
 
-    chuser(managerId);
-
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if ((log_fp = fopen(elogFname, "a+")) == NULL) {
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
         return -1;
     }
@@ -2115,7 +2106,6 @@ openEventFile(const char *fname)
     }
 
     chmod(elogFname, 0644);
-    chuser(batchId);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
     /* Use the same version as the main protocol.
@@ -2137,15 +2127,12 @@ openEventFile2(const char *fname)
     sigset_t newmask;
     sigset_t oldmask;
 
-    chuser(managerId);
-
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if ((log_fp = fopen(fname, "a+")) == NULL) {
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
         return -1;
     }
@@ -2158,7 +2145,6 @@ openEventFile2(const char *fname)
     }
 
     chmod(elogFname, 0644);
-    chuser(batchId);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
     /* Use the same version as the main protocol.
@@ -2211,9 +2197,7 @@ putEventRec1(const char *fname)
         streamEvent(logPtr);
 
     free(logPtr);
-    chuser(managerId);
     cc = FCLOSEUP(&log_fp);
-    chuser(batchId);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "%s: fclose() failed: %m", __func__);
         ret = -1;
@@ -2235,15 +2219,12 @@ logFinishedjob(struct jData *job)
         return;
     }
 
-    chuser(managerId);
     if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen",
                   jlogFname);
         return;
     }
     chmod(jlogFname, 0644);
-    chuser(batchId);
 
     logPtr = my_calloc(1, sizeof(struct eventRec), "logFinishedjob");
     jobFinishLog = &logPtr->eventLog.jobFinishLog;
@@ -2364,18 +2345,12 @@ logFinishedjob(struct jData *job)
         free(jobFinishLog->execHosts);
     free(logPtr);
 
-    chuser(managerId);
     if (FCLOSEUP(&joblog_fp) < 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M,
                   fname,
                   lsb_jobid2str(job->jobId),
                   "fclose");
-    } else{
-        chuser(batchId);
     }
-
-    return ;
 }
 
 void
@@ -2440,26 +2415,20 @@ switchAcctLog(void)
     int errnoSv;
     int totalAcctFile;
 
-    chuser(managerId);
-
     if (createAcct0File() == -1) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "createAcct0File");
         goto Acct_exiterr;
     }
 
 
     if (unlink(jlogFname) == -1 ) {
-        chuser(batchId);
         ls_syslog(LOG_ERR,
                   "%s: unlink(%s) failed: %m",
                   fname,
                   jlogFname);
-        chuser(managerId);
     }
 
     if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen",
                   jlogFname);
         goto Acct_exiterr;
@@ -2469,19 +2438,15 @@ switchAcctLog(void)
 
     errnoSv = errno;
     chmod(jlogFname, 0644);
-
-    chuser(batchId);
     errno = errnoSv;
 
     if ((totalAcctFile = renameAcctLogFiles(maxAcctArchiveNum)) > 0)
         return 0;
 
-    chuser(batchId);
     ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "renameAcctLogFiles");
 
 Acct_exiterr:
-    lsb_merr( _i18n_msg_get(ls_catd, NL_SETN, 1701,
-                            "Fail to switch lsb.acct; see mbatchd error log for details")); /* catgets 1701 */
+    lsb_merr("Fail to switch lsb.acct; see mbatchd error log for details");
     return -1;
 }
 
@@ -2504,10 +2469,7 @@ switch_log(void)
     ls_syslog(LOG_INFO, "\
 %s: switching event log file: %s", __FUNCTION__, tmpfn);
 
-    chuser(managerId);
-
     if (createEvent0File() == -1) { ;
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "createEvent0File");
         goto exiterr;
     }
@@ -2516,7 +2478,6 @@ switch_log(void)
             daemonParams[LSB_SHAREDIR].paramValue);
 
     if ((tmpfp = fopen(tmpfn, "w")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", tmpfn);
         goto exiterr;
     }
@@ -2527,15 +2488,12 @@ switch_log(void)
 
     efp = fopen(elogFname, "r");
     if (efp == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
         FCLOSEUP(&tmpfp);
         goto exiterr;
     }
 
     fprintf(tmpfp, "#                                     \n");
-
-    chuser(batchId);
 
     initHostCtrlTable();
     initQueueCtrlTable();
@@ -2680,10 +2638,8 @@ switch_log(void)
             if (lsb_puteventrec(tmpfp, logPtr) == -1) {
                 ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM,
                           fname, "lsb_puteventrec", tmpfn);
-                chuser(managerId);
                 FCLOSEUP(&efp);
                 unlink (tmpfn);
-                chuser(batchId);
                 goto exiterr;
             }
         }
@@ -2692,13 +2648,10 @@ switch_log(void)
     }
     FCLOSEUP(&efp);
 
-    chuser(managerId);
-
     pos = ftell(tmpfp);
     rewind(tmpfp);
     fprintf(tmpfp, "#%ld", pos);
     if (FCLOSEUP(&tmpfp)) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fclose", tmpfn);
         goto exiterr;
     }
@@ -2707,7 +2660,6 @@ switch_log(void)
     errnoSv = errno;
     chmod(elogFname, 0644);
 
-    chuser(batchId);
     errno = errnoSv;
     if (i == -1) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M,
@@ -2738,9 +2690,7 @@ switch_log(void)
                     daemonParams[LSB_SHAREDIR].paramValue,
                     LSF_JOBIDINDEX_FILENAME);
 
-            chuser(managerId);
             if (updateJobIdIndexFile(indexFile, elogFname, totalEventFile) < 0) {
-                chuser(batchId);
                 if (lsberrno == LSBE_SYS_CALL)
                     ls_syslog(LOG_ERR, "\
 %s: updateJobIdIndexFile(%s) failed: %s %m",
@@ -2754,7 +2704,6 @@ switch_log(void)
         }
         return 0;
     } else {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "renameElogFiles");
     }
 
@@ -2781,14 +2730,12 @@ createAcct0File(void)
     size = st.st_size;
 
     if ((acctPtr = fopen(jlogFname, "r")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", jlogFname);
         FCLOSEUP(&acctPtr);
         return -1;
     }
 
     if ((acct0Ptr  = fopen(acct0File, "w")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", acct0File);
         FCLOSEUP(&acctPtr);
         return -1;
@@ -2802,7 +2749,6 @@ createAcct0File(void)
                 cc = size - nread;
 
             if (fwrite(buf, 1, cc, acct0Ptr) == 0) {
-                chuser(batchId);
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
                 FCLOSEUP(&acctPtr);
                 FCLOSEUP(&acct0Ptr);
@@ -2812,7 +2758,6 @@ createAcct0File(void)
         } else if (feof(acctPtr)){
             break;
         } else {
-            chuser(batchId);
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", jlogFname);
             FCLOSEUP(&acctPtr);
             FCLOSEUP(&acct0Ptr);
@@ -2844,14 +2789,12 @@ createEvent0File (void)
     size = st.st_size;
 
     if ((eventPtr = fopen(elogFname, "r")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
         FCLOSEUP(&eventPtr);
         return -1;
     }
 
     if ((event0Ptr  = fopen(event0File, "w")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", event0File);
         FCLOSEUP(&eventPtr);
         return -1;
@@ -2877,7 +2820,6 @@ createEvent0File (void)
                 cc = size - nread;
 
             if (fwrite(buf, 1, cc, event0Ptr) == 0) {
-                chuser(batchId);
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
                 FCLOSEUP(&eventPtr);
                 FCLOSEUP(&event0Ptr);
@@ -2887,7 +2829,6 @@ createEvent0File (void)
         } else if (feof(eventPtr)){
             break;
         } else {
-            chuser(batchId);
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", elogFname);
             FCLOSEUP(&eventPtr);
             FCLOSEUP(&event0Ptr);
@@ -2913,7 +2854,6 @@ renameElogFiles(void)
     if (logclass & (LC_TRACE))
         ls_syslog(LOG_DEBUG, "%s: Entering ... ", fname);
 
-    chuser(managerId);
     i = 0;
     do {
         sprintf(tmpfn, "%s/logdir/lsb.events.%d",
@@ -2921,9 +2861,7 @@ renameElogFiles(void)
     } while (stat(tmpfn, &st) == 0);
 
     if (errno != ENOENT) {
-        chuser(batchId);
         ls_syslog(LOG_WARNING, I18N_FUNC_S_FAIL_M, fname, "stat", tmpfn);
-        chuser(managerId);
     }
 
     max = i;
@@ -2935,15 +2873,13 @@ renameElogFiles(void)
                 daemonParams[LSB_SHAREDIR].paramValue, i + 1);
 
         if (rename(tmpfn, eventfn) == -1 && errno != ENOENT) {
-            chuser(batchId);
             ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname,
                       "rename", tmpfn, eventfn);
             return -1;
         }
     }
-    chuser(batchId);
 
-    return (max);
+    return max;
 }
 
 void
@@ -2956,8 +2892,6 @@ logJobInfo(struct submitReq * req, struct jData *jp, struct lenData * jf)
     mode_t                  omask = umask(077);
     sigset_t                newmask, oldmask;
 
-    chuser(managerId);
-
     sprintf(logFn, "%s/logdir/info/%s",
             daemonParams[LSB_SHAREDIR].paramValue,
             jp->shared->jobBill.jobFile);
@@ -2969,7 +2903,6 @@ logJobInfo(struct submitReq * req, struct jData *jp, struct lenData * jf)
         errnoSv = errno;
         sigprocmask(SIG_SETMASK, &oldmask, NULL);
         umask(omask);
-        chuser(batchId);
         errno = errnoSv;
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen",
                   logFn);
@@ -2979,35 +2912,25 @@ logJobInfo(struct submitReq * req, struct jData *jp, struct lenData * jf)
     umask(omask);
 
     if (fwrite(jf->data, 1, jf->len, fp) != jf->len) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: fwrite(%s, len=%d) failed: %m",
                   fname,
                   logFn,
                   jf->len);
-        chuser(managerId);
-
         FCLOSEUP(&fp);
         goto error;
     }
 
-    chuser(managerId);
     if (FCLOSEUP(&fp) < 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fclose",
                   logFn);
         goto error;
     }
 
-
-    chuser(batchId);
     return;
 
 error:
-    chuser(managerId);
     unlink(logFn);
-    chuser(batchId);
     mbdDie(MASTER_FATAL);
-
 }
 
 int
@@ -3039,7 +2962,6 @@ rmLogJobInfo(struct jData *jp, int check)
         }
     }
 
-    chuser(managerId);
     sprintf(logFn, "%s/logdir/info/%s",
             daemonParams[LSB_SHAREDIR].paramValue, req->jobFile);
 
@@ -3052,7 +2974,6 @@ rmLogJobInfo(struct jData *jp, int check)
     if (stat(logFn, &st) == 0) {
 
         if (unlink(logFn) == -1) {
-            chuser(batchId);
             if (check == FALSE)
                 ls_syslog(LOG_ERR, "\
 %s: job %s unlink() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
@@ -3060,14 +2981,11 @@ rmLogJobInfo(struct jData *jp, int check)
         }
 
     } else if (errno != ENOENT) {
-        chuser(batchId);
         if (check == FALSE)
                 ls_syslog(LOG_ERR, "\
 %s: job %s stat() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
         return -1;
     }
-
-    chuser(batchId);
 
     return 0;
 }
@@ -3094,7 +3012,6 @@ readLogJobInfo(struct jobSpecs *jobSpecs, struct jData *jpbw,
     sprintf (logFn, "%s/logdir/info/%s",
              daemonParams[LSB_SHAREDIR].paramValue,
              jpbw->shared->jobBill.jobFile);
-    chuser(managerId);
 
     fd = open(logFn, O_RDONLY);
     if (fd < 0) {
@@ -3106,7 +3023,6 @@ readLogJobInfo(struct jobSpecs *jobSpecs, struct jData *jpbw,
     }
 
     if (fd < 0) {
-        chuser(batchId);
         if (errno != ENOENT) {
             ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M,
                       fname,
@@ -3120,7 +3036,6 @@ readLogJobInfo(struct jobSpecs *jobSpecs, struct jData *jpbw,
     fstat(fd, &st);
     buf = my_malloc(st.st_size, fname);
     if ((cc = read(fd, buf, st.st_size)) != st.st_size) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M,
                   fname,
                   lsb_jobid2str(jpbw->jobId),
@@ -3131,7 +3046,6 @@ readLogJobInfo(struct jobSpecs *jobSpecs, struct jData *jpbw,
         return -1;
     }
     close(fd);
-    chuser(batchId);
 
     for (sp = buf + strlen(SHELLLINE), numEnv = 0;
          strncmp(sp, ENVEND, sizeof(ENVEND) - 1); numEnv++) {
@@ -3302,7 +3216,6 @@ readJobInfoFile (struct jData *jp, int *len)
     sprintf(logFn, "%s/logdir/info/%s",
             daemonParams[LSB_SHAREDIR].paramValue,
             jp->shared->jobBill.jobFile);
-    chuser(managerId);
 
     fd = open(logFn, O_RDONLY);
     if (fd < 0) {
@@ -3314,7 +3227,6 @@ readJobInfoFile (struct jData *jp, int *len)
     }
 
     if (fd < 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
                   fname,
                   "open",
@@ -3326,7 +3238,6 @@ readJobInfoFile (struct jData *jp, int *len)
     buf = (char *) my_malloc(st.st_size, fname);
     *len = st.st_size;
     if (read(fd, buf, st.st_size) != st.st_size) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M,
                   fname,
                   lsb_jobid2str(jp->jobId),
@@ -3337,7 +3248,6 @@ readJobInfoFile (struct jData *jp, int *len)
         return NULL;
     }
     close(fd);
-    chuser(batchId);
     return (buf);
 }
 
@@ -3348,8 +3258,6 @@ writeJobInfoFile(struct jData *jp, char *jf, int len)
     static char             fname[] = "writeJobInfoFile";
     char                    logFn[MAXFILENAMELEN];
     int                     fd, errnoSv;
-
-    chuser(managerId);
 
     sprintf(logFn, "%s/logdir/info/%s",
             daemonParams[LSB_SHAREDIR].paramValue,
@@ -3363,7 +3271,6 @@ writeJobInfoFile(struct jData *jp, char *jf, int len)
         fd = open(logFn, O_CREAT | O_TRUNC | O_WRONLY, 0600);
     }
     if (fd < 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "open", logFn);
         mbdDie(MASTER_FATAL);
     }
@@ -3372,7 +3279,6 @@ writeJobInfoFile(struct jData *jp, char *jf, int len)
         errnoSv = errno;
         unlink(logFn);
         close(fd);
-        chuser(batchId);
         errno = errnoSv;
         ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
                   logFn, jf);
@@ -3397,8 +3303,6 @@ replaceJobInfoFile(char *jobFileName,
     int  nbyte;
     FILE *fdi, *fdo;
 
-    chuser(managerId);
-
     sprintf(jobFile, "\
 %s/logdir/info/%s", daemonParams[LSB_SHAREDIR].paramValue, jobFileName);
     sprintf(workFile, "\
@@ -3406,14 +3310,12 @@ replaceJobInfoFile(char *jobFileName,
             jobFileName);
 
     if ((fdi = fopen(jobFile, "r")) == NULL) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", jobFileName);
         return -1;
     }
 
     if ((fdo = fopen(workFile, "w")) == NULL) {
         FCLOSEUP(&fdi);
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", workFile);
         return -1;
     }
@@ -3435,7 +3337,6 @@ replaceJobInfoFile(char *jobFileName,
                     FCLOSEUP(&fdo);
                     FCLOSEUP(&fdi);
                     remove(workFile);
-                    chuser(batchId);
                     ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
                               fname,
                               jobFileName);
@@ -3458,7 +3359,6 @@ replaceJobInfoFile(char *jobFileName,
                     FCLOSEUP(&fdo);
                     FCLOSEUP(&fdi);
                     remove(workFile);
-                    chuser(batchId);
                     ls_syslog(LOG_ERR, "\
 %s: The command line is too long when replacing the command of (%s) by the one of (%s)",
                               fname, oldCmdArgs,
@@ -3484,11 +3384,8 @@ replaceJobInfoFile(char *jobFileName,
         FCLOSEUP(&fdo);
         FCLOSEUP(&fdi);
         remove(workFile);
-        chuser(batchId);
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6826,
-                                         "%s: Unexpected the end of (%s)"), /* catgets 6826 */
-                  fname,
-                  jobFileName);
+        ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
+                  __func__, jobFileName);
         return -1;
     }
 
@@ -3508,7 +3405,6 @@ replaceJobInfoFile(char *jobFileName,
         FCLOSEUP(&fdo);
         FCLOSEUP(&fdi);
         remove(workFile);
-        chuser(batchId);
         ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
                   fname,
                   jobFileName);
@@ -3522,7 +3418,6 @@ replaceJobInfoFile(char *jobFileName,
             FCLOSEUP(&fdo);
             FCLOSEUP(&fdi);
             remove(workFile);
-            chuser(batchId);
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fwrite", workFile);
             return -1;
         }
@@ -3531,7 +3426,6 @@ replaceJobInfoFile(char *jobFileName,
     FCLOSEUP(&fdi);
     remove(jobFile);
     rename(workFile, jobFile);
-    chuser(batchId);
     return 0;
 }
 void
@@ -4715,7 +4609,6 @@ renameAcctLogFiles(int fileLimit)
     if (logclass & (LC_TRACE))
         ls_syslog(LOG_DEBUG, "%s: Entering ... ", fname);
 
-    chuser(managerId);
     i = 0;
     if (fileLimit > 0){
         do {
@@ -4730,9 +4623,7 @@ renameAcctLogFiles(int fileLimit)
     }
 
     if ((errno != ENOENT) && (errno != 0)) {
-        chuser(batchId);
         ls_syslog(LOG_WARNING, I18N_FUNC_S_FAIL_M, fname, "stat", tmpfn);
-        chuser(managerId);
     }
 
     max = i;
@@ -4744,13 +4635,11 @@ renameAcctLogFiles(int fileLimit)
                 daemonParams[LSB_SHAREDIR].paramValue, i + 1);
 
         if (rename(tmpfn, acctfn) == -1 && errno != ENOENT) {
-            chuser(batchId);
             ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname,
                       "rename", tmpfn, acctfn);
             return -1;
         }
     }
-    chuser(batchId);
     return (max);
 }
 
@@ -4831,18 +4720,13 @@ checkDirAccess(const char *dir)
 {
     struct stat sbuf;
 
-    chuser(managerId);
-
     if (stat(dir, &sbuf) < 0) {
         if (mkdir(dir, 0700) == -1
             && errno != EEXIST) {
-            chuser(batchId);
             ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, dir);
             return -1;
         }
     }
-
-    chuser(batchId);
 
     return 0;
 }

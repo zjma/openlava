@@ -1798,19 +1798,25 @@ getClusterData(void)
 }
 
 static void
-setManagers (struct clusterInfo clusterInfo)
+setManagers(struct clusterInfo clusterInfo)
 {
-    static char fname[]="setManagers";
-    struct passwd   *pw;
-    int i, numValid = 0, gid, temNum = 0, tempId;
+    struct passwd *pw;
+    int i;
+    int num;
+    int gid;
+    int temNum = 0;
+    int tempId;
     char *sp;
-    char managerIdStr[MAX_LSB_NAME_LEN], managerStr[MAX_LSB_NAME_LEN];
+    char managerIdStr[MAX_LSB_NAME_LEN];
+    char managerStr[MAX_LSB_NAME_LEN];
 
     temNum = (clusterInfo.nAdmins) ? clusterInfo.nAdmins : 1;
-    managerIds = my_malloc (sizeof(uid_t) * temNum, fname);
-    lsbManagers = my_malloc (sizeof (char *) * temNum, fname);
+    managerIds = my_malloc(sizeof(uid_t) * temNum, __func__);
+    lsbManagers = my_malloc(sizeof (char *) * temNum, __func__);
 
+    num = 0;
     for (i = 0; i < temNum; i++) {
+
         sp = (clusterInfo.nAdmins) ?
             clusterInfo.admins[i] : clusterInfo.managerName;
         tempId = (clusterInfo.nAdmins) ?
@@ -1818,43 +1824,49 @@ setManagers (struct clusterInfo clusterInfo)
 
         lsbManagers[i] = safeSave (sp);
 
-        if ((pw = getpwnam (sp)) != NULL) {
-            managerIds[i] = pw->pw_uid;
-            if (numValid == 0) {
-                gid = pw->pw_gid;
-
-
-                lsbManager = lsbManagers[i];
-                managerId  = managerIds[i];
-            }
-            numValid++;
-        } else {
-            if (logclass & LC_AUTH) {
-                ls_syslog(LOG_DEBUG,
-                          "%s: Non recognize LSF administrator name <%s> and userId <%d> detected. It may be a user from other realm", fname, sp, tempId);
-            }
+        if ((pw = getpwnam (sp)) == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: Invalid LSF administrator name <%s> and userId <%d>",
+                          __func__, sp, tempId);
             managerIds[i] = -1;
+            continue;
         }
+        managerIds[i] = pw->pw_uid;
+        if (num == 0) {
+            gid = pw->pw_gid;
+            lsbManager = lsbManagers[i];
+            managerId  = managerIds[i];
+        }
+        num++;
     }
-    if (numValid == 0) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6184,
-                                         "%s: No valid LSF administrators"), fname); /* catgets 6184 */
+
+    if (num == 0) {
+        ls_syslog(LOG_ERR, "%s: No valid LSF administrators", __func__);
         mbdDie(MASTER_FATAL);
     }
+
     nManagers = temNum;
 
     setgid(gid);
 
-
     if (getenv("LSB_MANAGERID") == NULL) {
-        sprintf (managerIdStr, "%d", managerId);
-        putEnv ("LSB_MANAGERID", managerIdStr);
+        sprintf(managerIdStr, "%d", managerId);
+        putEnv("LSB_MANAGERID", managerIdStr);
     }
 
     if (getenv("LSB_MANAGER") == NULL) {
-        sprintf (managerStr, "%s", lsbManager);
-        putEnv ("LSB_MANAGER", managerStr);
+        sprintf(managerStr, "%s", lsbManager);
+        putEnv("LSB_MANAGER", managerStr);
     }
+
+    if (setreuid(managerId, managerId) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to set managerId for mbatchd: %m", __func__);
+        mbdDie(MASTER_FATAL);
+    }
+
+    ls_syslog(LOG_INFO, "%s: mbatchd running as managerId %d",
+              __func__, managerId);
 }
 
 static void

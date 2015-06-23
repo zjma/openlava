@@ -5,6 +5,9 @@ Release notes for OpenLava versions
 
 -- Removed obsolete mls code and infrastructure simplifying user
    management.
+-- No longer run mbatchd as root. The uid of the daemon is the one
+   of the primary lsb manager.
+-- Support memoery contraining using cgroup for batch jobs.
 
 3.0.1
 ======

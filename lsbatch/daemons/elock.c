@@ -1,4 +1,5 @@
-/* $Id: elock.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -58,7 +59,6 @@ getElogLock(void)
 int
 getElock(void)
 {
-    static char fname[] = "getElock";
     int  force = 0;
     int  retry;
     char *myhostnm, *mastername;
@@ -72,7 +72,7 @@ getElock(void)
         return 0;
 
     if ((myhostnm = ls_getmyhostname()) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getmyhostname");
+        ls_syslog(LOG_ERR, "%s: ls_getmyhostname() failed: %m", __func__);
         return MASTER_FATAL;
     }
 
@@ -81,28 +81,31 @@ getElock(void)
             EVENT_LOCK_FILE);
 access:
 
-    chuser(managerId);
     if (force)
         lock_fd = open(lockfile, O_RDWR | O_CREAT | O_TRUNC, 0644);
     else
         lock_fd = open(lockfile, O_RDWR | O_CREAT | O_EXCL, 0644);
 
     if (lock_fd >= 0) {
+
         sprintf(buf, "%s:%d", myhostnm, (int)getpid());
         write(lock_fd, buf, strlen(buf));
         close(lock_fd);
-        chuser(batchId);
-        ls_syslog(LOG_INFO, "%s: Got lock file", fname);
+        ls_syslog(LOG_INFO, "%s: Got lock file", __func__);
         gotLock = TRUE;
+
         return 0;
+
     } else if (errno == EEXIST) {
-        int fd,cc,i,pid;
+        int fd;
+        int cc;
+        int i;
+        int pid;
 
         fd = open(lockfile, O_RDONLY, 0444);
-        chuser(batchId);
         if (fd < 0) {
             ls_syslog(LOG_ERR, "\
-%s: Can't open existing lock file <%s>: %m", fname, lockfile);
+%s: Can't open existing lock file <%s>: %m", __func__, lockfile);
             return MASTER_FATAL;
         }
         i = 0;
@@ -120,7 +123,7 @@ access:
                 pid = atoi(buf);
                 if (kill(pid, 0) < 0) {
                     ls_syslog(LOG_ERR, "\
-%s: Last owner of lock file was on this host with pid <%d>; attempting to take over lock file", fname, pid);
+%s: Last owner of lock file was on this host with pid <%d>; attempting to take over lock file", __func__, pid);
                     close(fd);
                     force = 1;
                     goto access;
@@ -130,7 +133,7 @@ access:
         close(fd);
 
         if (stat(lockfile, &statbuf) < 0) {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "stat", lockfile);
+            ls_syslog(LOG_ERR, "%s: stat() failed on %s: %m", __func__, lockfile);
             return MASTER_FATAL;
         }
         lastmodtime = statbuf.st_mtime;
@@ -147,36 +150,39 @@ access:
                 mastername = ls_getmastername();
             }
             if (mastername == NULL) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8246,
-                                                 "%s: Can't get master host name: %M"),fname); /* catgets 8246 */
+                ls_syslog(LOG_ERR, "\
+%s: Can't get master host name: %M", __func__);
                 return MASTER_FATAL;
             }
 
             if (! equalHost_(mastername, myhostnm)) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8247,
-                                                 "%s: Local host <%s> is not master <%s>"), /* catgets 8247 */
-                          fname, myhostnm, mastername);
+                ls_syslog(LOG_ERR, "\
+%s: Local host <%s> is not master <%s>",
+                          __func__, myhostnm, mastername);
                 return(MASTER_RESIGN);
             }
 
-            if ( stat(lockfile, &statbuf) < 0) {
+            if (stat(lockfile, &statbuf) < 0) {
                 if (errno == ENOENT)
                     goto access;
-                ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "stat", lockfile);
+                ls_syslog(LOG_ERR, "\
+%s: stat() failed on %s: %m", __func__, lockfile);
                 return MASTER_FATAL;
             }
-            if ( statbuf.st_mtime == lastmodtime ) {
+
+            if (statbuf.st_mtime == lastmodtime) {
                 if (retry > 4) {
-                    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8249,
-                                                     "%s: Previous mbatchd appears dead; attempting to take over lock file"),fname); /* catgets 8249 */
+
+                   ls_syslog(LOG_ERR, "\
+%s: Previous mbatchd appears dead; attempting to take over lock file", __func__);
                     force = 1;
                     goto access;
                 } else
                     retry++;
             } else {
                 if (first) {
-                    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8250,
-                                                     "%s: Another mbatchd is accessing lock file; waiting ..."),fname); /* catgets 8250 */
+                    ls_syslog(LOG_ERR, "\
+%s: Another mbatchd is accessing lock file; waiting ...", __func__);
                     first = FALSE;
                 }
                 lastmodtime = statbuf.st_mtime;
@@ -184,10 +190,8 @@ access:
             }
         }
     } else {
-        chuser(batchId);
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 8251,
-                                         "%s: Failed in opening lock file <%s>: %m"), /* catgets 8251 */
-                  fname, lockfile);
+        ls_syslog(LOG_ERR, "%s: Failed in opening lock file <%s>: %m",
+                  __func__, lockfile);
         return MASTER_FATAL;
     }
 }
@@ -204,9 +208,7 @@ releaseElogLock(void)
         return;
 
     if (gotLock) {
-        chuser(managerId);
         ul_val = unlink(lockfile);
-        chuser(batchId);
         if (ul_val != 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, __FUNCTION__, "unlink", lockfile);
         } else
@@ -234,20 +236,16 @@ touchElock(void)
     if (lsb_CheckMode)
         return 0;
 
-    chuser (managerId);
-
     do {
         lock_fd = open(lockfile, O_RDWR, 0644);
     } while ((lock_fd < 0) && (errno == EINTR) && (i++ < 10));
 
     if (lock_fd < 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "open", lockfile);
         return MASTER_FATAL;
     }
     else if (lseek(lock_fd, 0, SEEK_SET) != 0)
     {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "lseek",
                   lockfile,
                   lock_fd);
@@ -255,7 +253,6 @@ touchElock(void)
     }
     else if ((cc = read(lock_fd, buf, 1)) != 1)
     {
-        chuser(batchId);
         if (cc < 0)
             ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "read",
                       lockfile,
@@ -268,7 +265,6 @@ touchElock(void)
     }
     else if (lseek(lock_fd, 0, SEEK_SET) != 0)
     {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_D_FAIL_M, fname, "lseek",
                   lockfile,
                   lock_fd);
@@ -276,7 +272,6 @@ touchElock(void)
     }
     else if ((cc = write(lock_fd, buf, 1)) != 1)
     {
-        chuser(batchId);
         if (cc < 0) {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "write",
                       lockfile);
@@ -288,11 +283,8 @@ touchElock(void)
     }
 
     if (close(lock_fd) != 0) {
-        chuser(batchId);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "close",
                   lockfile);
-    } else
-        chuser(batchId);
-
+    }
     return 0;
 }
