@@ -87,6 +87,8 @@ static void writePidInfoFile(const struct jobCard *,
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
+static void setup_mem_cgroup(struct jobCard *);
+static void rm_mem_cgroup(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -168,10 +170,13 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     jobCardPtr->notReported = 0;
     jobCardPtr->needReportRU = FALSE;
 
+    /* Setup the memory cgroup for the child
+     * we just started
+     */
+    setup_mem_cgroup(jobCardPtr);
+
     return ERR_NO_ERROR;
 }
-
-
 
 static int
 sendNotification(struct jobCard *jobCardPtr)
@@ -437,6 +442,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
                     setuid(jobSpecsPtr->execUid);
                 }
             }
+
             execv(execArgv[0], execArgv);
 
             fprintf(stderr, "\
@@ -1020,6 +1026,10 @@ job_finish(struct jobCard *jobCard, int report)
         deallocJobCard(jobCard);
         return 0;
     }
+
+    /* Clean up the cgroup hierarchy of this job.
+     */
+    rm_mem_cgroup(jobCard);
 
     if ( !jobCard->postJobStarted ) {
         pid = fork();
@@ -2462,9 +2472,6 @@ int
 setIds(struct jobCard *jobCardPtr)
 {
     struct jobSpecs *jobSpecsPtr = &(jobCardPtr->jobSpecs);
-    char *tGname;
-    char *sGname = NULL;
-    struct group *grEntry;
 
     if (debug)
         return 0;
@@ -2483,46 +2490,6 @@ setIds(struct jobCard *jobCardPtr)
         return -1;
     }
 
-
-    if ((tGname = getenv("LSB_UNIXGROUP"))) {
-
-        if (logclass & ( LC_TRACE | LC_EXEC) )
-            ls_syslog(LOG_DEBUG, "got the LSB_UNIXGROUP=%s", tGname);
-
-        if (tGname != NULL) {
-
-            sGname = putstr_(tGname);
-            if ((grEntry = getgrnam(sGname)) == NULL) {
-                ls_syslog(LOG_DEBUG, "\
-%s: Job <%s> getgrnam(%s) failed: ", __func__,
-                          lsb_jobid2str(jobSpecsPtr->jobId), sGname);
-            } else {
-
-                char **memp = grEntry->gr_mem;
-                while (memp != NULL && *memp != NULL) {
-
-                    if (strcmp(*memp, jobCardPtr->execUsername) == 0) {
-
-                        if (setgid(grEntry->gr_gid) < 0) {
-                            ls_syslog(LOG_DEBUG, "\
-%s: Job %s setgid(%d) for LSB_UNIXGROUP=%s  failed: %m",
-                                      __func__,
-                                      lsb_jobid2str(jobSpecsPtr->jobId),
-                                      (int)grEntry->gr_gid, sGname);
-                        } else {
-
-                            jobCardPtr->execGid = grEntry->gr_gid;
-                        }
-                        break;
-                    }
-                    memp++;
-                }
-            }
-
-            FREEUP(sGname);
-        }
-    }
-
     if ((jobSpecsPtr->options & SUB_INTERACTIVE) &&
         (jobSpecsPtr->options & SUB_PTY)) {
         chuser(jobSpecsPtr->execUid);
@@ -2533,11 +2500,10 @@ setIds(struct jobCard *jobCardPtr)
         return -1;
     }
 
-    if (logclass & LC_EXEC)
-        ls_syslog(LOG_DEBUG, "\
+    ls_syslog(LOG_DEBUG, "\
 %s: Job %s uid %d euid %d", __func__,
-                  lsb_jobid2str(jobSpecsPtr->jobId),
-                  getuid(), geteuid());
+              lsb_jobid2str(jobSpecsPtr->jobId),
+              getuid(), geteuid());
     return 0;
 }
 
@@ -2605,7 +2571,8 @@ deallocJobCard(struct jobCard *jobCard)
                   "unlink",
                   fileBuf);
 
-    sprintf(fileBuf, "%s/.%s.sbd/jobstatus.%s", LSTMPDIR, clusterName, lsb_jobidinstr(jobCard->jobSpecs.jobId));
+    sprintf(fileBuf, "%s/.%s.sbd/jobstatus.%s", LSTMPDIR, clusterName,
+            lsb_jobidinstr(jobCard->jobSpecs.jobId));
 
     if (unlink(fileBuf) < 0 && errno != ENOENT)
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
@@ -4095,4 +4062,38 @@ setJobArrayEnv(char *jobName, int jobIndex)
         idxList = idx;
     }
 
+}
+
+/* setup_mem_cgroup()
+ */
+static void
+setup_mem_cgroup(struct jobCard *jPtr)
+{
+    struct rlimit rlimit;
+    char job_id[64];
+
+    rlimitDecode_(&jPtr->jobSpecs.lsfLimits[LSF_RLIMIT_RSS],
+                  &rlimit,
+                  LSF_RLIMIT_RSS);
+
+    sprintf(job_id, "%s", lsb_jobid2str(jPtr->jobSpecs.jobId));
+
+    lsb_constrain_mem(job_id, rlimit.rlim_cur, jPtr->jobSpecs.jobPid);
+
+    ls_syslog(LOG_INFO, "%s: job %s cur %lu max %lu", __func__,
+              job_id,rlimit.rlim_cur, rlimit.rlim_max);
+
+}
+
+/* rm_mem_cgroup()
+ */
+static void
+rm_mem_cgroup(struct jobCard *jPtr)
+{
+    char job_id[64];
+
+    sprintf(job_id, "%s", lsb_jobid2str(jPtr->jobSpecs.jobId));
+    lsb_rmcgroup_mem(job_id, jPtr->jobSpecs.jobPid);
+
+    ls_syslog(LOG_INFO, "%s: cleanup job %s", __func__, job_id);
 }

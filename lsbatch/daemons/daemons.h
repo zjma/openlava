@@ -563,7 +563,7 @@ extern void daemon_doinit(void);
 
 extern void scaleByFactor(int *, int *, float);
 extern int execNqsi(u_long, int, int, int *, char *, int, char *);
-extern void daemonHang(void);
+extern void hang_me(void);
 
 
 #endif

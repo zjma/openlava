@@ -999,8 +999,10 @@ extern int ls_get_numcpus(void);
 struct infoCPUs *ls_get_cpu_info(int *);
 extern bool_t ls_check_mount(const char *);
 extern char *ls_make_job_container(const char *, int);
-extern int ls_constrain_mem(const char *, int, pid_t);
-extern int ls_rmcgroup_mem(const char *, pid_t);
+extern int ls_constrain_mem(int, pid_t);
+extern int ls_rmcgroup_mem(pid_t);
+extern int lsb_constrain_mem(const char *, int, pid_t);
+extern int lsb_rmcgroup_mem(const char *,  pid_t);
 
 #ifndef __CYGWIN__
 extern int optind;

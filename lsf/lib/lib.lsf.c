@@ -18,6 +18,7 @@
  */
 
 #include "../lsf.h"
+#include "lib.h"
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -310,20 +311,29 @@ ls_check_mount(const char *path)
  * Constrain the memory of the given pid
  */
 int
-ls_constrain_mem(const char *root, int mem_limit, pid_t pid)
+ls_constrain_mem(int mem_limit, pid_t pid)
 {
     FILE *fp;
+    char *root;
     static char buf[PATH_MAX];
+
+    root = genParams_[OL_CGROUP_ROOT].paramValue;
+    if (root == NULL)
+        return 0;
 
     sprintf(buf, "%s/memory/openlava", root);
     if (mkdir(buf, 0755) < 0 && errno != EEXIST)
         return false;
 
-    sprintf(buf, "%s/memory/openlava/%d", root, pid);
+    sprintf(buf, "%s/memory/openlava/res", root);
     if (mkdir(buf, 0755) < 0 && errno != EEXIST)
         return false;
 
-    sprintf(buf, "%s/memory/openlava/%d/memory.limit_in_bytes", root, pid);
+    sprintf(buf, "%s/memory/openlava/res/%d", root, pid);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/memory/openlava/res/%d/memory.limit_in_bytes", root, pid);
 
     fp = fopen(buf, "a");
     if (fp == NULL)
@@ -334,7 +344,7 @@ ls_constrain_mem(const char *root, int mem_limit, pid_t pid)
     }
     fclose(fp);
 
-    sprintf(buf, "%s/memory/openlava/%d/tasks", root, pid);
+    sprintf(buf, "%s/memory/openlava/res/%d/tasks", root, pid);
 
     fp = fopen(buf, "a");
     if (fp == NULL)
@@ -349,14 +359,100 @@ ls_constrain_mem(const char *root, int mem_limit, pid_t pid)
     return 0;
 }
 
-/* ls_rm_mem_container()
+/* lsb_constrain_mem()
  */
 int
-ls_rmcgroup_mem(const char *root,  pid_t pid)
+lsb_constrain_mem(const char *job_id, int mem_limit, pid_t pid)
+{
+    FILE *fp;
+    static char buf[PATH_MAX];
+    char *root;
+
+    root = genParams_[OL_CGROUP_ROOT].paramValue;
+    if (root == NULL)
+        return 0;
+
+    if (job_id == NULL)
+        return -1;
+
+    sprintf(buf, "%s/memory/openlava", root);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/memory/openlava/%s", root, job_id);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "%s/memory/openlava/%s/%d", root, job_id, pid);
+    if (mkdir(buf, 0755) < 0 && errno != EEXIST)
+        return false;
+
+    sprintf(buf, "\
+%s/memory/openlava/%s/%d/memory.limit_in_bytes", root, job_id, pid);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+    if (fprintf(fp, "%d\n", mem_limit) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    sprintf(buf, "%s/memory/openlava/%s/%d/tasks", root, job_id, pid);
+
+    fp = fopen(buf, "a");
+    if (fp == NULL)
+        return -1;
+
+    if (fprintf(fp, "%d\n", pid) < 0) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    return 0;
+}
+
+
+/* ls_rmcgroup_mem
+ */
+int
+ls_rmcgroup_mem(pid_t pid)
 {
     static char buf[PATH_MAX];
+    char *root;
 
-    sprintf(buf, "%s/memory/openlava/%d", root, pid);
+    root = genParams_[OL_CGROUP_ROOT].paramValue;
+    if (root == NULL)
+        return 0;
+
+    sprintf(buf, "%s/memory/openlava/res/%d", root, pid);
+
+    if (rmdir(buf) < 0)
+        return -1;
+
+    return 0;
+}
+
+/* lsb_rmcgroup_mem
+ */
+int
+lsb_rmcgroup_mem(const char *job_id,  pid_t pid)
+{
+    static char buf[PATH_MAX];
+    char *root;
+
+    root = genParams_[OL_CGROUP_ROOT].paramValue;
+    if (root == NULL)
+        return 0;
+
+    sprintf(buf, "%s/memory/openlava/%s/%d", root, job_id, pid);
+
+    if (rmdir(buf) < 0)
+        return -1;
+
+    sprintf(buf, "%s/memory/openlava/%s", root, job_id);
 
     if (rmdir(buf) < 0)
         return -1;

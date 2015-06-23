@@ -1,5 +1,5 @@
 /*
- * Copuright (C) 2011 David Bigagli
+ * Copuright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -47,6 +47,7 @@ struct config_param genParams_[] =
     {"LSF_INTERACTIVE_STDERR", NULL},
     {"HOSTS_FILE", NULL},
     {"LSB_SHAREDIR", NULL},
+    {"OL_CGROUP_ROOT", NULL},
     {NULL, NULL}
 };
 

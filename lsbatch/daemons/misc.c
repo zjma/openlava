@@ -846,16 +846,13 @@ lsbFreeResVal (struct resVal **resVal)
 }
 
 void
-daemonHang(void)
+hang_me(void)
 {
-    struct timeval timeval;
-    bool_t hang;
+    int cc;
 
-    hang = true;
-    while (hang) {
-        timeval.tv_sec = 2;
-        timeval.tv_usec = 0;
-        ls_syslog(LOG_ERR, "%s hanging... ", __func__);
-        select(0, NULL, NULL, NULL, &timeval);
+    cc = 1;
+    while (cc) {
+        ls_syslog(LOG_ERR, "%s: attachme ... %d", __func__, cc++);
+        sleep(2);
     }
 }

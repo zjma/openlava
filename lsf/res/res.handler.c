@@ -2091,7 +2091,8 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
 
     /* setup cgroup memory
      */
-    setup_mem_cgroup(cmdmsg->lsfLimits, pid);
+    if (0)
+        setup_mem_cgroup(cmdmsg->lsfLimits, pid);
 
     return child_ptr;
 }
@@ -3131,7 +3132,6 @@ delete_child(struct child *cp)
 
     uid = geteuid();
     setEUid(0);
-    ls_rmcgroup_mem("/cgroup", cp->pid);
     setEUid(uid);
 
     free(cp);
@@ -5806,7 +5806,7 @@ setup_mem_cgroup(struct lsfLimit *lsflimits, pid_t pid)
     uid = geteuid();
     setEUid(0);
 
-    if (ls_constrain_mem("/cgroup", rlimit.rlim_cur, pid) < 0) {
+    if (ls_constrain_mem(rlimit.rlim_cur, pid) < 0) {
         ls_syslog(LOG_ERR, "%s: failed for pid %d: %m", __func__, pid);
         cc = -1;
     }

@@ -116,7 +116,8 @@ typedef enum {
     LSF_MLS_LOG,
     LSF_INTERACTIVE_STDERR,
     NO_HOSTS_FILE,
-    LSB_SHAREDIR /* we share this with batch system */
+    LSB_SHAREDIR,
+    OL_CGROUP_ROOT
 } genparams_t;
 
 typedef struct lsRequest LS_REQUEST_T;
