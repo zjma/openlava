@@ -643,7 +643,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
                 if (entry != KEY_DURATION && entry != KEY_DECAY)
                     goto pryc;
 
-                if (usageReq[0] == '=') {
+                if (s[0] == '=') {
                     int returnValue;
                     if (entry == KEY_DURATION)
                         returnValue =  getTimeVal(&s, &value);
