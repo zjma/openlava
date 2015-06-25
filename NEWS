@@ -22,6 +22,7 @@ Release notes for openlava versions
 -- Fix the bug in which sbatchd was logging post exec failure even if
    the post exec ran fine.
 -- Reduce or remove sleep times in res.
+-- Fix bjobs -pl core dump.
 
 3.0
 ====
