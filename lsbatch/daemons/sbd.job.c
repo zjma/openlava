@@ -318,7 +318,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 %s: Got job start ok from mbatchd for job <%s>",
               fname, lsb_jobid2str(jobSpecsPtr->jobId));
 
-   if (acctMapTo(jobCardPtr) < 0)  {
+    if (acctMapTo(jobCardPtr) < 0)  {
         jobSetupStatus(JOB_STAT_PEND, PEND_NO_MAPPING, jobCardPtr);
     }
 

@@ -377,13 +377,16 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
     char **ep;
     char *sp, num[MAX_LSB_NAME_LEN], *p, *oldp;
     int size = MSGSIZE, length = 0, len, len1, numEnv = 0, noEqual;
-
     int tsoptlen;
 
     tsoptlen = 0;
 
     if (logclass & (LC_TRACE | LC_EXEC))
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
+
+    if (jobSubReq->projectName) {
+        setenv("LSB_PROJECT_NAME", jobSubReq->projectName, 0);
+    }
 
     length = sizeof(CMDSTART) + sizeof(TRAPSIGCMD) + sizeof(WAITCLEANCMD) +
         sizeof(EXITCMD) + strlen(jobSubReq->command) + tsoptlen +
@@ -438,8 +441,8 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
             !strncmp(*ep, "LSB_EVENT_ATTRIB=", 17) ||
             !strncmp(*ep, "OPENLAVA_VERSION=", 12) ||
             !strncmp(*ep, "LSB_SUB_", 8) ||
-
-
+            /* sbatchd sets these variables
+             */
             !strncmp(*ep, "HOME=", 5) ||
             !strncmp(*ep, "PWD=", 4) ||
             !strncmp(*ep, "USER=", 5)) {
