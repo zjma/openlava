@@ -33,6 +33,7 @@ Release notes for OpenLava versions
 -- Reduce or remove sleep times in res.
 -- Implement sorting by MXJ in mbatchd.
 -- Implement sorting by cpu factor in mbatchd.
+-- Fix bjobs -pl core dump.
 
 3.0
 ====

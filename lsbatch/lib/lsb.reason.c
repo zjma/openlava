@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -382,7 +382,7 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
             ls_syslog(LOG_DEBUG2, "%s: hostId=%d, reason=%d reasonTb[%d]=%d",
                       fname, hostId, reason, i, reasonTb[i]);
         if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL)
-            strcpy(hostList, jInfoH->hostNames[hostId - 1]);
+            strcpy(hostList, jInfoH->hostNames[hostId]);
         else
             num = 1;
 
@@ -402,7 +402,7 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
             reasonTb[j] = 0;
             if (jInfoH && jInfoH->numHosts != 0 && jInfoH->hostNames != NULL) {
                 sprintf(hostList, "%s, %s", hostList,
-                        jInfoH->hostNames[hostIdJ - 1]);
+                        jInfoH->hostNames[hostIdJ]);
             } else
                 num++;
         }
