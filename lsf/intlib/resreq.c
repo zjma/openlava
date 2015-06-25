@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2007-2015 Platform Computing Inc
+ * Copyright (C) 2011-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -666,7 +667,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 
             if (!(lsInfo->resTable[entry].flags & RESF_DYNAMIC)
                 && (lsInfo->resTable[entry].valueType != LS_NUMERIC)) {
-                if (usageReq[0] == '=') {
+                if (s[0] == '=') {
                     if (getVal(&s, &value) < 0 || value < 0.0)
                         goto pryc;
                 }
