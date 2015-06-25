@@ -385,6 +385,10 @@ createJobInfoFile(struct submit *jobSubReq, struct lenData *jf)
     if (logclass & (LC_TRACE | LC_EXEC))
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
+    if (jobSubReq->projectName) {
+        setenv("LSB_PROJECT_NAME", jobSubReq->projectName, 0);
+    }
+
     length = sizeof(CMDSTART) + sizeof(TRAPSIGCMD) + sizeof(WAITCLEANCMD) +
         sizeof(EXITCMD) + strlen(jobSubReq->command) + tsoptlen +
         sizeof(LSBNUMENV) +
