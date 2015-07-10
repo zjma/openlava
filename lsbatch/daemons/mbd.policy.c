@@ -1724,7 +1724,7 @@ ckResReserve(struct hData *hPtr,
         if (state == 1)
             return hPtr->numCPUs;
 
-    } /* while (all rusage blocks */
+    } /* while (all rusage blocks) */
 
     return 0;
 }

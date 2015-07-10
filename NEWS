@@ -7,7 +7,11 @@ Release notes for OpenLava versions
    management.
 -- No longer run mbatchd as root. The uid of the daemon is the one
    of the primary lsb manager.
--- Support memoery contraining using cgroup for batch jobs.
+-- Support memory contraining using cgroup for batch jobs.
+-- Developed a built in resource names 'slots' used by mbatchd only.
+   This resource allows to pack or stripe jobs on hosts.
+-- Developed the rusage or functionality. -R "rusage[x=1||y=2]".
+-- Introduced LSB_PROJECT_NAME variable in job and preexec environment.
 
 3.0.1
 ======
