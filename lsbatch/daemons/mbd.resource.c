@@ -109,8 +109,8 @@ addSharedResource (struct lsSharedResourceInfo *lsResourceInfo)
 }
 
 static void
-addInstances (struct lsSharedResourceInfo *lsResourceInfo,
-                                         struct sharedResource *resource)
+addInstances(struct lsSharedResourceInfo *lsResourceInfo,
+             struct sharedResource *resource)
 {
     static char fname[] = "addInstances";
     int i, numHosts, j, numInsatnces = 0;

@@ -506,25 +506,24 @@ struct sharedConf {
     char            *servers;
 };
 
-typedef struct lsSharedResourceInstance {
+struct lsSharedResourceInstance {
     char *value;
     int  nHosts;
     char **hostList;
+};
 
-} LS_SHARED_RESOURCE_INST_T;
-
-typedef struct lsSharedResourceInfo {
+struct lsSharedResourceInfo {
     char *resourceName;
     int  nInstances;
-    LS_SHARED_RESOURCE_INST_T  *instances;
-} LS_SHARED_RESOURCE_INFO_T;
+    struct lsSharedResourceInstance  *instances;
+};
 
 struct clusterConf {
     struct clusterInfo *clinfo;
-    int       numHosts;
+    int numHosts;
     struct hostInfo *hosts;
     int numShareRes;
-    LS_SHARED_RESOURCE_INFO_T *shareRes;
+    struct lsSharedResourceInfo *shareRes;
 };
 
 /* Maximum number of processes reported by PIM
