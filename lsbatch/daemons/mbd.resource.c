@@ -48,61 +48,66 @@ checkOrTakeAvailableByPreemptPRHQValue(int index, float value,
 
 
 void
-getLsbResourceInfo (void)
+getLsbResourceInfo(void)
 {
-    static char fname[] = "getLsbresourceInfo";
-    int i, numRes = 0;
+    int i;
+    int numRes;
     struct lsSharedResourceInfo *resourceInfo;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG3, "%s: Entering ..." , fname);
+        ls_syslog(LOG_DEBUG3, "%s: Entering ..." , __func__);
 
-    if ((resourceInfo = ls_sharedresourceinfo (NULL, &numRes, NULL, 0))
-        == NULL) {
-
+    numRes = 0;
+    resourceInfo = ls_sharedresourceinfo(NULL, &numRes, NULL, 0);
+    if (resourceInfo == NULL) {
         return;
     }
+
     if (numResources > 0)
         freeSharedResource();
-    initHostInstances (numRes);
+
+    initHostInstances(numRes);
+
     for (i = 0; i < numRes; i++)
         addSharedResource(&resourceInfo[i]);
-
 }
 
 
 static void
-addSharedResource (struct lsSharedResourceInfo *lsResourceInfo)
+addSharedResource(struct lsSharedResourceInfo *lsResourceInfo)
 {
-    static char fname[] = "addSharedResource";
-    struct sharedResource *resource, **temp;
+    struct sharedResource *resource;
+    struct sharedResource **temp;
 
     if (lsResourceInfo == NULL)
         return;
 
     if (getResource (lsResourceInfo->resourceName) != NULL) {
         if (logclass & LC_TRACE)
-            ls_syslog (LOG_DEBUG3, "%s: More than one resource <%s> is found in lsResourceInfo got from lim; ignoring later", fname, lsResourceInfo->resourceName);
+            ls_syslog (LOG_DEBUG3, "\
+%s: More than one resource %s found in lsResourceInfo from lim; ignoring later",
+                       __func__, lsResourceInfo->resourceName);
         return;
     }
-    resource = (struct sharedResource *)
-               my_malloc(sizeof (struct sharedResource), fname);
+
+    resource =  my_malloc(sizeof (struct sharedResource), __func__);
     resource->numInstances = 0;
     resource->instances = NULL;
     resource->resourceName = safeSave (lsResourceInfo->resourceName);
-    addInstances (lsResourceInfo, resource);
+
+    addInstances(lsResourceInfo, resource);
 
     if (numResources == 0)
-        temp = (struct sharedResource **)
-            my_malloc (sizeof (struct sharedResource *), fname);
+        temp =  my_malloc (sizeof (struct sharedResource *), __func__);
     else
-        temp = (struct sharedResource **) realloc (sharedResources,
-                                                   (numResources + 1) *sizeof (struct sharedResource *));
+        temp = realloc(sharedResources,
+                       (numResources + 1) *sizeof (struct sharedResource *));
     if (temp == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "realloc");
+        ls_syslog(LOG_ERR, "%s: realloc() failed: %m", __func__);
         mbdDie(MASTER_MEM);
     }
-    sharedResources = (struct sharedResource **) temp;
+
+    sharedResources = temp;
     sharedResources[numResources] = resource;
     numResources++;
 
@@ -112,35 +117,42 @@ static void
 addInstances(struct lsSharedResourceInfo *lsResourceInfo,
              struct sharedResource *resource)
 {
-    static char fname[] = "addInstances";
-    int i, numHosts, j, numInsatnces = 0;
+    int i;
+    int numHosts;
+    int j;
+    int numInst = 0;
     struct resourceInstance *instance;
     struct hData *hPtr;
 
     if (lsResourceInfo->nInstances <= 0)
         return;
 
-    resource->instances = (struct resourceInstance **) my_malloc
-            (lsResourceInfo->nInstances * sizeof (struct resourceInstance *), fname);
+    resource->instances = my_malloc(lsResourceInfo->nInstances
+                                    * sizeof (struct resourceInstance *),
+                                    __func__);
+
     for (i = 0; i < lsResourceInfo->nInstances; i++) {
-        instance = (struct resourceInstance *)my_malloc
-                     (sizeof (struct resourceInstance), fname);
+
+        instance = my_malloc(sizeof (struct resourceInstance), __func__);
         instance->nHosts = 0;
 	instance->lsfValue = NULL;
 	instance->value = NULL;
         instance->resName = resource->resourceName;
+
 	if (lsResourceInfo->instances[i].nHosts > 0) {
-            instance->hosts = (struct hData **) my_malloc
-              (lsResourceInfo->instances[i].nHosts * sizeof (struct hData *), fname);
+            instance->hosts = my_malloc(lsResourceInfo->instances[i].nHosts
+                                        * sizeof (struct hData *), __func__);
         } else
             instance->hosts = NULL;
 
         numHosts = 0;
         for (j = 0; j < lsResourceInfo->instances[i].nHosts; j++) {
-            if ((hPtr = getHostData
-                      (lsResourceInfo->instances[i].hostList[j])) == NULL) {
+            hPtr = getHostData(lsResourceInfo->instances[i].hostList[j]);
+            if (hPtr == NULL) {
                 if (logclass & LC_TRACE)
-                    ls_syslog (LOG_DEBUG3, "%s: Host <%s> is not used by the batch system;ignoring", fname, lsResourceInfo->instances[i].hostList[j]);
+                    ls_syslog (LOG_DEBUG3, "\
+%s: Host <%s> is not used by the batch system;ignoring", __func__,
+                               lsResourceInfo->instances[i].hostList[j]);
                 continue;
             }
 
@@ -154,45 +166,43 @@ addInstances(struct lsSharedResourceInfo *lsResourceInfo,
             instance->hosts[numHosts] = hPtr;
 	    numHosts++;
         }
+
         instance->nHosts = numHosts;
 	instance->lsfValue = safeSave(lsResourceInfo->instances[i].value);
-	instance->value = safeSave (lsResourceInfo->instances[i].value);
-
-
-        resource->instances[numInsatnces++] = instance;
+	instance->value = safeSave(lsResourceInfo->instances[i].value);
+        resource->instances[numInst++] = instance;
     }
-    resource->numInstances = numInsatnces;
-
+    resource->numInstances = numInst;
 }
 
 void
-freeSharedResource (void)
+freeSharedResource(void)
 {
-    int i, j;
+    int i;
+    int j;
 
     if (numResources <= 0)
         return;
 
     for (i = 0; i < numResources; i++) {
         for (j = 0; j < sharedResources[i]->numInstances; j++) {
-            FREEUP (sharedResources[i]->instances[j]->hosts);
-            FREEUP (sharedResources[i]->instances[j]->lsfValue);
-            FREEUP (sharedResources[i]->instances[j]->value);
-            FREEUP (sharedResources[i]->instances[j]);
+            FREEUP(sharedResources[i]->instances[j]->hosts);
+            FREEUP(sharedResources[i]->instances[j]->lsfValue);
+            FREEUP(sharedResources[i]->instances[j]->value);
+            FREEUP(sharedResources[i]->instances[j]);
         }
-        FREEUP (sharedResources[i]->instances);
-        FREEUP (sharedResources[i]->resourceName);
-        FREEUP (sharedResources[i]);
+        FREEUP(sharedResources[i]->instances);
+        FREEUP(sharedResources[i]->resourceName);
+        FREEUP(sharedResources[i]);
     }
     FREEUP (sharedResources);
     numResources = 0;
 
     freeHostInstances();
-
 }
 
 static void
-freeHostInstances (void)
+freeHostInstances(void)
 {
     sTab hashSearchPtr;
     hEnt *hashEntryPtr;
@@ -223,8 +233,10 @@ initHostInstances(int num)
     struct hData *hData;
 
     hashEntryPtr = h_firstEnt_(&hostTab, &hashSearchPtr);
+
     while (hashEntryPtr) {
-        hData = (struct hData *) hashEntryPtr->hData;
+
+        hData = (struct hData *)hashEntryPtr->hData;
         hashEntryPtr = h_nextEnt_(&hashSearchPtr);
 
         if (hData->flags & HOST_LOST_FOUND)
@@ -242,7 +254,7 @@ initHostInstances(int num)
 }
 
 struct sharedResource *
-getResource (char *resourceName)
+getResource(char *resourceName)
 {
     int i;
     if (resourceName == NULL || numResources <= 0)
@@ -257,8 +269,8 @@ getResource (char *resourceName)
 }
 
 int
-checkResources (struct resourceInfoReq *resourceInfoReq,
-                struct lsbShareResourceInfoReply *reply)
+checkResources(struct resourceInfoReq *resourceInfoReq,
+               struct lsbShareResourceInfoReply *reply)
 {
     static char fname[] = "checkResources";
     int i, j, allResources = FALSE, found = FALSE, replyCode;
@@ -281,22 +293,20 @@ checkResources (struct resourceInfoReq *resourceInfoReq,
     else {
 
         if ((hp = Gethostbyname_(resourceInfoReq->hostName)) == NULL) {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "getHostOfficialByName_",
-		resourceInfoReq->hostName);
 	    return LSBE_BAD_HOST;
         }
 
         if ((hPtr = getHostData (hp->h_name)) == NULL) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7703,
-                                             "%s: Host <%s>  is not used by the batch system"), /* catgets 7703 */
+            ls_syslog(LOG_ERR, "\
+%s: Host <%s>  is not used by the batch system",
                       fname, resourceInfoReq->hostName);
 	    return LSBE_BAD_HOST;
         }
     }
 
     reply->numResources = 0;
-    reply->resources = (struct lsbSharedResourceInfo *)
-       my_malloc (numResources * sizeof (struct lsbSharedResourceInfo), fname);
+    reply->resources = my_malloc(numResources
+                                  * sizeof (struct lsbSharedResourceInfo), fname);
 
     for (i = 0; i < resourceInfoReq->numResourceNames; i++) {
         found = FALSE;
@@ -330,7 +340,8 @@ checkResources (struct resourceInfoReq *resourceInfoReq,
 }
 
 static int
-copyResource (struct lsbShareResourceInfoReply *reply, struct sharedResource *resource, char *hostName)
+copyResource (struct lsbShareResourceInfoReply *reply,
+              struct sharedResource *resource, char *hostName)
 {
     static char fname[] = "copyResource";
     int i, j, num, found = FALSE, numInstances;
@@ -341,7 +352,9 @@ copyResource (struct lsbShareResourceInfoReply *reply, struct sharedResource *re
     reply->resources[num].resourceName = resource->resourceName;
 
 
-    reply->resources[num].instances = (struct lsbSharedResourceInstance *) my_malloc (resource->numInstances * sizeof (struct lsbSharedResourceInstance), fname);
+    reply->resources[num].instances
+        = my_malloc(resource->numInstances
+                    * sizeof (struct lsbSharedResourceInstance), fname);
     reply->resources[num].nInstances = 0;
     numInstances = 0;
 
@@ -398,9 +411,9 @@ getHRValue(char *resName,
 
         *instance = hPtr->instances[i];
         if (strcmp(hPtr->instances[i]->value, "-") == 0) {
-            return INFINIT_LOAD;
+            return -INFINIT_LOAD;
         }
-        return atof (hPtr->instances[i]->value);
+        return atof(hPtr->instances[i]->value);
     }
 
     ls_syslog(LOG_ERR, "%s, instance name not found.", __func__);
