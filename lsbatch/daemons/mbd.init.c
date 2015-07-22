@@ -978,6 +978,7 @@ addMember(struct gData *groupPtr,
     struct gData *subgrpPtr = NULL;
     char name[MAXHOSTNAMELEN];
     struct hostent *hp;
+    struct hEnt *ent;
 
     if (grouptype == USER_GRP) {
         subgrpPtr = getGrpData (tempUGData, word, nTempUGroups);
@@ -1058,8 +1059,10 @@ addMember(struct gData *groupPtr,
     if (isgrp) {
         groupPtr->gPtr[groupPtr->numGroups] = subgrpPtr;
         groupPtr->numGroups++;
-    } else
-        h_addEnt_(&groupPtr->memberTab, name, NULL);
+    } else {
+        ent = h_addEnt_(&groupPtr->memberTab, name, NULL);
+        ent->hData = strdup(name);
+    }
 
     return;
 
@@ -1963,9 +1966,10 @@ createTmpGData(struct groupInfoEnt *groups,
                struct gData *tempGData[],
                int *nTempGroups)
 {
-    static char fname[] = "createTmpGData";
     struct groupInfoEnt *gPtr;
-    char *HUgroups, *sp, *wp;
+    char *HUgroups;
+    char *sp;
+    char *wp;
     int i;
     struct gData *grpPtr;
 
@@ -1980,15 +1984,17 @@ createTmpGData(struct groupInfoEnt *groups,
 
         if (groupType == HOST_GRP && gPtr && gPtr->group
             && isHostAlias(gPtr->group)) {
-            ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 6186,
-                                                 "%s: Host group name <%s> conflicts with host name; ignoring"), fname, gPtr->group); /* catgets 6186 */
+            ls_syslog(LOG_WARNING, "\
+%s: Host group name <%s> conflicts with host name; ignoring", __func__,
+                      gPtr->group);
             lsb_CheckError = WARNING_ERR;
             continue;
         }
 
         if (getGrpData (tempGData, gPtr->group, *nTempGroups)) {
-            ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 6187,
-                                                 "%s: Group <%s> is multiply defined in %s; ignoring"), fname, gPtr->group, HUgroups); /* catgets 6187 */
+            ls_syslog(LOG_WARNING, "\
+%s: Group <%s> is multiply defined in %s; ignoring", __func__,
+                      gPtr->group, HUgroups);
             lsb_CheckError = WARNING_ERR;
             continue;
         }
@@ -2001,18 +2007,23 @@ createTmpGData(struct groupInfoEnt *groups,
             addMember(grpPtr,
                       wp,
                       groupType,
-                      fname,
+                      (char *)__func__,
                       tempGData,
                       nTempGroups);
         }
 
-        if (grpPtr->memberTab.numEnts == 0 &&
-            grpPtr->numGroups == 0 &&
-            strcmp(gPtr->memberList, "all") != 0) {
-            ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 6188,
-                                                 "%s: No valid member in group <%s>; ignoring the group"), fname, grpPtr->group); /* catgets 6188 */
+        /* Copy the group slots built in resource
+         */
+        if (gPtr->group_slots)
+            grpPtr->group_slots = strdup(gPtr->group_slots);
+
+        if (grpPtr->memberTab.numEnts == 0
+            && grpPtr->numGroups == 0
+            && strcmp(gPtr->memberList, "all") != 0) {
+            ls_syslog(LOG_WARNING, "\
+%s: No valid member in group <%s>; ignoring the group", __func__, grpPtr->group);
             lsb_CheckError = WARNING_ERR;
-            freeGrp (grpPtr);
+            freeGrp(grpPtr);
             *nTempGroups -= 1;
         }
     }
@@ -3320,7 +3331,7 @@ freeGrp(struct gData *grpPtr)
     h_delTab_(&grpPtr->memberTab);
     if (grpPtr->group && grpPtr->group[0] != '\0')
         FREEUP(grpPtr->group);
-
+    FREEUP(grpPtr->group_slots);
     FREEUP(grpPtr);
 }
 

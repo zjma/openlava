@@ -166,7 +166,7 @@ static void addBinaryAttributes(char *, int *, struct queueInfoEnt *,
                                 struct keymap *, unsigned int, char *);
 static int parseQFirstHost(char *, int *, char *, int *, char *, char *);
 int chkFirstHost(char *, int* );
-
+static int set_group_slots(struct groupInfoEnt *, const char *);
 
 extern int sigNameToValue_ (char *);
 extern int parseSigActCmd (struct queueInfoEnt *, char *, char *, int *, char *);
@@ -1326,12 +1326,13 @@ Error:
 
 static char
 do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
-           int *lineNum, int *ngroups, int options)
+          int *lineNum, int *ngroups, int options)
 {
-    struct keymap          keylist[] = {
+    struct keymap keylist[] = {
         {"GROUP_NAME", NULL, 0},
         {"GROUP_MEMBER", NULL, 0},
         {"USER_SHARES",  NULL, 0},
+        {"GROUP_SLOT", NULL, 0},
         {NULL, NULL, 0}
     };
     char *linep;
@@ -1445,9 +1446,9 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 continue;
             }
 
-            if ( *ngroups >= MAX_GROUPS ) {
+            if (*ngroups >= MAX_GROUPS) {
 
-                if ( nGrpOverFlow ++ == 0 )
+                if (nGrpOverFlow++ == 0)
 
                     ls_syslog(LOG_WARNING, I18N(5107,
                                                 "%s: File %s at line %d: The number of configured groups reaches the limit <%d>; ignoring the rest of groups defined"), __func__, fname, *lineNum, MAX_GROUPS); /* catgets 5107 */
@@ -1499,7 +1500,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 keylist[1].val = outHosts;
             }
 
-            gp = addGroup (groups, keylist[0].val, ngroups, 0);
+            gp = addGroup(groups, keylist[0].val, ngroups, 0);
 
             if ( gp == NULL && lsberrno == LSBE_NO_MEM )
                 return FALSE;
@@ -1548,6 +1549,13 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 gp->user_shares = strdup(keylist[2].val);
             }
 
+            /* Process the name of the group slot
+             * resource for this host group.
+             */
+            if (type == HOST_GRP && keylist[3].val) {
+                set_group_slots(gp, keylist[3].val);
+            }
+
         }
 
         ls_syslog(LOG_WARNING, I18N_FILE_PREMATURE, __func__, fname, *lineNum);
@@ -1590,15 +1598,15 @@ addGroup (struct groupInfoEnt **groups, char *gname, int *ngroups, int type)
     if (groups == NULL || ngroups == NULL)
         return NULL;
 
-    if ( type == 0 ) {
-        if ((groups[*ngroups] = (struct groupInfoEnt *) malloc
-             (sizeof(struct groupInfoEnt))) == NULL) {
+    if (type == 0) {
+        if ((groups[*ngroups] = (struct groupInfoEnt *)calloc
+             (1, sizeof(struct groupInfoEnt))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, "addGroup", "malloc",
                       sizeof(struct groupInfoEnt));
             lsberrno = LSBE_NO_MEM;
             return NULL;
         }
-        initGroupInfo ( groups[*ngroups] );
+        initGroupInfo(groups[*ngroups]);
         groups[*ngroups]->group = putstr_ ( gname );
         if (groups[*ngroups]->group == NULL) {
             FREEUP(groups[*ngroups]);
@@ -6759,4 +6767,16 @@ void
 updateClusterConf(struct clusterConf *clusterConf)
 {
     cConf = *clusterConf;
+}
+
+static int
+set_group_slots(struct groupInfoEnt *gp, const char *slot_name)
+{
+    if (gp == NULL
+        || slot_name == NULL)
+        return -1;
+
+    gp->group_slots = strdup(slot_name);
+
+    return 0;
 }

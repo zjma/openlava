@@ -23,7 +23,7 @@
 #include "mbd.h"
 
 #include "../../lsf/lib/lsi18n.h"
-#define NL_SETN		10
+#define NL_SETN         10
 
 static void addSharedResource (struct lsSharedResourceInfo *);
 static void addInstances (struct lsSharedResourceInfo *, struct sharedResource *);
@@ -43,9 +43,13 @@ static struct qPRValues * addQPRValues(int, struct hData *, struct qData *);
 static float roundFloatValue (float);
 
 static float
-checkOrTakeAvailableByPreemptPRHQValue(int index, float value,
-    struct hData *hPtr, struct qData *qPtr, int update);
-
+checkOrTakeAvailableByPreemptPRHQValue(int index,
+                                       float value,
+                                       struct hData *hPtr,
+                                       struct qData *qPtr,
+                                       int update);
+static void compute_group_slots(int, struct lsSharedResourceInfo *);
+static int get_group_slots(struct gData *);
 
 void
 getLsbResourceInfo(void)
@@ -65,6 +69,8 @@ getLsbResourceInfo(void)
 
     if (numResources > 0)
         freeSharedResource();
+
+    compute_group_slots(numRes, resourceInfo);
 
     initHostInstances(numRes);
 
@@ -135,11 +141,11 @@ addInstances(struct lsSharedResourceInfo *lsResourceInfo,
 
         instance = my_malloc(sizeof (struct resourceInstance), __func__);
         instance->nHosts = 0;
-	instance->lsfValue = NULL;
-	instance->value = NULL;
+        instance->lsfValue = NULL;
+        instance->value = NULL;
         instance->resName = resource->resourceName;
 
-	if (lsResourceInfo->instances[i].nHosts > 0) {
+        if (lsResourceInfo->instances[i].nHosts > 0) {
             instance->hosts = my_malloc(lsResourceInfo->instances[i].nHosts
                                         * sizeof (struct hData *), __func__);
         } else
@@ -162,14 +168,14 @@ addInstances(struct lsSharedResourceInfo *lsResourceInfo,
             }
 
             hPtr->instances[hPtr->numInstances] = instance;
-	    hPtr->numInstances++;
+            hPtr->numInstances++;
             instance->hosts[numHosts] = hPtr;
-	    numHosts++;
+            numHosts++;
         }
 
         instance->nHosts = numHosts;
-	instance->lsfValue = safeSave(lsResourceInfo->instances[i].value);
-	instance->value = safeSave(lsResourceInfo->instances[i].value);
+        instance->lsfValue = safeSave(lsResourceInfo->instances[i].value);
+        instance->value = safeSave(lsResourceInfo->instances[i].value);
         resource->instances[numInst++] = instance;
     }
     resource->numInstances = numInst;
@@ -258,11 +264,11 @@ getResource(char *resourceName)
 {
     int i;
     if (resourceName == NULL || numResources <= 0)
-	return NULL;
+        return NULL;
 
     for (i = 0; i < numResources; i++) {
-	if (!strcmp (sharedResources[i]->resourceName, resourceName))
-	    return (sharedResources[i]);
+        if (!strcmp (sharedResources[i]->resourceName, resourceName))
+            return (sharedResources[i]);
     }
     return NULL;
 
@@ -289,18 +295,18 @@ checkResources(struct resourceInfoReq *resourceInfoReq,
     if (resourceInfoReq->hostName == NULL
         || (resourceInfoReq->hostName
             && strcmp (resourceInfoReq->hostName, " ")== 0))
-	hPtr = NULL;
+        hPtr = NULL;
     else {
 
         if ((hp = Gethostbyname_(resourceInfoReq->hostName)) == NULL) {
-	    return LSBE_BAD_HOST;
+            return LSBE_BAD_HOST;
         }
 
         if ((hPtr = getHostData (hp->h_name)) == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: Host <%s>  is not used by the batch system",
                       fname, resourceInfoReq->hostName);
-	    return LSBE_BAD_HOST;
+            return LSBE_BAD_HOST;
         }
     }
 
@@ -317,7 +323,7 @@ checkResources(struct resourceInfoReq *resourceInfoReq,
                 continue;
             found = TRUE;
             if ((replyCode = copyResource (reply, sharedResources[j],
-		     (hPtr != NULL)?hPtr->host:NULL)) != LSBE_NO_ERROR) {
+                     (hPtr != NULL)?hPtr->host:NULL)) != LSBE_NO_ERROR) {
                 return replyCode;
             }
             reply->numResources++;
@@ -326,9 +332,9 @@ checkResources(struct resourceInfoReq *resourceInfoReq,
         }
         if (allResources == FALSE && found == FALSE) {
 
-	    reply->badResource = i;
-	    reply->numResources = 0;
-	    FREEUP(reply->resources);
+            reply->badResource = i;
+            reply->numResources = 0;
+            FREEUP(reply->resources);
             return LSBE_BAD_RESOURCE;
         }
         found = FALSE;
@@ -359,16 +365,16 @@ copyResource (struct lsbShareResourceInfoReply *reply,
     numInstances = 0;
 
     for (i = 0; i < resource->numInstances; i++) {
-	if (hostName) {
-	    for (j = 0; j < resource->instances[i]->nHosts; j++) {
-		if (strcmp (hostName, resource->instances[i]->hosts[j]->host))
-		    continue;
+        if (hostName) {
+            for (j = 0; j < resource->instances[i]->nHosts; j++) {
+                if (strcmp (hostName, resource->instances[i]->hosts[j]->host))
+                    continue;
                 found = TRUE;
-		break;
+                break;
             }
         }
         if (hostName && found == FALSE)
-	    continue;
+            continue;
 
         found = FALSE;
         reply->resources[num].instances[numInstances].totalValue =
@@ -390,7 +396,7 @@ copyResource (struct lsbShareResourceInfoReply *reply,
         }
         reply->resources[num].instances[numInstances].nHosts =
                                 resource->instances[i]->nHosts;
-	numInstances++;
+        numInstances++;
     }
     reply->resources[num].nInstances = numInstances;
     return LSBE_NO_ERROR;
@@ -400,7 +406,7 @@ copyResource (struct lsbShareResourceInfoReply *reply,
 float
 getHRValue(char *resName,
            struct hData *hPtr,
-	   struct resourceInstance **instance)
+           struct resourceInstance **instance)
 {
     int i;
 
@@ -416,7 +422,6 @@ getHRValue(char *resName,
         return atof(hPtr->instances[i]->value);
     }
 
-    ls_syslog(LOG_ERR, "%s, instance name not found.", __func__);
     return -INFINIT_LOAD;
 
 }
@@ -429,13 +434,13 @@ resetSharedResource(void)
 
     for (i = 0; i < numResources; i++) {
 
-	for (j = 0; j < sharedResources[i]->numInstances; j++) {
+        for (j = 0; j < sharedResources[i]->numInstances; j++) {
 
-	    FREEUP(sharedResources[i]->instances[j]->value);
+            FREEUP(sharedResources[i]->instances[j]->value);
 
-	    sharedResources[i]->instances[j]->value =
-		safeSave(sharedResources[i]->instances[j]->lsfValue);
-	}
+            sharedResources[i]->instances[j]->value =
+                safeSave(sharedResources[i]->instances[j]->lsfValue);
+        }
     }
 }
 void
@@ -463,17 +468,17 @@ updSharedResourceByRUNJob(const struct jData* jp)
     }
 
     if (!jp->numHostPtr || jp->hPtr == NULL) {
-	return;
+        return;
     }
 
     if ((resValPtr = getReserveValues(jp->shared->resValPtr,
-				      jp->qPtr->resValPtr)) == NULL) {
+                                      jp->qPtr->resValPtr)) == NULL) {
         return;
     }
 
     for (i = 0; i < GET_INTNUM(allLsInfo->nRes); i++) {
-	resAssign += resValPtr->rusage_bit_map[i];
-	rusage_bit_map[i] = 0;
+        resAssign += resValPtr->rusage_bit_map[i];
+        rusage_bit_map[i] = 0;
     }
 
     if (resAssign == 0)
@@ -483,103 +488,103 @@ updSharedResourceByRUNJob(const struct jData* jp)
     decay = resValPtr->decay;
     if (resValPtr->duration != INFINIT_INT && (duration - jp->runTime <= 0)){
 
-	if ((duration - runTimeSinceResume(jp) <= 0)
-	    || !isReservePreemptResource(resValPtr)) {
+        if ((duration - runTimeSinceResume(jp) <= 0)
+            || !isReservePreemptResource(resValPtr)) {
             return;
         }
         adjForPreemptableResource = TRUE;
     }
 
     for (i = 0; i < jp->numHostPtr; i++) {
-	float load;
-	char  loadString[MAXLSFNAMELEN];
+        float load;
+        char  loadString[MAXLSFNAMELEN];
 
-	if (jp->hPtr[i]->hStatus & HOST_STAT_UNAVAIL)
-	    continue;
+        if (jp->hPtr[i]->hStatus & HOST_STAT_UNAVAIL)
+            continue;
 
         for (ldx = 0; ldx < allLsInfo->nRes; ldx++) {
             float factor;
-	    int isSet;
+            int isSet;
 
 
             if (ldx < allLsInfo->numIndx)
-		continue;
+                continue;
 
-	    if (NOT_NUMERIC(allLsInfo->resTable[ldx]))
-		continue;
+            if (NOT_NUMERIC(allLsInfo->resTable[ldx]))
+                continue;
 
             TEST_BIT(ldx, resValPtr->rusage_bit_map, isSet);
-	    if (isSet == 0)
-	        continue;
+            if (isSet == 0)
+                continue;
 
 
-	    if (adjForPreemptableResource && (!isItPreemptResourceIndex(ldx))) {
-		continue;
+            if (adjForPreemptableResource && (!isItPreemptResourceIndex(ldx))) {
+                continue;
             }
 
 
-	    if (jp->jStatus & JOB_STAT_RUN) {
+            if (jp->jStatus & JOB_STAT_RUN) {
 
-		goto adjustLoadValue;
-
-
-	    } else if (IS_SUSP(jp->jStatus)
-		       &&
-		       ! (allLsInfo->resTable[ldx].flags & RESF_RELEASE)) {
-
-		goto adjustLoadValue;
+                goto adjustLoadValue;
 
 
-	    } else if (IS_SUSP(jp->jStatus)
-		       &&
-		       (jp->jStatus & JOB_STAT_RESERVE)) {
+            } else if (IS_SUSP(jp->jStatus)
+                       &&
+                       ! (allLsInfo->resTable[ldx].flags & RESF_RELEASE)) {
 
-		goto adjustLoadValue;
-
-	    } else {
+                goto adjustLoadValue;
 
 
+            } else if (IS_SUSP(jp->jStatus)
+                       &&
+                       (jp->jStatus & JOB_STAT_RESERVE)) {
 
-		continue;
+                goto adjustLoadValue;
 
-	    }
+            } else {
+
+
+
+                continue;
+
+            }
 
 adjustLoadValue:
 
-	    jackValue = resValPtr->val[ldx];
-	    if (jackValue >= INFINIT_LOAD || jackValue <= -INFINIT_LOAD)
-		continue;
+            jackValue = resValPtr->val[ldx];
+            if (jackValue >= INFINIT_LOAD || jackValue <= -INFINIT_LOAD)
+                continue;
 
-	    if ( (load = getHRValue(allLsInfo->resTable[ldx].name,
-				    jp->hPtr[i],
-				    &instance) ) < 0.0) {
-		continue;
-	    } else {
+            if ( (load = getHRValue(allLsInfo->resTable[ldx].name,
+                                    jp->hPtr[i],
+                                    &instance) ) < 0.0) {
+                continue;
+            } else {
 
-		TEST_BIT (ldx, rusage_bit_map, isSet)
+                TEST_BIT (ldx, rusage_bit_map, isSet)
                     if (isSet == TRUE)
                         continue;
-	    }
+            }
 
-	    if (logclass & LC_SCHED)
-		ls_syslog(LOG_DEBUG,"\
+            if (logclass & LC_SCHED)
+                ls_syslog(LOG_DEBUG,"\
 %s: jobId=<%s>, hostName=<%s>, resource name=<%s>, the specified rusage of the load or instance <%f>, current lsbload or instance value <%f>, duration <%f>, decay <%f>",
-			  __func__,
-			  lsb_jobid2str(jp->jobId),
-			  jp->hPtr[i]->host,
-			  allLsInfo->resTable[ldx].name,
-			  jackValue,
-			  load,
-			  duration,
-			  decay);
+                          __func__,
+                          lsb_jobid2str(jp->jobId),
+                          jp->hPtr[i]->host,
+                          allLsInfo->resTable[ldx].name,
+                          jackValue,
+                          load,
+                          duration,
+                          decay);
 
 
             factor = 1.0;
-	    if (resValPtr->duration != INFINIT_INT) {
-	        if (resValPtr->decay != INFINIT_FLOAT) {
+            if (resValPtr->duration != INFINIT_INT) {
+                if (resValPtr->decay != INFINIT_FLOAT) {
                     float du;
 
-		    if ( isItPreemptResourceIndex(ldx) ) {
+                    if ( isItPreemptResourceIndex(ldx) ) {
                         du = duration - runTimeSinceResume(jp);
                     } else {
                         du = duration - jp->runTime;
@@ -592,36 +597,136 @@ adjustLoadValue:
                 jackValue *= factor;
             }
 
-	    if (allLsInfo->resTable[ldx].orderType == DECR)
-	        jackValue = -jackValue;
+            if (allLsInfo->resTable[ldx].orderType == DECR)
+                jackValue = -jackValue;
 
-	    originalLoad = atof (instance->value);
-	    load = originalLoad + jackValue;
+            originalLoad = atof (instance->value);
+            load = originalLoad + jackValue;
 
-	    if (load < 0.0)
-		load = 0.0;
+            if (load < 0.0)
+                load = 0.0;
 
-	    sprintf (loadString, "%-10.1f", load);
+            sprintf (loadString, "%-10.1f", load);
 
-	    FREEUP (instance->value);
-	    instance->value = safeSave (loadString);
+            FREEUP (instance->value);
+            instance->value = safeSave (loadString);
 
-	    SET_BIT (ldx, rusage_bit_map);
+            SET_BIT (ldx, rusage_bit_map);
 
-	    if (logclass & LC_SCHED)
-		ls_syslog(LOG_DEBUG,"\
+            if (logclass & LC_SCHED)
+                ls_syslog(LOG_DEBUG,"\
 %s: JobId=<%s>, hostname=<%s>, resource name=<%s>, the amount by which the load or the instance has been adjusted <%f>, original load or instance value <%f>, runTime=<%d>, value of the load or the instance after the adjustment <%f>, factor <%f>",
-			  __func__,
-			  lsb_jobid2str(jp->jobId),
-			  jp->hPtr[i]->host,
-			  allLsInfo->resTable[ldx].name,
-			  jackValue,
-			  originalLoad,
-			  jp->runTime,
-			  load,
-			  factor);
+                          __func__,
+                          lsb_jobid2str(jp->jobId),
+                          jp->hPtr[i]->host,
+                          allLsInfo->resTable[ldx].name,
+                          jackValue,
+                          originalLoad,
+                          jp->runTime,
+                          load,
+                          factor);
         }
     }
+}
+
+/* compute_group_slots()
+ */
+static void
+compute_group_slots(int num_res, struct lsSharedResourceInfo *res)
+{
+    int cc;
+    int i;
+    char buf[128];
+
+    /* For all shared resources returned by lim
+     */
+    for (cc = 0; cc < num_res; cc++) {
+
+        /* For all host groups.
+         * Here we can optimize and have a hash table
+         * of host groups having group_slots != NULL.
+         */
+        for (i = 0; i < numofhgroups; i++) {
+            int k;
+            int slots;
+
+            /* if the host group has a slot resource
+             * which name is equal to the shared resource,
+             * its value is the sum of usable slots in the
+             * entire group. If no host is down it is the
+             * sum(MXJ)
+             */
+            if (hostgroups[i]->group_slots == NULL)
+                continue;
+            if (strcmp(hostgroups[i]->group_slots, res[cc].resourceName) != 0)
+                continue;
+
+            slots = get_group_slots(hostgroups[i]);
+            for (k = 0; k < res->nInstances; k++) {
+                _free_(res[cc].instances[k].value);
+                sprintf(buf, "%d", slots);
+                res[cc].instances[k].value = strdup(buf);
+            }
+            break;
+        } /* for (i = 0; i < numofhostgroup; i++) */
+    }
+}
+
+/* get_group_slots()
+ */
+static int
+get_group_slots(struct gData *gPtr)
+{
+    hEnt *ent;
+    sTab stab;
+    char *host;
+    struct hData *hPtr;
+    int slots;
+
+    /* A group with no members is a group whose
+     * members are all hosts.
+     */
+    slots = 0;
+    if (HTAB_NUM_ELEMENTS(&gPtr->memberTab) == 0) {
+
+        for (hPtr = (struct hData *)hostList->forw;
+             hPtr != (void *)hostList;
+             hPtr = hPtr->forw) {
+            if (LSB_HOST_UNUSABLE(hPtr->hStatus)) {
+                ls_syslog(LOG_DEBUG, "\
+%s: group %s host %s status 0x%x unusable", __func__, gPtr->group,
+                          hPtr->host,
+                          hPtr->hStatus);
+                continue;
+            }
+            slots = slots + hPtr->maxJobs;
+        }
+        return slots;
+    }
+
+    slots = 0;
+    ent = h_firstEnt_(&gPtr->memberTab, &stab);
+    while (ent) {
+
+        host = ent->hData;
+        hPtr = getHostData(host);
+        if (LSB_HOST_UNUSABLE(hPtr->hStatus)) {
+                ls_syslog(LOG_DEBUG, "\
+%s: group %s host %s status 0x%x unusable", __func__, gPtr->group,
+                          hPtr->host,
+                          hPtr->hStatus);
+            ent = h_nextEnt_(&stab);
+            continue;
+        }
+        slots = slots + hPtr->maxJobs;
+        ent = h_nextEnt_(&stab);
+    }
+
+    ls_syslog(LOG_DEBUG, "\
+%s: group %s resource %s slots %d", __func__, gPtr->group,
+              gPtr->group_slots, slots);
+
+    return slots;
 }
 
 static void
@@ -657,7 +762,7 @@ freePreemptResource(struct preemptResource *pRPtr)
 
     pRPtr->index = -1;
     for (i=0; i<pRPtr->numInstances; i++) {
-	freePreemptResourceInstance(&pRPtr->pRInstance[i]);
+        freePreemptResourceInstance(&pRPtr->pRInstance[i]);
     }
     pRPtr->numInstances = 0;
     FREEUP(pRPtr->pRInstance);
@@ -676,96 +781,96 @@ newPRMO(char *nameList)
         ls_syslog(LOG_DEBUG3, "%s: Entering ..." , __func__);
 
     if (pRMOPtr != NULL) {
-	delPRMO();
+        delPRMO();
     }
 
     if ((nameList == NULL) || (nameList[0] == '\0')) {
-	return;
+        return;
     }
 
     if ((nameListPtr = lsb_parseLongStr(nameList)) == NULL) {
-	return;
+        return;
     }
 
     nameList[0]='\0';
 
 
     if (nameListPtr->listSize <= 0) {
-	return;
+        return;
     }
     pRMOPtr = (struct objPRMO *) my_malloc(sizeof (struct objPRMO), __func__);
     pRMOPtr->numPreemptResources = 0;
     pRMOPtr->pResources = (struct preemptResource *)
-	my_malloc(nameListPtr->listSize * sizeof (struct preemptResource), __func__);
+        my_malloc(nameListPtr->listSize * sizeof (struct preemptResource), __func__);
 
 
     for (i=0; i<nameListPtr->listSize; i++) {
-	if (nameListPtr->counter[i] > 1) {
+        if (nameListPtr->counter[i] > 1) {
             ls_syslog(LOG_WARNING, I18N(7707,
-    	        "Duplicate preemptable resource names (%s) defined, take one only."),/* catgets 7707*/
-		nameListPtr->names[i]);
+                "Duplicate preemptable resource names (%s) defined, take one only."),/* catgets 7707*/
+                nameListPtr->names[i]);
             lsberrno = LSBE_CONF_WARNING;
 
-	}
-	if ((index = resName2resIndex(nameListPtr->names[i])) < 0) {
+        }
+        if ((index = resName2resIndex(nameListPtr->names[i])) < 0) {
             ls_syslog(LOG_ERR, I18N(7708,
-    	        "Unknown preemptable resource name (%s) defined, ignored."),/* catgets 7708*/
-		nameListPtr->names[i]);
+                "Unknown preemptable resource name (%s) defined, ignored."),/* catgets 7708*/
+                nameListPtr->names[i]);
             lsberrno = LSBE_CONF_WARNING;
-	    continue;
-	}
+            continue;
+        }
 
 
         if (index < allLsInfo->numIndx) {
             if (allLsInfo->resTable[index].flags & RESF_BUILTIN) {
                 ls_syslog(LOG_ERR, I18N(7709,
-    	            "Built-in load index (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7709*/
-		    nameListPtr->names[i]);
-	    } else {
+                    "Built-in load index (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7709*/
+                    nameListPtr->names[i]);
+            } else {
                 ls_syslog(LOG_ERR, I18N(7714,
-    	            "Host load index (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7714*/
-		    nameListPtr->names[i]);
-	    }
+                    "Host load index (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7714*/
+                    nameListPtr->names[i]);
+            }
             lsberrno = LSBE_CONF_WARNING;
-	    continue;
-	}
+            continue;
+        }
 
 
-	if (NOT_NUMERIC(allLsInfo->resTable[index])) {
+        if (NOT_NUMERIC(allLsInfo->resTable[index])) {
             ls_syslog(LOG_ERR, I18N(7710,
-    	        "Non-numeric resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7710*/
-		nameListPtr->names[i]);
+                "Non-numeric resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7710*/
+                nameListPtr->names[i]);
             lsberrno = LSBE_CONF_WARNING;
-	    continue;
-	}
+            continue;
+        }
 
 
         if (!(allLsInfo->resTable[index].flags & RESF_RELEASE)) {
             ls_syslog(LOG_ERR, I18N(7711,
-    	        "Non-releasable resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7711*/
-		nameListPtr->names[i]);
+                "Non-releasable resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7711*/
+                nameListPtr->names[i]);
             lsberrno = LSBE_CONF_WARNING;
-	    continue;
-	}
+            continue;
+        }
 
 
-	if (allLsInfo->resTable[index].orderType != DECR) {
+        if (allLsInfo->resTable[index].orderType != DECR) {
             ls_syslog(LOG_ERR, I18N(7712,
-    	        "Increasing resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7712*/
-		nameListPtr->names[i]);
+                "Increasing resource (%s) can't be defined as a preemptable resource, ignored."),/* catgets 7712*/
+                nameListPtr->names[i]);
             lsberrno = LSBE_CONF_WARNING;
-	    continue;
-	}
+            continue;
+        }
 
 
-	if (addPreemptableResource(index) == 0) {
+        if (addPreemptableResource(index) == 0) {
 
-	    if (addedNum > 0) {
-		strcat(nameList, " ");
-	    }
-	    strcat(nameList, nameListPtr->names[i]);
-	    addedNum++;
-	}
+            if (addedNum > 0) {
+                strcat(nameList, " ");
+            }
+            strcat(nameList, nameListPtr->names[i]);
+            addedNum++;
+        }
     }
 
     return;
@@ -777,11 +882,11 @@ void delPRMO()
     int i;
 
     if (pRMOPtr == NULL) {
-	return;
+        return;
     }
 
     for (i=0; i<pRMOPtr->numPreemptResources; i++) {
-	freePreemptResource(&pRMOPtr->pResources[i]);
+        freePreemptResource(&pRMOPtr->pResources[i]);
     }
     FREEUP(pRMOPtr->pResources);
     FREEUP(pRMOPtr);
@@ -806,11 +911,11 @@ void mbdReconfPRMO()
 
     for (i = SJL; i <= PJL; i++) {
         for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
-	    if (JOB_PREEMPT_WAIT(jp)) {
+            if (JOB_PREEMPT_WAIT(jp)) {
 
-	        deallocReservePreemptResources(jp);
-	    }
-	}
+                deallocReservePreemptResources(jp);
+            }
+        }
     }
 }
 
@@ -823,32 +928,32 @@ void resetPRMOValues(int valueSelectFlag)
     }
 
     for (i = 0; i < pRMOPtr->numPreemptResources; i++) {
-	struct preemptResource *pRPtr;
+        struct preemptResource *pRPtr;
 
-	pRPtr = &(pRMOPtr->pResources[i]);
+        pRPtr = &(pRMOPtr->pResources[i]);
 
         for (j = 0; j < pRPtr->numInstances; j++) {
-	    struct preemptResourceInstance *pRIPtr;
+            struct preemptResourceInstance *pRIPtr;
 
-	    pRIPtr = &(pRPtr->pRInstance[j]);
+            pRIPtr = &(pRPtr->pRInstance[j]);
 
             for (k = 0; k < pRIPtr->nQPRValues; k++) {
-		if ((valueSelectFlag == PRMO_ALLVALUES) ||
-		    (valueSelectFlag & PRMO_USEDBYRUNJOB)) {
-	            pRIPtr->qPRValues[k].usedByRunJob = 0.0;
-		}
-		if ((valueSelectFlag == PRMO_ALLVALUES) ||
-		    (valueSelectFlag & PRMO_RESERVEDBYPREEMPTWAIT)) {
-	            pRIPtr->qPRValues[k].reservedByPreemptWait = 0.0;
-		}
-		if ((valueSelectFlag == PRMO_ALLVALUES) ||
-		    (valueSelectFlag & PRMO_AVAILABLEBYPREEMPT)) {
-	            pRIPtr->qPRValues[k].availableByPreempt = 0.0;
-		}
-		if ((valueSelectFlag == PRMO_ALLVALUES) ||
-		    (valueSelectFlag & PRMO_PREEMPTINGRUNJOB)) {
-	            pRIPtr->qPRValues[k].preemptingRunJob = 0.0;
-		}
+                if ((valueSelectFlag == PRMO_ALLVALUES) ||
+                    (valueSelectFlag & PRMO_USEDBYRUNJOB)) {
+                    pRIPtr->qPRValues[k].usedByRunJob = 0.0;
+                }
+                if ((valueSelectFlag == PRMO_ALLVALUES) ||
+                    (valueSelectFlag & PRMO_RESERVEDBYPREEMPTWAIT)) {
+                    pRIPtr->qPRValues[k].reservedByPreemptWait = 0.0;
+                }
+                if ((valueSelectFlag == PRMO_ALLVALUES) ||
+                    (valueSelectFlag & PRMO_AVAILABLEBYPREEMPT)) {
+                    pRIPtr->qPRValues[k].availableByPreempt = 0.0;
+                }
+                if ((valueSelectFlag == PRMO_ALLVALUES) ||
+                    (valueSelectFlag & PRMO_PREEMPTINGRUNJOB)) {
+                    pRIPtr->qPRValues[k].preemptingRunJob = 0.0;
+                }
             }
         }
     }
@@ -869,11 +974,11 @@ struct resourceInstance **instance)
 
 
     if (currentValue < 0.0 || currentValue == INFINIT_LOAD) {
-	return(currentValue);
+        return(currentValue);
     }
 
     if ((pRInstancePtr = findPRInstance(index, hPtr)) == NULL) {
-	return(currentValue);
+        return(currentValue);
     }
 
     return(roundFloatValue(currentValue - reservedValue));
@@ -882,7 +987,7 @@ struct resourceInstance **instance)
 
 float
 takeAvailableByPreemptPRHQValue(int index, float value, struct hData *hPtr,
-				struct qData *qPtr)
+                                struct qData *qPtr)
 {
     return checkOrTakeAvailableByPreemptPRHQValue(index, value, hPtr, qPtr, 1);
 }
@@ -928,7 +1033,7 @@ struct qData *qPtr)
     }
     qPRVPtr->usedByRunJob = roundFloatValue(qPRVPtr->usedByRunJob-value);
     if (qPRVPtr->usedByRunJob < 0.1) {
-	qPRVPtr->usedByRunJob = 0.0;
+        qPRVPtr->usedByRunJob = 0.0;
     }
 
     return;
@@ -945,7 +1050,7 @@ struct qData *qPtr)
         return;
     }
     qPRVPtr->reservedByPreemptWait =
-	roundFloatValue(qPRVPtr->reservedByPreemptWait+value);
+        roundFloatValue(qPRVPtr->reservedByPreemptWait+value);
 
     return;
 }
@@ -960,9 +1065,9 @@ struct qData *qPtr)
         return;
     }
     qPRVPtr->reservedByPreemptWait =
-	roundFloatValue(qPRVPtr->reservedByPreemptWait-value);
+        roundFloatValue(qPRVPtr->reservedByPreemptWait-value);
     if (qPRVPtr->reservedByPreemptWait < 0.1) {
-	qPRVPtr->reservedByPreemptWait = 0.0;
+        qPRVPtr->reservedByPreemptWait = 0.0;
     }
 
     return;
@@ -992,7 +1097,7 @@ struct qData *qPtr)
         return;
     }
     qPRVPtr->availableByPreempt =
-	roundFloatValue(qPRVPtr->availableByPreempt+value);
+        roundFloatValue(qPRVPtr->availableByPreempt+value);
 
     return;
 
@@ -1008,7 +1113,7 @@ struct qData *qPtr)
         return;
     }
     qPRVPtr->availableByPreempt =
-	roundFloatValue(qPRVPtr->availableByPreempt-value);
+        roundFloatValue(qPRVPtr->availableByPreempt-value);
 
     return;
 }
@@ -1032,9 +1137,9 @@ resName2resIndex(char *resName)
     int i;
 
     for (i = 0; i < allLsInfo->nRes; i++) {
-	if (!strcmp(allLsInfo->resTable[i].name, resName)) {
+        if (!strcmp(allLsInfo->resTable[i].name, resName)) {
             return(i);
-	}
+        }
     }
 
     return -1;
@@ -1059,10 +1164,10 @@ isItPreemptResourceIndex(int index)
     }
 
     for (i = 0; i < pRMOPtr->numPreemptResources; i++) {
-	if (pRMOPtr->pResources[i].index == index) {
+        if (pRMOPtr->pResources[i].index == index) {
 
-	    return(1);
-	}
+            return(1);
+        }
     }
 
     return 0;
@@ -1078,11 +1183,11 @@ isReservePreemptResource(struct  resVal *resValPtr)
     }
 
     FORALL_PRMPT_RSRCS(resn) {
-	int valSet = FALSE;
-	TEST_BIT(resn, resValPtr->rusage_bit_map, valSet);
-	if ((valSet != 0) && (resValPtr->val[resn] > 0.0)) {
+        int valSet = FALSE;
+        TEST_BIT(resn, resValPtr->rusage_bit_map, valSet);
+        if ((valSet != 0) && (resValPtr->val[resn] > 0.0)) {
             return(1);
-	}
+        }
     } ENDFORALL_PRMPT_RSRCS;
 
     return 0;
@@ -1098,52 +1203,52 @@ addPreemptableResource(int index)
     int sharedIndex = -1;
 
     if (pRMOPtr == NULL) {
-	return -1;
+        return -1;
     }
 
 
     for (i=0; i<pRMOPtr->numPreemptResources; i++) {
         if (pRMOPtr->pResources[i].index == index) {
             ls_syslog(LOG_INFO, I18N(7707,
-    	        "Duplicated preemptable resource name (%s) defined, ignored."),/* catgets 7707*/
-	        allLsInfo->resTable[index].name);
+                "Duplicated preemptable resource name (%s) defined, ignored."),/* catgets 7707*/
+                allLsInfo->resTable[index].name);
             lsberrno = LSBE_CONF_WARNING;
-	    return -1;
-	}
+            return -1;
+        }
     }
 
 
     for (i=0; i<numResources; i++) {
         if (!strcmp(sharedResources[i]->resourceName,
-	    allLsInfo->resTable[index].name)) {
-	    sharedIndex = i;
-	    break;
-	}
+            allLsInfo->resTable[index].name)) {
+            sharedIndex = i;
+            break;
+        }
 
     }
 
     if (sharedIndex < 0) {
         ls_syslog(LOG_ERR, I18N(7713,
             "Preemptable resource name (%s) is not a shared resource, ignored."),/* catgets 7713*/
-	    allLsInfo->resTable[index].name);
+            allLsInfo->resTable[index].name);
         lsberrno = LSBE_CONF_WARNING;
-	return -1;
+        return -1;
     }
 
     loc = pRMOPtr->numPreemptResources;
     pRMOPtr->pResources[loc].index = index;
     pRMOPtr->pResources[loc].numInstances =
-	sharedResources[sharedIndex]->numInstances;
+        sharedResources[sharedIndex]->numInstances;
     pRMOPtr->pResources[loc].pRInstance =
-	(struct preemptResourceInstance *)
-	my_malloc ( sharedResources[sharedIndex]->numInstances *
-	    sizeof(struct preemptResourceInstance), fname);
+        (struct preemptResourceInstance *)
+        my_malloc ( sharedResources[sharedIndex]->numInstances *
+            sizeof(struct preemptResourceInstance), fname);
 
     for (i=0; i<pRMOPtr->pResources[loc].numInstances; i++) {
-	pRMOPtr->pResources[loc].pRInstance[i].instancePtr =
-	    sharedResources[sharedIndex]->instances[i];
-	pRMOPtr->pResources[loc].pRInstance[i].nQPRValues  = 0;
-	pRMOPtr->pResources[loc].pRInstance[i].qPRValues   = NULL;
+        pRMOPtr->pResources[loc].pRInstance[i].instancePtr =
+            sharedResources[sharedIndex]->instances[i];
+        pRMOPtr->pResources[loc].pRInstance[i].nQPRValues  = 0;
+        pRMOPtr->pResources[loc].pRInstance[i].qPRValues   = NULL;
     }
     pRMOPtr->numPreemptResources++;
 
@@ -1163,22 +1268,22 @@ findPRInstance(int index, struct hData *hPtr)
 
     for (i = 0; i < pRMOPtr->numPreemptResources; i++) {
 
-	if (pRMOPtr->pResources[i].index == index) {
-	    pRPtr = &(pRMOPtr->pResources[i]);
-	    break;
-	}
+        if (pRMOPtr->pResources[i].index == index) {
+            pRPtr = &(pRMOPtr->pResources[i]);
+            break;
+        }
     }
 
     if (pRPtr == NULL) {
-	return NULL;
+        return NULL;
     }
 
     for (i = 0; i < pRPtr->numInstances; i++) {
         for (j = 0; j < pRPtr->pRInstance[i].instancePtr->nHosts; j++) {
-	    if (pRPtr->pRInstance[i].instancePtr->hosts[j] == hPtr) {
+            if (pRPtr->pRInstance[i].instancePtr->hosts[j] == hPtr) {
                 return(&(pRPtr->pRInstance[i]));
-	    }
-	}
+            }
+        }
     }
 
     return NULL;
@@ -1192,16 +1297,16 @@ findQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
     int i;
 
     if ((pRIPtr = findPRInstance(index, hPtr)) == NULL) {
-	return NULL;
+        return NULL;
     }
 
     for (i = 0; i < pRIPtr->nQPRValues; i++) {
-	if (pRIPtr->qPRValues[i].qData->priority > qPtr->priority) {
-	  break;
-	}
-	if (pRIPtr->qPRValues[i].qData == qPtr) {
-	    return(&(pRIPtr->qPRValues[i]));
-	}
+        if (pRIPtr->qPRValues[i].qData->priority > qPtr->priority) {
+          break;
+        }
+        if (pRIPtr->qPRValues[i].qData == qPtr) {
+            return(&(pRIPtr->qPRValues[i]));
+        }
     }
     return NULL;
 
@@ -1215,19 +1320,19 @@ addQPRValues(int index, struct hData *hPtr, struct qData *qPtr)
     int i, pos;
 
     if ((pRIPtr = findPRInstance(index, hPtr)) == NULL) {
-	return NULL;
+        return NULL;
     }
 
 
     pos = pRIPtr->nQPRValues;
     for (i = 0; i < pRIPtr->nQPRValues; i++) {
-	if (pRIPtr->qPRValues[i].qData->priority > qPtr->priority) {
-	  pos = i;
-	  break;
-	}
-	if (pRIPtr->qPRValues[i].qData == qPtr) {
-	    return(&(pRIPtr->qPRValues[i]));
-	}
+        if (pRIPtr->qPRValues[i].qData->priority > qPtr->priority) {
+          pos = i;
+          break;
+        }
+        if (pRIPtr->qPRValues[i].qData == qPtr) {
+            return(&(pRIPtr->qPRValues[i]));
+        }
     }
 
 
@@ -1271,7 +1376,7 @@ void printPRMOValues()
     int i, j, k;
 
     if (!(logclass & LC_SCHED)) {
-	return;
+        return;
     }
 
     if (pRMOPtr == NULL) {
@@ -1284,7 +1389,7 @@ void printPRMOValues()
         pRPtr = &(pRMOPtr->pResources[i]);
         ls_syslog(LOG_DEBUG2,
             "%s: preemptable resource(%s, %d) has %d instances:",
-	    fname,
+            fname,
             allLsInfo->resTable[pRPtr->index].name,
             pRPtr->index,
             pRPtr->numInstances);
@@ -1296,13 +1401,13 @@ void printPRMOValues()
             ls_syslog(LOG_DEBUG2,
                 "%s: instance(%d) has %d queues:",
                 fname,
-		j,
+                j,
                 pRIPtr->nQPRValues);
 
             for (k = 0; k < pRIPtr->nQPRValues; k++) {
                 ls_syslog(LOG_DEBUG2,
                     "%s: queue(%s) has UBRJ-%f, RBPW-%f, ABP-%f, PRJ-%f.",
-		    fname,
+                    fname,
                     pRIPtr->qPRValues[k].qData->queue,
                     pRIPtr->qPRValues[k].usedByRunJob,
                     pRIPtr->qPRValues[k].reservedByPreemptWait,
@@ -1323,34 +1428,34 @@ isHostsInSameInstance(int index, struct hData *hPtr1, struct hData *hPtr2)
     int         j;
 
     if (hPtr1 == hPtr2) {
-	return true;
+        return true;
     }
 
     for (i = 0; i < numResources; i++) {
         if (strcmp(allLsInfo->resTable[index].name,
-	    sharedResources[i]->resourceName)) {
-	    continue;
-	}
-	for (j = 0; j < sharedResources[i]->numInstances; j++) {
-	    int found = 0;
-	    int k;
+            sharedResources[i]->resourceName)) {
+            continue;
+        }
+        for (j = 0; j < sharedResources[i]->numInstances; j++) {
+            int found = 0;
+            int k;
 
-	    for (k = 0; k < sharedResources[i]->instances[j]->nHosts; k++) {
-		if (sharedResources[i]->instances[j]->hosts[k] == hPtr1) {
-		    found++;
-		}
-		if (sharedResources[i]->instances[j]->hosts[k] == hPtr2) {
-		    found++;
-		}
-	    }
+            for (k = 0; k < sharedResources[i]->instances[j]->nHosts; k++) {
+                if (sharedResources[i]->instances[j]->hosts[k] == hPtr1) {
+                    found++;
+                }
+                if (sharedResources[i]->instances[j]->hosts[k] == hPtr2) {
+                    found++;
+                }
+            }
             if (found >= 2) {
-		return true;
-	    }
+                return true;
+            }
             if (found == 1) {
-		return false;
-	    }
-	}
-	return false;
+                return false;
+            }
+        }
+        return false;
     }
     return false;
 }

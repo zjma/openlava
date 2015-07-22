@@ -1451,7 +1451,8 @@ xdr_jobPeekReply(XDR *xdrs, struct jobPeekReply *jobPeekReply,
 
 
 bool_t
-xdr_groupInfoReply(XDR *xdrs, struct groupInfoReply *groupInfoReply,
+xdr_groupInfoReply(XDR *xdrs,
+                   struct groupInfoReply *groupInfoReply,
                    struct LSFHeader *hdr)
 {
     int i;
@@ -1460,6 +1461,7 @@ xdr_groupInfoReply(XDR *xdrs, struct groupInfoReply *groupInfoReply,
         for (i = 0; i < groupInfoReply->numGroups; i++) {
             FREEUP(groupInfoReply->groups[i].group);
             FREEUP(groupInfoReply->groups[i].memberList);
+            FREEUP(groupInfoReply->groups[i].group_slots);
         }
         FREEUP(groupInfoReply->groups);
         groupInfoReply->numGroups = 0;
@@ -1472,21 +1474,17 @@ xdr_groupInfoReply(XDR *xdrs, struct groupInfoReply *groupInfoReply,
         groupInfoReply->groups = NULL;
     }
 
-
     if (!xdr_int(xdrs, &(groupInfoReply->numGroups)))
         return false;
 
 
     if (xdrs->x_op == XDR_DECODE &&  groupInfoReply->numGroups != 0) {
 
-        groupInfoReply->groups =
-            (struct groupInfoEnt *)calloc(groupInfoReply->numGroups,
-                                          sizeof(struct groupInfoEnt));
+        groupInfoReply->groups = calloc(groupInfoReply->numGroups,
+                                        sizeof(struct groupInfoEnt));
         if (groupInfoReply->groups == NULL)
             return false;
-
     }
-
 
     for (i = 0; i < groupInfoReply->numGroups; i++) {
 
@@ -1514,7 +1512,6 @@ xdr_groupInfoEnt(XDR *xdrs, struct groupInfoEnt *gInfo,
         gInfo->memberList = NULL;
     }
 
-
     if (!xdr_var_string(xdrs, &(gInfo->group)) ||
         !xdr_var_string(xdrs, &(gInfo->memberList)))
         return false;
@@ -1522,7 +1519,11 @@ xdr_groupInfoEnt(XDR *xdrs, struct groupInfoEnt *gInfo,
     if (xdrs->x_op == XDR_FREE) {
         FREEUP(gInfo->group);
         FREEUP(gInfo->memberList);
+        FREEUP(gInfo->group_slots);
     }
+
+    if (! xdr_var_string(xdrs, &gInfo->group_slots))
+        return false;
 
     return true;
 

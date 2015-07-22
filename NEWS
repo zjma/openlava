@@ -12,6 +12,11 @@ Release notes for OpenLava versions
    This resource allows to pack or stripe jobs on hosts.
 -- Developed the rusage or functionality. -R "rusage[x=1||y=2]".
 -- Introduced LSB_PROJECT_NAME variable in job and preexec environment.
+-- Developed the host group based slot resources. A host group can have
+   a resource which represents the number of available slots in that
+   group. An oridnary shared resource is configured in the base
+   files but also in lsb.hosts in the group section. No elim is needed
+   to collect this resource as mbatchd computes the slots automatically.
 
 3.0.1
 ======

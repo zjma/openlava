@@ -664,10 +664,11 @@ extern struct sbdNode sbdNodeList;
 extern struct parameterInfo *mbdParams;
 
 struct gData {
-    char     *group;
-    hTab     memberTab;
-    int      numGroups;
-    struct   gData *gPtr[MAX_GROUPS];
+    char *group;
+    hTab memberTab;
+    int  numGroups;
+    struct gData *gPtr[MAX_GROUPS];
+    char *group_slots;
 };
 
 typedef enum {

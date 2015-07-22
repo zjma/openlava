@@ -31,6 +31,7 @@ struct group_acct {
     char *group;
     char *memberList;
     char *user_shares;
+    char *group_slots;
 };
 
 /* sshare_make_tree()

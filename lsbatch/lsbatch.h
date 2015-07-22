@@ -65,6 +65,13 @@
 
 #define LSB_HOST_UNAVAIL(status)     ((status & HOST_STAT_UNAVAIL) != 0)
 
+#define LSB_HOST_UNUSABLE(status)  ((status & (HOST_STAT_WIND |      \
+                                               HOST_STAT_DISABLED | \
+                                               HOST_STAT_LOCKED |   \
+                                               HOST_STAT_LOCKED_MASTER | \
+                                               HOST_STAT_NO_LIM | \
+                                               HOST_STAT_UNREACH | \
+                                               HOST_STAT_UNAVAIL)) != 0)
 #define HOST_BUSY_NOT          0x000
 #define HOST_BUSY_R15S         0x001
 #define HOST_BUSY_R1M          0x002
@@ -849,10 +856,14 @@ struct loadInfoEnt {
 #define GRP_ALL           0x10
 #define GRP_SHARES        0x40
 
+/* Anytime this structure is changed group_acct in
+ * sshare must change as well.
+ */
 struct groupInfoEnt {
     char *group;
     char *memberList;
     char *user_shares;
+    char *group_slots;
 };
 
 struct runJobRequest {

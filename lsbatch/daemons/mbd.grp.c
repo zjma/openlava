@@ -48,12 +48,12 @@ LS_BITSET_T                    *uGrpAllSet;
 LS_BITSET_T                    *uGrpAllAncestorSet;
 
 int
-checkGroups (struct infoReq *groupInfoReq,
-	     struct groupInfoReply *groupInfoReply)
+checkGroups(struct infoReq *groupInfoReq,
+            struct groupInfoReply *groupInfoReply)
 {
-    int                   recursive;
-    struct gData **        gplist;
-    int                    ngrp;
+    int recursive;
+    struct gData **gplist;
+    int ngrp;
 
     if (groupInfoReq->options & HOST_GRP) {
         gplist = hostgroups;
@@ -902,7 +902,8 @@ getAllHostGroup(struct gData **gplist, int ngrp, int recursive,
 	if (SKIP_HOST_GROUP(gplist[i]->group)) {
 	    continue;
 	}
-	copyHostGroup(gplist[i], recursive,
+	copyHostGroup(gplist[i],
+                      recursive,
 		      &(groupInfoEnt[count]));
 	count++;
     }
@@ -940,34 +941,33 @@ getSpecifiedHostGroup(char **grpName, int numGrpName, struct gData **gplist,
 }
 
 static void
-copyHostGroup(struct gData *grp, int recursive,
+copyHostGroup(struct gData *grp,
+              int recursive,
 	      struct groupInfoEnt *groupInfoEnt)
 {
     groupInfoEnt->group = grp->group;
     groupInfoEnt->memberList = getGroupMembers(grp, recursive);
+    groupInfoEnt->group_slots = grp->group_slots;
 }
 
 int
 sizeofGroupInfoReply(struct groupInfoReply *ugroups)
 {
-    int              len;
-    int              i;
+    int len;
+    int i;
 
-    len = 0;
-
-
-    len += ALIGNWORD_(sizeof(struct groupInfoReply)
-		      + ugroups->numGroups * sizeof(struct groupInfoEnt)
-		      + ugroups->numGroups * NET_INTSIZE_);
+    len = ALIGNWORD_(sizeof(struct groupInfoReply)
+                     + ugroups->numGroups * sizeof(struct groupInfoEnt)
+                     + ugroups->numGroups * NET_INTSIZE_);
 
     for (i = 0; i < ugroups->numGroups; i++) {
-	struct groupInfoEnt      *ent;
+	struct groupInfoEnt *ent;
 
 	ent = &(ugroups->groups[i]);
-
-
 	len += ALIGNWORD_(strlen(ent->group) + 1);
 	len += ALIGNWORD_(strlen(ent->memberList) + 1);
+        if (ent->group_slots)
+            len += ALIGNWORD_(strlen(ent->group_slots) + 1);
     }
 
     return(len);
