@@ -1,0 +1,116 @@
+
+Host Group Resource
+-------------------
+
+An lsbatch host group can have its number of available slots represented
+as a shared resource. The sum all MXJ of the hosts belonging to a given
+group is the value of this resource. The value of this resource is evaluated
+at the beginning of every scheduling cycle when mbatchd updates its
+shared resources with lim. Hosts that are unavailable, down or closed
+by admin don't have their slots counted in.
+
+Configuration
+-------------
+
+The configuration is very similar to what needs to be done today to
+configure a shared resource but with two exceptions:
+1) no elim is needed
+2) a new configuration must be done in lsb.hosts
+
+In what follows we use this example:
+we have 2 hosts 'lasagna' and 'sugo', 3 host groups group0, group1
+and group3 and 3 queues normal, sys and zz.
+We have 3 slots resources: free_slots, free_slots1 and free_slots2.
+
+Base configuration
+-------------------
+
+In lsf.shared and in lsf.cluster.<clustername> the configurations
+is as usual.
+
+lsf.shared:
+
+Begin Resource
+RESOURCENAME    TYPE    INTERVAL INCREASING  DESCRIPTION        # Keywords
+   free_slots   Numeric 60       N           (free slots)
+   free_slots2  Numeric 60       N           (free slots)
+   free_slots3  Numeric 60       N           (free slots)
+End Resource
+
+lsf.cluster.<clustername>:
+
+Begin ResourceMap
+RESOURCENAME  LOCATION
+ free_slots     [lasagna]
+ free_slots2     [sugo]
+ free_slots3     [all]
+End ResourceMap
+
+NOTE: the location of the shared resource must be specified
+correctly only those hosts that have access to resource must
+be listed under location or some other hosts can possible get
+access to the resource.
+
+lsb.hosts:
+
+Begin HostGroup
+GROUP_NAME    GROUP_MEMBER  GROUP_SLOT
+group0        (lasagna)       (free_slots)
+group1        (sugo)          (free_slots2)
+group3        (all)           (free_slots3)
+End HostGroup
+
+This illustrates the concept further. Only hosts belonging to the group0
+composed of host lasagna must have access to free_slots, only hosts
+belonging to group1 composed of host sugo must have access to free_slots2,
+as opposite the group3 which includes all hosts has access to free_slots3,
+thi means that both hosts lasgna and sugo have access to free_slots3 using
+the queue which has access to group3.
+
+Runtime example
+----------------
+
+Start all daemons. From lim we see the shared resources but without
+any value while the mbatch has computed the slot resource.
+
+->lsload -s;bhosts -s
+RESOURCE                                VALUE       LOCATION
+free_slots                                  -       lasagna
+free_slots2                                 -       sugo
+free_slots3                                 -       lasagna sugo
+RESOURCE                 TOTAL       RESERVED       LOCATION
+free_slots                   4            0.0       lasagna
+free_slots2                  7            0.0       sugo
+free_slots3                 11            0.0       lasagna sugo
+
+Submit a job to queue normal which has access to group0 only and which
+can use only the free_slots index.
+
+As soon as the job starts the counters are updated as expected:
+
+->bhosts -s
+RESOURCE                 TOTAL       RESERVED       LOCATION
+free_slots                 3.0            1.0       lasagna
+free_slots2                  7            0.0       sugo
+free_slots3                 11            0.0       lasagna sugo
+
+As a inverse example consider submitting a job to queue sys which has
+access to group1 and free_slots2 only. If the job is requesting
+free_slots it must pend.
+
+ ->bsub -q sys -o /dev/null -R "rusage[free_slots=1]" sleep 300
+
+Indeed the job stays pend as the host group does not have access
+to the requested resource.
+
+->bjobs -p
+JOBID   USER    STAT  QUEUE       FROM_HOST      JOB_NAME           SUBMIT_TIME
+1644    david   PEND  sys         lasagna        sleep 300          Jul 22 15:08
+ Job's requirements for reserving resource (free_slots) not satisfied: 1 host;
+
+It is enough to switch the job to the normal queue which has access
+to the free_slot resource and the job will start, or modify the
+rusage to use free_slots2.
+
+This is an overwie of the new feature.
+
