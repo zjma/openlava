@@ -24,7 +24,6 @@
 #include "lib.h"
 #include "../lib/lproto.h"
 
-
 #define LSF_LOG_MASK   7
 #define DEF_LOG_MASK   LOG_INFO
 #define DEF_LOG_MASK_NAME   "LOG_WARNING"
@@ -48,6 +47,8 @@ static char logfile[MAXPATHLEN];
 static char logident[10];
 static int logmask;
 static enum {LOGTO_SYS, LOGTO_FILE, LOGTO_STDERR} log_dest;
+static pthread_mutex_t mtx;
+
 static int openLogFile(const char *, char *);
 
 char *
@@ -83,6 +84,13 @@ ls_openlog(const char *ident,
            char *logMask)
 {
     char *msg = NULL;
+
+    /* Lock access to ls_syslog() as sometimes
+     * signal handler is run in printf and the
+     * signal handler also printf and deadlock
+     * happen... old lsf vice.
+     */
+    pthread_mutex_init(&mtx, NULL);
 
     strncpy(logident, ident, 9);
     logident[9] = '\0';
@@ -218,6 +226,10 @@ ls_syslog(int level, const char *fmt, ...)
     static char lastMsg[16384];
     static int  counter = 0;
 
+    /* Serialize access to printf
+     */
+    pthread_mutex_lock(&mtx);
+
     va_start(ap, fmt);
 
     if (log_dest == LOGTO_STDERR) {
@@ -316,6 +328,7 @@ ls_syslog(int level, const char *fmt, ...)
     }
 
     va_end(ap);
+    pthread_mutex_unlock(&mtx);
 }
 
 void

@@ -17,6 +17,7 @@ Release notes for OpenLava versions
    group. An oridnary shared resource is configured in the base
    files but also in lsb.hosts in the group section. No elim is needed
    to collect this resource as mbatchd computes the slots automatically.
+-- Introduce a mutex to protect critical section in the syslog library.
 
 3.0.1
 ======

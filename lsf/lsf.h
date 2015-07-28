@@ -43,6 +43,7 @@
 #include <pwd.h>
 #include <dlfcn.h>
 #include <limits.h>
+#include <pthread.h>
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/statvfs.h>
