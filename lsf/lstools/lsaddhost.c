@@ -26,7 +26,7 @@ usage(void)
     fprintf(stderr, "\
 lsaddhost: [-h] [-V] -m model -t type -f cpuFactor \
 -D numDisks -R \"resource list\" -w \"windows\" \
--b \"busy onlist \" [-v] [-p port] hostname\n");
+-b \"busy onlist \" -M \"MXJ\" [-v] [-p port] hostname\n");
 }
 static int getResList(struct hostEntry *, const char *);
 static int getBusyThr(struct hostEntry *, const char *);
@@ -36,7 +36,7 @@ static char buf[BUFSIZ];
 
 /* Da main()
  *
- * lsadd -m Inteli5 -t linux -f 100 -D 5 -R "" -w "" -b "" sofia
+ * lsadd -m Inteli5 -t linux -f 100 -D 5 -R "" -w "" -b "" -M 2 sofia
  *
  */
 int
@@ -58,7 +58,7 @@ main(int argc, char **argv)
     for (cc = 0; cc < 11; cc++)
         hPtr->busyThreshold[cc] = INFINIT_LOAD;
 
-    while ((cc = getopt(argc, argv, "Vhvm:t:f:D:R:w:b:p:")) != EOF) {
+    while ((cc = getopt(argc, argv, "Vhvm:t:f:D:R:w:b:p:M:")) != EOF) {
         switch (cc) {
             case 'V':
                 fputs(_LS_VERSION_, stderr);
@@ -91,6 +91,12 @@ main(int argc, char **argv)
             case 'p':
                 port = atoi(optarg);
                 break;
+            case 'M':
+                /* Overwrite rex priority using it
+                 * for batch MXJ.
+                 */
+                hPtr->rexPriority = atoi(optarg);
+                break;
             case 'h':
             case '?':
             default:
@@ -104,6 +110,9 @@ main(int argc, char **argv)
         return -1;
     }
 
+    /* Use Gethostbyname_() which reads the
+     * openlava hosts file.
+     */
     hp = Gethostbyname_(argv[optind]);
     if (hp == NULL) {
         fprintf(stderr, "\
