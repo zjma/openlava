@@ -54,7 +54,7 @@ main(int argc, char **argv)
         return -1;
     }
 
-    hp = gethostbyname(argv[optind]);
+    hp = Gethostbyname_(argv[optind]);
     if (hp == NULL) {
         fprintf(stderr, "\
 %s: invalid hostname %s\n", __func__, argv[optind]);
