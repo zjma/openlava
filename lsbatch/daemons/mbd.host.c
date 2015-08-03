@@ -19,11 +19,6 @@
 
 #include "mbd.h"
 
-extern void addHost(struct hostInfo *lsf,
-                    struct hData *thPtr,
-                    char *filename,
-                    int override);
-
 static void   initHostStat(void);
 static void   hostJobs(struct hData *, int);
 static void   hostQueues(struct hData *, int);
@@ -1654,6 +1649,10 @@ hasResReserve(struct resVal *resVal)
 }
 
 /* addMigrantHost()
+ *
+ * This function follows the same
+ * flow as addHostData() in mbd.init.c
+ *
  */
 static void
 addMigrantHost(struct hostInfo *info)
@@ -1663,15 +1662,16 @@ addMigrantHost(struct hostInfo *info)
     initHData(&hPtr);
     hPtr.host = strdup(info->hostName);
     hPtr.hStatus = HOST_STAT_OK;
-    /* Agressive openlava all hosts
-     * today are quad cores.
-     * In any case for a floating host
-     * turn on autoconfigure MXJ.
-     */
-    hPtr.numCPUs = 4;
-    hPtr.maxJobs = -1;
 
-    addHost(info, &hPtr, NULL, 0);
+    /* resPriority is used by migrant host
+     * to set the MXJ for the batch migrant.
+     */
+    if (info->rexPriority > 0) {
+        hPtr.maxJobs = info->rexPriority;
+        info->maxCpus = info->rexPriority;
+    }
+
+    addHost(info, &hPtr, (char *)__func__);
 }
 
 /* rmMigrantHost()

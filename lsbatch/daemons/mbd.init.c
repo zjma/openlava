@@ -2104,7 +2104,16 @@ addHostData(int numHosts, struct hostInfoEnt *hosts)
          */
         hPtr.host = hostConf->hosts[i].host;
         hPtr.uJobLimit = hostConf->hosts[i].userJobLimit;
-        hPtr.maxJobs   = hostConf->hosts[i].maxJobs;
+
+        /* Migrant host uses rexPriority to indicate
+         * the MXJ and maxCPU the migrant host has.
+         */
+        if (LIMhosts[j].rexPriority > 0) {
+            hPtr.maxJobs = LIMhosts[j].rexPriority;
+            LIMhosts[j].maxCpus = LIMhosts[j].maxCpus;
+        } else {
+            hPtr.maxJobs = hostConf->hosts[i].maxJobs;
+        }
 
         if (hostConf->hosts[i].chkSig != INFINIT_INT)
             hPtr.chkSig    = hostConf->hosts[i].chkSig;
