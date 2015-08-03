@@ -1671,7 +1671,7 @@ addMigrantHost(struct hostInfo *info)
         info->maxCpus = info->rexPriority;
     }
 
-    addHost(info, &hPtr, (char *)__func__);
+    addHost(info, &hPtr);
 }
 
 /* rmMigrantHost()

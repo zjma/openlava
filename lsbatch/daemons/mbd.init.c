@@ -725,8 +725,7 @@ createDefQueue(void)
  */
 void
 addHost(struct hostInfo *lsf,
-        struct hData *thPtr,
-        char *filename)
+        struct hData *thPtr)
 {
     static char first = TRUE;
     hEnt *ent;
@@ -1629,7 +1628,7 @@ mkLostAndFoundHost(void)
     host.uJobLimit = 0;
     host.maxJobs =  0;
 
-    addHost(NULL, &host, "LostFoundHost");
+    addHost(NULL, &host);
     checkHWindow();
 
     lost = getHostData(LOST_AND_FOUND);
@@ -2059,39 +2058,42 @@ isHostAlias (char *grpName)
 static void
 addHostData(int numHosts, struct hostInfoEnt *hosts)
 {
-    static char    fname[] = "addHostData";
-    int            i;
-    int            j;
-    struct hData   hPtr;
+    int i;
+    int j;
+    struct hData hPtr;
 
     removeFlags (&hostTab, HOST_UPDATE | HOST_AUTOCONF_MXJ, HDATA);
     if (numHosts == 0 || hosts == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6189,
-                                         "%s: No hosts specified in lsb.hosts; all hosts known by LSF will be used"), fname); /* catgets 6189 */
+        ls_syslog(LOG_ERR, "\
+%s: No hosts specified in lsb.hosts; all hosts known by LSF will be used",
+                  __func__);
         addDefaultHost();
         return;
     }
 
     for (i = 0; i < numHosts; i++) {
 
+        /* Find the batch host among LIM hosts
+         */
         for (j = 0; j < numLIMhosts; j++) {
             if (equalHost_(hosts[i].host, LIMhosts[j].hostName))
                 break;
         }
         if (j == numLIMhosts) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6190,
-                                             "%s: Host <%s> is not used by the batch system; ignored"), fname, hosts[i].host); /* catgets 6190 */
+            ls_syslog(LOG_ERR, "\
+%s: Host <%s> is not used by the batch system; ignored",
+                      __func__, hosts[i].host);
             continue;
         }
         if (LIMhosts[j].isServer != TRUE) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6191,
-                                             "%s: Host <%s> is not a server; ignoring"), fname, hosts[i].host); /* catgets 6191 */
+            ls_syslog(LOG_ERR, "\
+%s: Host <%s> is not a server; ignoring", __func__, hosts[i].host);
             continue;
         }
 
         if (!Gethostbyname_(LIMhosts[j].hostName)) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6242,
-                                             "%s: Host <%s> is not a valid host; ignoring"), fname, hosts[i].host); /* catgets 6242 */
+            ls_syslog(LOG_ERR, "\
+%s: Host <%s> is not a valid host; ignoring", __func__, hosts[i].host);
             continue;
         }
 
@@ -2116,11 +2118,11 @@ addHostData(int numHosts, struct hostInfoEnt *hosts)
         }
 
         if (hostConf->hosts[i].chkSig != INFINIT_INT)
-            hPtr.chkSig    = hostConf->hosts[i].chkSig;
+            hPtr.chkSig = hostConf->hosts[i].chkSig;
         if (hostConf->hosts[i].mig == INFINIT_INT)
-            hPtr.mig       = hostConf->hosts[i].mig;
+            hPtr.mig = hostConf->hosts[i].mig;
         else
-            hPtr.mig       = hostConf->hosts[i].mig * 60;
+            hPtr.mig = hostConf->hosts[i].mig * 60;
 
         hPtr.loadSched = hostConf->hosts[i].loadSched;
         hPtr.loadStop = hostConf->hosts[i].loadStop;
@@ -2129,7 +2131,7 @@ addHostData(int numHosts, struct hostInfoEnt *hosts)
         /* Add the host by merging the lsf base
          * host information with the batch configuration.
          */
-        addHost(&LIMhosts[j], &hPtr, fname);
+        addHost(&LIMhosts[j], &hPtr);
 
     } /* for (i = 0; i < numHosts; i++) */
 }
@@ -2847,7 +2849,7 @@ addDefaultHost(void)
             continue;
         initHData(&hData);
         hData.host = LIMhosts[i].hostName;
-        addHost(&LIMhosts[i], &hData, "addDefaultHost");
+        addHost(&LIMhosts[i], &hData);
     }
 }
 

@@ -18,6 +18,9 @@ Release notes for OpenLava versions
    files but also in lsb.hosts in the group section. No elim is needed
    to collect this resource as mbatchd computes the slots automatically.
 -- Introduce a mutex to protect critical section in the syslog library.
+-- lsaddhost has a new -M option. This indicates the MXJ that should be
+   assigned to the batch host, this also sets the number of CPUS available
+   on the batch host.
 
 3.0.1
 ======

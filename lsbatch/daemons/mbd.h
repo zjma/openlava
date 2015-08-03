@@ -1298,8 +1298,7 @@ extern void                 updResCounters(struct jData *, int);
 extern struct hostAcct *    addHAcct(struct hTab **, struct hData *,
                                       int, int, int, int);
 extern void                 addHost(struct hostInfo *,
-                                    struct hData *,
-                                    char *);
+                                    struct hData *);
 extern void                 checkQusable(struct qData *, int, int);
 extern void                 updHostLeftRusageMem(struct jData *, int);
 extern int                  minit(int);

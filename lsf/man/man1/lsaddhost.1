@@ -1,46 +1,46 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsaddhost 1 "OpenLava Version 3.0 - Mar 2015"
+.TH lsaddhost 1 "OpenLava Version 3.1 - Mar 2015"
 .br
 .SH NAME
-\fBlsaddhost\fR - Adds host and its properties 
+\fBlsaddhost\fR - Adds host and its properties
 .SH SYNOPSIS
 .BR
 .PP
 .PP
-\fBlsaddhost\fR [\fB-m\fR\fB \fImodel\fR] [\fB-t\fR\fB \fItype\fR] [\fB-f\fR\fB \fR\fIcpufactor\fR] [\fB-D\fR\fB \fInumDisks\fR] [\fB-R\fR\fB \fR\fB"\fR\fIresource list\fR\fB"\fR] [\fB-w\fR\fB \fR\fB"\fR\fIwindows\fR\fB"\fR] [\fB-b\fR\fB \fR\fB"\fR\fIbusy on list\fR\fB"\fR] \fIhost_name\fR 
+\fBlsaddhost\fR [\fB-m\fR\fB \fImodel\fR] [\fB-t\fR\fB \fItype\fR] [\fB-f\fR\fB \fR\fIcpufactor\fR] [\fB-D\fR\fB \fInumDisks\fR] [\fB-R\fR\fB \fR\fB"\fR\fIresource list\fR\fB"\fR] [\fB-w\fR\fB \fR\fB"\fR\fIwindows\fR\fB"\fR] [\fB-b\fR\fB \fR\fB"\fR\fIbusy on list\fR\fB"\fR]  [\fB-M\fR\fB \fIMXJ and numCPUs for the batch host\fR]  \fIhost_name\fR
 .PP
 \fBlsaddhost\fR [\fB-h\fR | \fB-V\fR]
 .SH DESCRIPTION
 .BR
 .PP
 .PP
-\fB\fRAdds a single host and its properties to an existing cluster. 
+\fB\fRAdds a single host and its properties to an existing cluster.
 .PP
 The host_name parameter is mandatory. If no additional parameter are specified,
-it adds the host_name to the cluster. 
-lsaddhost can be executed on MASTER host or on any other compute (slave) one on which 
-openlava package has been yet installed, in this case it must be specified the 
+it adds the host_name to the cluster.
+lsaddhost can be executed on MASTER host or on any other compute (slave) one on which
+openlava package has been yet installed, in this case it must be specified the
 variable LSF_SERVER_HOSTS in order to allow to determine where the master host is.
-With additional parameters, can be added the following information: host model, 
-host type, CPU factor, number of Disks, resource list, windows, busy on list. 
-See lsf.cluster(5), lshosts(1). 
+With additional parameters, can be added the following information: host model,
+host type, CPU factor, number of Disks, resource list, windows, busy on list.
+See lsf.cluster(5), lshosts(1).
 .PP
 .SH OPTIONS
 .BR
 .PP
-.TP 
-\fB-m\fR 
+.TP
+\fB-m\fR
 
 .IP
 The host model.
 
-.TP 
+.TP
 \fB-t
 \fR
 .IP
-The host type. 
+The host type.
 
 .TP
 \fB-f
@@ -54,8 +54,8 @@ The CPU factor.
 .IP
 Number of local Disks installed on host.
 
-.TP 
-\fB-R\fR \fB"\fR\fIresource list\fR\fB"\fR 
+.TP
+\fB-R\fR \fB"\fR\fIresource list\fR\fB"\fR
 
 .IP
 List of resources, separated by space chars, defined on cluster (boolean, static or dynamic ones).
@@ -73,24 +73,29 @@ The Run Window for the host.
 .IP
 List of values, separated by space chars, for which the host status becomes busy.
 
-.TP 
-\fB-h\fR 
+.TP
+\fB-M
+\fR
+Specify the MXJ and the number of CPUS for the batch hosts.
+
+.TP
+\fB-h\fR
 
 .IP
-Prints command usage to stderr and exits. 
+Prints command usage to stderr and exits.
 
 
-.TP 
-\fB-V\fR 
+.TP
+\fB-V\fR
 
 .IP
-Prints the openlava release version to stderr and exits. 
+Prints the openlava release version to stderr and exits.
 
 .TP
 \fBhost_name
 \fR
 .IP
-The hostname of the single host to be added to the cluster. 
+The hostname of the single host to be added to the cluster.
 This mandatory parameter must be resolved by DNS or /etc/hosts file.
 
 .SH OUTPUT
@@ -111,5 +116,5 @@ main: invalid hostname host_name
 .BR
 .PP
 .PP
-lsfintro(1), ls_info(3), ls_policy(3), 
+lsfintro(1), ls_info(3), ls_policy(3),
 ls_gethostinfo(3), lsf.cluster(5), lsf.shared(5)
