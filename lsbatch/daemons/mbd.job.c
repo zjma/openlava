@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -4425,6 +4425,13 @@ removeJob(LS_LONG_INT jobId)
 
     if ((jp = getJobData(jobId)) && jp->nodeType != JGRP_NODE_ARRAY) {
 
+        if (! IS_FINISH(jp->jStatus)) {
+            ls_syslog(LOG_ERR, "\
+%s: cannot remove job %s in state 0x%x stage 0x%x", __func__,
+                      lsb_jobid2str(jp->jobId), jp->jStatus, mSchedStage);
+            return;
+        }
+
         while ((zp = getZombieJob(jp->jobId)) != NULL) {
             closeSbdConnect4ZombieJob(zp);
             offList((struct listEntry *) zp);
@@ -4469,12 +4476,18 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
     struct jData *lastJob;
 
-    if (job->qPtr->lastJob)
-        inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
-    else
-        inPendJobList2(job, listno, NULL, &lastJob);
+    inPendJobList2(job, listno, NULL, &lastJob);
 
-    job->qPtr->lastJob = lastJob;
+    if (0) {
+        if (job->qPtr->lastJob)
+            inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
+        else
+            inPendJobList2(job, listno, NULL, &lastJob);
+
+        job->qPtr->lastJob = lastJob;
+    }
+
+    job->qPtr->lastJob = NULL;
 }
 
 /* inPendJobList2()
@@ -4557,14 +4570,16 @@ offJobList(struct jData *jp, int listno)
 {
     listRemoveEntry((LIST_T *)jDataList[listno], (LIST_ENTRY_T *)jp);
 
-    /* If leaving PJL adjust the queue's last job
-     * We have to check for the job status as well
-     * as we can get here from removeJob() while
-     * replying lsb.events. This is true for job arrays.
-     */
-    if (listno == PJL
-        || IS_PEND(jp->jStatus)) {
-        set_queue_last_job((LIST_T *)jDataList[PJL], jp);
+    if (0) {
+        /* If leaving PJL adjust the queue's last job
+         * We have to check for the job status as well
+         * as we can get here from removeJob() while
+         * replying lsb.events. This is true for job arrays.
+         */
+        if (listno == PJL
+            || IS_PEND(jp->jStatus)) {
+            set_queue_last_job((LIST_T *)jDataList[PJL], jp);
+        }
     }
 }
 
@@ -8786,9 +8801,38 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime))
 
     listInsertEntryAtFront((LIST_T *)jDataList[listno],
                            (LIST_ENTRY_T *)job);
+
+    if (mSchedStage == M_STAGE_REPLAY)
+        return;
+
     l = (LIST_T *)jDataList[listno];
     num = LIST_NUM_ENTRIES(l);
-    if (num == 1)
+    if (num == 1 || num == 0)
+        return;
+
+    jArray = calloc(num, sizeof(struct jData *));
+
+    cc = 0;
+    while ((jPtr = (struct jData *)listPop(l))) {
+        jArray[cc] = jPtr;
+        ++cc;
+    }
+
+    qsort(jArray, num, sizeof(struct jData *), jcompare);
+
+    for (cc = 0; cc < num; cc++) {
+        jPtr = jArray[cc];
+        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
+    }
+    free(jArray);
+}
+
+void
+sort_job_list(int listno)
+{
+    l = (LIST_T *)jDataList[listno];
+    num = LIST_NUM_ENTRIES(l);
+    if (num == 1 || num == 0)
         return;
 
     jArray = calloc(num, sizeof(struct jData *));
@@ -8843,4 +8887,3 @@ jcompare(const void *j1, const void *j2)
     return 0;
 }
 #endif
-

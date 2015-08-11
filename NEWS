@@ -47,6 +47,7 @@ Release notes for OpenLava versions
 -- Implement sorting by MXJ in mbatchd.
 -- Implement sorting by cpu factor in mbatchd.
 -- Fix bjobs -pl core dump.
+-- Fix bug in job lists management which leads to mbatchd core dumps.
 
 3.0
 ====
