@@ -268,6 +268,11 @@ init_log(void)
         if (log_fp)
             FCLOSEUP(&log_fp);
 
+#if 0
+            sort_job_list(PJL);
+            sort_job_list(FJL);
+#endif
+
         for (list = SJL; list <= PJL; list++) {
 
             for (jp = jDataList[list]->back;

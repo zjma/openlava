@@ -1047,7 +1047,8 @@ extern void                 jStatusChange(struct jData *,
 extern int                  findLastJob(int, struct jData *, struct jData **);
 extern void                 initJobIdHT(void);
 extern struct jData *       getJobData(LS_LONG_INT jobId);
-extern void                 inPendJobList(struct jData *, int list, time_t);
+extern void                 inPendJobList(struct jData *, int, time_t);
+extern void                 sort_job_list(int);
 extern void                 inStartJobList (struct jData *);
 extern void                 inFinishJobList(struct jData *);
 extern void                 jobInQueueEnd (struct jData *, struct qData *);

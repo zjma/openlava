@@ -23,6 +23,7 @@ Release notes for openlava versions
    the post exec ran fine.
 -- Reduce or remove sleep times in res.
 -- Fix bjobs -pl core dump.
+-- Fix bug in job lists management which leads to mbatchd core dumps.
 
 3.0
 ====
