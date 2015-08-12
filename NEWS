@@ -21,6 +21,7 @@ Release notes for OpenLava versions
 -- lsaddhost has a new -M option. This indicates the MXJ that should be
    assigned to the batch host, this also sets the number of CPUS available
    on the batch host.
+-- Improve scheduling performance when jobs use shared resources.
 
 3.0.1
 ======
