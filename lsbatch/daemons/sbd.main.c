@@ -117,7 +117,10 @@ int lsbStdoutDirect = FALSE;
 
 int sbdLogMask;
 int numCPUs;
-struct infoCPUs *array_cpus ;
+/* Keep these variable declared but there use
+ * is enabled only when _OL_VIRTUA_CLUSTER_ is on
+ */
+char *machineName = NULL;
 
 int
 main(int argc, char **argv)
@@ -126,7 +129,7 @@ main(int argc, char **argv)
     sigset_t oldsigmask, newmask;
     struct timeval timeout;
     struct Masks sockmask, chanmask;
-    int aopt;
+    int cc;
     char *msg = NULL;
 
     saveDaemonDir_(argv[0]);
@@ -159,7 +162,7 @@ main(int argc, char **argv)
         die(SLAVE_FATAL);
     }
 
-    if( (daemonParams[LSB_STDOUT_DIRECT].paramValue != NULL)
+    if ((daemonParams[LSB_STDOUT_DIRECT].paramValue != NULL)
 	&&(daemonParams[LSB_STDOUT_DIRECT].paramValue[0] == 'y'
            || daemonParams[LSB_STDOUT_DIRECT].paramValue[0] == 'Y' ) ) {
         lsbStdoutDirect = TRUE;
@@ -171,23 +174,25 @@ main(int argc, char **argv)
 	      ? daemonParams[LSB_STDOUT_DIRECT].paramValue :"NULL");
 
     opterr = 0;
-    while ((aopt = getopt(argc, argv, "hV:d:123")) != EOF) {
+    while ((cc = getopt(argc, argv, "hV:d:m:123")) != EOF) {
 
-        switch(aopt) {
+        switch (cc) {
             case '1':
             case '2':
             case '3':
-                debug = aopt - '0';
+                debug = cc - '0';
             break;
             case 'd':
                 env_dir = optarg;
                 break;
+            case 'm':
+                machineName = strdup(optarg);
+                break;
             case 'h':
             default:
-                fprintf(stderr,
-                        "%s: sbatchd [-h] [-V] [-d env_dir] [-1 | -2 | -3]\n",
-                        I18N_Usage);
-            exit(1);
+                fprintf(stderr, "\
+usage: sbatchd [-h] [-V] [-d env_dir] [-1 | -2 | -3]\n");
+            return 1;
         }
     }
 
@@ -787,8 +792,19 @@ sinit(void)
     if (get_ports() < 0)
         die(SLAVE_FATAL);
 
+#if defined(_OL_VIRT_CLUSTER_)
+    if (machineName) {
+        /* OpenLava virtual machine
+         */
+        sbd_port = htons(getPortByHostName(machineName));
+    }
+#endif
+
     init_sstate();
 
+    /* init_ServSocket() will ntohs the
+     * sbd_port
+     */
     batchSock = init_ServSock(sbd_port);
     if (batchSock < 0) {
         lsb_mperr("sbatchd: Cannot init servsocket");
@@ -810,7 +826,8 @@ sinit(void)
     }
 
     if (chanInit_() < 0) {
-        ls_syslog(LOG_ERR, "%s: chanInit_ Failed to init channel", __func__);
+        ls_syslog(LOG_ERR, "\
+%s: chanInit_ Failed to init channel", __func__);
         die(SLAVE_FATAL);
     }
 }
@@ -964,24 +981,4 @@ isLSFAdmin(struct lsfAuth *auth)
 
     return false;
 
-}
-
-/* cpus_cmp()
- *
- * qsort() helper
- */
-int
-cmp_cpus(const void *c1, const void *c2)
-{
-    const struct infoCPUs *cpu1;
-    const struct infoCPUs *cpu2;
-
-    cpu1 = c1;
-    cpu2 = c2;
-
-    if (cpu1->numTasks > cpu2->numTasks)
-        return 1;
-    if (cpu1->numTasks < cpu2->numTasks)
-        return -1;
-    return 0;
 }

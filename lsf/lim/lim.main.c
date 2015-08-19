@@ -761,10 +761,12 @@ periodic(int kernelPerm)
     /* OpenLava virtual host res server
      * always available
      */
+#if defined(_OL_VIRT_CLUSTER_)
     if (machineName) {
         resInactivityCount = 0;
         myHostPtr->status[0] &= ~(LIM_RESDOWN);
     }
+#endif
 
     alarmed = 0;
 }
@@ -832,7 +834,6 @@ initSock(int checkMode)
 {
     struct sockaddr_in limTcpSockId;
     socklen_t size;
-    struct hostNode hPtr;
     uint16_t port;
 
     if (limParams[LSF_LIM_PORT].paramValue == NULL) {
@@ -852,7 +853,9 @@ initSock(int checkMode)
     }
 
     port = lim_port;
+#if defined(_OL_VIRT_CLUSTER_)
     if (machineName) {
+        struct hostNode hPtr;
         /* A virtual host must bind to its own port
          * but uses the lim_port to talk to master lim
          */
@@ -864,6 +867,7 @@ initSock(int checkMode)
          */
         limParams[LIM_COMPUTE_ONLY].paramValue = "si";
     }
+#endif
 
     /* Tell the channel code to set the reuse option
      * for the socket.
@@ -969,10 +973,12 @@ startPIM(int argc, char **argv)
     int i;
     static time_t lastTime = 0;
 
+#if defined(_OL_VIRT_CLUSTER_)
     /* Dont start pim on a virtual host
      */
     if (machineName)
         return;
+#endif
 
     if (time(NULL) - lastTime < 60 * 2)
         return;

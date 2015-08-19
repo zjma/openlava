@@ -120,7 +120,8 @@ chanServSocket_(int type, u_short port, int backlog, int options)
         channels[ch].type  = CH_TYPE_UDP;
     else
         channels[ch].type  = CH_TYPE_PASSIVE;
-    return(ch);
+
+    return ch;
 }
 
 int

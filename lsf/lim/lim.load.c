@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2011-2013 David Bigagli
- *
- * $Id: lim.load.c 397 2007-11-26 19:04:00Z mblack $
+ * Copyright (C) 2011-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -392,16 +390,13 @@ rcvLoadVector(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *hdr)
     }
 
     /* OpenLava got load from a virtual host
-     * which has the same address as the master host.
      */
-    if (hPtr == myHostPtr) {
-        hPtr = getLIMByPort(hPtr, from);
-        if (hPtr == NULL) {
-            ls_syslog(LOG_ERR, "\
+    hPtr = getLIMByPort(hPtr, from);
+    if (hPtr == NULL) {
+        ls_syslog(LOG_ERR, "\
 %s: Received load update from unknown host %s",
-                      __func__, sockAdd2Str_(from));
-            return ;
-        }
+                  __func__, sockAdd2Str_(from));
+        return ;
     }
 
     if (hPtr->infoValid != TRUE) {

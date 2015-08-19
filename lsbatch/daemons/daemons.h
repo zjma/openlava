@@ -1,4 +1,5 @@
-/* $Id: daemons.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -495,7 +496,11 @@ extern struct tclLsInfo  *tclLsInfo;
 extern int rusageUpdateRate;
 extern int rusageUpdatePrecent;
 extern int jobTerminateInterval;
-extern int lsf_crossUnixNT;
+
+/* OpenLava virtual cluster
+ */
+extern char *machineName;
+extern int machinePort;
 
 
 #define DEFAULT_MAILTO	"^U"
@@ -564,6 +569,8 @@ extern void daemon_doinit(void);
 extern void scaleByFactor(int *, int *, float);
 extern int execNqsi(u_long, int, int, int *, char *, int, char *);
 extern void hang_me(void);
-
+extern int getPortByHostName(const char *);
+extern char *getHostNameByPort(struct LSFHeader *,
+                               struct hostent *);
 
 #endif
