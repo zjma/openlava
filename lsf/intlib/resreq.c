@@ -62,7 +62,7 @@ static int getTimeVal(char **, float *);
 void freeResVal (struct resVal *);
 void initResVal (struct resVal *);
 static link_t *get_rusage_entries(const char *);
-
+static char *strip_spaces(const char *);
 extern char isanumber_(char *);
 
 hTab resNameTbl = {NULL, 0, 0};
@@ -611,6 +611,8 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     char *s;
     int *rusage_bit_map;
     float *val;
+    char *usageReq2;
+    char *s2;
 
     if ((i = strlen(usageReq)) == 0)
         return PARSE_OK;
@@ -621,8 +623,10 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     if (m == i)
         return PARSE_OK;
 
+    s2 = usageReq2 = strip_spaces(usageReq);
+
     resVal->rl = make_link();
-    link = get_rusage_entries(usageReq);
+    link = get_rusage_entries(usageReq2);
 
     i = 0;
     traverse_init(link, &iter);
@@ -711,6 +715,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
     while ((s = pop_link(link)))
         _free_(s);
     fin_link(link);
+    _free_(s2);
 
     return PARSE_OK;
 
@@ -725,6 +730,8 @@ pryc:
         _free_(r);
     }
     fin_link(resVal->rl);
+    resVal->rl = NULL;
+    _free_(s2);
 
     return PARSE_BAD_NAME;
 }
@@ -1372,4 +1379,31 @@ get_rusage_entries(const char *s)
     _free_(ss0);
 
     return l;
+}
+
+/* strip_spaces()
+ */
+static char *
+strip_spaces(const char *str)
+{
+    char *s;
+    int l;
+    int cc;
+
+    if (str == NULL)
+        return NULL;
+
+    l = strlen(str);
+    s = calloc(l, sizeof(char));
+
+    for (cc = 0; cc < l; cc++) {
+        if (str[cc] == ' '
+            || str[cc] == '\t') {
+            ++cc;
+            continue;
+        }
+        s[cc] = str[cc];
+    }
+
+    return s;
 }
