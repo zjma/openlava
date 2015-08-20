@@ -22,6 +22,8 @@ Release notes for OpenLava versions
    assigned to the batch host, this also sets the number of CPUS available
    on the batch host.
 -- Improve scheduling performance when jobs use shared resources.
+-- Improve rusage syntax parsing, now spaces between operands are ignored
+   and mbatchd does not syntax error.
 
 3.0.1
 ======
