@@ -239,7 +239,7 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      * hosts.
      */
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = lim_port;
+    toAddr.sin_port = htons(lim_port);
 
     initLSFHeader_(&reqHdr);
     reqHdr.opCode  = (short) limReqCode;
