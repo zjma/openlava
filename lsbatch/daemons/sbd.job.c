@@ -2969,7 +2969,7 @@ runQPre(struct jobCard *jp)
 
         chdir("/tmp");
 
-        if (chPrePostUser(jp) < 0) {
+        if (debug == 0 && chPrePostUser(jp) < 0) {
             ls_syslog(LOG_ERR, "\
 %s: queue's pre-exec chPrePostUser failed for job <%d>",
                       fname, jp->jobSpecs.jobId);
