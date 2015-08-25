@@ -4823,7 +4823,7 @@ streamEvent(struct eventRec *logPtr)
             return -1;
         }
 
-        fp = fopen(streamFile, mode);
+        fp = fopen(streamFile, "w");
         if (fp == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed to open stream %s %m", __func__, streamFile);
