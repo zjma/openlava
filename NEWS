@@ -25,6 +25,9 @@ Release notes for OpenLava versions
 -- Improve rusage syntax parsing, now spaces between operands are ignored
    and mbatchd does not syntax error.
 -- Keep updating man pages.
+-- Add the environment variable LSB_EFFECTIVE_RUSAGE. In case a job is using
+   the rusage or feature this variable indicates which or clause evaluated
+   true dispatching the job.
 
 3.0.1
 ======

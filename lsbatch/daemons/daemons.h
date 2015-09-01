@@ -387,6 +387,13 @@ struct bucket {
     XDR   xdrs;
 };
 
+/* Generic name_list value
+ */
+struct name_list {
+    char *name;
+    int value;
+};
+
 #define NEW_BUCKET(BUCKET,chanBuf) \
 { \
     BUCKET = (struct bucket *)malloc(sizeof(struct bucket)); \

@@ -208,7 +208,8 @@ static void addReason(struct jData *jp, int hostId, int aReason);
 static int allInOne(struct jData *jp);
 static int ckResReserve(struct hData *,
                         struct resVal *,
-                        int *resource);
+                        int *,
+                        struct jData *);
 
 static int getPeerCand(struct jData *jobp);
 static int getPeerCand1(struct jData *jobp, struct jData *jpbw);
@@ -1446,7 +1447,8 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
             int resource;
             int num = ckResReserve(jUsable[i],
                                    jp->shared->resValPtr,
-                                   &resource);
+                                   &resource,
+                                   jp);
             if (num < 1) {
                 hReason = resource + PEND_HOST_JOB_RUSAGE;
             }
@@ -1456,7 +1458,8 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
             int resource;
             int num = ckResReserve(jUsable[i],
                                    jp->qPtr->resValPtr,
-                                   &resource);
+                                   &resource,
+                                   jp);
             if (num < 1) {
                 hReason = resource + PEND_HOST_QUE_RUSAGE;
             }
@@ -1603,7 +1606,8 @@ allInOne(struct jData *jp)
 static int
 ckResReserve(struct hData *hPtr,
              struct resVal *resValPtr,
-             int *resource)
+             int *resource,
+             struct jData *jPtr)
 {
     int cc;
     int is_set;
@@ -1613,6 +1617,9 @@ ckResReserve(struct hData *hPtr,
     linkiter_t iter;
     struct _rusage_ *r;
     bool_t state;
+    link_t *L;
+    int len;
+    struct name_list *nl;
 
     can_use = hPtr->numCPUs;
 
@@ -1627,6 +1634,8 @@ ckResReserve(struct hData *hPtr,
     if (rusage == 0)
         return hPtr->numCPUs;
 
+    L = make_link();
+    len = 0;
     traverse_init(resValPtr->rl, &iter);
     while ((r = traverse_link(&iter))) {
 
@@ -1716,15 +1725,42 @@ ckResReserve(struct hData *hPtr,
                 }
 
                 use_val = hPtr->numCPUs;
+
+                /* Save the resources used to dispatch
+                 * the job.
+                 */
+                nl = calloc(1, sizeof(struct name_list));
+                nl->name = allLsInfo->resTable[cc].name;
+                nl->value = (int)value;
+                push_link(L, nl);
+                len = strlen(nl->name) + 16;
             }
+
         } /* for (cc = 0; cc < allLsInfo->nres; cc ++) */
 
         /* All requested rusage are in state ok
          */
-        if (state == 1)
+        if (state == 1) {
+            if (LINK_NUM_ENTRIES(L) > 0) {
+                len = len + strlen("LSB_EFFECTIVE_RUSAGE=");
+                jPtr->run_rusage = calloc(len, sizeof(char));
+                sprintf(jPtr->run_rusage, "LSB_EFFECTIVE_RUSAGE=\"");
+                while ((nl = pop_link(L))) {
+                    sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage),
+                            "%s:%d ", nl->name, nl->value);
+                    _free_(nl);
+                }
+                sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage) - 1, "\"");
+                fin_link(L);
+            }
             return hPtr->numCPUs;
+        }
 
     } /* while (all rusage blocks) */
+
+    while ((nl = pop_link(L)))
+        _free_(nl);
+    fin_link(L);
 
     return 0;
 }
@@ -2826,7 +2862,8 @@ candHostOk (struct jData *jp, int indx, int *numAvailSlots,
         int resource;
         int num = ckResReserve(hp->hData,
                                jp->qPtr->resValPtr,
-                               &resource);
+                               &resource,
+                               jp);
         if (num < 1) {
             rtReason = resource + PEND_HOST_QUE_RUSAGE;
         } else {
@@ -2840,7 +2877,8 @@ candHostOk (struct jData *jp, int indx, int *numAvailSlots,
         int resource;
         int num = ckResReserve(hp->hData,
                                jp->shared->resValPtr,
-                               &resource);
+                               &resource,
+                               jp);
         if (num < 1) {
             rtReason = resource + PEND_HOST_JOB_RUSAGE;
         } else  {
