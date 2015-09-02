@@ -1683,6 +1683,7 @@ ckResReserve(struct hData *hPtr,
                             break;
                         }
                     }
+
                 } else {
 
                     if (hPtr->loadStop[cc] >= INFINIT_LOAD
@@ -1725,35 +1726,39 @@ ckResReserve(struct hData *hPtr,
                 }
 
                 use_val = hPtr->numCPUs;
-
-                /* Save the resources used to dispatch
-                 * the job.
-                 */
-                nl = calloc(1, sizeof(struct name_list));
-                nl->name = allLsInfo->resTable[cc].name;
-                nl->value = (int)value;
-                push_link(L, nl);
-                len = strlen(nl->name) + 16;
             }
+            /* Save the resources used to dispatch
+             * the job.
+             */
+            nl = calloc(1, sizeof(struct name_list));
+            nl->name = allLsInfo->resTable[cc].name;
+            nl->value = resValPtr->val[cc];
+            push_link(L, nl);
+            len = len + strlen(nl->name) + 16;
 
         } /* for (cc = 0; cc < allLsInfo->nres; cc ++) */
 
         /* All requested rusage are in state ok
          */
         if (state == 1) {
-            if (LINK_NUM_ENTRIES(L) > 0) {
-                len = len + strlen("LSB_EFFECTIVE_RUSAGE=");
-                jPtr->run_rusage = calloc(len, sizeof(char));
-                sprintf(jPtr->run_rusage, "LSB_EFFECTIVE_RUSAGE=\"");
-                while ((nl = pop_link(L))) {
-                    sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage),
-                            "%s:%d ", nl->name, nl->value);
-                    _free_(nl);
-                }
-                sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage) - 1, "\"");
-                fin_link(L);
+            len = len + strlen("LSB_EFFECTIVE_RUSAGE=");
+            jPtr->run_rusage = calloc(len, sizeof(char));
+            sprintf(jPtr->run_rusage, "LSB_EFFECTIVE_RUSAGE=\"");
+            while ((nl = pop_link(L))) {
+                sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage),
+                        "%s:%d ", nl->name, nl->value);
+                _free_(nl);
             }
+            sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage) - 1, "\"");
+            fin_link(L);
             return hPtr->numCPUs;
+        } else {
+            /* Free the job half done
+             */
+            while ((nl = pop_link(L)))
+                _free_(nl);
+            _free_(jPtr->run_rusage);
+            len = 0;
         }
 
     } /* while (all rusage blocks) */
