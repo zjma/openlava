@@ -154,7 +154,6 @@ sshare_distribute_slots(struct tree_ *t,
     int tried;
 
     stack = make_link();
-    n = t->root->child;
     /* This must be emptied after every scheduling
      * cycle. There could be still some leafs
      * if not all jobs got dispatched.
@@ -166,7 +165,9 @@ sshare_distribute_slots(struct tree_ *t,
     sort_tree_by_deviate(t);
     zero_out_sent(t);
     tried = 0;
-
+    /* only after sort get the first child
+     */
+    n = t->root->child;
 znovu:
 
     /* Iterate at each tree level but

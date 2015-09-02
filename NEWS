@@ -28,6 +28,8 @@ Release notes for OpenLava versions
 -- Add the environment variable LSB_EFFECTIVE_RUSAGE. In case a job is using
    the rusage or feature this variable indicates which or clause evaluated
    true dispatching the job.
+-- Fix fairshare bug which prevented jobs from being scheduled if groups
+   had different shares.
 
 3.0.1
 ======
