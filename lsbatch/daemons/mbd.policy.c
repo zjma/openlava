@@ -1746,7 +1746,7 @@ ckResReserve(struct hData *hPtr,
             sprintf(jPtr->run_rusage, "LSB_EFFECTIVE_RUSAGE=\"");
             while ((nl = pop_link(L))) {
                 sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage),
-                        "%s:%d ", nl->name, nl->value);
+                        "%s=%d ", nl->name, nl->value);
                 _free_(nl);
             }
             sprintf(jPtr->run_rusage + strlen(jPtr->run_rusage) - 1, "\"");
