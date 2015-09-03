@@ -1634,6 +1634,7 @@ ckResReserve(struct hData *hPtr,
     if (rusage == 0)
         return hPtr->numCPUs;
 
+    _free_(jPtr->run_rusage);
     L = make_link();
     len = 0;
     traverse_init(resValPtr->rl, &iter);
