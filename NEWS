@@ -30,6 +30,8 @@ Release notes for OpenLava versions
    true dispatching the job.
 -- Fix fairshare bug which prevented jobs from being scheduled if groups
    had different shares.
+-- Added support for client only hosts. These are host that do not run
+   OpenLava daemons but can run commands and submit jobs.
 
 3.0.1
 ======
