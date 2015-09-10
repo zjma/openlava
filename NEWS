@@ -32,6 +32,8 @@ Release notes for OpenLava versions
    had different shares.
 -- Added support for client only hosts. These are host that do not run
    OpenLava daemons but can run commands and submit jobs.
+-- Fix mbatchd bug that limited the output and error file to 80 characters
+   of length.
 
 3.0.1
 ======

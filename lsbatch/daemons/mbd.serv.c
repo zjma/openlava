@@ -2027,15 +2027,15 @@ initSubmit(int *first, struct submitReq *subReq,
 
     if (*first == TRUE) {
         subReq->fromHost = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->jobFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->inFile =  my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->outFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->errFile = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->inFileSpool = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->commandSpool = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->cwd = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->subHomeDir = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
-        subReq->chkpntDir = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
+        subReq->jobFile = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->inFile =  my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->outFile = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->errFile = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->inFileSpool = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->commandSpool = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->cwd = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->subHomeDir = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
+        subReq->chkpntDir = my_calloc(MAXLSFNAMELEN, sizeof(char), __func__);
         subReq->hostSpec = my_calloc(MAXHOSTNAMELEN, sizeof(char), __func__);
         submitReply->badJobName = my_calloc(MAX_CMD_DESC_LEN, sizeof(char), __func__);
         *first = FALSE;
