@@ -177,6 +177,9 @@ znovu:
     while (n) {
 
         sacct = n->data;
+        /* all is a dummy share account the
+         * tree is populated with real ones.
+         */
         if (sacct->options & SACCT_USER_ALL) {
             n = n->right;
             continue;
@@ -454,7 +457,7 @@ sort_siblings(struct tree_node_ *root,
     root->child = NULL;
 
     /* We want to sort in ascending order as we use
-     * tree_inser_node() which always inserts
+     * tree_insert_node() which always inserts
      * node in the left most position.
      */
     qsort(v, num, sizeof(struct tree_node_ *), cmp);
