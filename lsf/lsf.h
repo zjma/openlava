@@ -92,7 +92,7 @@ extern char **environ;
 
 #define LSF_DEFAULT_SOCKS       15
 #define MAXLINELEN              PATH_MAX
-#define MAXLSFNAMELEN           256
+#define MAXLSFNAMELEN           1024
 #define MAXSRES                 32
 #define MAXRESDESLEN            256
 #define NBUILTINDEX             11

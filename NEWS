@@ -34,6 +34,7 @@ Release notes for OpenLava versions
    OpenLava daemons but can run commands and submit jobs.
 -- Fix mbatchd bug that limited the output and error file to 80 characters
    of length.
+-- Enlarged MAXLSFNAMELEN to 1024.
 
 3.0.1
 ======
