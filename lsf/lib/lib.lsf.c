@@ -271,7 +271,7 @@ ls_get_numcpus(void)
     }
 
     if (n == 0)
-        return false;
+        return 0;
 
     fclose(fp);
     return n;

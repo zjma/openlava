@@ -154,6 +154,7 @@
 #define LSB_STDOUT_DIRECT      53
 #define MBD_DONT_FORK          54
 #define LIM_NO_MIGRANT_HOSTS   55
+#define SBD_BIND_CPU           56
 #define NOT_LOG  INFINIT_INT
 
 #define JOB_SAVE_OUTPUT   0x10000000

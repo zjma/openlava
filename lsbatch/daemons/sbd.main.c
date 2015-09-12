@@ -288,6 +288,14 @@ usage: sbatchd [-h] [-V] [-d env_dir] [-1 | -2 | -3]\n");
 	}
     }
 
+    /* Check if binding to cpus is enabled
+     */
+    if (daemonParams[SBD_BIND_CPU].paramValue) {
+        ls_syslog(LOG_INFO, "\
+%s: cpu binding via sched affinity is enabled", __func__);
+        init_cores();
+    }
+
     now = time(NULL);
 
     for (i = 0; i < 8; i++)
