@@ -35,6 +35,8 @@ Release notes for OpenLava versions
 -- Fix mbatchd bug that limited the output and error file to 80 characters
    of length.
 -- Enlarged MAXLSFNAMELEN to 1024.
+-- Introduce cpu binding using sched_setaffinity()/sched_getaffinity(),
+   this feature is enabled by setting SBD_BIND_CPU=y in lsf.conf.
 
 3.0.1
 ======
