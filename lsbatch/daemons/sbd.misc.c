@@ -421,6 +421,11 @@ free_core(int core_num)
     if (! cores)
         return;
 
+    /* Uot??
+     */
+    if (core_num < 0)
+        return;
+
     for (i = 0; i < num_cores; i++) {
         if (cores[i].core_num == core_num) {
             cores[i].bound--;
@@ -449,7 +454,7 @@ find_bound_core(pid_t pid)
         return -1;
     }
 
-    for (cc = 0; cc < 2; cc++) {
+    for (cc = 0; cc < num_cores; cc++) {
         if (CPU_ISSET(cc, &set))
             return cc;
     }
