@@ -61,11 +61,6 @@ int    preemPeriod = DEF_PREEM_PERIOD;
 int    pgSuspIdleT = DEF_PG_SUSP_IT;
 int    rusageUpdateRate = DEF_RUSAGE_UPDATE_RATE;
 int    rusageUpdatePercent = DEF_RUSAGE_UPDATE_PERCENT;
-char   *cpuset_mount = NULL;
-char   *memory_mount = NULL;
-bool_t cgroup_memory_mounted = false;
-bool_t cgroup_cpuset_mounted = false;
-struct infoCPUs *array_cpus;
 
 int    jobTerminateInterval = DEF_JTERMINATE_INTERVAL;
 char   psbdJobSpoolDir[MAXPATHLEN];
@@ -859,11 +854,6 @@ init_sstate(void)
     rusageUpdateRate = sbdPackage.rusageUpdateRate;
     rusageUpdatePercent = sbdPackage.rusageUpdatePercent;
     jobTerminateInterval = sbdPackage.jobTerminateInterval;
-
-    /* Hard code for now
-     */
-    cpuset_mount = strdup("/cgroup/cpuset");
-    memory_mount = strdup("/cgroup/memory");
 
     for (i = 0; i < sbdPackage.nAdmins; i++)
 	FREEUP(sbdPackage.admins[i]);
