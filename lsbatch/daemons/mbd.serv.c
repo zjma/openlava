@@ -1709,21 +1709,24 @@ int
 do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
                 struct LSFHeader * reqHdr)
 {
-    static char             fname[] = "do_paramInfoReq()";
-    char                   *reply_buf;
-    XDR                     xdrs2;
-    int                     reply;
-    struct LSFHeader        replyHdr;
-    char                   *replyStruct;
-    int                     count, jobSpoolDirLen;
-    struct infoReq          infoReq;
-    struct parameterInfo    paramInfo;
+    char *reply_buf;
+    XDR xdrs2;
+    int reply;
+    struct LSFHeader replyHdr;
+    char *replyStruct;
+    int count;
+    int jobSpoolDirLen;
+    struct infoReq infoReq;
+    struct parameterInfo paramInfo;
 
     if (!xdr_infoReq(xdrs, &infoReq, reqHdr)) {
         reply = LSBE_XDR;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_infoReq");
-    } else
-        checkParams(&infoReq, &paramInfo);
+        ls_syslog(LOG_ERR, "%s: xdr_infoReq() failed", __func__);
+        sendLSFHeader(chfd, LSBE_XDR);
+        return -1;
+    }
+
+    checkParams(&infoReq, &paramInfo);
     reply = LSBE_NO_ERROR;
 
     if (paramInfo.pjobSpoolDir != NULL) {
@@ -1741,7 +1744,7 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
 
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = reply;
-    replyStruct = (char *) &paramInfo;
+    replyStruct = (char *)&paramInfo;
 
     if (! xdr_encodeMsg(&xdrs2,
                         replyStruct,
@@ -1749,15 +1752,15 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
                         xdr_parameterInfo,
                         0,
                         NULL)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        ls_syslog(LOG_ERR, "%s: xdr_encodeMsg() failed", __func__);
         xdr_destroy(&xdrs2);
         FREEUP(reply_buf);
         return -1;
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "chanWrite_",
-                  XDR_GETPOS(&xdrs2));
+        ls_syslog(LOG_ERR, "%s: chanWrite_() failed sending %d bytes",
+                  __func__, XDR_GETPOS(&xdrs2));
         xdr_destroy(&xdrs2);
         FREEUP (reply_buf);
         return -1;

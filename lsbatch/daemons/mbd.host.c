@@ -971,6 +971,10 @@ getLsbHostInfo(void)
         queueHostsPF(qp, &i);
 }
 
+/* getLsbHostLoad()
+ *
+ * Get the load of all hosts used by the batch system
+ */
 int
 getLsbHostLoad(void)
 {
@@ -1100,11 +1104,6 @@ getLsbHostLoad(void)
         hPtr->flags |= HOST_UPDATE;
 
     } /* for ( i = 0; i < num; i++) */
-
-    for (jpbw = jDataList[SJL]->back;
-         (jpbw != jDataList[SJL]); jpbw = jpbw->back) {
-        adjLsbLoad(jpbw, FALSE, TRUE);
-    }
 
     /* Detect which hosts has left the
      * cluster only if the migrant hosts
