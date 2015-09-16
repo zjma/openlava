@@ -4260,24 +4260,10 @@ scheduleAndDispatchJobs(void)
         mSchedStage |= M_STAGE_INIT;
     }
 
-    /* Update shared resources regardless of built in
-     * timeout, some resources are just mbd resources.
-     */
-    TIMEIT(0, getLsbResourceInfo(), "getLsbResourceInfo()");
-
     if (!(mSchedStage & M_STAGE_GOT_LOAD)) {
 
         if (now_disp - lastUpdTime > freshPeriod) {
             int returnCode;
-
-            for (jPtr = jDataList[SJL]->back;
-                 jPtr != jDataList[SJL];
-                 jPtr = jPtr->back) {
-
-                if (jPtr->jStatus & JOB_STAT_RUN) {
-                    accumRunTime(jPtr, jPtr->jStatus, now_disp);
-                }
-            }
 
             if (numResources > 0) {
                 TIMEIT(0, getLsbResourceInfo(), "getLsbResourceInfo()");
@@ -4286,9 +4272,25 @@ scheduleAndDispatchJobs(void)
 
             TIMEIT(0, returnCode = getLsbHostLoad(), "getLsbHostLoad()");
             if (returnCode != 0) {
-
+                ls_syslog(LOG_ERR, "\
+%s: ohmygosh failed to get the load of hosts, cannot schedule", __func__);
                 return -1;
             }
+
+            /* After we got the load let's update
+             * the running jobs and accumulate
+             * jobs runtime.
+             */
+            for (jPtr = jDataList[SJL]->back;
+                 jPtr != jDataList[SJL];
+                 jPtr = jPtr->back) {
+
+                adjLsbLoad(jPtr, FALSE, TRUE);
+                if (jPtr->jStatus & JOB_STAT_RUN) {
+                    accumRunTime(jPtr, jPtr->jStatus, now_disp);
+                }
+            }
+
             lastUpdTime = now_disp;
         }
 
