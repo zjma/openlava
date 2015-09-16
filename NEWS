@@ -37,6 +37,10 @@ Release notes for OpenLava versions
 -- Enlarged MAXLSFNAMELEN to 1024.
 -- Introduce cpu binding using sched_setaffinity()/sched_getaffinity(),
    this feature is enabled by setting SBD_BIND_CPU=y in lsf.conf.
+-- Introduced LOAD_UPDATE_INTVL parameter in lsb.params. It controls how
+   often MBD calls LIM to update load and shared resources. The default
+   value is 15 seconds. Smaller the value and faster is the scheduler
+   response to changes in resource values.
 
 3.0.1
 ======
