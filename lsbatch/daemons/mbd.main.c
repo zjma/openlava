@@ -1302,7 +1302,7 @@ preempt(void)
 
         rl = make_link();
 
-        /* The current queue is preemptable
+        /* The current queue is preemptive
          * the rl link will have the preemption
          * candidates.
          */
