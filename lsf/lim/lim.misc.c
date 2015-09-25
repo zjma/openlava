@@ -565,12 +565,6 @@ getLIMByPort(struct hostNode *hPtr, struct sockaddr_in *from)
     struct hostNode *hPtr2;
 
     port = ntohs(from->sin_port);
-
-    /* Regular update from LIM_PORT
-     */
-    if (port == lim_port)
-        return hPtr;
-
     sprintf(buf, "%s@%d", hPtr->hostName, port);
 
     hPtr2 = findHostbyList(myClusterPtr->hostList, buf);

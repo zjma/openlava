@@ -2090,6 +2090,7 @@ countNumSpecs (struct hData *hData)
         }
     }
 
+
     for (jp = jDataList[FJL]->back; jp != jDataList[FJL]; jp = jp->back) {
         if (jp->hPtr && jp->hPtr[0] == hData) {
             if ( (jp->jStatus & JOB_STAT_DONE) &&

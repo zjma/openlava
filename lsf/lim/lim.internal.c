@@ -239,7 +239,7 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      * hosts.
      */
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = htons(lim_port);
+    toAddr.sin_port = lim_port;
 
     initLSFHeader_(&reqHdr);
     reqHdr.opCode  = (short) limReqCode;
@@ -340,12 +340,11 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
 
         if (hPtr == myHostPtr)
             continue;
-#if defined(_OL_VIRT_CLUSTER_)
+
         /* If this is a virtual host get
          * the port where lim is listening
          */
         toAddr.sin_port = htons(getLIMPort(hPtr));
-#endif
 
         memcpy(&toAddr.sin_addr, &hPtr->addr[0], sizeof(u_int));
 
@@ -577,13 +576,16 @@ rcvConfInfo(XDR *xdrs,
 	return;
 
     /* OpenLava got info from a virtual host
+     * which has the same address as the master host.
      */
-    hPtr = getLIMByPort(hPtr, from);
-    if (hPtr == NULL) {
-        ls_syslog(LOG_ERR, "\
+    if (hPtr == myHostPtr) {
+        hPtr = getLIMByPort(hPtr, from);
+        if (hPtr == NULL) {
+            ls_syslog(LOG_ERR, "\
 %s: Received load update from unknown host %s",
-                  __func__, sockAdd2Str_(from));
-        return ;
+                      __func__, sockAdd2Str_(from));
+            return ;
+        }
     }
 
     if (hPtr->infoValid == TRUE)
@@ -704,11 +706,7 @@ announceMasterToHost(struct hostNode *hPtr, int infoType )
     masterReg.portno   = myClusterPtr->masterPtr->statInfo.portno;
 
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = lim_port;
-
-#if defined(_OL_VIRT_CLUSTER_)
     toAddr.sin_port = htons(getLIMPort(hPtr));
-#endif
 
     xdrmem_create(&xdrs, buf, MSGSIZE/4, XDR_ENCODE);
     initLSFHeader_(&reqHdr);
