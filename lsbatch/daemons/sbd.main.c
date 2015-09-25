@@ -964,22 +964,3 @@ isLSFAdmin(struct lsfAuth *auth)
 
 }
 
-/* cpus_cmp()
- *
- * qsort() helper
- */
-int
-cmp_cpus(const void *c1, const void *c2)
-{
-    const struct infoCPUs *cpu1;
-    const struct infoCPUs *cpu2;
-
-    cpu1 = c1;
-    cpu2 = c2;
-
-    if (cpu1->numTasks > cpu2->numTasks)
-        return 1;
-    if (cpu1->numTasks < cpu2->numTasks)
-        return -1;
-    return 0;
-}

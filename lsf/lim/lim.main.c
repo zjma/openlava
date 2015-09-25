@@ -758,14 +758,6 @@ periodic(int kernelPerm)
         ckWtime = now;
     }
 
-    /* OpenLava virtual host res server
-     * always available
-     */
-    if (machineName) {
-        resInactivityCount = 0;
-        myHostPtr->status[0] &= ~(LIM_RESDOWN);
-    }
-
     alarmed = 0;
 }
 

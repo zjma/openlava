@@ -239,7 +239,6 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      * hosts.
      */
     toAddr.sin_family = AF_INET;
-    toAddr.sin_port = lim_port;
 
     initLSFHeader_(&reqHdr);
     reqHdr.opCode  = (short) limReqCode;
@@ -575,17 +574,11 @@ rcvConfInfo(XDR *xdrs,
     if (!hPtr)
 	return;
 
-    /* OpenLava got info from a virtual host
-     * which has the same address as the master host.
-     */
-    if (hPtr == myHostPtr) {
-        hPtr = getLIMByPort(hPtr, from);
-        if (hPtr == NULL) {
-            ls_syslog(LOG_ERR, "\
-%s: Received load update from unknown host %s",
-                      __func__, sockAdd2Str_(from));
-            return ;
-        }
+    if (findHostbyList(myClusterPtr->hostList, hPtr->hostName) == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Got info from client-only host %s %s", __func__,
+             sockAdd2Str_(from), hPtr->hostName);
+        return;
     }
 
     if (hPtr->infoValid == TRUE)
@@ -796,4 +789,25 @@ probeMasterTcp(struct clusterNode *clPtr)
     chanClose_(ch);
 
     return rc;
+}
+
+/* getLIMPort()
+ */
+uint16_t
+getLIMPort(struct hostNode *hPtr)
+{
+    char name[MAXHOSTNAMELEN];
+    char *p;
+    uint16_t port;
+
+    p = strchr(hPtr->hostName, '@');
+    if (p == NULL)
+        return lim_port;
+
+    strcpy(name, hPtr->hostName);
+    p = strchr(name, '@');
+    ++p;
+    port = atoi(p);
+
+    return port;
 }

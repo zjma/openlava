@@ -391,17 +391,11 @@ rcvLoadVector(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *hdr)
         return ;
     }
 
-    /* OpenLava got load from a virtual host
-     * which has the same address as the master host.
-     */
-    if (hPtr == myHostPtr) {
-        hPtr = getLIMByPort(hPtr, from);
-        if (hPtr == NULL) {
-            ls_syslog(LOG_ERR, "\
-%s: Received load update from unknown host %s",
-                      __func__, sockAdd2Str_(from));
-            return ;
-        }
+    if (findHostbyList(myClusterPtr->hostList, hPtr->hostName) == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Got load from client-only host %s.  Kill LIM on %s",
+                  __func__, sockAdd2Str_(from), sockAdd2Str_(from));
+        return;
     }
 
     if (hPtr->infoValid != TRUE) {

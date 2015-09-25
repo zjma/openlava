@@ -644,15 +644,26 @@ Reply:
 
 }
 
-/* validHosts()
- *
- * An OpenLava server or client hosts are always considered
- * as valid hosts.
- */
 int
 validHosts(char **hostList, int num, char *clName, int options)
 {
-    return true;
+    struct clusterNode *clPtr;
+    int cc;
+
+    myClusterPtr->status |= CLUST_ELIGIBLE;
+    *clName = FALSE;
+    clPtr = myClusterPtr;
+
+    for (cc = 0; cc < num; cc++) {
+
+        if (findHostbyList(clPtr->hostList, hostList[cc]) == NULL) {
+            ls_syslog(LOG_WARNING, "\
+%s: Unknown host %s in request", __func__, hostList[cc]);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
 }
 
 static struct shortLsInfo *
