@@ -1744,11 +1744,6 @@ readCluster(int checkMode)
     if ((hname = ls_getmyhostname()) == NULL)
         lim_Exit("readCluster/ls_getmyhostname");
 
-    /* Use virtual name if virtual lim
-     */
-    if (machineName)
-        hname = machineName;
-
     myHostPtr = findHostbyList(myClusterPtr->hostList, hname);
     if (!myHostPtr) {
         myHostPtr = findHostbyList(myClusterPtr->clientList, hname);
@@ -2471,12 +2466,6 @@ setMyClusterName(void)
 
     if ((hname = ls_getmyhostname()) == NULL)
         lim_Exit("setMyClusterName/ls_getmyhostname failed");
-
-    /* If we are a virtual host use our
-     * virtual name
-     */
-    if (machineName)
-        hname = machineName;
 
     ls_syslog(LOG_DEBUG, "%s: searching cluster files ...", __func__);
 

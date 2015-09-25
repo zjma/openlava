@@ -260,11 +260,8 @@ sendLoad(void)
         }
 
         toAddr.sin_family = AF_INET;
-        /* Sending load to the master so use
-         * the port defined in lsf.conf
-         * even if virtual host.
-         */
-        toAddr.sin_port   = htons(lim_port);
+        toAddr.sin_port   = lim_port;
+
         memcpy(&toAddr.sin_addr.s_addr,
                &myClusterPtr->masterPtr->addr[0],
                sizeof(in_addr_t));
