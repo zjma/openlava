@@ -647,23 +647,7 @@ Reply:
 int
 validHosts(char **hostList, int num, char *clName, int options)
 {
-    struct clusterNode *clPtr;
-    int cc;
-
-    myClusterPtr->status |= CLUST_ELIGIBLE;
-    *clName = FALSE;
-    clPtr = myClusterPtr;
-
-    for (cc = 0; cc < num; cc++) {
-
-        if (findHostbyList(clPtr->hostList, hostList[cc]) == NULL) {
-            ls_syslog(LOG_WARNING, "\
-%s: Unknown host %s in request", __func__, hostList[cc]);
-            return FALSE;
-        }
-    }
-
-    return TRUE;
+    return true;
 }
 
 static struct shortLsInfo *
