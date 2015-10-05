@@ -986,7 +986,6 @@ getLsbHostLoad(void)
     int gone;
     char update;
     struct hData *hPtr;
-    struct jData *jpbw;
 
     ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
