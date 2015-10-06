@@ -44,6 +44,7 @@
 #include <dlfcn.h>
 #include <limits.h>
 #include <pthread.h>
+#include <poll.h>
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/statvfs.h>

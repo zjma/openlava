@@ -46,6 +46,8 @@ Release notes for OpenLava versions
    response to changes in resource values.
 -- Fix MBD job lists bug preventing preemption from working correctly.
 -- Add -rdynamic option to gcc as new compiler (4.8.3)don't set it by default.
+-- Fix the limitation of the select() system call which can handle only 1024
+   simultaneous connections. Use poll() instead.
 
 3.0.1
 ======
