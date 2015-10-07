@@ -1146,7 +1146,6 @@ chanPoll_(struct chanData **chans,
     int n;
 
     nready = 0;
-    ls_syslog(LOG_INFO, "%s: nready %d", __func__, nready);
 
     if (poll_array == NULL) {
 	poll_array = calloc(chanMaxSize, sizeof(struct pollfd));
@@ -1200,8 +1199,6 @@ chanPoll_(struct chanData **chans,
 
 	poll_array[n].fd = channels[i].handle;
 	poll_array[n].events = POLLIN;
-
-        ls_syslog(LOG_INFO, "%s: add channel %d", __func__, i);
 
         if (channels[i].send
 	    && channels[i].send->forw != channels[i].send) {
