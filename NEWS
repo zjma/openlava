@@ -48,6 +48,7 @@ Release notes for OpenLava versions
 -- Add -rdynamic option to gcc as new compiler (4.8.3)don't set it by default.
 -- Fix the limitation of the select() system call which can handle only 1024
    simultaneous connections. Use poll() instead.
+-- Fix potential buffer overrun in lim when running elim.
 
 3.0.1
 ======
