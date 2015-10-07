@@ -4422,13 +4422,6 @@ removeJob(LS_LONG_INT jobId)
 
     if ((jp = getJobData(jobId)) && jp->nodeType != JGRP_NODE_ARRAY) {
 
-        if (! IS_FINISH(jp->jStatus)) {
-            ls_syslog(LOG_ERR, "\
-%s: cannot remove job %s in state 0x%x stage 0x%x", __func__,
-                      lsb_jobid2str(jp->jobId), jp->jStatus, mSchedStage);
-            return;
-        }
-
         while ((zp = getZombieJob(jp->jobId)) != NULL) {
             closeSbdConnect4ZombieJob(zp);
             offList((struct listEntry *) zp);
