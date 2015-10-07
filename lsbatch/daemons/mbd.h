@@ -41,7 +41,7 @@
 #define  DEF_EXCLUSIVE        FALSE
 #define  DEF_EVENT_WATCH_TIME 60
 #define  DEF_COND_CHECK_TIME  600
-#define DEF_MAX_SBD_CONNS     774
+#define DEF_MAX_SBD_CONNS     4096  /* Increase in lsb.params for high performance */
 #define DEF_SCHED_STAY        3
 #define DEF_FRESH_PERIOD     15
 #define DEF_PEND_EXIT       512
