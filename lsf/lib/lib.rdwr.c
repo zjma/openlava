@@ -236,7 +236,9 @@ rd_select_(int rd, struct timeval *timeout)
 	pfd.events = POLLIN;
 	pfd.revents = 0;
 
-	t = timeout->tv_sec * 1000 + timeout->tv_usec/1000;
+	t = -1;
+	if (timeout)
+	    t = timeout->tv_sec * 1000 + timeout->tv_usec/1000;
 
 	cc = poll(&pfd, 1, t);
 	if (cc >= 0)
