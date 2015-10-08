@@ -751,7 +751,7 @@ chanReadNonBlock_(int chfd, char *buf, int len, int timeout)
         return -1;
     }
 
-    return (nb_read_timeout(channels[chfd].handle, buf, len, timeout));
+    return nb_read_timeout(channels[chfd].handle, buf, len, timeout);
 }
 
 int
@@ -809,7 +809,8 @@ chanRpc_(int chfd, struct Buffer *in, struct Buffer *out,
     }
 
     if (logclass & LC_COMM)
-        ls_syslog(LOG_DEBUG2,"%s: waiting for reply timeout=%d ms", fname,timeout);
+        ls_syslog(LOG_DEBUG2,"\
+%s: waiting for reply timeout=%d ms", fname,timeout);
     if (timeout > 0) {
         timeval.tv_sec = timeout/1000;
         timeval.tv_usec = timeout - timeval.tv_sec*1000;
