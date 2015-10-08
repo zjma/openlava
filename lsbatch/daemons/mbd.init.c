@@ -3463,7 +3463,7 @@ load_fair_plugin(struct qData *qPtr)
     assert(qPtr->fsSched);
 
     sprintf(buf, "\
-%s/../lib/libfairshare.so", daemonParams[LSB_CONFDIR].paramValue);
+%s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
 
     f->handle = dlopen(buf, RTLD_NOW);
     if (f->handle == NULL) {
@@ -3771,7 +3771,7 @@ load_preempt_plugin(struct qData *qPtr)
     qPtr->prmSched->name = strdup(qPtr->queue);
 
     sprintf(buf, "\
-%s/../lib/libpreempt.so", daemonParams[LSB_CONFDIR].paramValue);
+%s/libpreempt.so", daemonParams[LSF_LIBDIR].paramValue);
 
     p->handle = dlopen(buf, RTLD_NOW);
     if (p->handle == NULL) {
