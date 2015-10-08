@@ -49,6 +49,7 @@ Release notes for OpenLava versions
 -- Fix the limitation of the select() system call which can handle only 1024
    simultaneous connections. Use poll() instead.
 -- Fix potential buffer overrun in lim when running elim.
+-- Modify bparams and mbatchd to display maxSbdConnections.
 
 3.0.1
 ======
