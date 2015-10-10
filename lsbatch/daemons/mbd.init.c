@@ -2013,8 +2013,10 @@ createTmpGData(struct groupInfoEnt *groups,
 
         /* Copy the group slots built in resource
          */
-        if (gPtr->group_slots)
+        if (gPtr->group_slots) {
             grpPtr->group_slots = strdup(gPtr->group_slots);
+	    grpPtr->max_slots = gPtr->max_slots;
+	}
 
         if (grpPtr->memberTab.numEnts == 0
             && grpPtr->numGroups == 0
@@ -3561,7 +3563,7 @@ getQueueSlots(struct qData *qPtr)
         if (!isHostQMember(hPtr, qPtr))
             continue;
 
-        numSlots = numSlots + hPtr->numCPUs;
+        numSlots = numSlots + hPtr->maxJobs;
     }
 
     return numSlots;
