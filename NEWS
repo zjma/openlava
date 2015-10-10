@@ -50,6 +50,9 @@ Release notes for OpenLava versions
    simultaneous connections. Use poll() instead.
 -- Fix potential buffer overrun in lim when running elim.
 -- Modify bparams and mbatchd to display maxSbdConnections.
+-- Added a new feature MAX_SLOTS in lsb.hosts which is the upper limit
+   for the number of usable slots in a hostgroup. The parameter GROUP_SLOTS
+   must be enabled in lsb.hosts.
 
 3.0.1
 ======
