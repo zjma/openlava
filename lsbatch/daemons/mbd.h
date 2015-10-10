@@ -403,7 +403,7 @@ struct jShared {
     (JP)->jStatus &= ~JOB_STAT_RESERVE; \
 }
 
-struct       hostAcct {
+struct hostAcct {
     struct   hData *hPtr;
     int      numRUN;
     int      numSSUSP;
@@ -670,6 +670,7 @@ struct gData {
     int  numGroups;
     struct gData *gPtr[MAX_GROUPS];
     char *group_slots;
+    int max_slots;
 };
 
 typedef enum {
