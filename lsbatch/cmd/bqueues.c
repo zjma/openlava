@@ -526,7 +526,7 @@ print_slot_shares(struct queueInfoEnt *qp)
 
     numRUN = 0;
     for (i = 0; i < qp->numAccts; i++) {
-        if (qp->saccts[i]->options & SACCT_GROUP)
+        if (qp->saccts[i]->options & SACCT_USER)
             numRUN = numRUN + qp->saccts[i]->numRUN;
     }
 

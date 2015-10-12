@@ -53,6 +53,7 @@ Release notes for OpenLava versions
 -- Added a new feature MAX_SLOTS in lsb.hosts which is the upper limit
    for the number of usable slots in a hostgroup. The parameter GROUP_SLOTS
    must be enabled in lsb.hosts.
+-- Fix wrong calculation of fairshare free slots in the bqueues -l display.
 
 3.0.1
 ======
