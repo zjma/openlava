@@ -426,3 +426,67 @@ groupC and hostB.
 .HP 2
 \(bu groupF contains hostF, hostK, and the 3 hosts in groupC.
 .RE
+.SH GROUP_SLOT
+.BR
+.PP
+.SS Description
+.BR
+.PP
+.PP
+A shared resource name that represents the free job slots in the host group. This is an optional parameter.
+.PP
+The shared resource needs to be defined as a cluster wide shared resource in the
+lsf.shared and lsf.cluster.<cluster_name> files. The OpenLava scheduler (mbatchd) automatically sets up the value of this shared resource without the need to configure an elim. The
+value can be displayed with the command "bhosts -l".
+.PP
+.SH MAX_SLOTS
+.BR
+.PP
+.SS Description
+.BR
+.PP
+.PP
+The maximum value of the free job slots in the host group. This is an optional parameter.
+.RE
+.SS Example 3
+.BR
+.PP
+Two shared resources are defined in the lsf.shared file to represent free job slots for two host groups:
+
+Begin Resource
+.br
+RESOURCENAME  TYPE    INTERVAL INCREASING  DESCRIPTION
+.br
+   fslots1    Numeric    60       N        (Free job slots for group1)
+.br
+   fslots2    Numeric    60       N        (Free job slots for group2)
+.br
+End Resource
+.br
+.PP
+The resource locations are defined in the lsf.cluster.openlava file:
+
+Begin ResourceMap
+.br
+RESOURCENAME  LOCATION
+.br
+fslots1       [all]
+.br
+fslots2       [all]
+.br
+End ResourceMap
+.PP
+The GROUP_SLOT and MAX_SLOTS fields are defined in the lsb.hosts file:
+
+Begin HostGroup
+.br
+GROUP_NAME       GROUP_MEMBER         GROUP_SLOT      MAX_SLOTS
+.br
+group1           (all ~master)         (fslots1)        ()
+.br
+group2           (node001 node002)     (fslots2)        (20)
+.br
+End HostGroup
+.PP
+In this example, the number of free job slots for host groups group1 and group2 is calculated by
+the OpenLava scheduler with host group group2 having a maximum value of 20.
