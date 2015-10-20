@@ -2,6 +2,7 @@ Release notes for OpenLava versions
 
 3.1.0
 ======
+-- Modify openlava.sh to forcefully terminate sbatchd if SIGTERM does not work.
 
 3.1pre1
 =======
