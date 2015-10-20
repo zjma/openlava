@@ -27,6 +27,7 @@ export OPENLAVA_TOP=@prefix@
 kill_daemons()
 {
     killall -q lim res sbatchd  mbatchd
+    killall -q -9 sbatchd
 }
 
 check_ret_code()
