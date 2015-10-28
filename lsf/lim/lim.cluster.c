@@ -71,14 +71,14 @@ processMsg(int chanfd)
     struct Buffer *buf;
     struct LSFHeader hdr;
     XDR xdrs;
-    struct sockaddr_in from;
 
     if (clientMap[chanfd] && clientMap[chanfd]->inprogress)
         return;
 
     if (chanDequeue_(chanfd, &buf) < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed to dequeue from channel %d %M", __func__, chanfd);
+%s: failed to dequeue from channel %d from %s %M",
+		  __func__, chanfd, sockAdd2Str_(&clientMap[chanfd]->from));
         shutDownChan(chanfd);
         return;
     }
@@ -91,7 +91,7 @@ processMsg(int chanfd)
     if (!xdr_LSFHeader(&xdrs, &hdr)) {
         ls_syslog(LOG_ERR, "\
 %s: Bad header received chanfd %d from %s",
-                  __func__, chanfd, sockAdd2Str_(&from));
+                  __func__, chanfd, sockAdd2Str_(&clientMap[chanfd]->from));
         xdr_destroy(&xdrs);
         shutDownChan(chanfd);
         chanFreeBuf_(buf);
@@ -102,7 +102,7 @@ processMsg(int chanfd)
         || (!clientMap[chanfd] && hdr.opCode < FIRST_INTER_CLUS)) {
         ls_syslog(LOG_ERR, "\
 %s: Invalid opCode %d from client %s",
-                  __func__, hdr.opCode, sockAdd2Str_(&from));
+                  __func__, hdr.opCode, sockAdd2Str_(&clientMap[chanfd]->from));
         xdr_destroy(&xdrs);
         shutDownChan(chanfd);
         chanFreeBuf_(buf);
@@ -112,7 +112,7 @@ processMsg(int chanfd)
     if (hdr.opCode >= FIRST_INTER_CLUS && !masterMe) {
         ls_syslog(LOG_ERR, "\
 %s: Intercluster request received from %s, but I'm not master",
-                  __func__, sockAdd2Str_(&from));
+                  __func__, sockAdd2Str_(&clientMap[chanfd]->from));
         xdr_destroy(&xdrs);
         shutDownChan(chanfd);
         chanFreeBuf_(buf);
@@ -123,6 +123,7 @@ processMsg(int chanfd)
 
         if (hdr.opCode != LIM_CLUST_INFO) {
             socklen_t L = sizeof(struct sockaddr_in);
+	    struct sockaddr_in from;
 
             if (getpeername(chanSock_(chanfd),
                             (struct sockaddr *)&from,
@@ -144,7 +145,7 @@ processMsg(int chanfd)
 
     ls_syslog(LOG_DEBUG, "\
 %s: Received request %d from %s chan %d len %d",
-              __func__, hdr.opCode, sockAdd2Str_(&from),
+              __func__, hdr.opCode, sockAdd2Str_(&clientMap[chanfd]->from),
               chanfd, buf->len);
 
     switch(hdr.opCode) {
@@ -184,7 +185,7 @@ processMsg(int chanfd)
         default:
             ls_syslog(LOG_ERR, "\
 %s: Invalid opCode %d from %s", __func__, hdr.opCode,
-                      sockAdd2Str_(&from));
+                      sockAdd2Str_(&clientMap[chanfd]->from));
             xdr_destroy(&xdrs);
             chanFreeBuf_(buf);
             break;
