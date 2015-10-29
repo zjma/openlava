@@ -4,6 +4,7 @@ Release notes for OpenLava versions
 ======
 -- Modify openlava.sh to forcefully terminate sbatchd if SIGTERM does not work.
 -- Fix LIM bug in which the code was accessing non initialized memory.
+-- Fix several memory leaks in LIM.
 
 3.1pre1
 =======

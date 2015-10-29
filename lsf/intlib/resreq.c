@@ -1283,6 +1283,8 @@ freeResVal(struct resVal *resVal)
 	FREEUP(resVal->xorExprs);
     }
 
+    _free_(resVal->val);
+    _free_(resVal->rusage_bit_map);
     while ((r = pop_link(resVal->rl))) {
         _free_(r->bitmap);
         _free_(r->val);
