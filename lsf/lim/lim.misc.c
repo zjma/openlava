@@ -448,6 +448,7 @@ loadEvents(void)
 znovu:
     while ((eRec = ls_readeventrec(logFp))) {
         struct hostEntryLog *hPtr;
+	struct hostEntryLog *hPtr2;
 
         switch (eRec->event) {
             case EV_ADD_HOST:
@@ -473,8 +474,10 @@ znovu:
 %s: attempt to remove host %s which is not configured, ignoring it.",
                               __func__, hPtr->hostName);
                 }
+		hPtr2 = e->hData;
                 h_rmEnt_(&tab, e);
                 freeHostEntryLog(&hPtr);
+		freeHostEntryLog(&hPtr2);
                 break;
             case EV_LIM_START:
                 break;
