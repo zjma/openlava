@@ -788,23 +788,11 @@ child_handler(int sig)
     int           pid;
     LS_WAIT_T     status;
 
-    if (logclass & (LC_TRACE | LC_HANG))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
-
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         if (pid == elim_pid) {
-            ls_syslog(LOG_ERR, "\
-%s: elim (pid=%d) died (exit_code=%d, exit_sig=%d)",
-                      __func__,
-                      (int)elim_pid,
-                      WEXITSTATUS (status),
-                      WIFSIGNALED (status) ? WTERMSIG (status) : 0);
             elim_pid = -1;
         }
         if (pid == pimPid) {
-            if (logclass & LC_PIM)
-                ls_syslog(LOG_DEBUG, "\
-child_handler: pim (pid=%d) died", pid);
             pimPid = -1;
         }
     }
