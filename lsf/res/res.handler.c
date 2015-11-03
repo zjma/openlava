@@ -3546,7 +3546,6 @@ void
 child_handler(void)
 {
     res_interrupted = 1;
-    ls_syslog(LOG_ERR, "%s: interrupted %d", __func__, res_interrupted);
 }
 
 void
