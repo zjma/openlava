@@ -163,6 +163,7 @@ breconfig(int argc, char **argv, int configFlag)
     int fd;
     FILE *fp;
     char *linep;
+    char filename[]="/tmp/lsbXXXXXX";
 
     while ((optName = myGetOpt(argc, argv, "f|v|")) != NULL) {
         switch(optName[0]) {
@@ -185,7 +186,7 @@ breconfig(int argc, char **argv, int configFlag)
         fprintf(stderr, "\nChecking configuration files ...\n\n");
 
         stdoutsave = dup(1);
-        fd = mkstemp("lsbatch");
+        fd = mkstemp(filename);
         if (fd > 0 ) {
 
             dup2(fd, 1);
@@ -196,7 +197,7 @@ breconfig(int argc, char **argv, int configFlag)
             dup2(stdoutsave, 1);
             dup2(stdoutsave, 2);
 
-            fp = fdopen(fd, "r");
+            fp = fopen(filename, "r");
             if (fp != 0) {
                 if (checkReply == EXIT_FATAL_ERROR
                     || checkReply == EXIT_WARNING_ERROR) {
@@ -215,7 +216,7 @@ breconfig(int argc, char **argv, int configFlag)
                 fflush(stderr);
             }
             fclose(fp);
-            close(fd);
+	    unlink(filename);
         }
         else
             checkReply = checkConf(0, 2);
