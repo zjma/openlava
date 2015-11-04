@@ -187,7 +187,7 @@ sendGrpReq (char *clusterName, int options, struct infoReq *groupInfo,
 }
 
 void
-freeGroupInfoReply (struct groupInfoReply *reply)
+freeGroupInfoReply(struct groupInfoReply *reply)
 {
     int i;
 
@@ -196,9 +196,11 @@ freeGroupInfoReply (struct groupInfoReply *reply)
 
     for (i = 0; i < reply->numGroups; i++) {
         FREEUP(reply->groups[i].memberList);
-
+	/* other members of the groupInfoEnt are
+	 * not freed as they address static memory
+	 */
     }
 
-    FREEUP (reply->groups);
+    FREEUP(reply->groups);
 
 }

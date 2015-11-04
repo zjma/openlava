@@ -220,6 +220,12 @@ getGroupInfoEntFromUdata(struct uData *u, char recursive)
     group.group = u->user;
     group.memberList = getGroupMembers(u->gData,
 				       recursive);
+    /* The group_slots is only valid for host groups
+     * here we assign static memory which must not
+     * be freed in freegroupInfoReply()
+     */
+    group.group_slots = "";
+
     return (&group);
 
 }

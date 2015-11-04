@@ -7,6 +7,7 @@ Release notes for OpenLava versions
 -- Fix several memory leaks in LIM.
 -- Fix res hang in child handler.
 -- Fix memory corruption in mbatchd when dealing with rusage.
+-- Fix mbatchd child core dump when processing bugroup command.
 
 3.1pre1
 =======
