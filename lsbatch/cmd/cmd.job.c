@@ -750,7 +750,7 @@ initLoadIndex(void)
     } else {
 	loadIndex.nIdx = lsInfo->nRes;
         if (!names)
-            if(!(names =(char **)malloc(lsInfo->nRes*sizeof(char *)))) {
+            if(!(names = malloc(lsInfo->nRes * sizeof(char *)))) {
                 lserrno=LSE_MALLOC;
                 ls_perror("initLoadIndex");
                 return NULL;

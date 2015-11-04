@@ -389,7 +389,13 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
         } else {
             num = 1;
         }
-
+	/*
+	 * Search for the rest of the reasonTb and see whether there
+	 * is a matching reason.  If so, we add the associated host name
+	 * to the string stored in hostList so that we can provide a
+	 * summary information instead of repeating the same reason for
+	 * each host.
+	 */
         for (j = i + 1; j < numReasons; j++) {
             if (reasonTb[j] == 0)
                 continue;
