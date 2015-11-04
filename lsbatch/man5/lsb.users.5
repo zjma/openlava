@@ -60,13 +60,13 @@ parentheses () or a dash - to specify the default value for an entry.
 .PP
 Begin UserGroup
 .br
-GROUP_NAME   GROUP_MEMBER
+GROUP_NAME   GROUP_MEMBER               USER_SHARES
 .br
-groupA       (user1 user2 user3 user4)
+groupA       (user1 user2 user3 user4)  ()
 .br
-groupB       (groupA user5)
+groupB       (groupA user5)             ([groupA,3] [user5,4])
 .br
-groupC       (!)
+groupC       (!)                        ([default,1])
 .br
 End UserGroup
 
@@ -129,7 +129,51 @@ The reserved name all specifies all users in the cluster.
 .IP
 The exclamation mark ! specifies that the group membership 
 should be retrieved via egroup. 
+.SH USER_SHARES
+.BR
+.PP
+.PP
+Mandatory only if FAIRSHARE is defined in lsb.queues. This section defines a share
+tree for users and user groups for hierarchical fairshare.
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fB(\fR\fIuser\fR, \fInumber_shares\fR\fB)\fR
+.PP
+Specify the following:
+.HP2
+\(bu Enclose the list in parentheses, even if there is no user share assignment.
+.RE
 
+\(bu Enclose each user share assignment in square brackets.
+.RE
+
+\(bu Separate the list of share assignments with a space.
+.RE
+
+\(bu \fIuser\fR-Specify users or user groups. Shares can be assigned to:
+.RE
+.RS
+- A single user (specify \fIuser_name\fR).
+
+- Users in a group, individually (specify \fIgroup_name@\fR) or collectively (specify
+\fIgroup_name\fR).
+
+- Users not included in any other share assignment, individually (specify the keyword
+\fIdefault\fR).
+
+\fBNote:\fR By default, when resources are assigned collectively to a group, the group
+members compete for the resources according to first-come, first-served (FCFS) scheduling.
+.PP
+.RE
+.HP2
+\(bu \fInumber_shares\fR-Specify a positive integer representing the number of shares of
+the cluster resources assigned to the user. The number of shares assigned to each user is
+only meaningful when comparing it to the shares assigned to other users or to the total
+number of shares. The total number of shares is just the sum of all the shares assigned
+in each share assignment.
 .SH User Section
 .BR
 .PP

@@ -1,5 +1,10 @@
 Release notes for OpenLava versions
 
+-- badmin ckconfig/reconfig displays configuration error and warning 
+   messages. 
+-- bsub/bmod/brestart -h displays usage information.
+-- Added USER_SHARES information in lsb.users.5
+
 3.1.0
 ======
 -- Modify openlava.sh to forcefully terminate sbatchd if SIGTERM does not work.

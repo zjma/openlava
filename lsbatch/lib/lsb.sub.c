@@ -2586,6 +2586,71 @@ gettimefor(char *toptarg, time_t *tTime)
     return 0;
 }
 
+void
+usage(int options)
+{
+    fprintf(stderr, I18N_Usage);
+    switch(options){
+    case SUB_MODIFY:
+        fprintf(stderr, ": bmod [-h] [-V] [-B | -Bn] [-N | -Nn] [-r | -rn]\n");
+        fprintf(stderr, "\t    [-x | -xn] [-b begin_time | -bn] [-C core_limit | -Cn]\n");
+        fprintf(stderr, "\t    [-c [hour:]minute[/host_name | /host_model] | -cn]\n");
+        fprintf(stderr, "\t    [-D data_limit | -Dn] [-e err_file | -en]\n");
+        fprintf(stderr, "\t    [-E \"pre_exec_command [argument ...]\" | -En]\n");
+        fprintf(stderr, "\t    [-f \"local_file op [remote_file]\" ... | -fn]\n");
+        fprintf(stderr, "\t    [-F file_limit | -Fn] [-G user_group | -Gn]\n");
+        fprintf(stderr, "\t    [-i input_file | -in | -is input_file | -isn]\n");
+        fprintf(stderr, "\t    [-J job_name | -J \"%%job_limit\" | -Jn]\n");
+        fprintf(stderr, "\t    [-k checkpoint_dir | -k \"checkpoint_dir [checkpoint_period]\" | -kn]\n");
+        fprintf(stderr, "\t    [-L login_shell | -Ln]\n");
+        fprintf(stderr, "\t    [-m \"host_name[+[pref_level]] | host_group[+[pref_level]] ...\" | -mn]\n");
+        fprintf(stderr, "\t    [-M mem_limit | -Mn] [-n num_processors | -nn ]\n");
+        fprintf(stderr, "\t    [-o out_file | -on] [-P project_name | -Pn]\n");
+        fprintf(stderr, "\t    [-p process_limit | -Pn] [-q \"queue_name ...\" | -qn]\n");
+        fprintf(stderr, "\t    [-R \"res_req\" | -Rn] [-sp priority | -spn]\n");
+        fprintf(stderr, "\t    [-S stack_limit | -Sn] [-t term_time | -tn]\n");
+        fprintf(stderr, "\t    [-u mail_user | -un] [-w ’dependency_expression’ | -wn]\n");
+        fprintf(stderr, "\t    [-W run_limit [/host_name | /host_model] | -Wn]\n");
+        fprintf(stderr, "\t    [-Z \"new_command\" | -Zs \"new_command\" | -Zsn]\n");
+        fprintf(stderr, "\t    [job_ID | \"job_ID[index]\"]\n");
+        break;
+    case SUB_RESTART:
+        fprintf(stderr, ": brestart [-h] [-V] [-B] [-f] [-N] [-x]\n");
+        fprintf(stderr, "\t\t[-b begin_time] [-C core_limit]\n");
+        fprintf(stderr, "\t\t[-c [hour:]minute[/host_name | /host_model]]\n");
+        fprintf(stderr, "\t\t[-D data_limit] [-E \"pre_exec_command [argument ...]\" | -En]\n");
+        fprintf(stderr, "\t\t[-F file_limit] [-G user_group]\n");
+        fprintf(stderr, "\t\t[-m \"host_name[+[pref_level]] | host_group[+[pref_level]] ...\"]\n");
+        fprintf(stderr, "\t\t[-M mem_limit] [-q \"queue_name ...\"] [-S stack_limit]\n"); 
+        fprintf(stderr, "\t\t[-t term_time] [-w ’dependency_expression’]\n");
+        fprintf(stderr, "\t\t[-W run_limit [/host_name | /host_model]]\n");
+        fprintf(stderr, "\t\tcheckpoint_dir [job_ID | \"job_ID[index]\"]\n");
+        break;
+    default:
+        fprintf(stderr, ": bsub [-h] [-V] [-B] [-H] [-I | -Ip | -Is | -K] [-N] [-r] [-x]\n");
+        fprintf(stderr, "\t    [a esub_parameters] [-b [[month:]day:]hour:minute] [-C core_limit]\n");
+        fprintf(stderr, "\t    [-c [hour:]minute[/host_name | /host_model] | -cn]\n");
+        fprintf(stderr, "\t    [-D data_limit] [-e err_file]\n");
+        fprintf(stderr, "\t    [-E \"pre_exec_command [argument ...]\"]\n");
+        fprintf(stderr, "\t    [-f \"local_file op [remote_file]\" ...]\n");
+        fprintf(stderr, "\t    [-F file_limit] [-G user_group]\n");
+        fprintf(stderr, "\t    [-i input_file | -is input_file]\n");
+        fprintf(stderr, "\t    [-J job_name | -J \"job_name[index_list]%%job_limit\"\n");
+        fprintf(stderr, "\t    [-k \"checkpoint_dir [checkpoint_period] [method=method_name]\"\n");
+        fprintf(stderr, "\t    [-L login_shell\n");
+        fprintf(stderr, "\t    [-m \"host_name[+[pref_level]] | host_group[+[pref_level]] ...\"]\n");
+        fprintf(stderr, "\t    [-M mem_limit] [-n min_processors[,max_processors]]\n");
+        fprintf(stderr, "\t    [-o out_file] [-P project_name]\n");
+        fprintf(stderr, "\t    [-p process_limit] [-q \"queue_name ...\"]\n");
+        fprintf(stderr, "\t    [-R \"res_req\"] [-sp priority]\n");
+        fprintf(stderr, "\t    [-S stack_limit] [-t [[month:]day:]hour:minut]\n");
+        fprintf(stderr, "\t    [-u mail_user] [-w ’dependency_expression’]\n");
+        fprintf(stderr, "\t    [-W [hours:]minutes[/host_name | /host_model]]\n");
+        fprintf(stderr, "\t    [-Zs]\n");
+        break;
+    }
+}
+
 int
 setOption_(int argc, char **argv, char *template, struct submit *req,
            int mask, int mask2, char **errMsg)
@@ -2830,7 +2895,8 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                 break;
 
             case 'h':
-                return -1;
+                usage(req->options);
+                exit(-1);
 
             case 'm':
                 req->options2 |= SUB2_MODIFY_PEND_JOB;
