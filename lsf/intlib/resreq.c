@@ -704,8 +704,14 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
              */
             _free_(resVal->rusage_bit_map);
             _free_(resVal->val);
-            resVal->rusage_bit_map = rusage_bit_map;
-            resVal->val = val;
+	    /* Copy the values as later we free them separately
+	     */
+            resVal->rusage_bit_map = calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
+	    memcpy(resVal->rusage_bit_map,
+		   rusage_bit_map,
+		   GET_INTNUM(lsInfo->nRes) * sizeof(int));
+            resVal->val = calloc(lsInfo->nRes, sizeof(float));
+	    memcpy(resVal->val, r->val, lsInfo->nRes * sizeof(float));
         }
         ++i;
     } /* while (s = traverse_link()) */

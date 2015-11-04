@@ -124,13 +124,9 @@ getGroupInfoEnt(char **groups, int *num, char recursive)
 	struct uData *u;
 	int i;
 
-
-	groupInfoEnt = (struct groupInfoEnt *)
-	    my_calloc(numofugroups,
-		      sizeof(struct groupInfoEnt),
-			     fname);
-
-	i = 0;
+	groupInfoEnt = my_calloc(numofugroups,
+				 sizeof(struct groupInfoEnt),
+				 fname);
 
 	for (i = 0; i < numofugroups; i++) {
 	    struct groupInfoEnt *g;
@@ -223,7 +219,7 @@ getGroupInfoEntFromUdata(struct uData *u, char recursive)
 
     group.group = u->user;
     group.memberList = getGroupMembers(u->gData,
-				      recursive);
+				       recursive);
     return (&group);
 
 }
