@@ -1,9 +1,12 @@
 Release notes for OpenLava versions
 
+3.2.0
+=====
 -- badmin ckconfig/reconfig displays configuration error and warning 
    messages. 
 -- bsub/bmod/brestart -h displays usage information.
 -- Added USER_SHARES information in lsb.users.5
+-- Add lsclusters command.
 
 3.1.0
 ======
