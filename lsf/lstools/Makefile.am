@@ -7,7 +7,10 @@ include $(top_srcdir)/common.mk
 AM_CPPFLAGS += -I..
 
 bin_PROGRAMS = lsacct lseligible lshosts lsid lsinfo lsloadadj \
- 		lsload lsplace lsrcp lsrun lsaddhost lsrmhost lsmon
+ 		lsload lsplace lsrcp lsrun lsaddhost lsrmhost lsmon lsclusters
+
+lsclusters_SOURCES = lsclusters.c
+lsclusters_LDADD = ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
 
 lsacct_SOURCES = lsacct.c  
 lsacct_LDADD = ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
