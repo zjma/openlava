@@ -950,6 +950,8 @@ copyHostGroup(struct gData *grp,
     groupInfoEnt->group = grp->group;
     groupInfoEnt->memberList = getGroupMembers(grp, recursive);
     groupInfoEnt->group_slots = grp->group_slots;
+    if (groupInfoEnt->group_slots == NULL)
+	groupInfoEnt->group_slots = "";
 }
 
 int

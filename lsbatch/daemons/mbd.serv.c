@@ -1603,10 +1603,9 @@ do_groupInfoReq(XDR *xdrs,
             reply = LSBE_NO_HOST_GROUP;
         } else {
 
-            groupInfoReply.groups = (struct groupInfoEnt *)
-                my_calloc(numofhgroups,
-                          sizeof(struct groupInfoEnt),
-                          "do_groupInfoReq");
+            groupInfoReply.groups = my_calloc(numofhgroups,
+					      sizeof(struct groupInfoEnt),
+					      "do_groupInfoReq");
 
             reply = checkGroups(&groupInfoReq, &groupInfoReply);
 
