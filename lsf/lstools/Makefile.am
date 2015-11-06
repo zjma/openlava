@@ -12,7 +12,7 @@ bin_PROGRAMS = lsacct lseligible lshosts lsid lsinfo lsloadadj \
 lsclusters_SOURCES = lsclusters.c
 lsclusters_LDADD = ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
 if SOLARIS
-lsacct_LDADD += -lnsl -lsocket
+lsclusters_LDADD += -lnsl -lsocket
 endif
 
 lsacct_SOURCES = lsacct.c  
