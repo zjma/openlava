@@ -1,0 +1,63 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH lsclusters 1 "OpenLava Version 3.1 - Aug 2015"
+.br
+.SH NAME
+\fBlsclusters\fR - displays configuration information about the current 
+OpenLava cluster
+.SH SYNOPSIS
+.BR
+.PP
+.PP
+\fBlsclusters\fR [\fB-h\fR | \fB-V\fR] [\fB-l\fR]
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+\fB\fRDisplays configuration information about the current OpenLava 
+cluster.
+.SH OPTIONS
+.BR
+.PP
+.TP
+\fB-l
+\fR
+.IP
+Long format. Displays additional information.
+
+
+.TP 
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exits. 
+
+
+.TP 
+\fB-V
+\fR
+.IP
+Prints OpenLava release version to stderr and exits. 
+
+
+.SH DEFAULT OUTPUT
+.BR
+.PP
+.PP
+The information includes: cluster name, cluster master host, 
+primary clsuter administrator's login name, total number of hosts
+in the cluster, and the number of server hosts in the cluster.
+
+.SH LONG FORMAT (-l)
+.BR
+.PP
+.PP
+If this option is specified, the command also lists available
+resource names, host types, host models, and cluster adminisrtator's 
+login names.
+.SH SEE ALSO
+.BR
+.PP
+.PP
+lsinfo(1), ls_info(3), ls_clusterinfo(3), lsf.cluster(5)
