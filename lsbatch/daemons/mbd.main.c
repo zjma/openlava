@@ -143,6 +143,7 @@ int    schedule;
 int    scheRawLoad;
 int lsbModifyAllJobs = FALSE;
 int max_job_sched = INT32_MAX;
+int qsort_jobs = 0;
 struct parameterInfo *mbdParams;
 static int schedule1;
 static struct jData *jobData = NULL;
@@ -307,6 +308,11 @@ main(int argc, char **argv)
 	max_job_sched = atoi(daemonParams[MBD_MAX_JOBS_SCHED].paramValue);
 	ls_syslog(LOG_INFO, "\
 mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
+    }
+
+    if (daemonParams[MBD_QSORT_JOBS].paramValue) {
+	qsort_jobs = 1;
+	ls_syslog(LOG_INFO, "mbd:%s MBD_QOSRT_JOBS is set to true", __func__);
     }
 
     daemon_doinit();

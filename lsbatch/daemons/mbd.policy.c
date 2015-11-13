@@ -4199,6 +4199,11 @@ scheduleAndDispatchJobs(void)
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
 
+    if (qsort_jobs) {
+	sort_job_list(MJL);
+	sort_job_list(PJL);
+    }
+
     if (jRefList == NULL)
         jRefList = listCreate("job reference list");
 

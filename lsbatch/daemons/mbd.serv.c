@@ -167,6 +167,11 @@ do_jobInfoReq(XDR *xdrs,
         ls_syslog(LOG_DEBUG, "\
 %s: Entering this routine...; channel=%d", __func__,chfd);
 
+    if (qsort_jobs) {
+	sort_job_list(MJL);
+	sort_job_list(PJL);
+    }
+
     jobInfoHead.hostNames = NULL;
     jobInfoHead.jobIds  = NULL;
 
