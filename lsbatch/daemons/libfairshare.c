@@ -167,7 +167,7 @@ fs_elect_job(struct qData *qPtr,
 	++count;
 	if (count >= max_job_sched) {
 	    *jRef = NULL;
-	    ls_syslog(LOG_INFO, "\
+	    ls_syslog(LOG_DEBUG, "\
 %s: bailed out at %d max %d", __func__, count, max_job_sched);
 	    return -1;
 	}

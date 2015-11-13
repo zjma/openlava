@@ -303,10 +303,10 @@ main(int argc, char **argv)
         setLsbPtilePack(TRUE);
     }
 
-    if (daemonParams[MBD_MAX_JOB_SCHED].paramValue) {
-	max_job_sched = atoi(daemonParams[MBD_MAX_JOB_SCHED].paramValue);
+    if (daemonParams[MBD_MAX_JOBS_SCHED].paramValue) {
+	max_job_sched = atoi(daemonParams[MBD_MAX_JOBS_SCHED].paramValue);
 	ls_syslog(LOG_INFO, "\
-mbd:%s: MBD_MAX_JOB_SCHED %d", __func__, max_job_sched);
+mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
     }
 
     daemon_doinit();

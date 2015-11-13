@@ -86,7 +86,7 @@ struct config_param daemonParams[] = {
     {"MBD_DONT_FORK", NULL},
     {"LIM_NO_MIGRANT_HOSTS", NULL},
     {"SBD_BIND_CPU", NULL},
-    {"MBD_MAX_JOB_SCHED", NULL},
+    {"MBD_MAX_JOBS_SCHED", NULL},
     {NULL, NULL}
 };
 

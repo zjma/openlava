@@ -4558,7 +4558,7 @@ jiter_next_job(LIST_T *jRefList)
 
 	++count;
 	if (count >= max_job_sched) {
-	    ls_syslog(LOG_INFO, "\
+	    ls_syslog(LOG_DEBUG, "\
 %s: bailed out at %d max %d", __func__, count, max_job_sched);
 	    return NULL;
 	}
