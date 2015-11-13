@@ -154,13 +154,14 @@ fs_elect_job(struct qData *qPtr,
          * ahead belongs to a different queue
          */
         if (jref->back == (void *)jRefList
-            || jPtr->qPtr->queueId != jPtr->back->qPtr->queueId) {
+            || jPtr->qPtr->priority != jPtr->back->qPtr->priority) {
             *jRef = jref;
             return 0;
         }
         /* fixme: handle user priority here
          */
-        if (jPtr->userId == s->uid)
+        if (jPtr->userId == s->uid
+	    && jPtr->qPtr == qPtr)
             break;
     }
 

@@ -4567,8 +4567,8 @@ jiter_next_job(LIST_T *jRefList)
         if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
             struct qData *qPtr = jPtr->qPtr;
             (*qPtr->fsSched->fs_elect_job)(qPtr,
-                                             jRefList,
-                                             &jR0);
+					   jRefList,
+					   &jR0);
             if (jR0) {
                 listRemoveEntry(jRefList,
                                 (LIST_ENTRY_T *)jR0);
