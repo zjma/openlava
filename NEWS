@@ -9,6 +9,9 @@ Release notes for OpenLava versions
 -- Fix memory corruption in mbatchd when dealing with rusage.
 -- Fix mbatchd child core dump when processing bugroup command.
 -- Improve fairshare performance.
+-- Introduce a lsf.conf parameter MBD_MAX_JOB_SCHED which allows site
+   to configure how many jobs should MBD attempt to schedule per cycle.
+   Typically two times the number of slots.
 
 3.1pre1
 =======

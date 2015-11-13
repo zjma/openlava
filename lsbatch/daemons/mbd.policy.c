@@ -4540,6 +4540,7 @@ jiter_next_job(LIST_T *jRefList)
     struct jRef *jR0;
     struct jData *jPtr0;
     struct jData *jPtr;
+    int count;
 
     min = INT32_MAX;
     jR0 = NULL;
@@ -4550,10 +4551,17 @@ jiter_next_job(LIST_T *jRefList)
      * the list keeps shrinking regardless if
      * job goes or not.
      */
+    count = 0;
     for (jR = (struct jRef *)jRefList->back;
          jR != (void *)jRefList;
          jR = (struct jRef *)jR->back) {
 
+	++count;
+	if (count >= max_job_sched) {
+	    ls_syslog(LOG_INFO, "\
+%s: bailed out at %d max %d", __func__, count, max_job_sched);
+	    return NULL;
+	}
         /* Get the highest priority job
          */
         jPtr = jR->job;

@@ -120,6 +120,7 @@ typedef enum {
 extern int mSchedStage;
 extern int freshPeriod;
 extern int maxSchedStay;
+extern int max_job_sched;
 
 #define DEL_ACTION_KILL      0x01
 #define DEL_ACTION_REQUEUE   0x02

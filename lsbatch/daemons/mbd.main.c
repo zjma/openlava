@@ -142,6 +142,7 @@ long   schedSeqNo;
 int    schedule;
 int    scheRawLoad;
 int lsbModifyAllJobs = FALSE;
+int max_job_sched = INT32_MAX;
 struct parameterInfo *mbdParams;
 static int schedule1;
 static struct jData *jobData = NULL;
@@ -299,9 +300,13 @@ main(int argc, char **argv)
 
     if (daemonParams[LSB_PTILE_PACK].paramValue != NULL
         && (strcasecmp(daemonParams[LSB_PTILE_PACK].paramValue, "y") == 0)) {
-
-
         setLsbPtilePack(TRUE);
+    }
+
+    if (daemonParams[MBD_MAX_JOB_SCHED].paramValue) {
+	max_job_sched = atoi(daemonParams[MBD_MAX_JOB_SCHED].paramValue);
+	ls_syslog(LOG_INFO, "\
+mbd:%s: MBD_MAX_JOB_SCHED %d", __func__, max_job_sched);
     }
 
     daemon_doinit();
