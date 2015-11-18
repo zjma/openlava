@@ -134,6 +134,7 @@ static void inPendJobList2(struct jData *,
                            int,
                            struct jData *,
                            struct jData **);
+static int jcompare(const void *, const void *);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
@@ -4466,15 +4467,10 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
 {
     struct jData *lastJob;
 
-    inPendJobList2(job, listno, NULL, &lastJob);
-
-    if (0) {
-        if (job->qPtr->lastJob)
-            inPendJobList2(job, listno, job->qPtr->lastJob, &lastJob);
-        else
-            inPendJobList2(job, listno, NULL, &lastJob);
-
-        job->qPtr->lastJob = lastJob;
+    if (qsort_jobs) {
+	_inPendJobList_(job, listno, requeueTime);
+    } else {
+	inPendJobList2(job, listno, NULL, &lastJob);
     }
 
     job->qPtr->lastJob = NULL;
@@ -8778,13 +8774,23 @@ rmMessageFile(struct jData *jPtr)
     unlink(file);
 }
 
-/* jcompare()
- *
- * Job sorting function.
- *
+/*
+ * Job sorting functions.
  */
-#if 0
-inPendJobList(struct jData *job, int listno, time_t requeueTime))
+void
+_inPendJobList_(struct jData *job, int listno, time_t requeueTime)
+{
+    listInsertEntryAtFront((LIST_T *)jDataList[listno],
+                           (LIST_ENTRY_T *)job);
+
+    if (mSchedStage == M_STAGE_REPLAY)
+        return;
+    if (0)
+	sort_job_list(listno);
+}
+
+void
+sort_job_list(int listno)
 {
     LIST_T *l;
     struct jData *jPtr;
@@ -8792,56 +8798,37 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime))
     int num;
     int cc;
 
-    listInsertEntryAtFront((LIST_T *)jDataList[listno],
-                           (LIST_ENTRY_T *)job);
+    /* Have to count the jobs, cannot trust the numEnts
+     * in the list_t data as not all list access use
+     * the list_t interface.
+     */
+    cc = 0;
+    for (jPtr = (struct jData *)jDataList[listno]->back;
+	 jPtr != (void *)jDataList[listno];
+	 jPtr = jPtr->back)
+	++cc;
 
-    if (mSchedStage == M_STAGE_REPLAY)
-        return;
+    if (cc == 0
+	|| cc == 1)
+	return;
 
+    jArray = calloc(cc, sizeof(struct jData *));
     l = (LIST_T *)jDataList[listno];
-    num = LIST_NUM_ENTRIES(l);
-    if (num == 1 || num == 0)
-        return;
-
-    jArray = calloc(num, sizeof(struct jData *));
 
     cc = 0;
     while ((jPtr = (struct jData *)listPop(l))) {
-        jArray[cc] = jPtr;
-        ++cc;
+	jArray[cc] = jPtr;
+	++cc;
     }
 
-    qsort(jArray, num, sizeof(struct jData *), jcompare);
+    qsort(jArray, cc, sizeof(struct jData *), jcompare);
+    num = cc;
 
     for (cc = 0; cc < num; cc++) {
         jPtr = jArray[cc];
         listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
     }
-    free(jArray);
-}
 
-void
-sort_job_list(int listno)
-{
-    l = (LIST_T *)jDataList[listno];
-    num = LIST_NUM_ENTRIES(l);
-    if (num == 1 || num == 0)
-        return;
-
-    jArray = calloc(num, sizeof(struct jData *));
-
-    cc = 0;
-    while ((jPtr = (struct jData *)listPop(l))) {
-        jArray[cc] = jPtr;
-        ++cc;
-    }
-
-    qsort(jArray, num, sizeof(struct jData *), jcompare);
-
-    for (cc = 0; cc < num; cc++) {
-        jPtr = jArray[cc];
-        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
-    }
     free(jArray);
 }
 
@@ -8879,4 +8866,3 @@ jcompare(const void *j1, const void *j2)
 
     return 0;
 }
-#endif

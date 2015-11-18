@@ -16,6 +16,14 @@ Release notes for OpenLava versions
 -- Fix res hang in child handler.
 -- Fix memory corruption in mbatchd when dealing with rusage.
 -- Fix mbatchd child core dump when processing bugroup command.
+-- Improve fairshare performance.
+-- Introduce an lsf.conf parameter MBD_MAX_JOB_SCHED which allows site
+   to configure how many jobs should MBD attempt to schedule per cycle.
+   Typically two times the number of slots.
+-- Introduce an lsf.conf parameter MBD_QSORT_JOBS which changes the way
+   jobs are inserted and sorted in the PJL. This parameter avoids searching
+   the job list upon a new job arrival speeding up the submission and overall
+   MBD operations. 
 
 3.1pre1
 =======

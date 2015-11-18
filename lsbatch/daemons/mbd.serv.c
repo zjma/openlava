@@ -167,6 +167,11 @@ do_jobInfoReq(XDR *xdrs,
         ls_syslog(LOG_DEBUG, "\
 %s: Entering this routine...; channel=%d", __func__,chfd);
 
+    if (qsort_jobs) {
+	sort_job_list(MJL);
+	sort_job_list(PJL);
+    }
+
     jobInfoHead.hostNames = NULL;
     jobInfoHead.jobIds  = NULL;
 
@@ -1603,10 +1608,9 @@ do_groupInfoReq(XDR *xdrs,
             reply = LSBE_NO_HOST_GROUP;
         } else {
 
-            groupInfoReply.groups = (struct groupInfoEnt *)
-                my_calloc(numofhgroups,
-                          sizeof(struct groupInfoEnt),
-                          "do_groupInfoReq");
+            groupInfoReply.groups = my_calloc(numofhgroups,
+					      sizeof(struct groupInfoEnt),
+					      "do_groupInfoReq");
 
             reply = checkGroups(&groupInfoReq, &groupInfoReply);
 

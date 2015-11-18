@@ -3460,6 +3460,7 @@ load_fair_plugin(struct qData *qPtr)
 {
     char buf[PATH_MAX];
     struct fair_sched *f;
+    int cc;
 
     f = qPtr->fsSched = calloc(1, sizeof(struct fair_sched));
     assert(qPtr->fsSched);
@@ -3538,7 +3539,9 @@ load_fair_plugin(struct qData *qPtr)
     f->name = strdup(qPtr->queue);
     /* invoke the plugin initializer
      */
-    (*f->fs_init)(qPtr, userConf);
+    cc = (*f->fs_init)(qPtr, userConf);
+    if (cc < 0)
+	return -1;
 
     return 0;
 }

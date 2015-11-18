@@ -189,7 +189,37 @@ treeNextSib(struct jgTreeNode *node)
     return NULL;
 }
 
+struct jgTreeNode *
+treeInsertChild(struct jgTreeNode *parent, struct jgTreeNode *child)
+{
+    if (!parent)
+        return(child);
 
+    if (!child)
+        return(parent);
+
+    if (parent->child) {
+	child->right = parent->child;
+	parent->child->left = child;
+	parent->child = child;
+    } else {
+        parent->child = child;
+    }
+
+    child->parent = parent;
+
+    if (child->nodeType == JGRP_NODE_JOB) {
+        updJgrpCountByJStatus(JOB_DATA(child),
+			      JOB_STAT_NULL,
+                              JOB_DATA(child)->jStatus);
+    } else {
+        updJgrpCountByOp(child, 1);
+    }
+
+    return parent;
+}
+
+#if 0
 struct jgTreeNode *
 treeInsertChild(struct jgTreeNode *parent, struct jgTreeNode *child)
 {
@@ -222,6 +252,7 @@ treeInsertChild(struct jgTreeNode *parent, struct jgTreeNode *child)
     treeObserverInvoke((void *)child, TREE_EVENT_ADD);
     return(parent);
 }
+#endif
 
 struct jgTreeNode *
 treeLinkSibling(struct jgTreeNode *sib1, struct jgTreeNode *sib2)

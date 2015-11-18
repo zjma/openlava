@@ -4199,6 +4199,11 @@ scheduleAndDispatchJobs(void)
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
 
+    if (qsort_jobs) {
+	sort_job_list(MJL);
+	sort_job_list(PJL);
+    }
+
     if (jRefList == NULL)
         jRefList = listCreate("job reference list");
 
@@ -4540,6 +4545,7 @@ jiter_next_job(LIST_T *jRefList)
     struct jRef *jR0;
     struct jData *jPtr0;
     struct jData *jPtr;
+    int count;
 
     min = INT32_MAX;
     jR0 = NULL;
@@ -4550,10 +4556,17 @@ jiter_next_job(LIST_T *jRefList)
      * the list keeps shrinking regardless if
      * job goes or not.
      */
+    count = 0;
     for (jR = (struct jRef *)jRefList->back;
          jR != (void *)jRefList;
          jR = (struct jRef *)jR->back) {
 
+	++count;
+	if (count >= max_job_sched) {
+	    ls_syslog(LOG_DEBUG, "\
+%s: bailed out at %d max %d", __func__, count, max_job_sched);
+	    return NULL;
+	}
         /* Get the highest priority job
          */
         jPtr = jR->job;
@@ -4567,8 +4580,8 @@ jiter_next_job(LIST_T *jRefList)
         if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
             struct qData *qPtr = jPtr->qPtr;
             (*qPtr->fsSched->fs_elect_job)(qPtr,
-                                             jRefList,
-                                             &jR0);
+					   jRefList,
+					   &jR0);
             if (jR0) {
                 listRemoveEntry(jRefList,
                                 (LIST_ENTRY_T *)jR0);

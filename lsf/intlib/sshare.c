@@ -631,6 +631,11 @@ get_sacct(const char *acct_name, const char *user_list)
     char *p0;
 
     p0 = p = strdup(user_list);
+    /* If we don't find account name
+     * in the user list make sure we
+     * return NULL and not random memory.
+     */
+    sacct = NULL;
 
     cc = sscanf(p, "%s%u%n", name, &shares, &n);
     if (cc == EOF) {

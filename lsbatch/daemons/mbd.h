@@ -120,6 +120,8 @@ typedef enum {
 extern int mSchedStage;
 extern int freshPeriod;
 extern int maxSchedStay;
+extern int max_job_sched;
+extern int qsort_jobs;
 
 #define DEL_ACTION_KILL      0x01
 #define DEL_ACTION_REQUEUE   0x02
@@ -1051,6 +1053,7 @@ extern int                  findLastJob(int, struct jData *, struct jData **);
 extern void                 initJobIdHT(void);
 extern struct jData *       getJobData(LS_LONG_INT jobId);
 extern void                 inPendJobList(struct jData *, int, time_t);
+extern void                 _inPendJobList_(struct jData *, int, time_t);
 extern void                 sort_job_list(int);
 extern void                 inStartJobList (struct jData *);
 extern void                 inFinishJobList(struct jData *);
