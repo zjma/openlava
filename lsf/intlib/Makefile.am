@@ -14,7 +14,8 @@ liblsfint_la_SOURCES = admin.c cmdtime.c jidx.c lsftcl.c \
 	resourcecmd.c testbitset.c list2.c list2.h \
 	bitset.h intlibout.h jidx.h list.h listset.h  \
 	lsftcl.h resreq.h tokdefs.h yparse.h \
-	link.c link.h listerr.def lsbitseterr.def
+	link.c link.h listerr.def lsbitseterr.def \
+	dlink.c dlink.h
 liblsfint_la_LDFLAGS =  -no-undefined -version-info 0:1
 
 libtools_la_SOURCES = tree.c tree.h list2.c list2.h \
