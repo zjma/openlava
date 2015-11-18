@@ -4195,6 +4195,7 @@ scheduleAndDispatchJobs(void)
     hEnt *hashEntryPtr;
     struct jRef *jR;
     struct jData *jPtr;
+    int count;
 
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
@@ -4224,6 +4225,7 @@ scheduleAndDispatchJobs(void)
             }
         }
 
+	count = 0;
         for (i = MJL; i <= PJL; i++) {
 
             for (jPtr = jDataList[i]->back;
@@ -4253,9 +4255,15 @@ scheduleAndDispatchJobs(void)
 
                 listInsertEntryAtFront(jRefList,
                                        (struct _listEntry *)jR);
+		++count;
+		if (count >= max_job_sched) {
+		    ls_syslog(LOG_DEBUG, "\
+%s: bailed out at %d max %d", __func__, count, max_job_sched);
+		    goto ven;
+		}
             }
         }
-
+    ven:
         if (logclass & LC_SCHED) {
             gettimeofday(&scheduleStartTime, NULL);
             ls_syslog(LOG_DEBUG, "\
@@ -4545,7 +4553,6 @@ jiter_next_job(LIST_T *jRefList)
     struct jRef *jR0;
     struct jData *jPtr0;
     struct jData *jPtr;
-    int count;
 
     min = INT32_MAX;
     jR0 = NULL;
@@ -4556,17 +4563,10 @@ jiter_next_job(LIST_T *jRefList)
      * the list keeps shrinking regardless if
      * job goes or not.
      */
-    count = 0;
     for (jR = (struct jRef *)jRefList->back;
          jR != (void *)jRefList;
          jR = (struct jRef *)jR->back) {
 
-	++count;
-	if (count >= max_job_sched) {
-	    ls_syslog(LOG_DEBUG, "\
-%s: bailed out at %d max %d", __func__, count, max_job_sched);
-	    return NULL;
-	}
         /* Get the highest priority job
          */
         jPtr = jR->job;

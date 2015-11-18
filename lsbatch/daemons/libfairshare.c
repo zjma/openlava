@@ -116,7 +116,6 @@ fs_elect_job(struct qData *qPtr,
     struct jRef *jref;
     struct jData *jPtr;
     uint32_t sent;
-    int count;
 
     l = qPtr->fsSched->tree->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
@@ -144,7 +143,7 @@ fs_elect_job(struct qData *qPtr,
         *jRef = NULL;
         return -1;
     }
-    count = 0;
+
     for (jref = (struct jRef *)jRefList->back;
          jref != (void *)jRefList;
          jref = jref->back) {
@@ -164,13 +163,6 @@ fs_elect_job(struct qData *qPtr,
         if (jPtr->userId == s->uid
 	    && jPtr->qPtr == qPtr)
             break;
-	++count;
-	if (count >= max_job_sched) {
-	    *jRef = NULL;
-	    ls_syslog(LOG_DEBUG, "\
-%s: bailed out at %d max %d", __func__, count, max_job_sched);
-	    return -1;
-	}
     }
 
     /* More to dispatch from this node
