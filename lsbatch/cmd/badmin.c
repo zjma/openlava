@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -319,8 +319,8 @@ badminDebug(int nargc, char *nargv[], int opCode)
                     if (strcmp(word, "LC_XDR") == 0)
                         debug.logClass |= LC_XDR;
 
-                    if (strcmp(word, "LC_CHKPNT") == 0)
-                        debug.logClass |= LC_CHKPNT;
+                    if (strcmp(word, "LC_FAIRSHARE") == 0)
+                        debug.logClass |= LC_FAIR;
 
                     if (strcmp(word, "LC_FILE") == 0)
                         debug.logClass |= LC_FILE;

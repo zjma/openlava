@@ -424,8 +424,8 @@ getLogClass_(char *lsp, char *tsp)
             class |= LC_COMM;
         if (strcmp (word, "LC_XDR") == 0)
             class |= LC_XDR;
-        if (strcmp (word, "LC_CHKPNT") == 0)
-            class |= LC_CHKPNT;
+        if (strcmp (word, "LC_FAIRSHARE") == 0)
+            class |= LC_FAIR;
         if (strcmp (word, "LC_FILE") == 0)
             class |= LC_FILE;
         if (strcmp (word, "LC_AUTH") == 0)

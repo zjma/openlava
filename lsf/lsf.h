@@ -748,7 +748,7 @@ struct hostEntryLog {
 #define LC_TRACE    0x00000004
 #define LC_COMM     0x00000008
 #define LC_XDR      0x00000010
-#define LC_CHKPNT   0x00000020
+#define LC_FAIR     0x00000020
 #define LC_FILE     0x00000080
 #define LC_AUTH     0x00000200
 #define LC_HANG     0x00000400

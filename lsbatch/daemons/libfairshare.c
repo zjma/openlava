@@ -116,6 +116,11 @@ fs_elect_job(struct qData *qPtr,
     struct jRef *jref;
     struct jData *jPtr;
     uint32_t sent;
+    struct uData *uPtr;
+    struct dlink *dl;
+    hEnt *ent;
+    int count;
+    int found;
 
     l = qPtr->fsSched->tree->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
@@ -127,6 +132,7 @@ fs_elect_job(struct qData *qPtr,
      * to zero we remove it and never traverse
      * it again.
      */
+dalsi:
     sent = 0;
     while ((n = pop_link(l))) {
         s = n->data;
@@ -144,27 +150,62 @@ fs_elect_job(struct qData *qPtr,
         return -1;
     }
 
-    for (jref = (struct jRef *)jRefList->back;
-         jref != (void *)jRefList;
-         jref = jref->back) {
+    if (logclass & LC_FAIR)
+	ls_syslog(LOG_INFO, "\
+%s: account %s num slots %d queue %s", __func__, s->name,
+		  s->sent + 1, qPtr->queue);
 
-        jPtr = jref->job;
+    ent = h_getEnt_(&uDataList, s->name);
+    uPtr = ent->hData;
 
-        /* end of the reference list or the job
-         * ahead belongs to a different queue
-         */
-        if (jref->back == (void *)jRefList
-            || jPtr->qPtr->priority != jPtr->back->qPtr->priority) {
-            *jRef = jref;
-            return 0;
-        }
-        /* fixme: handle user priority here
-         */
-        if (jPtr->userId == s->uid
-	    && jPtr->qPtr == qPtr)
-            break;
+    found = false;
+    count = 0;
+    jref = NULL;
+    jPtr = NULL;
+    for (dl = uPtr->jobs->back;
+	 dl != uPtr->jobs;
+	 dl = dl->back) {
+	++count;
+
+	jref = dl->e;
+	jPtr = jref->job;
+
+	assert(jPtr->userId == s->uid);
+        if (jPtr->qPtr == qPtr) {
+	    ls_syslog(LOG_INFO, "\
+%s: jqueue %s %p queue %s %p job %p ref %p %d", __func__,
+		      jPtr->qPtr->queue, jPtr->qPtr,
+		      qPtr->queue, qPtr,
+		      jPtr, jref, count);
+	    dlink_rm_ent(uPtr->jobs, dl);
+	    found = true;
+	    break;
+	}
     }
 
+    if (jPtr == NULL
+	|| found == false) {
+	/* This happens if MBD_MAX_JOBS_SCHED
+	 * is configured or if the user has no
+	 * jobs in the current queue.
+	 */
+
+	    ls_syslog(LOG_INFO, "\
+%s: user %s is chosen %d in queue %s but has no jobs count %d numpend %d numj %d",
+		      __func__, s->name,
+		      s->sent + 1, qPtr->queue,
+		      count, uPtr->numPEND, dl->num);
+
+	goto dalsi;
+    }
+
+    if (jPtr) {
+	if (logclass & LC_FAIR) {
+	    ls_syslog(LOG_INFO, "\
+%s: user %s job %s queue %s found in %d iterations", __func__, s->name,
+		      lsb_jobid2str(jPtr->jobId), qPtr->queue, count);
+	}
+    }
     /* More to dispatch from this node
      * so back to the leaf link
      */

@@ -1513,7 +1513,9 @@ initUData(struct uData *uPtr)
     uPtr->descendants = NULL;
     uPtr->parents     = NULL;
     uPtr->ancestors   = NULL;
-    uPtr->pxySJL = NULL;
+    /* User jobs references
+     */
+    uPtr->jobs = dlink_make();
 }
 
 void

@@ -14,7 +14,6 @@ dlink_make(void)
     L->forw = L->back = L;
 
     return L;
-
 }
 
 /* dlink_insert()

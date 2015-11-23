@@ -291,8 +291,8 @@ lsadminDebug(int argc, char **argv, int opCode)
                         debug.logClass |= LC_COMM;
                     if (strcmp(word, "LC_XDR") == 0)
                         debug.logClass |= LC_XDR;
-                    if (strcmp(word, "LC_CHKPNT") == 0)
-                        debug.logClass |= LC_CHKPNT;
+                    if (strcmp(word, "LC_FAIRSHARE") == 0)
+                        debug.logClass |= LC_FAIR;
                     if (strcmp(word, "LC_FILE") == 0)
                         debug.logClass |= LC_FILE;
                     if (strcmp(word, "LC_AUTH") == 0)

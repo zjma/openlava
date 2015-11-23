@@ -25,6 +25,7 @@
 #include "daemons.h"
 #include "../../lsf/intlib/bitset.h"
 #include "../../lsf/intlib/link.h"
+#include "../../lsf/intlib/dlink.h"
 #include "jgrp.h"
 #include "../lib/lsb.sig.h"
 
@@ -437,7 +438,7 @@ struct uData {
     LS_BITSET_T *descendants;
     LS_BITSET_T *parents;
     LS_BITSET_T *ancestors;
-    LIST_T *pxySJL;
+    struct dlink *jobs;
 };
 
 #define USER_GROUP_IS_ALL_USERS(UserGroup) \

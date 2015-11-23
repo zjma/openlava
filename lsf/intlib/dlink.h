@@ -20,6 +20,7 @@ extern struct dlink *dlink_make(void);
 extern int dlink_insert(struct dlink *, void *);
 extern int  dlink_enque(struct dlink *, void *);
 extern void *dlink_dqueue(struct dlink *);
+extern void *dlink_pop(struct dlink *);
 extern void *dlink_rm_ent(struct dlink *, struct dlink *);
 extern void dlink_rm(struct dlink *);
 

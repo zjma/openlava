@@ -8857,10 +8857,15 @@ jcompare(const void *j1, const void *j2)
 
     /* Same priority compare jobids
      */
-    if (jPtr1->jobId > jPtr2->jobId)
+    if (LSB_ARRAY_JOBID(jPtr1->jobId) > LSB_ARRAY_JOBID(jPtr2->jobId))
         return 1;
-    if (jPtr1->jobId < jPtr2->jobId)
+    if (LSB_ARRAY_JOBID(jPtr1->jobId) < LSB_ARRAY_JOBID(jPtr2->jobId))
         return -1;
+
+    if (LSB_ARRAY_IDX(jPtr1->jobId) > LSB_ARRAY_IDX(jPtr2->jobId))
+	return 1;
+    if (LSB_ARRAY_IDX(jPtr1->jobId) < LSB_ARRAY_IDX(jPtr2->jobId))
+	return -1;
 
     abort();
 

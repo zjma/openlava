@@ -324,6 +324,8 @@ static void groupCands2CandPtr(int, struct groupCandHosts *,
 static void jiter_init(LIST_T *);
 static struct jData *jiter_next_job(LIST_T *);
 static void jiter_fin(LIST_T *);
+static void update_udata_jref(struct jRef *jref);
+static void empty_udata_jref(struct uData *);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -4223,6 +4225,7 @@ scheduleAndDispatchJobs(void)
                     up->reasonTb[1][i] = 0;
                 }
             }
+	    empty_udata_jref(up);
         }
 
 	count = 0;
@@ -4255,9 +4258,18 @@ scheduleAndDispatchJobs(void)
 
                 listInsertEntryAtFront(jRefList,
                                        (struct _listEntry *)jR);
+		if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
+		    if (logclass & LC_FAIR) {
+			ls_syslog(LOG_INFO, "\
+%s: user %s job %s queue %s jref %p job %p", __func__, jPtr->userName,
+				  lsb_jobid2str(jR->job->jobId),
+				  jR->job->qPtr->queue, jR, jR->job);
+		    }
+		    update_udata_jref(jR);
+		}
 		++count;
 		if (count >= max_job_sched) {
-		    ls_syslog(LOG_DEBUG, "\
+		    ls_syslog(LOG_INFO, "\
 %s: bailed out at %d max %d", __func__, count, max_job_sched);
 		    goto ven;
 		}
@@ -6934,4 +6946,33 @@ setLsbPtilePack(const bool_t x)
         lsbPtilePack = FALSE;
     }
 
+}
+
+/* update_udate_jref()
+ */
+static void
+update_udata_jref(struct jRef *jref)
+{
+    struct uData *uPtr;
+    hEnt *ent;
+
+    ent = h_getEnt_(&uDataList, jref->job->userName);
+    uPtr = ent->hData;
+    dlink_insert(uPtr->jobs, jref);
+
+    if (logclass & LC_FAIR)
+	ls_syslog(LOG_INFO, "\
+%s: user %s job %s queue %s jref %p job %p", __func__, uPtr->user,
+		  lsb_jobid2str(jref->job->jobId),
+		  jref->job->qPtr->queue, jref, jref->job);
+}
+
+/* empty_jdata_jref()
+ */
+static void
+empty_udata_jref(struct uData *uPtr)
+{
+    while ((dlink_pop(uPtr->jobs)))
+	;
+    assert(uPtr->jobs->num == 0);
 }
