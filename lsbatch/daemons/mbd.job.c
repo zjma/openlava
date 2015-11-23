@@ -8826,7 +8826,7 @@ sort_job_list(int listno)
 
     for (cc = 0; cc < num; cc++) {
         jPtr = jArray[cc];
-        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
+        listInsertEntryAtBack(l, (LIST_ENTRY_T *)jPtr);
     }
 
     free(jArray);
@@ -8857,10 +8857,15 @@ jcompare(const void *j1, const void *j2)
 
     /* Same priority compare jobids
      */
-    if (jPtr1->jobId > jPtr2->jobId)
+    if (LSB_ARRAY_JOBID(jPtr1->jobId) > LSB_ARRAY_JOBID(jPtr2->jobId))
         return 1;
-    if (jPtr1->jobId < jPtr2->jobId)
+    if (LSB_ARRAY_JOBID(jPtr1->jobId) < LSB_ARRAY_JOBID(jPtr2->jobId))
         return -1;
+
+    if (LSB_ARRAY_IDX(jPtr1->jobId) > LSB_ARRAY_IDX(jPtr2->jobId))
+	return 1;
+    if (LSB_ARRAY_IDX(jPtr1->jobId) < LSB_ARRAY_IDX(jPtr2->jobId))
+	return -1;
 
     abort();
 
