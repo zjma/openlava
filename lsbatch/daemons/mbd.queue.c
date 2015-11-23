@@ -199,7 +199,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
 
     for (j = 0; j < queueInfoReqPtr->numNames; j++) {
 
-        for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
+        for (qp = qDataList->back; qp != qDataList; qp = qp->back) {
 
             if (strcmp(qp->queue, LOST_AND_FOUND) == 0 && qp->numJobs == 0) {
                 continue;
