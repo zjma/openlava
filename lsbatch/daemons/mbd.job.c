@@ -8826,7 +8826,7 @@ sort_job_list(int listno)
 
     for (cc = 0; cc < num; cc++) {
         jPtr = jArray[cc];
-        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
+        listInsertEntryAtBack(l, (LIST_ENTRY_T *)jPtr);
     }
 
     free(jArray);
