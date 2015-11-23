@@ -3677,7 +3677,7 @@ sort_queues(void)
     qsort(v, n, sizeof(struct qData *), queue_cmp);
 
     for (i = 0; i < n; i++) {
-        listInsertEntryAtBack((LIST_T *)qDataList, (LIST_ENTRY_T *)v[i]);
+        listInsertEntryAtFront((LIST_T *)qDataList, (LIST_ENTRY_T *)v[i]);
     }
 
     _free_(v);
