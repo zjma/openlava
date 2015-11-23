@@ -190,12 +190,11 @@ dalsi:
 	 * jobs in the current queue.
 	 */
 
-	    ls_syslog(LOG_INFO, "\
+	ls_syslog(LOG_INFO, "\
 %s: user %s is chosen %d in queue %s but has no jobs count %d numpend %d numj %d",
-		      __func__, s->name,
-		      s->sent + 1, qPtr->queue,
-		      count, uPtr->numPEND, dl->num);
-
+		  __func__, s->name,
+		  s->sent + 1, qPtr->queue,
+		  count, uPtr->numPEND, dl->num);
 	goto dalsi;
     }
 
