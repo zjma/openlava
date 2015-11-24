@@ -16,6 +16,7 @@ Release notes for OpenLava versions
    jobs are inserted and sorted in the PJL. This parameter avoids searching
    the job list upon a new job arrival speeding up the submission and overall
    MBD operations. 
+-- Fix issues in the job sorting order while using qsort().
 
 3.1pre1
 =======
