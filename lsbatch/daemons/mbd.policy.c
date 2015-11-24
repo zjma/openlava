@@ -4389,7 +4389,10 @@ scheduleAndDispatchJobs(void)
 
     if (!(mSchedStage & M_STAGE_QUE_CAND)) {
 
-        for (qp = qDataList->back; qp != qDataList; qp = qp->back) {
+	/* Unlike jobs we want the queue with the highest
+	 * number.
+	 */
+        for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
 
             if (qp->numPEND == 0 && qp->numRESERVE == 0)
                 continue;
