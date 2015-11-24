@@ -3649,35 +3649,30 @@ static int
 sort_queues(void)
 {
     struct qData *qPtr;
-    struct qData *qPtr2;
     struct qData **v;
     int n;
     int i;
+    LIST_T *l;
 
     n = 0;
-    for (qPtr = qDataList->forw;
+    for (qPtr = qDataList->back;
          qPtr != (void *)qDataList;
-         qPtr = qPtr->forw)
+         qPtr = qPtr->back)
         ++n;
 
     v = calloc(n, sizeof(struct qData *));
+    l = (LIST_T *)qDataList;
 
-    i = 0;
-    for (qPtr = qDataList->forw;
-         qPtr != (void *)qDataList;
-         qPtr = qPtr2) {
-
-        qPtr2 = qPtr->forw;
-
+    while ((qPtr = (struct qData *)listPop(l))) {
         v[i] = qPtr;
-        listRemoveEntry((LIST_T *)qDataList, (LIST_ENTRY_T *)qPtr);
         ++i;
     }
 
     qsort(v, n, sizeof(struct qData *), queue_cmp);
 
     for (i = 0; i < n; i++) {
-        listInsertEntryAtFront((LIST_T *)qDataList, (LIST_ENTRY_T *)v[i]);
+	qPtr = v[i];
+        listInsertEntryAtFront(l, (LIST_ENTRY_T *)qPtr);
     }
 
     _free_(v);
