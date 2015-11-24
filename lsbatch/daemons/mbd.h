@@ -597,6 +597,9 @@ struct qData {
     char *preemption;
     link_t *preemptable;
     struct prm_sched *prmSched;
+    char *ownership;
+    uint32_t num_owned_slots;
+    struct fair_sched *own_sched;
 };
 
 #define HOST_STAT_REMOTE       0x80000000

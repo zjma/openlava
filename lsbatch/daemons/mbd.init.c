@@ -138,13 +138,15 @@ static int parseFirstHostErr(int,
                              int);
 static struct hData *mkLostAndFoundHost(void);
 static int init_fairshare_scheduler(void);
-static int load_fair_plugin(struct qData *);
+static struct fair_sched *load_fair_plugin(struct qData *,
+					   const char *);
 static int parse_preemption(struct qData *);
 static int sort_queues(void);
 static int queue_cmp(const void *, const void *);
 static void check_same_priority_queues(void);
 static int init_preemption_scheduler(void);
 static int load_preempt_plugin(struct qData *);
+static int init_ownership_scheduler(void);
 
 int
 minit(int mbdInitFlags)
@@ -355,6 +357,7 @@ minit(int mbdInitFlags)
      */
     init_fairshare_scheduler();
     init_preemption_scheduler();
+    init_ownership_scheduler();
 
     if (!lsb_CheckMode) {
         TIMEIT(0, init_log(), "init_log()");
@@ -1531,6 +1534,7 @@ initQData (void)
     qPtr->chkpntPeriod = -1;
     qPtr->chkpntDir = NULL;
     qPtr->fairshare = NULL;
+    qPtr->ownership = NULL;
 
     return qPtr;
 }
@@ -2309,6 +2313,14 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
             qPtr->preemption = strdup(queue->preemption);
             qPtr->qAttrib |= Q_ATTRIB_PREEMPTIVE;
         }
+
+	if (queue->ownership) {
+	    /* No more queue attributes since we
+	     * have the ownership string. Why 2
+	     * variables for one thing?
+	     */
+	    qPtr->ownership = strdup(queue->ownership);
+	}
     }
 
     for (i = 0; i < queueConf->numQueues; i++) {
@@ -3429,8 +3441,12 @@ parseFirstHostErr(int returnErr,
 static int
 init_fairshare_scheduler(void)
 {
+    char buf[PATH_MAX];
     struct qData *qPtr;
     int cc;
+
+    sprintf(buf, "\
+%s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
 
     for (qPtr = qDataList->forw;
          qPtr != (void *)qDataList;
@@ -3439,13 +3455,24 @@ init_fairshare_scheduler(void)
         if (qPtr->fairshare == NULL)
             continue;
 
-        cc = load_fair_plugin(qPtr);
-        if (cc < 0) {
+	qPtr->fsSched = load_fair_plugin(qPtr, buf);
+        if (qPtr->fsSched == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed loading fairshare plugin, fall back to fcfs", __func__);
             FREEUP(qPtr->fairshare);
             continue;
         }
+	/* invoke the plugin initializer
+	 */
+	cc = (*qPtr->fsSched->fs_init)(qPtr, userConf);
+	if (cc < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: failed initializing fairshare plugin, fall back to fcfs", __func__);
+	    dlclose(qPtr->fsSched->handle);
+	    free(qPtr->fsSched);
+	    return -1;
+	}
+
         qPtr->numFairSlots = getQueueSlots(qPtr);
         (*qPtr->fsSched->fs_init_sched_session)(qPtr);
     }
@@ -3455,24 +3482,19 @@ init_fairshare_scheduler(void)
 
 /* load_fair_plugin()
  */
-static int
-load_fair_plugin(struct qData *qPtr)
+static struct fair_sched *
+load_fair_plugin(struct qData *qPtr,
+		 const char *file)
 {
-    char buf[PATH_MAX];
     struct fair_sched *f;
-    int cc;
 
-    f = qPtr->fsSched = calloc(1, sizeof(struct fair_sched));
-    assert(qPtr->fsSched);
+    f = calloc(1, sizeof(struct fair_sched));
 
-    sprintf(buf, "\
-%s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
-
-    f->handle = dlopen(buf, RTLD_NOW);
+    f->handle = dlopen(file, RTLD_NOW);
     if (f->handle == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: gudness cannot open %s: %s", __func__, buf, dlerror());
-        return -1;
+%s: gudness cannot open %s: %s", __func__, file, dlerror());
+        return NULL;
     }
 
     /* now check for scheduler symbols.
@@ -3480,70 +3502,65 @@ load_fair_plugin(struct qData *qPtr)
     f->fs_init = dlsym(f->handle, "fs_init");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "%s: ohmygosh missing fs_init() symbol in %s: %s",
-                  __func__, buf, dlerror());
+                  __func__, file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->fs_update_sacct = dlsym(f->handle, "fs_update_sacct");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh missing fs_update_sacct() symbol in %s: %s", __func__,
-                  buf, dlerror());
+                  file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->fs_init_sched_session = dlsym(f->handle, "fs_init_sched_session");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh missing fs_init_sched_session() symbol in %s: %s", __func__,
-                  buf, dlerror());
+                  file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->fs_elect_job = dlsym(f->handle, "fs_elect_job");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh missing fs_elect_job() symbol in %s: %s", __func__,
-                  buf, dlerror());
+                  file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->fs_fin_sched_session = dlsym(f->handle, "fs_fin_sched_session");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh missing fs_fin_sched_session() symbol in %s: %s", __func__,
-                  buf, dlerror());
+                  file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->fs_get_saccts = dlsym(f->handle, "fs_get_saccts");
     if (f->fs_init == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh missing fs_get_saccts() symbol in %s: %s", __func__,
-                  buf, dlerror());
+                  file, dlerror());
         dlclose(f->handle);
-        free(qPtr->fsSched);
-        return -1;
+        free(f);
+        return NULL;
     }
 
     f->name = strdup(qPtr->queue);
-    /* invoke the plugin initializer
-     */
-    cc = (*f->fs_init)(qPtr, userConf);
-    if (cc < 0)
-	return -1;
 
-    return 0;
+    return f;
 }
 
 /* getQueueSlots()
@@ -3803,6 +3820,49 @@ load_preempt_plugin(struct qData *qPtr)
         free(qPtr->prmSched);
         qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
+    }
+
+    return 0;
+}
+
+/* init_ownersip_scheduler()
+ */
+static int
+init_ownership_scheduler(void)
+{
+    char buf[PATH_MAX];
+    struct qData *qPtr;
+    int cc;
+
+    sprintf(buf, "\
+%s/libownership.so", daemonParams[LSF_LIBDIR].paramValue);
+
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->ownership == NULL)
+            continue;
+
+        qPtr->own_sched = load_fair_plugin(qPtr, buf);
+        if (qPtr->own_sched == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: failed loading ownership plugin, fall back to fcfs", __func__);
+            FREEUP(qPtr->fairshare);
+            continue;
+        }
+
+	cc = (*qPtr->own_sched->fs_init)(qPtr, userConf);
+	if (cc < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: failed initializing fairshare plugin, fall back to fcfs", __func__);
+	    dlclose(qPtr->fsSched->handle);
+	    free(qPtr->fsSched);
+	    return -1;
+	}
+
+        qPtr->num_owned_slots = getQueueSlots(qPtr);
+        (*qPtr->own_sched->fs_init_sched_session)(qPtr);
     }
 
     return 0;

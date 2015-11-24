@@ -3792,7 +3792,8 @@ do_Queues(struct lsConf *conf,
 #define QKEY_PRE_POST_EXEC_USER info->numIndx+47
 #define QKEY_FAIRSHARE info->numIndx + 48
 #define QKEY_PREEMPTION info->numIndx + 49
-#define KEYMAP_SIZE info->numIndx+51
+#define QKEY_OWNERSHIP info->numIndx + 50
+#define KEYMAP_SIZE info->numIndx+52
 
     struct queueInfoEnt queue;
     char *linep;
@@ -3862,6 +3863,7 @@ do_Queues(struct lsConf *conf,
     keylist[QKEY_PRE_POST_EXEC_USER].key="PRE_POST_EXEC_USER";
     keylist[QKEY_FAIRSHARE].key = "FAIRSHARE";
     keylist[QKEY_PREEMPTION].key = "PREEMPTION";
+    keylist[QKEY_OWNERSHIP].key = "OWNERSHIP";
     keylist[KEYMAP_SIZE - 1].key = NULL;
 
     initQueueInfo(&queue);
@@ -4642,6 +4644,22 @@ do_Queues(struct lsConf *conf,
             }
         }
 
+	/* Support slot ownership in queue
+	 */
+        if (keylist[QKEY_OWNERSHIP].val != NULL) {
+            if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USER_SHARES")) {
+                queue.ownership = strdup(keylist[QKEY_OWNERSHIP].val);
+            } else  {
+                ls_syslog(LOG_ERR, "\
+%s: unsupported OWNERSHIP %s key, ignored",
+                          __func__,keylist[QKEY_FAIRSHARE].val);
+                lsberrno = LSBE_CONF_WARNING;
+                freekeyval(keylist);
+                freeQueueInfo(&queue);
+                return FALSE;
+            }
+        }
+
         if (info->numIndx
             && (queue.loadSched = calloc(info->numIndx,
                                          sizeof(float *))) == NULL) {
@@ -4716,22 +4734,22 @@ freeQueueInfo(struct queueInfoEnt *qp)
     if (qp == NULL)
         return;
 
-    FREEUP(qp->queue );
-    FREEUP(qp->description );
-    FREEUP(qp->userList );
-    FREEUP(qp->hostList );
-    FREEUP(qp->loadSched );
-    FREEUP(qp->loadStop );
-    FREEUP(qp->windows );
-    FREEUP(qp->hostSpec );
-    FREEUP(qp->windowsD );
-    FREEUP(qp->defaultHostSpec );
-    FREEUP(qp->admins );
-    FREEUP(qp->preCmd );
-    FREEUP(qp->postCmd );
-    FREEUP(qp->prepostUsername );
-    FREEUP(qp->requeueEValues );
-    FREEUP(qp->resReq );
+    FREEUP(qp->queue);
+    FREEUP(qp->description);
+    FREEUP(qp->userList);
+    FREEUP(qp->hostList);
+    FREEUP(qp->loadSched);
+    FREEUP(qp->loadStop);
+    FREEUP(qp->windows);
+    FREEUP(qp->hostSpec);
+    FREEUP(qp->windowsD);
+    FREEUP(qp->defaultHostSpec);
+    FREEUP(qp->admins);
+    FREEUP(qp->preCmd);
+    FREEUP(qp->postCmd);
+    FREEUP(qp->prepostUsername);
+    FREEUP(qp->requeueEValues);
+    FREEUP(qp->resReq);
     FREEUP(qp->jobStarter);
     FREEUP(qp->stopCond);
     FREEUP(qp->resumeCond);
@@ -4740,10 +4758,12 @@ freeQueueInfo(struct queueInfoEnt *qp)
     FREEUP(qp->resumeActCmd);
     FREEUP(qp->terminateActCmd);
     FREEUP(qp->fairshare);
+    _free_(qp->ownership);
 }
 
 char
-checkRequeEValues(struct queueInfoEnt *qp, char *word, char *fname, int *lineNum)
+checkRequeEValues(struct queueInfoEnt *qp,
+		  char *word, char *fname, int *lineNum)
 {
 #define NORMAL_EXIT 0
 #define EXCLUDE_EXIT 1
@@ -4842,10 +4862,10 @@ addQueue(struct queueInfoEnt *qp, char *fname, int lineNum)
             queuesize = 5;
         else
             queuesize *= 2;
-        if ((tmpQueues = (struct queueInfoEnt **)  myrealloc
-             (queues, queuesize*sizeof(struct queueInfoEnt *))) == NULL) {
+        if ((tmpQueues = myrealloc(queues, queuesize
+				   * sizeof(struct queueInfoEnt *))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "myrealloc",
-                      queuesize*sizeof(struct queueInfoEnt *));
+                      queuesize * sizeof(struct queueInfoEnt *));
             lsberrno = LSBE_NO_MEM;
             freeQueueInfo (qp);
             return FALSE;
@@ -4853,7 +4873,7 @@ addQueue(struct queueInfoEnt *qp, char *fname, int lineNum)
             queues = tmpQueues;
     }
 
-    if ((queues[numofqueues] = (struct queueInfoEnt *) malloc
+    if ((queues[numofqueues] = malloc
          (sizeof(struct queueInfoEnt))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                   sizeof(struct queueInfoEnt));
@@ -4861,7 +4881,9 @@ addQueue(struct queueInfoEnt *qp, char *fname, int lineNum)
         freeQueueInfo (qp);
         return FALSE;
     }
-    initQueueInfo ( queues[numofqueues] );
+
+    initQueueInfo(queues[numofqueues]);
+
     *queues[numofqueues] = *qp;
     numofqueues++;
     return TRUE;

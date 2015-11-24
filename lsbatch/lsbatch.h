@@ -765,6 +765,7 @@ struct queueInfoEnt {
     uint32_t numFairSlots;
     struct share_acct **saccts;
     char *preemption;
+    char *ownership;
 };
 
 #define ACT_NO              0
