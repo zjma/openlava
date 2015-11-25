@@ -35,7 +35,6 @@ extern void freeQConf(struct queueConf *, int);
 extern void freeWorkUser(int);
 extern void freeWorkHost(int);
 extern void freeWorkQueue(int);
-extern void uDataTableFree(UDATA_TABLE_T *);
 extern void cleanCandHosts (struct jData *);
 static uint32_t getQueueSlots(struct qData *);
 
@@ -184,8 +183,6 @@ minit(int mbdInitFlags)
     initTab(&jobIdHT);
     initTab(&jgrpIdHT);
 
-    uDataPtrTb = uDataTableCreate();
-
     qDataList = (struct qData *)listCreate("Queue List");
 
     /* who am I...
@@ -262,17 +259,6 @@ minit(int mbdInitFlags)
     initParse(allLsInfo);
     tclLsInfo = getTclLsInfo();
     initTcl(tclLsInfo);
-
-    allUsersSet = setCreate(MAX_GROUPS,
-                            getIndexByuData,
-                            getuDataByIndex,
-                            "");
-    setAllowObservers(allUsersSet);
-
-    uGrpAllSet = setCreate(MAX_GROUPS, getIndexByuData, getuDataByIndex, "");
-
-    uGrpAllAncestorSet = setCreate(MAX_GROUPS, getIndexByuData,
-                                   getuDataByIndex, "");
 
     TIMEIT(0, readParamConf(mbdInitFlags), "minit_readParamConf");
     TIMEIT(0, readHostConf(mbdInitFlags), "minit_readHostConf");
@@ -3172,9 +3158,6 @@ updUserList(int mbdInitFlags)
         }
         ent = h_nextEnt_(&next);
     }
-
-    uDataGroupCreate();
-    setuDataCreate();
 
     if (mbdInitFlags == RECONFIG_CONF || mbdInitFlags == WINDOW_CONF) {
         struct uData*  uData;

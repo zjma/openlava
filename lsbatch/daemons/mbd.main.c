@@ -89,7 +89,6 @@ int    **hReasonTb = NULL;
 int    **cReasonTb = NULL;
 time_t now;
 long   schedSeqNo = 0;
-UDATA_TABLE_T * uDataPtrTb;
 struct hTab uDataList;
 
 /* Host data main global data structures.

@@ -564,43 +564,31 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
 int
 getMinGSlots(struct uData *uPtr, struct qData *qPtr, int *numGAvailSlots)
 {
-    static char     fname[] = "getMinGSlots";
-    int             minNumAvailSlots = INFINIT_INT;
-    int             minGUsableSlots = INFINIT_INT;
+    int minNumAvailSlots = INFINIT_INT;
+    int minGUsableSlots = INFINIT_INT;
+    struct userAcct *grpUAcct;
+    int numGUsableSlots;
+    int numGUnUsedSlots;
 
-    FOR_EACH_USER_ANCESTOR_UGRP(uPtr, grp) {
-        struct userAcct      *grpUAcct;
-        int                  numGUsableSlots;
-        int                  numGUnUsedSlots;
-        int                  numGAvailSlots;
+    grpUAcct = getUAcct(qPtr->uAcct, uPtr);
 
-        grpUAcct = getUAcct(qPtr->uAcct, grp);
-        if (grpUAcct == NULL) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7200,
-                                             "%s: expect a non-NULL uAcct for group %s in queue %s, but got a NULL one, please report."), /* catgets 7200 */
-                      fname, grp->user, qPtr->queue);
-            continue;
-        }
+    numGUnUsedSlots = MAX(0, uPtr->maxJobs
+			  - (uPtr->numJobs - uPtr->numPEND));
+    *numGAvailSlots = MIN(grpUAcct->numAvailSUSP + numGUnUsedSlots,
+			 uPtr->maxJobs - (uPtr->numRUN - uPtr->numRESERVE));
+    minNumAvailSlots = MIN(minNumAvailSlots, *numGAvailSlots);
 
-        numGUnUsedSlots = MAX(0, grp->maxJobs
-                              - (grp->numJobs - grp->numPEND));
-        numGAvailSlots = MIN(grpUAcct->numAvailSUSP + numGUnUsedSlots,
-                             grp->maxJobs - (grp->numRUN - grp->numRESERVE));
-        minNumAvailSlots = MIN(minNumAvailSlots, numGAvailSlots);
+    if (uPtr->maxJobs == INFINIT_INT)
+	numGUsableSlots = INFINIT_INT;
+    else {
+	numGUsableSlots = numGAvailSlots;
+    }
 
-        if (grp->maxJobs == INFINIT_INT)
-            numGUsableSlots = INFINIT_INT;
-        else {
-            numGUsableSlots = numGAvailSlots;
-        }
-
-        minGUsableSlots = MIN(minGUsableSlots, numGUsableSlots);
-
-    } END_FOR_EACH_USER_ANCESTOR_UGRP;
+    minGUsableSlots = MIN(minGUsableSlots, numGUsableSlots);
 
     *numGAvailSlots = minNumAvailSlots;
 
-    return(minGUsableSlots);
+    return minGUsableSlots;
 
 }
 

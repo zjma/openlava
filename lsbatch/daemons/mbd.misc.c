@@ -340,19 +340,9 @@ updQaccount(struct jData *jp, int numJobs, int numPEND,
     newJob = (numRUN == 0 && numSSUSP == 0 && numUSUSP == 0
               && numRESERVE == 0 && numPEND == 0);
 
-
     updUAcct(jp, jp->uPtr, &(qp->uAcct), numRUN, numSSUSP, numUSUSP,
              numRESERVE,numPEND, (struct hData *)NULL,
              NULL, (void *) qp);
-
-
-    FOR_EACH_USER_ANCESTOR_UGRP(jp->uPtr, grp) {
-
-        updUAcct(jp, grp, &(qp->uAcct), numRUN, numSSUSP, numUSUSP,
-                 numRESERVE, numPEND, (struct hData *) NULL,
-                 NULL, (void *)qp);
-
-    } END_FOR_EACH_USER_ANCESTOR_UGRP;
 
     /* update fairshare counters
      */
@@ -1136,19 +1126,21 @@ struct uData *
 addUserData(char *username, int maxjobs, float pJobLimit,
             char *filename, int override, int config)
 {
-    static char fname[] = "addUserData";
     hEnt *userEnt;
     int new;
     struct uData *uData;
     static int first = TRUE;
 
     if (logclass & (LC_JLIMIT))
-        ls_syslog(LOG_DEBUG2, "addUserData: New uData for user/group %s with maxJobs=%d pJobLimit=%f", username, maxjobs, pJobLimit);
+        ls_syslog(LOG_DEBUG2, "\
+%s: new uData for user/group %s with maxJobs=%d pJobLimit=%f",
+		  __func__, username, maxjobs, pJobLimit);
 
     if (first) {
         h_initTab_(&uDataList, 61);
         first = FALSE;
     }
+
     userEnt = h_addEnt_(&uDataList, username, &new);
     if (new) {
         uData = my_calloc(1,
@@ -1157,90 +1149,26 @@ addUserData(char *username, int maxjobs, float pJobLimit,
         initUData(uData);
     } else if (override) {
         uData = (struct uData *)userEnt->hData;
-        FREEUP (uData->user);
+        FREEUP(uData->user);
     } else {
         if (filename)
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7013,
-                                             "%s: %s: User <%s> is multiply defined; retaining old definition"), /* catgets 7013 */
-                      fname,
+            ls_syslog(LOG_ERR, "\
+%s: %s: User <%s> is multiply defined; retaining old definition",
+                      __func__,
                       filename,
                       username);
-        return (struct uData *)userEnt->hData;
+        return userEnt->hData;
     }
+
     if (config == TRUE)
         uData->flags |= USER_UPDATE;
 
     uData->user = safeSave(username);
     uData->pJobLimit = pJobLimit;
     uData->maxJobs   = maxjobs;
+    userEnt->hData = uData;
 
-    uData->uDataIndex = UDATA_TABLE_NUM_ELEMENTS(uDataPtrTb);
-
-
-    uDataTableAddEntry(uDataPtrTb, uData);
-
-    userEnt->hData = (int *) uData;
-
-    if (! (uData->flags & USER_GROUP) && strstr(uData->user, "others") == NULL)
-    {
-        struct uData              *allUserGrp;
-        LS_BITSET_ITERATOR_T      iter;
-
-        if (logclass & (LC_TRACE))
-            ls_syslog(LOG_DEBUG2, "\
-%s: new user <%s> added to the all user set",
-                      fname, uData->user);
-
-
-        setAddElement(allUsersSet, (void *)uData);
-
-
-        BITSET_ITERATOR_ZERO_OUT(&iter);
-        setIteratorAttach(&iter, uGrpAllSet, fname);
-        for (allUserGrp = (struct uData *)setIteratorBegin(&iter);
-             allUserGrp != NULL;
-             allUserGrp = (struct uData *)setIteratorGetNextElement(&iter))
-        {
-            char strBuf[128];
-            if (uData->parents == NULL) {
-                memset(strBuf, 0, 128);
-                sprintf(strBuf, "%s's parents set", uData->user);
-                uData->parents = setCreate(MAX_GROUPS,
-                                           getIndexByuData,
-                                           getuDataByIndex ,
-                                           strBuf);
-                if (uData->parents == NULL) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_EMSG_S,
-                              fname, "setCreate", strBuf, setPerror(bitseterrno));
-                    mbdDie(MASTER_MEM);
-                }
-            }
-
-            if (uData->ancestors == NULL) {
-                memset(strBuf, 0, 128);
-                sprintf(strBuf, "%s's ancestors set", uData->user);
-                uData->ancestors = setCreate(MAX_GROUPS,
-                                             getIndexByuData,
-                                             getuDataByIndex ,
-                                             strBuf);
-                if (uData->ancestors == NULL) {
-                    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_EMSG_S,
-                              fname, "setCreate", strBuf, setPerror(bitseterrno));
-                    mbdDie(MASTER_MEM);
-                }
-            }
-
-            setAddElement(uData->parents, (void *)allUserGrp);
-            setAddElement(uData->ancestors, (void *)allUserGrp);
-
-
-            if (allUserGrp->ancestors != NULL)
-                setOperate(uData->ancestors, allUserGrp->ancestors,
-                           LS_SET_UNION);
-        }
-    }
     return uData;
-
 }
 
 void

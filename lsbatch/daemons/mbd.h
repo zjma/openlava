@@ -445,55 +445,6 @@ struct uData {
      ((UserGroup)->numGroups == 0 && \
       (UserGroup)->memberTab.numEnts == 0) \
 
-#define FOR_EACH_UGRP_CHILD_USER(User, Grp) \
-    if ((User)->children != NULL) { \
-        struct uData *Grp; \
-        LS_BITSET_ITERATOR_T __iter__; \
-        BITSET_ITERATOR_ZERO_OUT(&__iter__); \
-        setIteratorAttach(&__iter__, (User)->children, "FOR_EACH_UGRP_CHILD_USER"); \
-        for (Grp = (struct uData *)setIteratorBegin(&__iter__); \
-             Grp != NULL; \
-             Grp = (struct uData *)setIteratorGetNextElement(&__iter__)) \
-        {
-
-#define END_FOR_EACH_UGRP_CHILD_USER }}
-
-#define FOR_EACH_UGRP_DESCENDANT_USER(Grp, User) \
-    if ((User)->children != NULL) { \
-        struct uData *User; \
-        LS_BITSET_ITERATOR_T __iter__; \
-        BITSET_ITERATOR_ZERO_OUT(&__iter__); \
-        setIteratorAttach(&__iter__, (Grp)->descendants, "FOR_EACH_UGRP_CHILD_USER"); \
-        for (User = (struct uData *)setIteratorBegin(&__iter__); \
-             User != NULL; \
-             User = (struct uData *)setIteratorGetNextElement(&__iter__)) \
-        {
-
-#define END_FOR_EACH_UGRP_DESCENDANT_USER }}
-
-#define FOR_EACH_USER_ANCESTOR_UGRP(User, Grp) \
-    if ((User)->ancestors != NULL) { \
-        struct uData *Grp; \
-        LS_BITSET_ITERATOR_T __iter__; \
-        BITSET_ITERATOR_ZERO_OUT(&__iter__); \
-        setIteratorAttach(&__iter__, (User)->ancestors, "FOR_EACH_USER_ANCESTOR_UGRP"); \
-        for (Grp = (struct uData *)setIteratorBegin(&__iter__); \
-             Grp != NULL; \
-             Grp = (struct uData *)setIteratorGetNextElement(&__iter__)) \
-        {
-
-#define END_FOR_EACH_USER_ANCESTOR_UGRP }}
-
-struct uDataTable {
-    struct uData **_base_;
-    int            _cur_;
-    int            _size_;
-};
-
-typedef struct uDataTable UDATA_TABLE_T;
-
-#define UDATA_TABLE_NUM_ELEMENTS(Table) ( (Table)->_cur_ )
-
 struct userAcct {
     struct   uData *uData;
     int      userId;
@@ -870,7 +821,6 @@ extern struct hTab            hostTab;
 extern struct jData           *jDataList[];
 extern struct migJob          *migJobList;
 extern struct qData           *qDataList;
-extern UDATA_TABLE_T          *uDataPtrTb;
 extern struct hTab            uDataList;
 extern struct hTab            calDataList;
 extern struct jData           *chkJList;
@@ -1265,15 +1215,6 @@ extern int                  sumMembers (struct gData *,
 extern void                 createGroupuData();
 extern void                 createGroupTbPtr();
 extern void                 createGroupSet();
-extern int                  getIndexByuData(void *);
-extern void *               getuDataByIndex(int);
-extern UDATA_TABLE_T *      uDataTableCreate(void);
-extern void                 uDataPtrTbInitialize(void);
-extern void                 uDataTableAddEntry(UDATA_TABLE_T *,
-                                               struct uData *);
-extern int                  uDataTableGetNumEntries(UDATA_TABLE_T *);
-extern struct uData *       uDataTableGetNextEntry(UDATA_TABLE_T *);
-extern void                 setuDataCreate(void);
 extern void                 updHostList(void);
 extern void                 uDataGroupCreate(void);
 extern int                  sizeofGroupInfoReply(struct groupInfoReply *);

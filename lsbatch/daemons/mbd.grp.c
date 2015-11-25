@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -20,16 +20,7 @@
 #include <stdlib.h>
 #include "mbd.h"
 
-struct uStackEntry {
-    struct gData*  myGData;
-    struct uData*  myUData;
-    struct gData*  parentGData;
-    struct uData*  parentUData;
-};
-
 static void                    catMembers (struct gData*, char*, char);
-static void                    traverseGroupTree(struct gData*);
-static void                    checkuDataSet(struct uData*);
 static struct groupInfoEnt*    getGroupInfoEnt(char**, int*, char);
 static struct groupInfoEnt*    getGroupInfoEntFromUdata(struct uData*, char);
 static void 	    	       getAllHostGroup(struct gData **, int, int,
@@ -40,8 +31,6 @@ static void    	       	       getSpecifiedHostGroup(char **, int,
 						     int *);
 static void    	       	       copyHostGroup(struct gData *, int,
 					     struct groupInfoEnt *);
-
-LS_BITSET_T                    *allUsersSet = NULL;
 
 LS_BITSET_T                    *uGrpAllSet;
 
@@ -249,7 +238,7 @@ getGroupMembers (struct gData *gp, char r)
 }
 
 int
-sumMembers (struct gData *gp, char r, int first)
+sumMembers(struct gData *gp, char r, int first)
 {
     int i;
     static int num;
@@ -265,12 +254,12 @@ sumMembers (struct gData *gp, char r, int first)
     if (!r)
 	num += gp->numGroups;
     else {
-	for (i=0; i<gp->numGroups; i++)
+	for (i = 0; i < gp->numGroups; i++)
             if (sumMembers (gp->gPtr[i], r, 0) == 0)
                 return 0;
     }
 
-    return (num);
+    return num;
 }
 
 static void
@@ -303,7 +292,7 @@ catMembers(struct gData *gp, char *cbuf, char r)
 }
 
 char *
-catGnames (struct gData *gp)
+catGnames(struct gData *gp)
 {
     int i;
     char *buf;
@@ -322,7 +311,7 @@ catGnames (struct gData *gp)
 }
 
 char **
-expandGrp (struct gData *gp, char *gName, int *num)
+expandGrp(struct gData *gp, char *gName, int *num)
 {
     char **memberTab;
 
@@ -388,7 +377,7 @@ getGroup (int groupType, char *member)
 }
 
 char
-gDirectMember (char *word, struct gData *gp)
+gDirectMember(char *word, struct gData *gp)
 {
 
     if (word == NULL || gp == NULL)
@@ -405,7 +394,7 @@ gDirectMember (char *word, struct gData *gp)
 
 
 char
-gMember (char *word, struct gData *gp)
+gMember(char *word, struct gData *gp)
 {
     int i;
 
@@ -427,7 +416,7 @@ gMember (char *word, struct gData *gp)
 
 
 int
-countEntries (struct gData *gp, char first)
+countEntries(struct gData *gp, char first)
 {
     static int num;
     int i;
@@ -445,19 +434,19 @@ countEntries (struct gData *gp, char first)
 }
 
 struct gData *
-getUGrpData (char *gname)
+getUGrpData(char *gname)
 {
     return (getGrpData (usergroups, gname, numofugroups));
 }
 
 struct gData *
-getHGrpData (char *gname)
+getHGrpData(char *gname)
 {
     return (getGrpData (hostgroups, gname, numofhgroups));
 }
 
 struct gData *
-getGrpData (struct gData *groups[], char *name, int num)
+getGrpData(struct gData *groups[], char *name, int num)
 {
     int i;
 
@@ -473,424 +462,6 @@ getGrpData (struct gData *groups[], char *name, int num)
 
 }
 
-void
-uDataGroupCreate()
-{
-    static char fname[] = "uDataGroupCreate()";
-    int i;
-
-    for (i = 0; i < numofugroups; i++) {
-	struct uData *u;
-
-	if ((u = getUserData(usergroups[i]->group)) == NULL) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M,
-		fname, "getUserData", usergroups[i]->group);
-	    mbdDie(MASTER_FATAL);
-	}
-	u->flags |= USER_GROUP;
-
-	if (logclass & (LC_TRACE))
-	    ls_syslog(LOG_DEBUG2, "\
-%s: removing user group <%s> from all user set",
-		      fname, u->user);
-
-	setRemoveElement(allUsersSet, (void *)u);
-
-	if (USER_GROUP_IS_ALL_USERS(usergroups[i]) == TRUE) {
-	    u->flags |= USER_ALL;
-
-            if(u->children){
-	    setDestroy(u->children);
-            }
-            if(u->descendants){
-	    setDestroy(u->descendants);
-            }
-
-	    u->children = allUsersSet;
-	    u->descendants = allUsersSet;
-	    setAddElement(uGrpAllSet, (void *)u);
-	}
-
-	u->gData = usergroups[i];
-    }
-}
-void
-uDataPtrTbInitialize(void)
-{
-    sTab        hashSearchPtr;
-    hEnt *      hashEntryPtr;
-    int         currentIndex;
-
-    uDataPtrTb = uDataTableCreate();
-
-    currentIndex = 0;
-    hashEntryPtr = h_firstEnt_(&uDataList, &hashSearchPtr);
-
-    while (hashEntryPtr) {
-	struct uData *uData;
-
-	uData = (struct uData *)hashEntryPtr->hData;
-
-	uData->uDataIndex = currentIndex;
-	++currentIndex;
-
-
-	uDataTableAddEntry(uDataPtrTb, uData);
-
-
-	hashEntryPtr = h_nextEnt_(&hashSearchPtr);
-    }
-
-}
-int
-getIndexByuData(void *userData)
-{
-    struct uData *u;
-
-    u = (struct uData *)userData;
-
-    return (u->uDataIndex);
-}
-
-void *
-getuDataByIndex(int index)
-{
-    if (index > uDataPtrTb->_size_)
-	return NULL;
-
-    return ((struct uData *)uDataPtrTb->_base_[index]);
-}
-void
-setuDataCreate()
-{
-    static char fname[] = "setuDataCreate";
-    struct uData *u;
-
-    while ((u = uDataTableGetNextEntry(uDataPtrTb))) {
-	if ((u->flags & USER_GROUP)
-	    && (strncmp(u->user, "others", 6) != 0)) {
-
-	    traverseGroupTree(u->gData);
-        }
-    }
-
-
-    while ((u = uDataTableGetNextEntry(uDataPtrTb)) != NULL)
-    {
-
-	if (! u->flags & USER_GROUP) {
-	    struct uData              *allUserGrp;
-	    LS_BITSET_ITERATOR_T      iter;
-
-	    BITSET_ITERATOR_ZERO_OUT(&iter);
-	    setIteratorAttach(&iter, uGrpAllSet, fname);
-	    for (allUserGrp = (struct uData *)setIteratorBegin(&iter);
-		 allUserGrp != NULL;
-		 allUserGrp = (struct uData *)setIteratorGetNextElement(&iter))
-	    {
-		setAddElement(u->parents, (void *)allUserGrp);
-		setAddElement(u->ancestors, (void *)allUserGrp);
-	    }
-	}
-
-	if (u->flags & USER_ALL)
-	    FOR_EACH_USER_ANCESTOR_UGRP(u, ancestor) {
-	        if (setIsMember(uGrpAllAncestorSet, (void *)ancestor)==FALSE)
-		{
-		    char                      strBuf[512];
-		    LS_BITSET_OBSERVER_T      *observer;
-
-
-		    sprintf(strBuf,
-			    "User <%s>'s all user set observer",
-			    ancestor->user);
-
-		    observer = setObserverCreate(strBuf,
-						 (void *)ancestor->descendants,
-						 (LS_BITSET_ENTRY_SELECT_OP_T)
-						 NULL,
-						 LS_BITSET_EVENT_ENTER,
-						 userSetOnNewUser,
-						 LS_BITSET_EVENT_NULL);
-		    if (observer == NULL) {
-			ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5902,
-			    "%s: failed to create observer for all users set: %s"), /* catgets 5902 */
-			    fname, setPerror(bitseterrno));
-			mbdDie(MASTER_FATAL);
-		    }
-
-		    setObserverAttach(observer, allUsersSet);
-		    setAddElement(uGrpAllAncestorSet, ancestor);
-		}
-            } END_FOR_EACH_USER_ANCESTOR_UGRP;
-    }
-}
-static void
-traverseGroupTree(struct gData *grp)
-{
-    static char         fname[] = "traverseGroupTree";
-    struct uStackEntry  uStack[MAX_GROUPS];
-    int                 uStackTop;
-    int                 uStackCur;
-
-    uStackTop = 0;
-    uStackCur = -1;
-
-
-    uStack[uStackTop].myGData = grp;
-    uStack[uStackTop].myUData = getUserData(grp->group);
-    uStack[uStackTop].parentGData = NULL;
-    uStack[uStackTop].parentUData = NULL;
-
-    ++uStackTop;
-    uStackCur = 0;
-
-    while (uStackCur < uStackTop) {
-        int i;
-        struct gData *curGData;
-        struct uData *curUData;
-	sTab hashSearchPtr;
-	hEnt *hashEntryPtr;
-
-
-        curGData = uStack[uStackCur].myGData;
-        curUData = uStack[uStackCur].myUData;
-
-
-	checkuDataSet(curUData);
-
-
-	hashEntryPtr = h_firstEnt_(&curGData->memberTab, &hashSearchPtr);
-
-	while (hashEntryPtr) {
-	    char *user;
-	    struct uData *u;
-
-	    user =  hashEntryPtr->keyname;
-
-	    u = getUserData(user);
-	    if (u == NULL) {
-		ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL,
-		    fname, "getUserData", user);
-		continue;
-	    }
-
-
-	    checkuDataSet(u);
-
-
-	    setAddElement(u->parents, curUData);
-	    setAddElement(u->ancestors, curUData);
-
-
-	    setOperate(u->ancestors, curUData->ancestors,
-		       LS_SET_UNION);
-
-
-	    setAddElement(curUData->children, u);
-	    setAddElement(curUData->descendants, u);
-
-
-	    hashEntryPtr = h_nextEnt_(&hashSearchPtr);
-	}
-
-
-	for (i = 0; i < curGData->numGroups; i++) {
-	    struct gData *subGData;
-	    struct uData *subUData;
-
-	    subGData = curGData->gPtr[i];
-	    subUData = getUserData(subGData->group);
-
-	    uStack[uStackTop].myGData = subGData;
-	    uStack[uStackTop].myUData = subUData;
-	    uStack[uStackTop].parentGData = curGData;
-	    uStack[uStackTop].parentUData = curUData;
-
-
-	    checkuDataSet(subUData);
-
-
-	    setAddElement(subUData->parents, curUData);
-	    setAddElement(subUData->ancestors, curUData);
-	    setOperate(subUData->ancestors, curUData->ancestors,
-		       LS_SET_UNION);
-
-
-	    setAddElement(curUData->children, subUData);
-	    setAddElement(curUData->descendants, subUData);
-
-	    ++uStackTop;
-	}
-
-	++uStackCur;
-    }
-
-    --uStackTop;
-    while (uStackTop > 0 ) {
-        struct uData *curUData;
-	struct uData *parentUData;
-
-        curUData = uStack[uStackTop].myUData;
-	parentUData = uStack[uStackTop].parentUData;
-
-	checkuDataSet(parentUData);
-
-	setOperate(parentUData->descendants, curUData->descendants,
-		   LS_SET_UNION);
-
-        --uStackTop;
-    }
-}
-static void
-checkuDataSet(struct uData *u)
-{
-    static char fname[] = "checkuDataSet()";
-    static char strBuf[128];
-
-    if (u->children == NULL) {
-	memset(strBuf, 0, 128);
-	sprintf(strBuf, "%s children set", u->user);
-	u->children = setCreate(MAX_GROUPS,
-				getIndexByuData,
-				getuDataByIndex ,
-				strBuf);
-    }
-
-    if (u->descendants == NULL) {
-	memset(strBuf, 0, 128);
-	sprintf(strBuf, "%s descendants set", u->user);
-	u->descendants = setCreate(MAX_GROUPS,
-				 getIndexByuData,
-				 getuDataByIndex ,
-				 strBuf);
-    }
-
-    if (u->parents == NULL) {
-	memset(strBuf, 0, 128);
-	sprintf(strBuf, "%s parents set", u->user);
-	u->parents = setCreate(MAX_GROUPS,
-			       getIndexByuData,
-			       getuDataByIndex ,
-			       strBuf);
-    }
-
-    if (u->ancestors == NULL) {
-       	memset(strBuf, 0, 128);
-	sprintf(strBuf, "%s ancestors set", u->user);
-	u->ancestors = setCreate(MAX_GROUPS,
-				getIndexByuData,
-				getuDataByIndex ,
-				strBuf);
-    }
-    if (u->children == NULL   ||
-	u->descendants == NULL||
-	u->parents == NULL    ||
-	u->ancestors == NULL) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5904,
-	    "%s: Failed in creating user set %s"), /* catgets 5904 */
-	    fname,
-	    setPerror(bitseterrno));
-	mbdDie(MASTER_FATAL);
-    }
-}
-UDATA_TABLE_T *
-uDataTableCreate()
-{
-    static char fname[] = "uDataTableCreate()";
-    UDATA_TABLE_T *this;
-
-    this = (UDATA_TABLE_T *)my_calloc(1, sizeof(UDATA_TABLE_T), fname);
-
-    this->_base_ = (struct uData **)my_calloc(MAX_GROUPS,
-						sizeof(struct uData *),
-						fname);
-    this->_cur_  =   0;
-    this->_size_ =   MAX_GROUPS;
-
-    return (this);
-
-}
-
-void
-uDataTableFree(UDATA_TABLE_T *uTab)
-{
-
-    if (!uTab)
-       return;
-    FREEUP(uTab->_base_)
-    FREEUP(uTab);
-    return;
-
-}
-
-void
-uDataTableAddEntry(UDATA_TABLE_T *this, struct uData *new)
-{
-    static char fname[] = "uDataTableAddEntry()";
-
-    if (! this) {
-	this = uDataPtrTb = uDataTableCreate();
-    }
-
-    if (this->_cur_  >= this->_size_) {
-
-	this->_base_ = (struct uData **)realloc(this->_base_,
-						2*(this->_size_)
-						*(sizeof(struct uData *)));
-	if (this->_base_ == NULL) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "realloc");
-	    mbdDie(MASTER_FATAL);
-	}
-
-	memset(this->_base_ + this->_size_, 0,
-	       (this->_size_)*(sizeof(struct uData *)));
-	this->_size_ = 2*(this->_size_);
-    }
-
-    this->_base_[this->_cur_++] = new ;
-
-}
-int
-uDataTableGetNumEntries(UDATA_TABLE_T *this)
-{
-    return(this->_size_);
-}
-struct uData *
-uDataTableGetNextEntry(UDATA_TABLE_T *this)
-{
-    static int i = 0;
-
-    if (i == this->_cur_) {
-	i = 0;
-	return NULL;
-    } else {
-	return (this->_base_[i++]);
-    }
-}
-
-int
-userSetOnNewUser(LS_BITSET_T *subjectSet,
-		 void *extra,
-		 LS_BITSET_EVENT_T *event)
-{
-    static char        fname[] = "userSetOnNewUser";
-    LS_BITSET_T        *set;
-    struct uData       *newUser;
-
-    set = (LS_BITSET_T *) extra;
-    newUser = (struct uData *)event->entry;
-
-    if (logclass & (LC_TRACE))
-	ls_syslog(LOG_DEBUG, "\
-%s: added new user <%s> to <%s>",
-		  fname, newUser->user,  set->setDescription);
-
-    setAddElement(set, (void *)newUser);
-
-    return 0;
-
-}
 
 #define SKIP_HOST_GROUP(group) (strstr(group, "others") != NULL)
 
