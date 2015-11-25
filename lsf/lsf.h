@@ -89,7 +89,7 @@ extern char **environ;
  * comparibility where vN daemon talks
  * to vN-1 library
  */
-#define OPENLAVA_XDR_VERSION 31
+#define OPENLAVA_XDR_VERSION 32
 
 #define LSF_DEFAULT_SOCKS       15
 #define MAXLINELEN              PATH_MAX

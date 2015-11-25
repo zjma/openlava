@@ -2301,11 +2301,11 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
         }
 
 	if (queue->ownership) {
-	    /* No more queue attributes since we
-	     * have the ownership string. Why 2
-	     * variables for one thing?
+	    /* Keep using the qAttrib since the
+	     * API library needs it
 	     */
 	    qPtr->ownership = strdup(queue->ownership);
+	    qPtr->qAttrib |= Q_ATTRIB_OWNERSHIP;
 	}
     }
 
@@ -3831,7 +3831,8 @@ init_ownership_scheduler(void)
         if (qPtr->own_sched == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed loading ownership plugin, fall back to fcfs", __func__);
-            FREEUP(qPtr->fairshare);
+            _free_(qPtr->fairshare);
+	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
             continue;
         }
 
@@ -3840,7 +3841,8 @@ init_ownership_scheduler(void)
             ls_syslog(LOG_ERR, "\
 %s: failed initializing fairshare plugin, fall back to fcfs", __func__);
 	    dlclose(qPtr->fsSched->handle);
-	    free(qPtr->fsSched);
+	    _free_(qPtr->own_sched);
+	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
 	    return -1;
 	}
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -24,6 +24,7 @@
 static void prtQueuesLong(int, struct queueInfoEnt *);
 static void prtQueuesShort(int, struct queueInfoEnt *);
 static void print_slot_shares(struct queueInfoEnt *);
+static void print_slot_owned(struct queueInfoEnt *);
 
 static char wflag = FALSE;
 extern int terminateWhen_(int *, char *);
@@ -317,6 +318,8 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
                 printf("  NO_INTERACTIVE");
             if (qp->qAttrib & Q_ATTRIB_ONLY_INTERACTIVE)
                 printf("  ONLY_INTERACTIVE");
+	    if (qp->qAttrib & Q_ATTRIB_OWNERSHIP)
+		printf("  OWNERSHIP");
             if (qp->qAttrib & Q_ATTRIB_ROUND_ROBIN)
                 printf("ROUND_ROBIN_SCHEDULING:  yes\n");
             printf("\n");
@@ -328,6 +331,10 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
         if (qp->qAttrib & Q_ATTRIB_FAIRSHARE) {
             print_slot_shares(qp);
         }
+
+	if (qp->qAttrib & Q_ATTRIB_OWNERSHIP) {
+	    print_slot_owned(qp);
+	}
 
         if (qp->qAttrib & Q_ATTRIB_PREEMPTIVE)
             printf("\nPREEMPTION = %s", qp->preemption);
@@ -549,6 +556,44 @@ print_slot_shares(struct queueInfoEnt *qp)
                buf,
                qp->saccts[i]->shares,
                qp->saccts[i]->dshares);
+        printf("   %6d   %6d\n",
+               qp->saccts[i]->numPEND,
+               qp->saccts[i]->numRUN);
+    }
+}
+
+/* print_slot_owned()
+ */
+static void
+print_slot_owned(struct queueInfoEnt *qp)
+{
+    int i;
+    int numRUN;
+
+    numRUN = 0;
+    for (i = 0; i < qp->numAccts; i++) {
+        if (qp->saccts[i]->options & SACCT_USER)
+            numRUN = numRUN + qp->saccts[i]->numRUN;
+    }
+
+    printf("\
+\nTOTAL_SLOTS: %u FREE_SLOTS: %d\n", qp->num_owned_slots,
+           qp->num_owned_slots - numRUN);
+
+    printf("\
+%9s   %6s   %6s   %6s\n",
+           "USER/GROUP", "OWNED", "PEND", "RUN");
+    for (i = 0; i < qp->numAccts; i++) {
+        char buf[MAXLSFNAMELEN];
+
+        if (qp->saccts[i]->options & SACCT_GROUP)
+            sprintf(buf, "%s/", qp->saccts[i]->name);
+        else
+            sprintf(buf, "%s", qp->saccts[i]->name);
+
+        printf("%-9s   %6d",
+               buf,
+               qp->saccts[i]->shares);
         printf("   %6d   %6d\n",
                qp->saccts[i]->numPEND,
                qp->saccts[i]->numRUN);

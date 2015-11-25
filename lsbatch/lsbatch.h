@@ -108,6 +108,7 @@
 #define Q_ATTRIB_CHKPNT           0x8000
 #define Q_ATTRIB_RERUNNABLE       0x10000
 #define Q_ATTRIB_FAIRSHARE        0x80000
+#define Q_ATTRIB_OWNERSHIP        0x100000
 
 #define MASTER_NULL           200
 #define MASTER_RESIGN         201
@@ -766,6 +767,7 @@ struct queueInfoEnt {
     struct share_acct **saccts;
     char *preemption;
     char *ownership;
+    uint32_t num_owned_slots;
 };
 
 #define ACT_NO              0

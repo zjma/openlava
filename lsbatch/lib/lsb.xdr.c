@@ -821,7 +821,6 @@ xdr_queueInfoReply(XDR *xdrs,
             }
         }
 
-
         for (i = 0; i < qInfoReply->numQueues; i++) {
             FREEUP(qInfo[i].description);
             FREEUP(qInfo[i].userList);
@@ -1010,6 +1009,11 @@ xdr_queueInfoEnt(XDR *xdrs,
     if (xdrs->x_op == XDR_DECODE
         && hdr->version >= 3) {
         xdr_var_string(xdrs, &qInfo->preemption);
+    }
+
+    if (hdr->version >= 32) {
+        if (! xdr_uint32_t(xdrs, &qInfo->num_owned_slots))
+            return false;
     }
 
     return true;

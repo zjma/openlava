@@ -581,7 +581,7 @@ getMinGSlots(struct uData *uPtr, struct qData *qPtr, int *numGAvailSlots)
     if (uPtr->maxJobs == INFINIT_INT)
 	numGUsableSlots = INFINIT_INT;
     else {
-	numGUsableSlots = numGAvailSlots;
+	numGUsableSlots = *numGAvailSlots;
     }
 
     minGUsableSlots = MIN(minGUsableSlots, numGUsableSlots);

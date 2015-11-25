@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -313,7 +313,7 @@ checkQueues(struct infoReq *queueInfoReqPtr,
 
             qRep->qAttrib = qp->qAttrib;
             qRep->qStatus = qp->qStatus;
-            for(i = 0; i < LSF_RLIM_NLIMITS; i++) {
+            for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
                 qRep->rLimits[i] = qp->rLimits[i];
                 qRep->defLimits[i] = qp->defLimits[i];
             }
@@ -436,6 +436,13 @@ checkQueues(struct infoReq *queueInfoReqPtr,
                                               &qRep->saccts);
             }
             qRep->numFairSlots = qp->numFairSlots;
+
+	    if (qp->ownership) {
+		(*qp->own_sched->fs_get_saccts)(qp,
+						&qRep->numAccts,
+						&qRep->saccts);
+	    }
+	    qRep->num_owned_slots = qp->num_owned_slots;
 
             if (qp->qAttrib & Q_ATTRIB_PREEMPTIVE) {
                 qRep->preemption = strdup(qp->preemption);
