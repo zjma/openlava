@@ -25,6 +25,7 @@ Release notes for OpenLava versions
    the job list upon a new job arrival speeding up the submission and overall
    MBD operations. 
 -- Fix issues in the job sorting order while using qsort().
+-- Increase the array size of LIM clients from 64 to 2014.
 
 3.1pre1
 =======
