@@ -1073,7 +1073,8 @@ int
 chanFreeBuf_(struct Buffer *buf)
 {
     if (buf) {
-        if (buf->stashed) return 0;
+        if (buf->stashed)
+	    return 0;
 
         if (buf->data)
             free(buf->data);
