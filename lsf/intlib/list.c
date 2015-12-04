@@ -151,7 +151,13 @@ listInsertEntryAfter(LIST_T * list, LIST_ENTRY_T *pred, LIST_ENTRY_T *entry)
  *
  * Push items in from of the list:
  *
+ * before:
+ *
  * L->3->2->1
+ *
+ * after:
+ *
+ * L->4->3->2->1
  *
  */
 int
@@ -160,6 +166,17 @@ listInsertEntryAtFront(LIST_T * list, LIST_ENTRY_T *entry)
     return listInsertEntryBefore(list, list->forw, entry);
 }
 
+/* listInsertEntryAtBack()
+ *
+ * before:
+ *
+ * L->1->2->3
+ *
+ * after:
+ *
+ * L->1->2->3->4
+ *
+ */
 int
 listInsertEntryAtBack(LIST_T * list, LIST_ENTRY_T *entry)
 {
