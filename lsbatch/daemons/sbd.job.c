@@ -480,7 +480,7 @@ LSF: Unable to execute jobfile %s job %s: %s\n",
                           fname, jobSpecsPtr->options,
                           chanSock_(chfd), shellPath);
 
-            putEnv("PATH", "/bin:/usr/bin/:/local/bin:/usr/local/bin");
+            putenv("PATH=/bin:/usr/bin:/local/bin:/usr/local/bin");
 
             chdir(jobSpecsPtr->execHome);
             if (shellPath != NULL) {
@@ -654,9 +654,7 @@ setJobEnv(struct jobCard *jp)
     if (strlen(jp->jobSpecs.chkpntDir) == 0) {
 
         if (jp->jobSpecs.jobSpoolDir[0] == '\0' ) {
-            sprintf(shellFile, "%s/.lsbatch/%s",
-                    jp->jobSpecs.execHome,
-                    jp->jobSpecs.jobFile);
+            strcpy(shellFile,jp->jobSpecs.jobFile);
         } else {
             sprintf(shellFile, "%s/%s",
                     jp->jobSpecs.jobSpoolDir,
