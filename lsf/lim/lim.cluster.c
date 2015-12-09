@@ -143,12 +143,27 @@ processMsg(int chanfd)
         }
     }
 
+    /* Don't go ahead unless the operation is LIM_ADD_HOST
+     * since the fromhost pointer is NULL.
+     */
+    if (hdr.opCode != LIM_ADD_HOST
+	&& clientMap[chanfd]->fromHost == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: receive message %d not LIM_ADD_HOST from unknown host %s",
+		  __func__, hdr.opCode,
+		  sockAdd2Str_(&clientMap[chanfd]->from));
+	xdr_destroy(&xdrs);
+	shutDownChan(chanfd);
+	chanFreeBuf_(buf);
+	return;
+    }
+
     ls_syslog(LOG_DEBUG, "\
 %s: Received request %d from %s chan %d len %d",
               __func__, hdr.opCode, sockAdd2Str_(&clientMap[chanfd]->from),
               chanfd, buf->len);
 
-    switch(hdr.opCode) {
+    switch (hdr.opCode) {
 
         case LIM_LOAD_REQ:
         case LIM_GET_HOSTINFO:

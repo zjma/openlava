@@ -29,7 +29,7 @@ extern void sub_perror (char *usrMsg);
 extern int getJobIdList(char *, LS_LONG_INT **);
 
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
     struct submit req;
     struct submitReply  reply;

@@ -3297,7 +3297,7 @@ parseGroups (char *linep, char *fname, int *lineNum, char *section,
                 }
             } else {
                 ls_syslog(LOG_WARNING, "\
-%s: File %s%s at line %d: Unknown user or user group <%s>",
+%s: File %s%s at line %d: Unknown user or user group <%s>", __func__, fname,
                           section, *lineNum, myWord);
                 lsberrno = LSBE_CONF_WARNING;
                 if (!addMember(mygp, myWord, USER_GRP, fname,

@@ -127,5 +127,5 @@ extern int  stringIsDigitNumber(char *);
 extern int processXFReq(char *, char *, struct submit *);
 extern char *extractStringValue(char *);
 extern void copyJUsage(struct jRusage *, struct jRusage *);
-
+extern void bsub_usage(int);
 #endif

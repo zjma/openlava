@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -35,7 +35,6 @@ extern  int setOption_(int argc, char **argv, char *template,
                         struct submit *req, int mask, int mask2, char **errMsg);
 extern  struct submit * parseOptFile_(char *filename,
                                       struct submit *req, char **errMsg);
-extern void subUsage_(int, char **);
 static  int parseLine(char *line, int *embedArgc, char ***embedArgv, int option);
 
 static int emptyCmd = TRUE;
@@ -213,7 +212,7 @@ W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K|";
 
             req->command = chkDir;
         } else
-            subUsage_(req->options, NULL);
+            bsub_usage(req->options);
 
     } else {
         if (myArgc > 0 && myArgv0 != NULL) {

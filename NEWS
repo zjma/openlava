@@ -10,7 +10,8 @@ Release notes for OpenLava versions
 
 3.1.0
 ======
--- Modify openlava.sh to forcefully terminate sbatchd if SIGTERM does not work.
+-- Modify openlava.sh to forcefully terminate sbatchd if SIGTERM does
+   not work.
 -- Fix LIM bug in which the code was accessing non initialized memory.
 -- Fix several memory leaks in LIM.
 -- Fix res hang in child handler.
@@ -23,9 +24,12 @@ Release notes for OpenLava versions
 -- Introduce an lsf.conf parameter MBD_QSORT_JOBS which changes the way
    jobs are inserted and sorted in the PJL. This parameter avoids searching
    the job list upon a new job arrival speeding up the submission and overall
-   MBD operations. 
+   MBD operations.
 -- Fix issues in the job sorting order while using qsort().
 -- Increase the array size of LIM clients from 64 to 2014.
+-- Fix lim core dump if the lim receives an operation request from
+   outside of the OL cluster and it is not LIM_ADD_HOST.
+
 
 3.1pre1
 =======

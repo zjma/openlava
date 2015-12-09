@@ -8826,7 +8826,13 @@ sort_job_list(int listno)
 
     for (cc = 0; cc < num; cc++) {
         jPtr = jArray[cc];
-        listInsertEntryAtFront(l, (LIST_ENTRY_T *)jPtr);
+	/* jobs are sorted in increasing order by queue
+	 * priority and jobids switched so the latest job
+	 * in the array jArray[num - 1] is the one with
+	 * the highest priority so it should be pointed
+	 * by the list->back pointer.
+	 */
+        listInsertEntryAtBack(l, (LIST_ENTRY_T *)jPtr);
     }
 
     free(jArray);
@@ -8848,24 +8854,26 @@ jcompare(const void *j1, const void *j2)
     if (jPtr1->qPtr->priority < jPtr2->qPtr->priority)
         return -1;
 
-    /* Same queue compare priority
+    /* Same queue compare job priority
      */
     if (jPtr1->priority > jPtr2->priority)
         return 1;
     if (jPtr1->priority < jPtr2->priority)
         return -1;
 
-    /* Same priority compare jobids
+    /* Same priority compare jobids. A job with higher jobid is
+     * "smaller" then job with lesser jobid because it has arrived
+     * after.
      */
     if (LSB_ARRAY_JOBID(jPtr1->jobId) > LSB_ARRAY_JOBID(jPtr2->jobId))
-	return 1;
-    if (LSB_ARRAY_JOBID(jPtr1->jobId) < LSB_ARRAY_JOBID(jPtr2->jobId))
 	return -1;
+    if (LSB_ARRAY_JOBID(jPtr1->jobId) < LSB_ARRAY_JOBID(jPtr2->jobId))
+	return 1;
 
     if (LSB_ARRAY_IDX(jPtr1->jobId) > LSB_ARRAY_IDX(jPtr2->jobId))
-	return 1;
-    if (LSB_ARRAY_IDX(jPtr1->jobId) < LSB_ARRAY_IDX(jPtr2->jobId))
 	return -1;
+    if (LSB_ARRAY_IDX(jPtr1->jobId) < LSB_ARRAY_IDX(jPtr2->jobId))
+	return 1;
 
     abort();
 
