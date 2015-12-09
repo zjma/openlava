@@ -20,6 +20,8 @@
 #include "lib.h"
 #include "lproto.h"
 
+static inline int getc2(FILE *);
+
 char *
 getNextLine_(FILE *fp, int confFormat)
 {
@@ -253,7 +255,7 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
 
 
         lpos = 0;
-        while ((cin = getc(fp)) != EOF) {
+        while ((cin = getc2(fp)) != EOF) {
 
             if (cin == '\n') {
                 *LineCount += 1;
@@ -267,7 +269,7 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
             }
             if (confFormat && cin == '#' && quotes == 0) {
 
-                while ((cin = getc(fp)) != EOF)
+                while ((cin = getc2(fp)) != EOF)
                     if (cin == '\n') {
                         *LineCount += 1;
                         break;
@@ -278,7 +280,7 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
 
             if (confFormat && cin == '\\') {
                 cinBslash = cin;
-                if ((cin = getc(fp)) == EOF)
+                if ((cin = getc2(fp)) == EOF)
                     break;
 
                 if (cin == '\n')
@@ -401,3 +403,35 @@ nextline_(FILE *fp)
     return(p);
 
 } /* nextline_() */
+
+/* getc2()
+ */
+static inline int
+getc2(FILE *fp)
+{
+    static int    pos;
+    static int    L;
+    static char   buf[32768];
+    int           cc;
+
+    /* read() the file in blocks up to
+     * 32K and return the buffer char
+     * by char. When all the bytes from
+     * the buffer are returned read()
+     * again, if done reading return
+     * EOF.
+     */
+    if (L == pos) {
+	L = read(fileno(fp), buf, sizeof(buf));
+	if (L <= 0) {
+	    L = pos = 0;
+	    return EOF;
+	}
+	pos = 0;
+    }
+
+    cc = (unsigned char)buf[pos];
+    ++pos;
+
+    return cc ;
+}
