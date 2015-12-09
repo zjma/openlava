@@ -2788,6 +2788,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
             case 'I':
                 if (flagI || flagK) {
+		    subUsage_(0, NULL);
                     return -1;
                 }
 
@@ -2801,6 +2802,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                     req->options |= SUB_INTERACTIVE | SUB_PTY | SUB_PTY_SHELL;
                     flagI++;
                 } else {
+		    subUsage_(0, NULL);
                     return -1;
                 }
                 break;
@@ -2811,6 +2813,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                 break;
             case 'K':
                 if (flagI || flagK) {
+		    subUsage_(0, NULL);
                     return -1;
                 }
                 flagK++;
@@ -2830,6 +2833,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                 break;
 
             case 'h':
+		subUsage_(0, NULL);
                 return -1;
 
             case 'm':
