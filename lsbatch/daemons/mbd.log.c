@@ -240,7 +240,10 @@ init_log(void)
 
 
         while (lsberrno != LSBE_EOF) {
-            if ((logPtr = lsb_geteventrec(log_fp, &lineNum)) == NULL) {
+
+	    /* Use single purpose reading getc2() routine.
+	     */
+            if ((logPtr = lsb_geteventrecord(log_fp, &lineNum)) == NULL) {
 
                 if (lsberrno != LSBE_EOF) {
                     ls_syslog(LOG_ERR, "\
@@ -251,12 +254,12 @@ init_log(void)
                               lsb_sysmsg());
                     first = FALSE;
                     if (lsberrno == LSBE_NO_MEM) {
-
                         mbdDie(MASTER_MEM);
                     }
 
                 } else {
-                    FCLOSEUP(&log_fp);
+                    _fclose_(&log_fp);
+		    reset_getc2();
                     log_fp = NULL;
                 }
                 continue;
@@ -273,8 +276,10 @@ init_log(void)
             }
         }
 
-        if (log_fp)
-            FCLOSEUP(&log_fp);
+        if (log_fp) {
+            _fclose_(&log_fp);
+	    reset_getc2();
+	}
 
 	if (qsort_jobs) {
 	    sort_job_list(PJL);
@@ -2201,7 +2206,7 @@ putEventRec1(const char *fname)
         streamEvent(logPtr);
 
     free(logPtr);
-    cc = FCLOSEUP(&log_fp);
+    cc = _fclose_(&log_fp);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "%s: fclose() failed: %m", __func__);
         ret = -1;
@@ -2349,7 +2354,7 @@ logFinishedjob(struct jData *job)
         free(jobFinishLog->execHosts);
     free(logPtr);
 
-    if (FCLOSEUP(&joblog_fp) < 0) {
+    if (_fclose_(&joblog_fp) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M,
                   fname,
                   lsb_jobid2str(job->jobId),
@@ -2438,7 +2443,7 @@ switchAcctLog(void)
         goto Acct_exiterr;
     }
 
-    FCLOSEUP(&joblog_fp);
+    _fclose_(&joblog_fp);
 
     errnoSv = errno;
     chmod(jlogFname, 0644);
@@ -2493,7 +2498,7 @@ switch_log(void)
     efp = fopen(elogFname, "r");
     if (efp == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
-        FCLOSEUP(&tmpfp);
+        _fclose_(&tmpfp);
         goto exiterr;
     }
 
@@ -2642,7 +2647,7 @@ switch_log(void)
             if (lsb_puteventrec(tmpfp, logPtr) == -1) {
                 ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM,
                           fname, "lsb_puteventrec", tmpfn);
-                FCLOSEUP(&efp);
+                _fclose_(&efp);
                 unlink (tmpfn);
                 goto exiterr;
             }
@@ -2650,12 +2655,12 @@ switch_log(void)
         jobId = 0;
         preserved = FALSE;
     }
-    FCLOSEUP(&efp);
+    _fclose_(&efp);
 
     pos = ftell(tmpfp);
     rewind(tmpfp);
     fprintf(tmpfp, "#%ld", pos);
-    if (FCLOSEUP(&tmpfp)) {
+    if (_fclose_(&tmpfp)) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fclose", tmpfn);
         goto exiterr;
     }
@@ -2735,13 +2740,13 @@ createAcct0File(void)
 
     if ((acctPtr = fopen(jlogFname, "r")) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", jlogFname);
-        FCLOSEUP(&acctPtr);
+        _fclose_(&acctPtr);
         return -1;
     }
 
     if ((acct0Ptr  = fopen(acct0File, "w")) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", acct0File);
-        FCLOSEUP(&acctPtr);
+        _fclose_(&acctPtr);
         return -1;
     }
     chmod(acct0File, 0644);
@@ -2754,8 +2759,8 @@ createAcct0File(void)
 
             if (fwrite(buf, 1, cc, acct0Ptr) == 0) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
-                FCLOSEUP(&acctPtr);
-                FCLOSEUP(&acct0Ptr);
+                _fclose_(&acctPtr);
+                _fclose_(&acct0Ptr);
                 return -1;
             }
             nread += cc;
@@ -2763,13 +2768,13 @@ createAcct0File(void)
             break;
         } else {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", jlogFname);
-            FCLOSEUP(&acctPtr);
-            FCLOSEUP(&acct0Ptr);
+            _fclose_(&acctPtr);
+            _fclose_(&acct0Ptr);
             return -1;
         }
     }
-    FCLOSEUP(&acctPtr);
-    FCLOSEUP(&acct0Ptr);
+    _fclose_(&acctPtr);
+    _fclose_(&acct0Ptr);
     return 0;
 }
 
@@ -2794,13 +2799,13 @@ createEvent0File (void)
 
     if ((eventPtr = fopen(elogFname, "r")) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
-        FCLOSEUP(&eventPtr);
+        _fclose_(&eventPtr);
         return -1;
     }
 
     if ((event0Ptr  = fopen(event0File, "w")) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", event0File);
-        FCLOSEUP(&eventPtr);
+        _fclose_(&eventPtr);
         return -1;
     }
     chmod(event0File, 0644);
@@ -2825,8 +2830,8 @@ createEvent0File (void)
 
             if (fwrite(buf, 1, cc, event0Ptr) == 0) {
                 ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
-                FCLOSEUP(&eventPtr);
-                FCLOSEUP(&event0Ptr);
+                _fclose_(&eventPtr);
+                _fclose_(&event0Ptr);
                 return -1;
             }
             nread += cc;
@@ -2834,13 +2839,13 @@ createEvent0File (void)
             break;
         } else {
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", elogFname);
-            FCLOSEUP(&eventPtr);
-            FCLOSEUP(&event0Ptr);
+            _fclose_(&eventPtr);
+            _fclose_(&event0Ptr);
             return -1;
         }
     }
-    FCLOSEUP(&eventPtr);
-    FCLOSEUP(&event0Ptr);
+    _fclose_(&eventPtr);
+    _fclose_(&event0Ptr);
 
     return 0;
 }
@@ -2920,11 +2925,11 @@ logJobInfo(struct submitReq * req, struct jData *jp, struct lenData * jf)
                   fname,
                   logFn,
                   jf->len);
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
         goto error;
     }
 
-    if (FCLOSEUP(&fp) < 0) {
+    if (_fclose_(&fp) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fclose",
                   logFn);
         goto error;
@@ -3330,7 +3335,7 @@ replaceJobInfoFile(char *jobFileName,
     }
 
     if ((fdo = fopen(workFile, "w")) == NULL) {
-        FCLOSEUP(&fdi);
+        _fclose_(&fdi);
         ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", workFile);
         return -1;
     }
@@ -3349,8 +3354,8 @@ replaceJobInfoFile(char *jobFileName,
 
 
                 if ((ptr = fgets(line, MAXLINELEN, fdi)) == NULL) {
-                    FCLOSEUP(&fdo);
-                    FCLOSEUP(&fdi);
+                    _fclose_(&fdo);
+                    _fclose_(&fdi);
                     remove(workFile);
                     ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
                               fname,
@@ -3371,8 +3376,8 @@ replaceJobInfoFile(char *jobFileName,
 
                 if (replace1stCmd_(oldCmdArgs, newCommand,
                                    outCmdArgs, sizeof(outCmdArgs)) < 0) {
-                    FCLOSEUP(&fdo);
-                    FCLOSEUP(&fdi);
+                    _fclose_(&fdo);
+                    _fclose_(&fdi);
                     remove(workFile);
                     ls_syslog(LOG_ERR, "\
 %s: The command line is too long when replacing the command of (%s) by the one of (%s)",
@@ -3396,8 +3401,8 @@ replaceJobInfoFile(char *jobFileName,
         }
     }
     if (ptr == NULL) {
-        FCLOSEUP(&fdo);
-        FCLOSEUP(&fdi);
+        _fclose_(&fdo);
+        _fclose_(&fdi);
         remove(workFile);
         ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
                   __func__, jobFileName);
@@ -3417,8 +3422,8 @@ replaceJobInfoFile(char *jobFileName,
     }
 
     if (ptr == NULL) {
-        FCLOSEUP(&fdo);
-        FCLOSEUP(&fdi);
+        _fclose_(&fdo);
+        _fclose_(&fdi);
         remove(workFile);
         ls_syslog(LOG_ERR, "%s: Unexpected the end of (%s)",
                   fname,
@@ -3430,15 +3435,15 @@ replaceJobInfoFile(char *jobFileName,
 
     while ((nbyte=fread(line,1, MAXLINELEN, fdi)) > 0)
         if (fwrite(line,1, nbyte, fdo) != nbyte) {
-            FCLOSEUP(&fdo);
-            FCLOSEUP(&fdi);
+            _fclose_(&fdo);
+            _fclose_(&fdi);
             remove(workFile);
             ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fwrite", workFile);
             return -1;
         }
 
-    FCLOSEUP(&fdo);
-    FCLOSEUP(&fdi);
+    _fclose_(&fdo);
+    _fclose_(&fdi);
     remove(jobFile);
     rename(workFile, jobFile);
     return 0;

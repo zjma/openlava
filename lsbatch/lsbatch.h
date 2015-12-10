@@ -1506,6 +1506,7 @@ extern char *lsb_pendreason(int, int *, struct jobInfoHead *,
                             struct loadIndexLog *);
 extern int lsb_puteventrec(FILE *, struct eventRec *);
 extern struct eventRec *lsb_geteventrec(FILE *, int *);
+extern struct eventRec *lsb_geteventrecord(FILE *, int *);
 extern int getJobIdIndexFromEventFile(char *, struct sortIntList *, time_t *);
 extern int getJobIdFromEvent(char *, int);
 extern int writeJobIdIndexToIndexFile(FILE *, struct sortIntList *, time_t);

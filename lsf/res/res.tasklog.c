@@ -1,4 +1,5 @@
-/* $Id: res.tasklog.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -209,7 +210,7 @@ resAcctWrite(struct child *child)
     acctRec.cmdln = (char *) malloc (l * (sizeof(char)));
     if (acctRec.cmdln == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "malloc");
-        FCLOSEUP(&fd);
+        _fclose_(&fd);
         unlink(acctFile);
         return;
     } else {
@@ -227,7 +228,7 @@ resAcctWrite(struct child *child)
 
     if (ls_putacctrec(fd, &acctRec) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_putacctrec");
-        FCLOSEUP(&fd);
+        _fclose_(&fd);
         free(acctRec.cmdln);
         unlink(acctFile);
         return;
@@ -239,7 +240,7 @@ resAcctWrite(struct child *child)
                   fname, child->pid, child->wait, WEXITSTATUS(child->wait));
     }
 
-    FCLOSEUP(&fd);
+    _fclose_(&fd);
     free(acctRec.cmdln);
 
     if (!sbdMode) {
@@ -315,7 +316,7 @@ resParentWriteAcct(struct LSFHeader *msgHdr, XDR *xdrs, int sock)
         return;
     }
 
-    FCLOSEUP(&fp);
+    _fclose_(&fp);
     if (lstat(resAcctFN, &st) < 0 ) {
         if (errno != ENOENT
             || (errno == ENOENT
@@ -351,7 +352,7 @@ resParentWriteAcct(struct LSFHeader *msgHdr, XDR *xdrs, int sock)
         return;
     }
 
-    FCLOSEUP(&fp);
+    _fclose_(&fp);
     free(buf);
     sendReturnCode(sock, RESE_OK);
 

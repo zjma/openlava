@@ -941,7 +941,7 @@ updateJRru(struct jRusage *jru, char *jobFile)
 		    &tmpJru.utime, &tmpJru.stime);
     if (status == 0) {
 	ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fscanf", jobFile);
-        FCLOSEUP(&jrfPtr);
+        _fclose_(&jrfPtr);
 	return -1;
     }
 
@@ -951,7 +951,7 @@ updateJRru(struct jRusage *jru, char *jobFile)
     jru->utime = tmpJru.utime;
     jru->stime = tmpJru.stime;
 
-    FCLOSEUP(&jrfPtr);
+    _fclose_(&jrfPtr);
 
     return 0;
 }
@@ -1174,7 +1174,7 @@ exeActCmd(struct jobCard *jp, char *actCmd, char *exitFile)
 
     chuser(batchId);
 
-    if ((fp = fopen(exitFile, "w")) == NULL || FCLOSEUP(&fp) == -1) {
+    if ((fp = fopen(exitFile, "w")) == NULL || _fclose_(&fp) == -1) {
         sprintf(errMsg, I18N_FUNC_S_FAIL_M, fname, "fopen", exitFile);
         goto Error;
     }
@@ -1554,7 +1554,7 @@ exeChkpnt(struct jobCard *jp, int chkFlags, char * exitFile)
         if (jobsig(jp, SIGKILL, FALSE) == 0) {
 
 
-            if ((fp = fopen(exitFile, "w")) == NULL || FCLOSEUP(&fp) == -1) {
+            if ((fp = fopen(exitFile, "w")) == NULL || _fclose_(&fp) == -1) {
                 sprintf(errMsg, _i18n_msg_get(ls_catd , NL_SETN, 910,
                                               "Unable to write migration status into %s file: %s"), /* catgets 910 */
                         exitFile, strerror(errno));
@@ -1772,7 +1772,7 @@ exeChkpnt(struct jobCard *jp, int chkFlags, char * exitFile)
 
     chuser(batchId);
 
-    if ((fp = fopen(exitFile, "w")) == NULL || FCLOSEUP(&fp) == -1) {
+    if ((fp = fopen(exitFile, "w")) == NULL || _fclose_(&fp) == -1) {
 	sprintf(errMsg, I18N_FUNC_S_FAIL_M, fname, "fopen", exitFile);
 	goto Error;
     }
@@ -1960,7 +1960,7 @@ writeChkLog(char *fn, char *chkpntDir, struct jobCard *jp,
     free(jobNewLog->resReq);
 
     if (cc == -1) {
-	FCLOSEUP(&fp);
+	_fclose_(&fp);
 	errno = eno;
 	return -1;
     }
@@ -1983,12 +1983,12 @@ writeChkLog(char *fn, char *chkpntDir, struct jobCard *jp,
 
     if (lsb_puteventrec(fp, &logPtr) == -1) {
 	eno = errno;
-	FCLOSEUP(&fp);
+	_fclose_(&fp);
 	errno = eno;
 	return -1;
     }
 
-    return FCLOSEUP(&fp);
+    return _fclose_(&fp);
 }
 
 
@@ -2039,12 +2039,12 @@ sbdlog_newstatus (struct jobCard *jp)
 
     if (lsb_puteventrec(fp, &logPtr) == -1) {
         eno = errno;
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
         errno = eno;
         return -1;
     }
 
-    return (FCLOSEUP(&fp));
+    return (_fclose_(&fp));
 }
 
 
@@ -2077,7 +2077,7 @@ sbdread_jobstatus (struct jobCard *jp)
     if ((logPtr = lsb_geteventrec(fp, &line)) == NULL
         || logPtr->type != EVENT_SBD_JOB_STATUS) {
 
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
         return -1;
     }
     jobStatusLog = &logPtr->eventLog.sbdJobStatusLog;
@@ -2095,7 +2095,7 @@ sbdread_jobstatus (struct jobCard *jp)
     jp->actReasons = jobStatusLog->actReasons;
     jp->actSubReasons = jobStatusLog->actSubReasons;
 
-    FCLOSEUP(&fp);
+    _fclose_(&fp);
     return 0;
 }
 

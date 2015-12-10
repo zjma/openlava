@@ -22,11 +22,30 @@
 
 static inline int getc2(FILE *);
 
+/*
+ * getNextLine_()
+ *
+ *     Read next meaningful line. The definition of a meaningful line
+ *     depends on parameter CONFFORMAT.
+ *
+ *     If CONFFORMAT is true, a line is meaningful if the line is
+ *     not a comment line nor a blank line; A comment line begins with
+ *     the character '#'. In CONFFORMAT, backslash '\' quotes the next
+ *     character, therefore the next character is ignored. Using '\'
+ *     at the end of a line effectly joins the current line with the
+ *     next line.
+ *
+ *     If CONFFORMAT is FALSE, then a line is meaningful if the line is
+ *     non-blank. A line is blank if it contains nothing except spaces
+ *     and tabs.
+ *
+ */
+
 char *
 getNextLine_(FILE *fp, int confFormat)
 {
     int dummy = 0;
-    return (getNextLineC_(fp, &dummy, confFormat));
+    return getNextLineC_(fp, &dummy, confFormat);
 }
 
 char *
@@ -120,8 +139,6 @@ getNextValueQ_(char **line, char ch1, char ch2)
         return sp;
 
 
-
-
     sprintf(str, "%c", ch1);
     if (strcmp(sp, str) == 0) {
         sp = getNextWord_(line);
@@ -184,8 +201,17 @@ getNextValueQ_(char **line, char ch1, char ch2)
 
 }
 
+/* Strips "" around a string that may itself contains quotes. This function
+ * is the de-transformation of function addQStr().
+ * Copies string bracketed by " in *q to *str.  Returns index at the next
+ * character after the terminating ".  (strips bracketing quotes).
+ * Returns -1 if can't find ".
+ * E.g. c = Q2Str ("\"  hi\" there", to) returns
+ * to = "  hi"
+ * c = 7
+ */
 int
-stripQStr (char *q, char *str)
+stripQStr(char *q, char *str)
 {
     char *fr = q;
 
@@ -210,6 +236,16 @@ stripQStr (char *q, char *str)
     return (q-fr+1);
 }
 
+/* addQStr()
+ *
+ * Write str with quotes to file log_fp.
+ * An extra quote is added to indicate an intermediate quote.
+ *
+ * eg: `echo "Hello ""` becomes `"echo ""Hello """""`
+ *
+ * stripQStr() can be used to obtain the original form.
+ *
+ */
 int
 addQStr(FILE *log_fp, char *str)
 {
@@ -232,6 +268,9 @@ addQStr(FILE *log_fp, char *str)
     return 0;
 }
 
+/*
+ * Same as getNextLineC_() except that blank lines are also kept
+ */
 char *
 getNextLineD_(FILE *fp, int *LineCount, int confFormat)
 {
@@ -253,88 +292,86 @@ getNextLineD_(FILE *fp, int *LineCount, int confFormat)
         return NULL;
     }
 
+    lpos = 0;
+    while ((cin = getc(fp)) != EOF) {
 
-        lpos = 0;
-        while ((cin = getc2(fp)) != EOF) {
+	if (cin == '\n') {
+	    *LineCount += 1;
+	    break;
+	}
+	if (cin == '"') {
+	    if (quotes == 0)
+		quotes++;
+	    else
+		quotes--;
+	}
+	if (confFormat && cin == '#' && quotes == 0) {
 
-            if (cin == '\n') {
-                *LineCount += 1;
-                break;
-            }
-            if (cin == '"') {
-                if (quotes == 0)
-                    quotes++;
-                else
-                    quotes--;
-            }
-            if (confFormat && cin == '#' && quotes == 0) {
+	    while ((cin = getc(fp)) != EOF)
+		if (cin == '\n') {
+		    *LineCount += 1;
+		    break;
+		}
+	    break;
+	}
 
-                while ((cin = getc2(fp)) != EOF)
-                    if (cin == '\n') {
-                        *LineCount += 1;
-                        break;
-                    }
-                break;
-            }
+	if (confFormat && cin == '\\') {
+	    cinBslash = cin;
+	    if ((cin = getc(fp)) == EOF)
+		break;
 
+	    if (cin == '\n')
+		*LineCount += 1;
+	    else if (!isspace(cin)) {
 
-            if (confFormat && cin == '\\') {
-                cinBslash = cin;
-                if ((cin = getc2(fp)) == EOF)
-                    break;
+		if (lpos < linesize - 1)
+		    line[lpos++] = cinBslash;
+		else {
+		    char *sp;
+		    linesize += MAXLINELEN;
+		    sp = myrealloc(line, linesize);
+		    if (sp == NULL)
+			break;
+		    line = sp;
+		    line[lpos++] = cinBslash;
+		}
+	    }
+	}
 
-                if (cin == '\n')
-                    *LineCount += 1;
-                else if (!isspace(cin)) {
-
-                    if (lpos < linesize - 1)
-                        line[lpos++] = cinBslash;
-                    else {
-                        char *sp;
-                        linesize += MAXLINELEN;
-                        sp = myrealloc(line, linesize);
-                        if (sp == NULL)
-                            break;
-                        line = sp;
-                        line[lpos++] = cinBslash;
-                    }
-                }
-            }
-
-
-            if (isspace(cin))
-                cin = ' ';
+	if (isspace(cin))
+	    cin = ' ';
 
 
-            if (lpos < linesize - 1)
-                line[lpos++] = cin;
-            else {
-                char *sp;
-                linesize += MAXLINELEN;
-                sp = myrealloc(line, linesize);
-                if (sp == NULL)
-                    break;
-                line = sp;
-                line[lpos++] = cin;
-            }
-        }
+	if (lpos < linesize - 1)
+	    line[lpos++] = cin;
+	else {
+	    char *sp;
+	    linesize += MAXLINELEN;
+	    sp = myrealloc(line, linesize);
+	    if (sp == NULL)
+		break;
+	    line = sp;
+	    line[lpos++] = cin;
+	}
+    }
 
-        if (lpos == 1)
-            oneChar = 1;
+    if (lpos == 1)
+	oneChar = 1;
 
-
-        while(lpos > 0 && (line[--lpos] == ' '))
-            ;
+    while(lpos > 0 && (line[--lpos] == ' '))
+	;
 
     if ((cin != EOF) || (oneChar == 1) || (cin == EOF && lpos > 0)) {
 
         line[++lpos] = '\0';
-        return(line);
+        return line;
     }
 
     return NULL;
 }
 
+/* Same as getNextLineD_() except that blank lines are skipped
+ */
 char *
 getNextLineC_(FILE *fp, int *LineCount, int confFormat)
 {
@@ -342,19 +379,14 @@ getNextLineC_(FILE *fp, int *LineCount, int confFormat)
     char *sp;
 
     nextLine = getNextLineD_(fp, LineCount, confFormat);
-
     if (nextLine == NULL)
         return NULL;
 
-
-
-    for (sp=nextLine; *sp != '\0'; sp++)
+    for (sp = nextLine; *sp != '\0'; sp++)
         if (*sp != ' ')
-            return (nextLine);
+            return nextLine;
 
-
-    return (getNextLineC_(fp, LineCount, confFormat));
-
+    return getNextLineC_(fp, LineCount, confFormat);
 }
 
 
@@ -362,10 +394,10 @@ void
 subNewLine_(char* instr) {
     int i, k, strlength;
 
-    if ( instr && (strlength = strlen(instr))) {
-        for ( i = strlength-1; i >= 0; i--) {
+    if (instr && (strlength = strlen(instr))) {
+        for (i = strlength-1; i >= 0; i--) {
             if( instr[i] == '\n' ) {
-                for( k = i; k < strlength; k++ ) {
+                for(k = i; k < strlength; k++) {
                     instr[k] = instr[k+1];
                 }
             }
@@ -404,6 +436,130 @@ nextline_(FILE *fp)
 
 } /* nextline_() */
 
+/* _getNextLine_()
+ *
+ * Used by lsbatch
+ *
+ */
+char *
+_getNextLine_(FILE *fp, int *LineCount, int confFormat)
+{
+    static char *line;
+    int cin;
+    int lpos;
+    int oneChar;
+    int cinBslash;
+    int quotes = 0;
+    int linesize = BUFSIZ;
+
+    lserrno = LSE_NO_ERR;
+    /* Handle the case of one character line */
+    oneChar = -1;
+
+    if (line != NULL)
+	FREEUP (line);
+
+    line = calloc(1, BUFSIZ);
+    if (line == NULL) {
+        lserrno = LSE_MALLOC;
+	return (NULL);
+    }
+
+    /* get another line */
+    lpos = 0;
+    while ((cin = getc2(fp)) != EOF) {
+	/* end of input line */
+	if (cin == '\n') {
+	    *LineCount += 1;
+	    break;
+	}
+	if (cin == '"') {
+	    if (quotes == 0)
+		quotes++;
+	    else
+		quotes--;
+	}
+	if (confFormat && cin == '#' && quotes == 0) {
+	    /* comment; discard to EOL */
+	    while ((cin = getc2(fp)) != EOF)
+		if (cin == '\n') {
+		    *LineCount += 1;
+		    break;
+		}
+	    break;
+	}
+
+	/* backslash */
+	if (confFormat && cin == '\\') {
+	    cinBslash = cin;
+	    if ((cin = getc2(fp)) == EOF)
+		break;
+
+	    if (cin == '\n')
+		*LineCount += 1;
+	    else if (!isspace(cin)) {
+		/* add backslash to our line if it fits */
+		if (lpos < linesize - 1)
+		    line[lpos++] = cinBslash;
+		else {
+		    char *sp;
+		    linesize += BUFSIZ;
+		    sp = myrealloc(line, linesize);
+		    if (sp == NULL)  /* no memory, return whatever we got*/
+			break;
+		    line = sp;
+		    line[lpos++] = cinBslash;
+		}
+	    }
+	}
+
+	/* convert all whitespace to blanks */
+	if (isspace(cin))
+	    cin = ' ';
+
+	/* add the character to our line if it fits */
+	if (lpos < linesize - 1)
+	    line[lpos++] = cin;
+	else {
+	    char *sp;
+	    linesize += BUFSIZ;
+	    sp = myrealloc(line, linesize);
+	    if (sp == NULL)     /* no memory, return whatever we got*/
+		break;
+	    line = sp;
+	    line[lpos++] = cin;
+	}
+
+    } /* while (cin == getc2(fp)) */
+
+    /* Check for the case of one character line */
+    if (lpos == 1)
+	oneChar = 1;
+
+    /* discard blanks from end of line */
+    while(lpos > 0 && (line[--lpos] == ' '))
+	/* empty loop */;
+
+    if ((cin != EOF) || (oneChar == 1) || (cin == EOF && lpos > 0)) {
+	/* got some input, null terminate and return it */
+	line[++lpos] = '\0';
+	return line;
+    }
+
+    /* otherwise we got EOF with no other input */
+    return NULL;
+}
+
+/* reset_getc2()
+ *
+ * Reset the getc2() internal buffer
+ */
+void
+reset_getc2(void)
+{
+    getc2(NULL);
+}
+
 /* getc2()
  */
 static inline int
@@ -413,6 +569,12 @@ getc2(FILE *fp)
     static int    L;
     static char   buf[32768];
     int           cc;
+
+    /* reset
+     */
+    if (fp == NULL) {
+	L = pos = 0;
+    }
 
     /* read() the file in blocks up to
      * 32K and return the buffer char

@@ -437,8 +437,121 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
         return logRec;
 
     return NULL;
-
 }
+
+/* lsb_geteventrecord()
+ *
+ * Use special purpose lsb.events reading routine
+ *
+ */
+struct eventRec *
+lsb_geteventrecord(FILE *log_fp, int *LineNum)
+{
+    int cc;
+    int ccount;
+    int cnt;
+    char *line;
+    char etype[MAX_LSB_NAME_LEN];
+    char *namebuf;
+    static struct eventRec *logRec;
+    int eventKind;
+    int tempTimeStamp;
+
+    cnt = 0;
+    if (logRec != NULL)  {
+        freeLogRec(logRec);
+        free(logRec);
+    }
+
+    logRec = calloc(1, sizeof (struct eventRec));
+    if (logRec == NULL) {
+        lsberrno = LSBE_NO_MEM;
+        return NULL;
+    }
+
+    (*LineNum)++;
+
+    if ((line = _getNextLine_(log_fp, &cnt, false)) == NULL) {
+        if (lserrno == LSE_NO_MEM) {
+            lsberrno = LSBE_NO_MEM;
+        } else {
+            lsberrno = LSBE_EOF;
+        }
+        return NULL;
+    }
+
+    while (*line == '#') {
+
+        line = _getNextLine_(log_fp, &cnt, false);
+        if (line == NULL) {
+            lsberrno = LSBE_EOF;
+            return NULL;
+        }
+    }
+
+    if (logclass & LC_TRACE)
+        ls_syslog(LOG_DEBUG2, "%s: line=%s", __func__, line);
+
+    namebuf = calloc(1, strlen(line)+1);
+    if (namebuf == NULL) {
+        lsberrno = LSBE_NO_MEM;
+        return NULL;
+    }
+
+
+    if ((ccount = stripQStr(line, namebuf)) < 0
+        || strlen(line) == ccount
+        || strlen(namebuf) >= MAX_LSB_NAME_LEN) {
+        lsberrno = LSBE_EVENT_FORMAT;
+        free(namebuf);
+        return NULL;
+    }
+
+    strcpy(etype, namebuf);
+    line += ccount + 1;
+
+    if ((ccount = stripQStr(line, namebuf)) < 0
+        || strlen(line) == ccount
+        || strlen(namebuf) >= MAX_VERSION_LEN) {
+        lsberrno = LSBE_EVENT_FORMAT;
+        free(namebuf);
+        return NULL;
+    }
+
+    /* The log record keeps the version as char[]
+     * while the global is uint32_t
+     */
+    strcpy(logRec->version, namebuf);
+    if ((version = atoi(logRec->version)) <= 0) {
+        lsberrno = LSBE_EVENT_FORMAT;
+        return NULL;
+    }
+    line += ccount + 1;
+
+    free(namebuf);
+
+    cc = sscanf(line, "%d%n", &tempTimeStamp, &ccount);
+    logRec->eventTime = tempTimeStamp;
+
+    if (cc != 1) {
+        lsberrno = LSBE_EVENT_FORMAT;
+        return NULL;
+    }
+    line += ccount + 1;
+
+    if ((logRec->type = getEventTypeAndKind(etype, &eventKind)) == -1)
+        return NULL;
+    if (logclass & LC_TRACE)
+        ls_syslog(LOG_DEBUG2, "%s: log.type=%x", __func__, logRec->type);
+
+    readEventRecord(line, logRec);
+
+    if (lsberrno == LSBE_NO_ERROR)
+        return logRec;
+
+    return NULL;
+}
+
 
 static void
 freeLogRec(struct eventRec *logRec)

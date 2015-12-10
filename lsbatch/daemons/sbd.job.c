@@ -1769,7 +1769,7 @@ send_results(struct jobCard *jp)
             }
             fprintf(notif, "------------------------------------------------------------\n\n");
         }
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
     }
 
     if (cpuTime > MIN_CPU_TIME) {
@@ -1908,7 +1908,7 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
                     }
                 }
             }
-            FCLOSEUP(&fp);
+            _fclose_(&fp);
         }
     }
 
@@ -1921,7 +1921,7 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
             while ((nItems = fread(line, sizeof(char), MAXLINELEN, fp))) {
                 fwrite(line, sizeof(char), nItems, errout);
             }
-            FCLOSEUP(&fp);
+            _fclose_(&fp);
         }
     } else if (strcmp(jp->jobSpecs.errFile, "/dev/null")) {
 
@@ -1947,18 +1947,13 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
                     && (nItems = fread(line, sizeof(char), MAXLINELEN, fp))) {
                 fwrite(line, sizeof(char), nItems, errout);
             }
-            FCLOSEUP(&fp);
+            _fclose_(&fp);
         }
     }
-
-
-
-
 
     fflush(output);
     fflush(errout);
     fflush(notif);
-
 
     ofileHost[0] = '\0';
     if (jp->jobSpecs.nxf && output != mail && notif == output) {
@@ -2812,7 +2807,7 @@ getLoginShell (char *jfData, char *jobFile, struct hostent *hp, int readFile)
     if (fgets(line, MAXLINELEN, fp) != NULL) {
 
         if ((sp = strstr(line, "# LOGIN_SHELL ")) == NULL) {
-            FCLOSEUP(&fp);
+            _fclose_(&fp);
             return NULL;
         }
         sp += strlen("# LOGIN_SHELL ");
@@ -2821,10 +2816,10 @@ getLoginShell (char *jfData, char *jobFile, struct hostent *hp, int readFile)
             i++; sp++;
         }
         shellPath[i] = '\0';
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
         return (shellPath);
     }
-    FCLOSEUP(&fp);
+    _fclose_(&fp);
     return NULL;
 
 }
@@ -3715,7 +3710,7 @@ writePidInfoFile(const struct jobCard    *jPtr,
                 jRusage->pidInfo[i].pgid);
     }
 
-    FCLOSEUP(&fp);
+    _fclose_(&fp);
 
 }
 
@@ -3785,7 +3780,7 @@ jobFinishRusage(struct jobCard *jp)
             jp->lsfRusage = rec->lsfRu;
             jp->w_status = rec->exitStatus;
         }
-        FCLOSEUP(&fp);
+        _fclose_(&fp);
     }
     if (jp->runRusage.utime > jp->lsfRusage.ru_utime)
         jp->lsfRusage.ru_utime = jp->runRusage.utime;

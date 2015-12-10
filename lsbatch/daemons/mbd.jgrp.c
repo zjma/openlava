@@ -705,7 +705,7 @@ printTreeStruct(char *fileName)
     printSubtree(groupRoot, out_file, 0);
     fprintf(out_file, "\n");
     printCounts(groupRoot, out_file);
-    FCLOSEUP(&out_file);
+    _fclose_(&out_file);
 }
 
 static int

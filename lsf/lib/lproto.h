@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -296,6 +296,8 @@ extern void freeStack(struct pStack *);
 extern char *getNextLineD_(FILE *, int *, int);
 extern char *getNextLineC_conf(struct lsConf *, int *, int);
 extern char *getNextLine_conf(struct lsConf *, int);
+extern char *_getNextLine_(FILE *, int *, int);
+extern void reset_getc2(void);
 extern char *nextline_(FILE *);
 extern void subNewLine_(char*);
 
@@ -303,7 +305,8 @@ extern void doSkipSection(FILE *, int *, char *, char *);
 extern int isSectionEnd (char *, char *, int *, char *);
 extern int keyMatch (struct keymap *keyList, char *line, int exact);
 extern int mapValues (struct keymap *keyList, char *line);
-extern int readHvalues(struct keymap *, char *, FILE *, char *, int *, int, char *);
+extern int readHvalues(struct keymap *, char *, FILE *,
+		       char *, int *, int, char *);
 extern char *getNextValue(char **line);
 extern int putValue(struct keymap *keyList, char *key, char *value);
 extern char *getBeginLine(FILE *, int *);
@@ -379,10 +382,9 @@ extern int createUtmpEntry(char *, pid_t, char *);
 extern int removeUtmpEntry(pid_t);
 
 extern int createSpoolSubDir(const char *);
-
-
 extern int getUser(char *, unsigned int);
 extern int getUserByUid(uid_t, char *, unsigned int);
-extern int getUid(const char *lsfUserName, uid_t *uid);
+extern int getUid(const char *, uid_t *);
+extern int _fclose_(FILE **);
 
 #endif

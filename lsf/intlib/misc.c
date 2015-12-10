@@ -1,4 +1,5 @@
-/* $Id: misc.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -59,9 +60,6 @@ hostValue(void)
     return (int) value;
 
 }
-
-
-
 
 int
 getBootTime(time_t *bootTime)
@@ -379,10 +377,11 @@ END:
     return argv;
 }
 
-int
-FCLOSEUP(FILE **fp)
+inline int
+_fclose_(FILE **fp)
 {
-    if (*fp == NULL)
+    if (fp == NULL
+	|| *fp == NULL)
         return EOF;
 
     return fclose(*fp);
@@ -421,7 +420,8 @@ linux_getopt(nargc, nargv, ostr)
 	char *p;
 
 	if (!*place) {
-		if (linux_optind >= nargc || *(place = nargv[linux_optind]) != '-') {
+	    if (linux_optind >= nargc
+		|| *(place = nargv[linux_optind]) != '-') {
 			place = EMSG;
 			opterr = linux_opterr;
 			optopt = linux_optopt;
