@@ -155,7 +155,7 @@
 #define LIM_NO_MIGRANT_HOSTS   55
 #define SBD_BIND_CPU           56
 #define MBD_MAX_JOBS_SCHED     57
-#define MBD_QSORT_JOBS         58
+#define MBD_NO_QSORT_JOBS      58
 
 #define NOT_LOG  INFINIT_INT
 

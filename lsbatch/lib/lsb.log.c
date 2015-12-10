@@ -98,25 +98,34 @@ static int lsb_readeventrecord(char *, struct eventRec *);
 #define   EVENT_JOB_RELATED     1
 #define   EVENT_NON_JOB_RELATED 0
 
+static inline int
+copyQStr(char **line,
+	 int maxLen,
+	 int nonNil,
+	 char *dbuf)
+{
+    static char buf[BUFSIZ];
+    int cc;
 
-#define copyQStr(line, maxLen, nonNil, destStr)    {            \
-        char *tmpLine;                                          \
-        int ccount;                                             \
-        if ((tmpLine = (char *) malloc (strlen(line))) == NULL) \
-            return LSBE_NO_MEM;                               \
-        if ((ccount = stripQStr(line, tmpLine)) < 0) {          \
-            FREEUP (tmpLine);                                   \
-            return LSBE_EVENT_FORMAT;                         \
-        }                                                       \
-        line += ccount + 1;                                     \
-        if (strlen(tmpLine) >= maxLen                           \
-            || (nonNil && strlen(tmpLine)==0)) {                \
-            FREEUP (tmpLine);                                   \
-            return LSBE_EVENT_FORMAT;                         \
-        }                                                       \
-        strcpy(destStr, tmpLine);                               \
-        FREEUP (tmpLine);                                       \
+    memset(buf, 0, sizeof(buf));
+    memset(dbuf, 0, strlen(dbuf));
+
+    cc = stripQStr(*line, buf);
+    if (cc < 0)
+	return LSBE_EVENT_FORMAT;
+
+    *line += cc + 1;
+    cc = strlen(buf);
+
+    if (cc >= maxLen
+	|| (nonNil && cc == 0)) {
+	return LSBE_EVENT_FORMAT;
     }
+
+    strcpy(dbuf, buf);
+
+    return LSBE_NO_ERROR;
+}
 
 #define saveQStr(line, destStr)  {                              \
         char *tmpLine;                                          \
@@ -737,7 +746,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
 
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobNewLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobNewLog->userName);
 
     for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
         cc = sscanf(line, "%d%n", &(jobNewLog->rLimits[i]), &ccount);
@@ -746,7 +755,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         line += ccount + 1;
     }
 
-    copyQStr(line, MAXHOSTNAMELEN, 0, jobNewLog->hostSpec);
+    copyQStr(&line, MAXHOSTNAMELEN, 0, jobNewLog->hostSpec);
 
     cc = sscanf(line, "%f%d%n", &jobNewLog->hostFactor,
                 &jobNewLog->umask, &ccount);
@@ -754,16 +763,16 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobNewLog->queue);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobNewLog->queue);
     saveQStr(line, jobNewLog->resReq);
-    copyQStr(line, MAXHOSTNAMELEN, 1, jobNewLog->fromHost);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->cwd);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->chkpntDir);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->inFile);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->outFile);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->errFile);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->subHomeDir);
-    copyQStr(line, MAXFILENAMELEN, 1, jobNewLog->jobFile);
+    copyQStr(&line, MAXHOSTNAMELEN, 1, jobNewLog->fromHost);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->cwd);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->chkpntDir);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->inFile);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->outFile);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->errFile);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->subHomeDir);
+    copyQStr(&line, MAXFILENAMELEN, 1, jobNewLog->jobFile);
 
     cc = sscanf(line, "%d%n", &jobNewLog->numAskedHosts, &ccount);
     if (cc != 1)
@@ -797,8 +806,8 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     saveQStr(line, jobNewLog->dependCond);
     saveQStr(line, jobNewLog->preExecCmd);
 
-    copyQStr(line, MAX_CMD_DESC_LEN, 0, jobNewLog->jobName);
-    copyQStr(line, MAX_CMD_DESC_LEN, 0, jobNewLog->command);
+    copyQStr(&line, MAX_CMD_DESC_LEN, 0, jobNewLog->jobName);
+    copyQStr(&line, MAX_CMD_DESC_LEN, 0, jobNewLog->command);
 
     cc = sscanf(line, "%d%n", &jobNewLog->nxf, &ccount);
     if (cc != 1)
@@ -815,8 +824,8 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     }
 
     for (i = 0; i < jobNewLog->nxf; i++) {
-        copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->xf[i].subFn);
-        copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->xf[i].execFn);
+        copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->xf[i].subFn);
+        copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->xf[i].execFn);
         cc = sscanf(line, "%d%n", &jobNewLog->xf[i].options, &ccount);
         if (cc != 1)
             return LSBE_EVENT_FORMAT;
@@ -858,9 +867,9 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         convertRLimit(jobNewLog->rLimits, 1);
     }
 
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->inFileSpool);
-    copyQStr(line, MAXFILENAMELEN, 0, jobNewLog->commandSpool);
-    copyQStr(line, MAXPATHLEN, 0, jobNewLog->jobSpoolDir);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->inFileSpool);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobNewLog->commandSpool);
+    copyQStr(&line, MAXPATHLEN, 0, jobNewLog->jobSpoolDir);
 
     cc = sscanf(line, "%d%n", &jobNewLog->userPriority, &ccount);
     if (cc != 1)
@@ -975,8 +984,8 @@ readJobMod(char *line, struct jobModLog *jobModLog)
             }
         }
         for (i = 0; i < jobModLog->nxf; i++) {
-            copyQStr(line, MAXFILENAMELEN, 0, jobModLog->xf[i].subFn);
-            copyQStr(line, MAXFILENAMELEN, 0, jobModLog->xf[i].execFn);
+            copyQStr(&line, MAXFILENAMELEN, 0, jobModLog->xf[i].subFn);
+            copyQStr(&line, MAXFILENAMELEN, 0, jobModLog->xf[i].execFn);
             cc = sscanf(line, "%d%n", &jobModLog->xf[i].options, &ccount);
             if (cc != 1)
                 return LSBE_EVENT_FORMAT;
@@ -1262,7 +1271,7 @@ readMig(char *line, struct migLog *migLog)
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, migLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, migLog->userName);
     return LSBE_NO_ERROR;
 
 }
@@ -1373,7 +1382,7 @@ readJobSwitch(char *line, struct jobSwitchLog *jobSwitchLog)
         return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->queue);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->queue);
 
     cc = sscanf(line, "%d%n", &(jobSwitchLog->idx),
                 &ccount);
@@ -1381,7 +1390,7 @@ readJobSwitch(char *line, struct jobSwitchLog *jobSwitchLog)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobSwitchLog->userName);
 
     return LSBE_NO_ERROR;
 
@@ -1408,7 +1417,7 @@ readJobMove(char *line, struct jobMoveLog *jobMoveLog)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobMoveLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobMoveLog->userName);
 
     return LSBE_NO_ERROR;
 }
@@ -1423,13 +1432,13 @@ readQueueCtrl(char *line, struct queueCtrlLog *queueCtrlLog)
         return LSBE_EVENT_FORMAT;
 
     line += ccount + 1;
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->queue);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->queue);
 
     cc = sscanf(line, "%d%n", &(queueCtrlLog->userId), &ccount);
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, queueCtrlLog->userName);
 
     return LSBE_NO_ERROR;
 }
@@ -1445,13 +1454,13 @@ readHostCtrl(char *line, struct hostCtrlLog *hostCtrlLog)
 
     line += ccount + 1;
 
-    copyQStr(line, MAXHOSTNAMELEN, 0, hostCtrlLog->host);
+    copyQStr(&line, MAXHOSTNAMELEN, 0, hostCtrlLog->host);
 
     cc = sscanf(line, "%d%n", &(hostCtrlLog->userId), &ccount);
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, hostCtrlLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, hostCtrlLog->userName);
 
     return LSBE_NO_ERROR;
 
@@ -1462,7 +1471,7 @@ readMbdDie (char *line, struct mbdDieLog *mbdDieLog)
 {
     int cc;
 
-    copyQStr(line, MAXHOSTNAMELEN, 0,  mbdDieLog->master);
+    copyQStr(&line, MAXHOSTNAMELEN, 0,  mbdDieLog->master);
     cc = sscanf(line, "%d%d", &(mbdDieLog->numRemoveJobs),
                 &(mbdDieLog->exitCode));
     if (cc != 2)
@@ -1546,17 +1555,17 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
 
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobFinishLog->userName);
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobFinishLog->queue);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobFinishLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobFinishLog->queue);
     saveQStr(line, jobFinishLog->resReq);
     saveQStr(line, jobFinishLog->dependCond);
     saveQStr(line, jobFinishLog->preExecCmd);
-    copyQStr(line, MAXHOSTNAMELEN, 1, jobFinishLog->fromHost);
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->cwd);
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->inFile);
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->outFile);
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->errFile);
-    copyQStr(line, MAXFILENAMELEN, 1, jobFinishLog->jobFile);
+    copyQStr(&line, MAXHOSTNAMELEN, 1, jobFinishLog->fromHost);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->cwd);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->inFile);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->outFile);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->errFile);
+    copyQStr(&line, MAXFILENAMELEN, 1, jobFinishLog->jobFile);
 
     cc = sscanf(line, "%d%n", &jobFinishLog->numAskedHosts, &ccount);
     if (cc != 1)
@@ -1620,8 +1629,8 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
 
     jobFinishLog->endTime = eventTime;
 
-    copyQStr(line, MAX_CMD_DESC_LEN, 0, jobFinishLog->jobName);
-    copyQStr(line, MAX_CMD_DESC_LEN, 0, jobFinishLog->command);
+    copyQStr(&line, MAX_CMD_DESC_LEN, 0, jobFinishLog->jobName);
+    copyQStr(&line, MAX_CMD_DESC_LEN, 0, jobFinishLog->command);
 
     if ((cc =  str2lsfRu(line, &jobFinishLog->lsfRusage, &ccount)) != 19)
         return LSBE_EVENT_FORMAT;
@@ -1657,8 +1666,8 @@ readJobFinish(char *line, struct jobFinishLog *jobFinishLog, time_t eventTime)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->inFileSpool);
-    copyQStr(line, MAXFILENAMELEN, 0, jobFinishLog->commandSpool);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->inFileSpool);
+    copyQStr(&line, MAXFILENAMELEN, 0, jobFinishLog->commandSpool);
 
     return LSBE_NO_ERROR;
 
@@ -2626,8 +2635,8 @@ readMbdStart(char *line, struct mbdStartLog *mbdStartLog)
 {
     int cc;
 
-    copyQStr(line, MAXHOSTNAMELEN, 0,  mbdStartLog->master);
-    copyQStr(line, MAXLSFNAMELEN, 0,  mbdStartLog->cluster);
+    copyQStr(&line, MAXHOSTNAMELEN, 0,  mbdStartLog->master);
+    copyQStr(&line, MAXLSFNAMELEN, 0,  mbdStartLog->cluster);
     cc = sscanf(line, "%d%d", &(mbdStartLog->numHosts),
                 &(mbdStartLog->numQueues));
     if (cc != 2)
@@ -2726,7 +2735,7 @@ readJobSignal (char *line, struct signalLog *signalLog)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, signalLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, signalLog->userName);
 
     return LSBE_NO_ERROR;
 
@@ -2845,7 +2854,7 @@ readJobForce(char* line, struct jobForceRequestLog* jobForceRequestLog)
         line += cc + 1;
     }
 
-    copyQStr(line, MAX_LSB_NAME_LEN, 1, jobForceRequestLog->userName);
+    copyQStr(&line, MAX_LSB_NAME_LEN, 1, jobForceRequestLog->userName);
 
     return LSBE_NO_ERROR;
 }

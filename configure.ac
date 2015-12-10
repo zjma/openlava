@@ -44,7 +44,7 @@ AC_PROG_LIBTOOL
 # Force warnings on for gcc and make sure main
 # daemons export their symbols to so plugins
 if test "x$ac_compiler_gnu" = xyes; then
-    CFLAGS="$CFLAGS -Wall -Wno-switch -fPIC -rdynamic"
+    CFLAGS="$CFLAGS -Wall -Werror -Wno-switch -fPIC -rdynamic"
 fi
 
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [

@@ -2,11 +2,17 @@ Release notes for OpenLava versions
 
 3.2.0
 =====
--- badmin ckconfig/reconfig displays configuration error and warning 
-   messages. 
+-- badmin ckconfig/reconfig displays configuration error and warning
+   messages.
 -- bsub/bmod/brestart -h displays usage information.
 -- Added USER_SHARES information in lsb.users.5
 -- Add lsclusters command.
+-- Use qsort() to sort jobs in MBD this improves the performance
+   of replay and general bsub operations.
+-- Introduce a getc2() functions to read lsb.events in memory
+   before parsing it.
+-- Reduce the number of malloc operations when reading the
+   lsb.events file.
 
 3.1.0
 ======

@@ -309,9 +309,11 @@ main(int argc, char **argv)
 mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
     }
 
-    if (daemonParams[MBD_QSORT_JOBS].paramValue) {
-	qsort_jobs = 1;
-	ls_syslog(LOG_INFO, "mbd:%s MBD_QOSRT_JOBS is set to true", __func__);
+    qsort_jobs = 1;
+    if (daemonParams[MBD_NO_QSORT_JOBS].paramValue) {
+	qsort_jobs = 0;
+	ls_syslog(LOG_INFO, "\
+mbd:%s qsort() of jobs is disabled", __func__);
     }
 
     daemon_doinit();
