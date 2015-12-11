@@ -342,10 +342,15 @@ my_getopt(int nargc, char **nargv, char *ostr, char **errMsg)
 
 }
 
+/* putEnv()
+ */
 int
 putEnv(char *env, char *val)
 {
-    return setenv(env, val, 0);
+    /* Make sure we overwrite the value
+     * if already set in the environment
+     */
+    return setenv(env, val, 1);
 }
 
 void

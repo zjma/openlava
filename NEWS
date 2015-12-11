@@ -35,6 +35,7 @@ Release notes for OpenLava versions
 -- Increase the array size of LIM clients from 64 to 2014.
 -- Fix lim core dump if the lim receives an operation request from
    outside of the OL cluster and it is not LIM_ADD_HOST.
+-- Fix bsub < file which was not creating the shell file correctly.
 
 
 3.1pre1
