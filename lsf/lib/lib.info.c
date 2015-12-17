@@ -492,7 +492,7 @@ expandSHinfo(struct hostInfoReply *hostInfoReply)
         FREEUP(hostInfoPtr);
     }
 
-    hostInfoPtr = malloc(hostInfoReply->nHost * sizeof(struct hostInfo) );
+    hostInfoPtr = calloc(hostInfoReply->nHost, sizeof(struct hostInfo));
     if (!hostInfoPtr) {
         nHost = 0;
         lserrno = LSE_MALLOC;
