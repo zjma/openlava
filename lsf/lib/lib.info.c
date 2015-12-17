@@ -492,8 +492,7 @@ expandSHinfo(struct hostInfoReply *hostInfoReply)
         FREEUP(hostInfoPtr);
     }
 
-    hostInfoPtr = (struct hostInfo *) malloc( (int) hostInfoReply->nHost *
-                                              sizeof(struct hostInfo) );
+    hostInfoPtr = malloc(hostInfoReply->nHost * sizeof(struct hostInfo) );
     if (!hostInfoPtr) {
         nHost = 0;
         lserrno = LSE_MALLOC;
@@ -545,9 +544,9 @@ expandSHinfo(struct hostInfoReply *hostInfoReply)
             free(hostInfoPtr[j].resources);
         FREEUP(hostInfoPtr);
         lserrno = LSE_MALLOC;
-        return((struct hostInfo *)NULL);
+        return NULL;
     }
-    return(hostInfoPtr);
+    return hostInfoPtr;
 }
 
 struct hostInfo *

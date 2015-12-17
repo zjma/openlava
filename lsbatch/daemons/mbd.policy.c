@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2007 Platform Computing Inc
  * Copyright (C) 2011-2015 David Bigagli
+ * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -3015,7 +3015,7 @@ allocHosts (struct jData *jp)
 }
 
 static int
-deallocHosts (struct jData *jp)
+deallocHosts(struct jData *jp)
 {
     int i;
 
@@ -3024,10 +3024,9 @@ deallocHosts (struct jData *jp)
         jp->hPtr[i]->numDispJobs--;
     }
 
-    FREEUP (jp->hPtr);
+    FREEUP(jp->hPtr);
     jp->numHostPtr = 0;
     return 0;
-
 }
 
 bool_t
@@ -3888,16 +3887,15 @@ isCandHost (char *hostname, struct jData *jp)
 static void
 reserveSlots (struct jData *jp)
 {
-    static char fname[] = "reserveSlots";
     int i;
 
     if (jp->numHostPtr < 0)
         return;
 
     if (jp->jStatus & JOB_STAT_RESERVE) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7230,
-                                         "%s: Job <%s> already has slots reserved before"),/* catgets 7230 */
-                  fname, lsb_jobid2str(jp->jobId));
+        ls_syslog(LOG_ERR, "\
+%s: Job %s already has slots reserved before",
+                  __func__, lsb_jobid2str(jp->jobId));
         return;
     }
 
@@ -3917,8 +3915,9 @@ reserveSlots (struct jData *jp)
             jp->qPtr->numUsable--;
         }
         if (logclass & (LC_SCHED))
-            ls_syslog (LOG_DEBUG2, "%s: Reserve host %s for job %s",
-                       fname, jp->hPtr[i]->host, lsb_jobid2str(jp->jobId));
+            ls_syslog (LOG_DEBUG2, "\
+%s: Reserve host %s for job %s", __func__, jp->hPtr[i]->host,
+		       lsb_jobid2str(jp->jobId));
     }
 
 }
