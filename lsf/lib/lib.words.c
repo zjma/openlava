@@ -575,6 +575,7 @@ getc2(FILE *fp)
      */
     if (fp == NULL) {
 	L = pos = 0;
+	return EOF;
     }
 
     /* read() the file in blocks up to
