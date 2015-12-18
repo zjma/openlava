@@ -324,8 +324,11 @@ static void groupCands2CandPtr(int, struct groupCandHosts *,
 static void jiter_init(LIST_T *);
 static struct jData *jiter_next_job(LIST_T *);
 static void jiter_fin(LIST_T *);
-static void update_udata_jref(struct jRef *jref);
+static void update_udata_jref(struct jRef *);
 static void empty_udata_jref(struct uData *);
+static void reserve_memory(struct jData *);
+static void free_reserve_memory(struct jData *);
+static void handle_reserve_memory(struct jData *, int);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -3019,13 +3022,14 @@ deallocHosts(struct jData *jp)
 {
     int i;
 
-    for (i = 0; i < jp->numHostPtr; i++) {
-        INC_CNT(PROF_CNT_loopdeallocHosts);
+    free_reserve_memory(jp);
+
+    for (i = 0; i < jp->numHostPtr; i++)
         jp->hPtr[i]->numDispJobs--;
-    }
 
     FREEUP(jp->hPtr);
     jp->numHostPtr = 0;
+
     return 0;
 }
 
@@ -3920,6 +3924,7 @@ reserveSlots (struct jData *jp)
 		       lsb_jobid2str(jp->jobId));
     }
 
+    reserve_memory(jp);
 }
 
 static int
@@ -3946,7 +3951,6 @@ freeReserveSlots(struct jData *jpbw)
     jpbw->jStatus &= ~JOB_STAT_RESERVE;
 
     deallocHosts(jpbw);
-
 }
 
 static void
@@ -4224,7 +4228,12 @@ scheduleAndDispatchJobs(void)
 
                 checkSlotReserve(&jPtr, &continueSched);
                 if (continueSched == FALSE) {
-
+		    /* When the reservation is expired we
+		     * don't schedule this job otherwise
+		     * it is going to reserve the resources
+		     * again and the reservation will
+		     * be endless.
+		     */
                     jPtr->processed |= JOB_STAGE_DONE;
                     if (logclass & LC_SCHED) {
                         ls_syslog(LOG_DEBUG2, "\
@@ -6965,4 +6974,79 @@ empty_udata_jref(struct uData *uPtr)
     while ((dlink_pop(uPtr->jobs)))
 	;
     assert(uPtr->jobs->num == 0);
+}
+
+/* handle_reserve_memory()
+ *
+ * Generic function that reserve or free memory
+ * on a host.
+ */
+static void
+handle_reserve_memory(struct jData *jPtr, int op)
+{
+    int i;
+    int on;
+    struct resVal *r;
+    hTab htab;
+
+    if (jPtr->shared->resValPtr == NULL)
+	return;
+
+    ls_syslog(LOG_INFO, "\
+%s: Entering job %s operation %d", __func__, lsb_jobid2str(jPtr->jobId), op);
+
+    if ((r = getReserveValues(jPtr->shared->resValPtr,
+			      jPtr->qPtr->resValPtr)) == NULL)
+        return;
+
+    TEST_BIT(MEM, r->rusage_bit_map, on);
+    if (on == 0)
+	return;
+
+    memset(&htab, 0, sizeof(hTab));
+    h_initTab_(&htab, 11);
+
+    for (i = 0; i < jPtr->numHostPtr; i++) {
+	int new;
+	char hbuf[64];
+
+	sprintf(hbuf, "%p", jPtr->hPtr[i]);
+	h_addEnt_(&htab, hbuf, &new);
+	if (new == FALSE)
+	    continue;
+
+	/* If we are reserving memory and the host does
+	 * not have enough skip it, if we are returning
+	 * memory then don't run the if....
+	 */
+	if (op == 1
+	    && r->val[MEM] > jPtr->hPtr[i]->lsbLoad[MEM])
+	    continue;
+
+	/* op is either 1 or -1 so we can
+	 * share the code between the two operations
+	 * reserve and free.
+	 */
+	ls_syslog(LOG_INFO, "\
+%s: reserving %4.2f GB on host %s with %4.2f GB", __func__,
+		  r->val[MEM], jPtr->hPtr[i]->host,
+		  jPtr->hPtr[i]->lsbLoad[MEM]);
+
+	jPtr->hPtr[i]->lsbLoad[MEM]
+	    = jPtr->hPtr[i]->lsbLoad[MEM] - r->val[MEM] * op;
+    }
+
+    h_freeRefTab_(&htab);
+}
+
+static void
+reserve_memory(struct jData *jPtr)
+{
+    handle_reserve_memory(jPtr, 1);
+}
+
+static void
+free_reserve_memory(struct jData *jPtr)
+{
+    handle_reserve_memory(jPtr, -1);
 }
