@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014 - 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -4546,13 +4546,13 @@ saveHostIPAddr(struct hostNode *hPtr, struct hostent *hp)
     return 0;
 }
 
-/* addMigrantHost()
+/* lim_add_migrant_host()
  */
 void
-addMigrantHost(XDR *xdrs,
-               struct sockaddr_in *from,
-               struct LSFHeader *reqHdr,
-               int chan)
+lim_add_migrant_host(XDR *xdrs,
+		     struct sockaddr_in *from,
+		     struct LSFHeader *reqHdr,
+		     int chan)
 {
     static char buf[MSGSIZE];
     struct LSFHeader hdr;
@@ -4693,10 +4693,10 @@ addHostByTab(hTab *tab)
 /* rmMigrantHost()
  */
 void
-rmMigrantHost(XDR *xdrs,
-              struct sockaddr_in *from,
-              struct LSFHeader *reqHdr,
-              int chan)
+lim_rm_migrant_host(XDR *xdrs,
+		    struct sockaddr_in *from,
+		    struct LSFHeader *reqHdr,
+		    int chan)
 {
     static char buf[MSGSIZE];
     struct LSFHeader hdr;

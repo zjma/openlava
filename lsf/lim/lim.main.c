@@ -368,7 +368,7 @@ Reading configuration from %s/lsf.conf\n", env_dir);
             doAcceptConn();
         }
 
-        clientIO(&chanmask);
+        lim_client_io(&chanmask);
 
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
 

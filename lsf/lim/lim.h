@@ -516,19 +516,19 @@ extern int xdr_loadmatrix(XDR *, int, struct loadVectorStruct *,
                           struct LSFHeader *);
 extern int xdr_masterReg(XDR *, struct masterReg *, struct LSFHeader *);
 extern int xdr_statInfo(XDR *, struct statInfo *, struct LSFHeader *);
-extern void clientIO(struct Masks *);
+extern void lim_client_io(struct Masks *);
 extern uint16_t getLIMPort(struct hostNode *);
 
 /* openlava migrating host management
  */
-extern void addMigrantHost(XDR *,
-                           struct sockaddr_in *,
-                           struct LSFHeader *,
-                           int);
-extern void rmMigrantHost(XDR *,
-                          struct sockaddr_in *,
-                          struct LSFHeader *,
-                          int);
+extern void lim_add_migrant_host(XDR *,
+				 struct sockaddr_in *,
+				 struct LSFHeader *,
+				 int);
+extern void lim_rm_migrant_host(XDR *,
+				struct sockaddr_in *,
+				struct LSFHeader *,
+				int);
 extern int logInit(void);
 extern int logLIMStart(void);
 extern int logLIMDown(void);

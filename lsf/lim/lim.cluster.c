@@ -1,4 +1,5 @@
-/* $Id: lim.cluster.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2011 - 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,13 +32,13 @@ struct clientNode  *clientMap[MAXCLIENTS];
 
 extern int chanIndex;
 
-static void processMsg(int);
+static void lim_process_msg(int);
 static void clientReq(XDR *, struct LSFHeader *, int );
 
 static void shutDownChan(int);
 
 void
-clientIO(struct Masks *chanmasks)
+lim_client_io(struct Masks *chanmasks)
 {
     int  i;
 
@@ -58,7 +59,7 @@ clientIO(struct Masks *chanmasks)
         }
 
         if (FD_ISSET(i, &chanmasks->rmask)) {
-            processMsg(i);
+            lim_process_msg(i);
         }
     }
 }
@@ -66,7 +67,7 @@ clientIO(struct Masks *chanmasks)
 /* processMsg()
  */
 static void
-processMsg(int chanfd)
+lim_process_msg(int chanfd)
 {
     struct Buffer *buf;
     struct LSFHeader hdr;
@@ -186,13 +187,13 @@ processMsg(int chanfd)
             chanFreeBuf_(buf);
             break;
         case LIM_ADD_HOST:
-            addMigrantHost(&xdrs, &clientMap[chanfd]->from, &hdr, chanfd);
+            lim_add_migrant_host(&xdrs, &clientMap[chanfd]->from, &hdr, chanfd);
             xdr_destroy(&xdrs);
             shutDownChan(chanfd);
             chanFreeBuf_(buf);
             break;
         case LIM_RM_HOST:
-            rmMigrantHost(&xdrs, &clientMap[chanfd]->from, &hdr, chanfd);
+            lim_rm_migrant_host(&xdrs, &clientMap[chanfd]->from, &hdr, chanfd);
             xdr_destroy(&xdrs);
             shutDownChan(chanfd);
             chanFreeBuf_(buf);
