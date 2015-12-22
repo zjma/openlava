@@ -20,7 +20,7 @@
 #include "lim.h"
 
 static struct hostNode *findHNbyAddr(in_addr_t);
-static int loadEvents(void);
+static hTab *loadEvents(void);
 
 void
 lim_Exit(const char *fname)
@@ -300,6 +300,9 @@ logInit(void)
     struct stat sbuf;
     time_t tp;
     int cc;
+    hTab *htab;
+    hEnt *ent;
+    sTab stab;
 
     sprintf(eFile, "\
 %s/lim.events", limParams[LSB_SHAREDIR].paramValue);
@@ -311,7 +314,15 @@ logInit(void)
         return -1;
     }
 
-    loadEvents();
+    /* Load the events file and return the
+     * table of hosts added but not yet
+     * removed from LIM.
+     */
+    htab = loadEvents();
+    if (HTAB_NUM_ELEMENTS(htab) == 0) {
+	h_freeRefTab_(htab);
+        return 0;
+    }
 
     /* If the size of the file is greater
      * then an arbitrary 1024 * 1024
@@ -322,13 +333,16 @@ logInit(void)
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh stat() failed on %s.. %m",
                   __func__, eFile);
+	h_freeRefTab_(htab);
         return -1;
     }
 
     logLIMStart();
 
-    if (! (sbuf.st_size > LIM_EVENT_MAXSIZE))
+    if (! (sbuf.st_size > LIM_EVENT_MAXSIZE)) {
+	h_freeRefTab_(htab);
         return 0;
+    }
 
     fclose(logFp);
 
@@ -341,21 +355,37 @@ logInit(void)
 %s.%d.%d.%d.%d.%d", eFile, t->tm_mday, t->tm_mon + 1,
             t->tm_hour, t->tm_min, t->tm_sec);
 
+    ls_syslog(LOG_INFO, "\
+%s: switching %s in %s", __func__, eFile, eFile2);
+
     cc = rename(eFile, eFile2);
     if (cc != 0) {
         ls_syslog(LOG_ERR, "\
 %s: failed to rename %s in %s %m, keeping the old file",
                   __func__, eFile, eFile2);
+	h_freeRefTab_(htab);
+	return -1;
     }
 
     logFp = fopen(eFile, "a+");
     if (logFp == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: failed opening %s: %m", __func__, eFile);
+	h_freeRefTab_(htab);
         return -1;
     }
 
+    for (ent = h_firstEnt_(htab, &stab);
+         ent != NULL ;
+         ent = h_nextEnt_(&stab)) {
+	struct hostEntry *hPtr;
+
+	hPtr = ent->hData;
+	logAddHost(hPtr);
+    }
+
     logLIMStart();
+    h_freeRefTab_(htab);
 
     return 0;
 }
@@ -432,15 +462,17 @@ logRmHost(struct hostEntry *hPtr)
     return 0;
 }
 
-static int
+static hTab *
 loadEvents(void)
 {
     struct lsEventRec *eRec;
-    hTab tab;
+    hTab *tab;
     hEnt *e;
     int new;
 
-    h_initTab_(&tab, 111);
+    tab = calloc(1, sizeof(hTab));
+
+    h_initTab_(tab, 111);
 
     /* Load the events and build the
      * hash table of runtime hosts.
@@ -453,7 +485,7 @@ znovu:
         switch (eRec->event) {
             case EV_ADD_HOST:
                 hPtr = eRec->record;
-                e = h_addEnt_(&tab, hPtr->hostName, &new);
+                e = h_addEnt_(tab, hPtr->hostName, &new);
                 if (new != TRUE) {
                     /* Somebody has been messing around
                      * with the LIM events?
@@ -468,14 +500,14 @@ znovu:
                 break;
             case EV_REMOVE_HOST:
                 hPtr = eRec->record;
-                e = h_getEnt_(&tab, hPtr->hostName);
+                e = h_getEnt_(tab, hPtr->hostName);
                 if (e == NULL) {
                     ls_syslog(LOG_WARNING, "\
 %s: attempt to remove host %s which is not configured, ignoring it.",
                               __func__, hPtr->hostName);
                 }
 		hPtr2 = e->hData;
-                h_rmEnt_(&tab, e);
+                h_rmEnt_(tab, e);
                 freeHostEntryLog(&hPtr);
 		freeHostEntryLog(&hPtr2);
                 break;
@@ -493,23 +525,20 @@ znovu:
         goto znovu;
     }
 
-    /* heresy...
+    /* heresy... actually quite possible
+     * if the migrating host is not being used
      */
-    if (tab.numEnts == 0)
-        goto out;
+    if (HTAB_NUM_ELEMENTS(tab) == 0)
+        return NULL;;
 
-    addHostByTab(&tab);
+    addHostByTab(tab);
 
     /* the table now contains hosts
      * added but not yet removed
      * create a new lim.events file
      * purged of the old events.
      */
-
-out:
-    h_freeRefTab_(&tab);
-
-    return 0;
+    return tab;
 }
 
 /* lim_system()

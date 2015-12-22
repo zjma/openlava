@@ -16,6 +16,7 @@ Release notes for OpenLava versions
 -- Implement memory reservation if the queue has SLOT_RESERVE configured
    and the job requests rusage of memory. The jobs has to reserve slots
    on the hosts as well.
+-- Implement a correct switching of the lim.events file.
 
 3.1.0
 ======

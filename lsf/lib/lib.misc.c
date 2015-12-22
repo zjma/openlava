@@ -736,7 +736,11 @@ writeAddHost(FILE *fp,
      * or it may not be configured and does not have
      * a counter.
      */
-    fprintf(fp, "%d \"%s\" ", hPtr->rexPriority, hPtr->window);
+    fprintf(fp, "%d ", hPtr->rexPriority);
+    if (hPtr->window)
+	fprintf(fp, "\"%s\" ", hPtr->window);
+    else
+	fprintf(fp, "\"%s\" ", "");
 
     /* new line and flush
      */
