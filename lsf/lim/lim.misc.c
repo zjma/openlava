@@ -529,7 +529,7 @@ znovu:
      * if the migrating host is not being used
      */
     if (HTAB_NUM_ELEMENTS(tab) == 0)
-        return NULL;;
+	return tab;
 
     addHostByTab(tab);
 
