@@ -22,7 +22,8 @@ Release notes for OpenLava versions
 -- Fix lim core dump if the lim receives an operation request from
    outside of the OL cluster and it is not LIM_ADD_HOST.
 -- Fix bsub < file which was not creating the shell file correctly.
-
+-- Fix rusage bug in which the host could be allocated to a job even with
+   not enough resources.
 
 3.1pre1
 =======

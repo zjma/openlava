@@ -1677,7 +1677,7 @@ ckResReserve(struct hData *hPtr,
                     if (hPtr->loadStop[cc] < INFINIT_LOAD) {
                         use_val = (int)((hPtr->loadStop[cc]
                                          - hPtr->lsfLoad[cc])/ resValPtr->val[cc]);
-                        if (use_val < 0) {
+                        if (use_val <= 0) {
                             /* state = !ok
                              */
                             state = 0;
@@ -1693,7 +1693,7 @@ ckResReserve(struct hData *hPtr,
                     else {
                         use_val = (int)((hPtr->lsbLoad[cc]
                                          - hPtr->loadStop[cc])/resValPtr->val[cc]);
-                        if (use_val < 0) {
+                        if (use_val <= 0) {
                             /* state = !ok
                              */
                             state = 0;
