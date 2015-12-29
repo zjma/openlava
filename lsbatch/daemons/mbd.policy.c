@@ -2973,24 +2973,20 @@ moveHostPos (struct candHost *candH, int source, int target)
 static int
 allocHosts (struct jData *jp)
 {
-    static char         fname[] = "allocHosts";
-    struct hData        **hPtr;
-    int                 i,
-        j,
-        numh;
+    struct hData **hPtr;
+    int i;
+    int j;
+    int numh;
 
     if (jp->numEligProc <= 0)
         return -1;
 
-    hPtr = (struct hData **) my_calloc (jp->numEligProc,
-                                        sizeof(struct hData *), fname);
-
+    hPtr =  my_calloc(jp->numEligProc, sizeof(struct hData *), __func__);
 
     numh = 0;
     for (i = 0; i < jp->numExecCandPtr; i++) {
-        INC_CNT(PROF_CNT_firstloopallocHosts);
+
         for (j = 0; j < jp->execCandPtr[i].numSlots; j++) {
-            INC_CNT(PROF_CNT_secondloopallocHosts);
 
             if (jp->execCandPtr[i].numSlots <= 0)
                 continue;
@@ -3001,16 +2997,18 @@ allocHosts (struct jData *jp)
     }
 
     if (numh != jp->numEligProc) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7220,
-                                         "%s: numh <%d> jp->numEligProc <%d> are not equal"), /* catgets 7220 */
-                  fname, numh, jp->numEligProc);
+        ls_syslog(LOG_ERR, "\
+%s: numh <%d> jp->numEligProc <%d> are not equal",
+                  __func__, numh, jp->numEligProc);
     }
 
     jp->hPtr = hPtr;
     jp->numHostPtr = numh;
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG2, "%s: Allocated %d host/processors to job %s", fname, numh, lsb_jobid2str(jp->jobId));
+        ls_syslog(LOG_DEBUG2, "\
+%s: Allocated %d host/processors to job %s", __func__, numh,
+		  lsb_jobid2str(jp->jobId));
     }
 
     return 0;
@@ -4904,13 +4902,15 @@ other candHost are not allowed to be tried at this stage",
                         if (qAttributes & Q_ATTRIB_BACKFILL) {
                             jobStartTime (jp);
                         }
-                        reserveSlots (jp);
+                        reserveSlots(jp);
                         reserved = TRUE;
                     }
                 } else {
 
                     if (logclass & (LC_SCHED | LC_PEND)) {
-                        ls_syslog(LOG_DEBUG1, "%s: job <%s> will not reserve slots because there not enough online host slots for the job", fname, lsb_jobid2str(jp->jobId));
+                        ls_syslog(LOG_DEBUG1, "\
+%s: job %s will not reserve slots there not enough slots for the job", fname,
+				  lsb_jobid2str(jp->jobId));
                     }
                 }
             }
@@ -5088,8 +5088,8 @@ dispatchToCandHost(struct jData *jp)
 static void
 getNumProcs(struct jData *jp)
 {
-#define HAS_HOST_PREFERNECE(jp) ((jp)->numAskedPtr || (jp)->qPtr->numAskedPtr)
-    static char fname[] = "getNumProcs";
+#define HAS_HOST_PREFERENCE(jp) ((jp)->numAskedPtr || (jp)->qPtr->numAskedPtr)
+
     int i, nSlots, nAvailSlots, backfillSlots;
     struct candHost *execCandPtr;
     struct backfillCand *backfillCandPtr;
@@ -5101,31 +5101,20 @@ getNumProcs(struct jData *jp)
     jp->numEligProc = 0;
     jp->numAvailEligProc = 0;
 
-    execCandPtr = (struct candHost *)my_malloc(jp->numCandPtr * sizeof(struct candHost), fname);
-    for (i = 0; i < jp->numCandPtr; i++) {
-        execCandPtr[i].hData = NULL;
-        execCandPtr[i].numSlots = 0;
-        execCandPtr[i].numAvailSlots = 0;
-        execCandPtr[i].backfilleeList = NULL;
-    }
+    execCandPtr = my_calloc(jp->numCandPtr, sizeof(struct candHost), __func__);
 
     if (JOB_CAN_BACKFILL(jp) &&
-        !HAS_HOST_PREFERNECE(jp) &&
+        !HAS_HOST_PREFERENCE(jp) &&
         jobHasBackfillee(jp) &&
         !allInOne(jp)) {
         sortedBackfilleeList = listCreate(NULL);
 
         sortBackfillee(jp, sortedBackfilleeList);
-        backfillCandPtr = (struct backfillCand *)my_malloc(jp->numCandPtr * sizeof(struct backfillCand), fname);
+        backfillCandPtr = my_calloc(jp->numCandPtr,
+				    sizeof(struct backfillCand), __func__);
         backfillCandPtrIndex = 0;
-        for (i = 0; i < jp->numCandPtr; i++) {
-            backfillCandPtr[i].numSlots = 0;
-            backfillCandPtr[i].numAvailSlots = 0;
-            backfillCandPtr[i].indexInCandHostList = 0;
-            backfillCandPtr[i].backfilleeList = NULL;
-        }
 
-        (void)listIteratorAttach(&iter, sortedBackfilleeList);
+        listIteratorAttach(&iter, sortedBackfilleeList);
 
         for (backfillee = (struct backfillee *)listIteratorGetCurEntry(&iter);
              !listIteratorIsEndOfList(&iter) &&
@@ -5144,7 +5133,6 @@ getNumProcs(struct jData *jp)
                     break;
                 }
             }
-
 
             maxSlots =
                 jp->candPtr[backfillee->indexInCandHostList].numAvailSlots;
@@ -5445,17 +5433,11 @@ removeNOccuranceOfHost(struct jData *jp, struct hData *host, int num,
 }
 
 static struct backfillee *
-backfilleeCreate()
+backfilleeCreate(void)
 {
-    static char fname[] = "backfilleeCreate";
     struct backfillee *ent;
 
-    ent = (struct backfillee *)my_malloc(sizeof(struct backfillee), fname);
-    ent->backfilleePtr = NULL;
-    ent->indexInCandHostList = 0;
-    ent->backfillSlots = 0;
-    ent->numHostPtr = 0;
-    ent->hPtr = NULL;
+    ent = my_calloc(1, sizeof(struct backfillee), __func__);
 
     return ent;
 }
@@ -5463,10 +5445,9 @@ backfilleeCreate()
 static struct backfillee *
 backfilleeCreateByCopy(struct backfillee *bp)
 {
-    static char fname[] = "backfilleeCreateByCopy";
     struct backfillee *ent;
 
-    ent = (struct backfillee *)my_malloc(sizeof(struct backfillee), fname);
+    ent = my_calloc(1, sizeof(struct backfillee), __func__);
     ent->backfilleePtr = bp->backfilleePtr;
     ent->indexInCandHostList = bp->indexInCandHostList;
     ent->backfillSlots = bp->backfillSlots;
@@ -5489,7 +5470,8 @@ sortBackfillee(struct jData *jp, LIST_T *sortedBackfilleeList)
         if (backfilleeList == NULL) {
             continue;
         }
-        (void)listIteratorAttach(&iter, backfilleeList);
+
+	listIteratorAttach(&iter, backfilleeList);
         for (entry = (struct backfillee *)listIteratorGetCurEntry(&iter);
              !listIteratorIsEndOfList(&iter);
              listIteratorNext(&iter, (LIST_ENTRY_T **)&entry)) {
