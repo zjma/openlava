@@ -634,7 +634,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 
         /* Allocate for each element of the link
          */
-        rusage_bit_map =  calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
+        rusage_bit_map = calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
         val = calloc(lsInfo->nRes, sizeof(float));
 
         resVal->genClass = 0;
@@ -667,7 +667,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 
             entry = getResEntry(token);
             if (entry < 0)
-                return PARSE_BAD_NAME;
+		goto pryc;
 
             if (!(lsInfo->resTable[entry].flags & RESF_DYNAMIC)
                 && (lsInfo->resTable[entry].valueType != LS_NUMERIC)) {
@@ -727,6 +727,8 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 
 pryc:
 
+    _free_(rusage_bit_map);
+    _free_(val);
     while ((s = pop_link(link)))
         _free_(s);
     fin_link(link);

@@ -458,8 +458,8 @@ packJobInfo(struct jData *jobData,
     job_reasonTb = jobData->reasonTb;
 
     if (reasonTb == NULL) {
-        reasonTb = my_calloc(numofhosts(), sizeof(int), __func__);
-        jReasonTb = my_calloc(numofhosts(), sizeof(int), __func__);
+        reasonTb = my_calloc(numofhosts() + 1, sizeof(int), __func__);
+        jReasonTb = my_calloc(numofhosts() + 1, sizeof(int), __func__);
     }
 
     jobInfoReply.jobId = jobData->jobId;
