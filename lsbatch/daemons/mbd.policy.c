@@ -1620,6 +1620,7 @@ ckResReserve(struct hData *hPtr,
     link_t *L;
     int len;
     struct name_list *nl;
+    struct resVal r2;
 
     can_use = hPtr->numCPUs;
 
@@ -1640,8 +1641,8 @@ ckResReserve(struct hData *hPtr,
     traverse_init(resValPtr->rl, &iter);
     while ((r = traverse_link(&iter))) {
 
-        resValPtr->rusage_bit_map = r->bitmap;
-        resValPtr->val = r->val;
+        r2.rusage_bit_map = r->bitmap;
+        r2.val = r->val;
 
         /* state = ok
          */
@@ -1651,14 +1652,14 @@ ckResReserve(struct hData *hPtr,
             if (NOT_NUMERIC(allLsInfo->resTable[cc]))
                 continue;
 
-            TEST_BIT(cc, resValPtr->rusage_bit_map, is_set);
+            TEST_BIT(cc, r2.rusage_bit_map, is_set);
             if (is_set == 0)
                 continue;
 
             *resource = cc;
 
-            if (resValPtr->val[cc] >= INFINIT_LOAD
-                || resValPtr->val[cc] < 0.01)
+            if (r2.val[cc] >= INFINIT_LOAD
+                || r2.val[cc] < 0.01)
                 continue;
 
             /* Built in resource
@@ -1676,7 +1677,7 @@ ckResReserve(struct hData *hPtr,
 
                     if (hPtr->loadStop[cc] < INFINIT_LOAD) {
                         use_val = (int)((hPtr->loadStop[cc]
-                                         - hPtr->lsfLoad[cc])/ resValPtr->val[cc]);
+                                         - hPtr->lsfLoad[cc])/ r2.val[cc]);
                         if (use_val <= 0) {
                             /* state = !ok
                              */
@@ -1689,10 +1690,10 @@ ckResReserve(struct hData *hPtr,
 
                     if (hPtr->loadStop[cc] >= INFINIT_LOAD
                         || hPtr->loadStop[cc] <= -INFINIT_LOAD)
-                        use_val = (int)(hPtr->lsbLoad[cc]/ resValPtr->val[cc]);
+                        use_val = (int)(hPtr->lsbLoad[cc]/ r2.val[cc]);
                     else
                         use_val = (int)((hPtr->lsbLoad[cc]
-                                         - hPtr->loadStop[cc])/resValPtr->val[cc]);
+                                         - hPtr->loadStop[cc])/r2.val[cc]);
 		    if (use_val <= 0) {
                             /* state = !ok
                              */
@@ -1701,7 +1702,7 @@ ckResReserve(struct hData *hPtr,
                     }
                 }
                 if (cc == MEM
-                    && (((int)(hPtr->leftRusageMem/resValPtr->val[MEM])) == 0)){
+                    && (((int)(hPtr->leftRusageMem/r2.val[MEM])) == 0)){
                     state = 0;
                     break;
                 }
@@ -1719,7 +1720,7 @@ ckResReserve(struct hData *hPtr,
                     break;
                 }
 
-                if (value < resValPtr->val[cc]
+                if (value < r2.val[cc]
                     && allLsInfo->resTable[cc].orderType != INCR) {
                     state = 0;
                     break;
@@ -1732,7 +1733,7 @@ ckResReserve(struct hData *hPtr,
              */
             nl = calloc(1, sizeof(struct name_list));
             nl->name = allLsInfo->resTable[cc].name;
-            nl->value = resValPtr->val[cc];
+            nl->value = r2.val[cc];
             push_link(L, nl);
             len = len + strlen(nl->name) + 16;
 

@@ -634,7 +634,7 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
 
         /* Allocate for each element of the link
          */
-        rusage_bit_map =  calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
+        rusage_bit_map = calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
         val = calloc(lsInfo->nRes, sizeof(float));
 
         resVal->genClass = 0;
