@@ -25,6 +25,7 @@ Release notes for OpenLava versions
 -- Fix rusage bug in which the host could be allocated to a job even with
    not enough resources.
 -- Fix memory error in mbatchd when computing job's rusage.
+-- Fix various memory leaks
 
 3.1pre1
 =======
