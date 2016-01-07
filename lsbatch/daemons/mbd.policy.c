@@ -6984,7 +6984,7 @@ handle_reserve_memory(struct jData *jPtr, int op)
     /* Currently we do not support the memory reservation
      * with rusage || syntax.
      */
-    if (LINK_NUM_ENTRIES(jPtr->shared->resValPtr->rl > 1))
+    if (LINK_NUM_ENTRIES(jPtr->shared->resValPtr->rl) > 1)
 	return;
 
     TEST_BIT(MEM, r->rusage_bit_map, on);
