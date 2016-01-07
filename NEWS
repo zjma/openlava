@@ -13,10 +13,13 @@ Release notes for OpenLava versions
    before parsing it.
 -- Reduce the number of malloc operations when reading the
    lsb.events file.
--- Implement memory reservation if the queue has SLOT_RESERVE configured
+-- Implement memory reservation if the queue has SLOT_MEMORY_RESERVE configured
    and the job requests rusage of memory. The jobs has to reserve slots
    on the hosts as well.
 -- Implement a correct switching of the lim.events file.
+-- Update the bmgroup command to display GROUP_SLOT and MAX_SLOTS
+   sections if configured.
+-- Update the bqueues command to display slot and memory reservation.
 
 3.1.0
 ======
