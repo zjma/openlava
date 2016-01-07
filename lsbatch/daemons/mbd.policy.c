@@ -6981,6 +6981,12 @@ handle_reserve_memory(struct jData *jPtr, int op)
 			      jPtr->qPtr->resValPtr)) == NULL)
         return;
 
+    /* Currently we do not support the memory reservation
+     * with rusage || syntax.
+     */
+    if (LINK_NUM_ENTRIES(jPtr->shared->resValPtr->rl > 1))
+	return;
+
     TEST_BIT(MEM, r->rusage_bit_map, on);
     if (on == 0)
 	return;
@@ -6998,8 +7004,10 @@ handle_reserve_memory(struct jData *jPtr, int op)
 	    continue;
 
 	/* If we are reserving memory and the host does
-	 * not have enough skip it, if we are returning
-	 * memory then don't run the if....
+	 * not have enough skip it, this should not
+	 * really happen because we have checked if the
+	 * host has enough memory in ckResReserve().
+	 * If we are returning memory then don't run the if....
 	 */
 	if (op == 1
 	    && r->val[MEM] > jPtr->hPtr[i]->lsbLoad[MEM])
