@@ -109,6 +109,7 @@
 #define Q_ATTRIB_RERUNNABLE       0x10000
 #define Q_ATTRIB_FAIRSHARE        0x80000
 #define Q_ATTRIB_OWNERSHIP        0x100000
+#define Q_ATTRIB_MEM_RESERVE      0x200000
 
 #define MASTER_NULL           200
 #define MASTER_RESIGN         201

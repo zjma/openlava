@@ -370,8 +370,13 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
             printf("REQUEUE_EXIT_VALUES:  %s\n", qp->requeueEValues);
         if (strcmp (qp->resReq, " ") != 0)
             printf("RES_REQ:  %s\n", qp->resReq);
-        if (qp->slotHoldTime > 0)
+        if (qp->slotHoldTime > 0
+	    && !(qp->qAttrib & Q_ATTRIB_MEM_RESERVE))
             printf("Maximum slot reservation time: %d seconds\n", qp->slotHoldTime);
+        if (qp->slotHoldTime > 0
+	    && (qp->qAttrib & Q_ATTRIB_MEM_RESERVE))
+            printf("Maximum slot and memory reservation time: %d seconds\n",
+		   qp->slotHoldTime);
         if (strcmp (qp->resumeCond, " ") != 0)
             printf("RESUME_COND:  %s\n", qp->resumeCond);
         if (strcmp (qp->stopCond, " ") != 0)

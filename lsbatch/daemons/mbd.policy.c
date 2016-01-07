@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2015 David Bigagli
+ * Copyright (C) 2011-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -6971,10 +6971,13 @@ handle_reserve_memory(struct jData *jPtr, int op)
     struct resVal *r;
     hTab htab;
 
+    if (! (jPtr->qPtr->qAttrib & Q_ATTRIB_MEM_RESERVE))
+	return;
+
     if (jPtr->shared->resValPtr == NULL)
 	return;
 
-    ls_syslog(LOG_INFO, "\
+    ls_syslog(LOG_DEBUG, "\
 %s: Entering job %s operation %d", __func__, lsb_jobid2str(jPtr->jobId), op);
 
     if ((r = getReserveValues(jPtr->shared->resValPtr,
@@ -7017,7 +7020,7 @@ handle_reserve_memory(struct jData *jPtr, int op)
 	 * share the code between the two operations
 	 * reserve and free.
 	 */
-	ls_syslog(LOG_INFO, "\
+	ls_syslog(LOG_DEBUG, "\
 %s: reserving %4.2f GB on host %s with %4.2f GB", __func__,
 		  r->val[MEM], jPtr->hPtr[i]->host,
 		  jPtr->hPtr[i]->lsbLoad[MEM]);
@@ -7032,11 +7035,17 @@ handle_reserve_memory(struct jData *jPtr, int op)
 static void
 reserve_memory(struct jData *jPtr)
 {
+    if (! (jPtr->qPtr->qAttrib & Q_ATTRIB_MEM_RESERVE))
+	return;
+
     handle_reserve_memory(jPtr, 1);
 }
 
 static void
 free_reserve_memory(struct jData *jPtr)
 {
+    if (! (jPtr->qPtr->qAttrib & Q_ATTRIB_MEM_RESERVE))
+	return;
+
     handle_reserve_memory(jPtr, -1);
 }

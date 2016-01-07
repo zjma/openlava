@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2015 David Bigagli
+ * Copyright (C) 2011 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -3793,7 +3793,8 @@ do_Queues(struct lsConf *conf,
 #define QKEY_FAIRSHARE info->numIndx + 48
 #define QKEY_PREEMPTION info->numIndx + 49
 #define QKEY_OWNERSHIP info->numIndx + 50
-#define KEYMAP_SIZE info->numIndx+52
+#define QKEY_SLOT_MEMORY_RESERVE info->numIndx + 51
+#define KEYMAP_SIZE info->numIndx+53  /* This must be the last offset by 2 */
 
     struct queueInfoEnt queue;
     char *linep;
@@ -3864,6 +3865,7 @@ do_Queues(struct lsConf *conf,
     keylist[QKEY_FAIRSHARE].key = "FAIRSHARE";
     keylist[QKEY_PREEMPTION].key = "PREEMPTION";
     keylist[QKEY_OWNERSHIP].key = "OWNERSHIP";
+    keylist[QKEY_SLOT_MEMORY_RESERVE].key = "SLOT_MEMORY_RESERVE";
     keylist[KEYMAP_SIZE - 1].key = NULL;
 
     initQueueInfo(&queue);
@@ -4537,8 +4539,17 @@ do_Queues(struct lsConf *conf,
 
         if (keylist[QKEY_SLOT_RESERVE].val != NULL
             && strcmp(keylist[QKEY_SLOT_RESERVE].val, "")) {
-            getReserve (keylist[QKEY_SLOT_RESERVE].val, &queue, fname,
-                        *lineNum);
+
+	    if (keylist[QKEY_SLOT_MEMORY_RESERVE].val) {
+		ls_syslog(LOG_ERR, "\
+ %s: File %s in section Queue ending at line %d: SLOT_RESERVE cannot be specified with SLOT_MEMORY_RESERVE for queue <%s>;ignoring",
+			  __func__, fname, *lineNum,
+			  queue.queue);
+                lsberrno = LSBE_CONF_WARNING;
+	    } else {
+		getReserve(keylist[QKEY_SLOT_RESERVE].val, &queue, fname,
+			   *lineNum);
+	    }
         }
 
         if (keylist[QKEY_RESUME_COND].val != NULL &&
@@ -4585,9 +4596,6 @@ do_Queues(struct lsConf *conf,
                 return FALSE;
             }
         }
-
-
-
 
         if (keylist[QKEY_JOB_CONTROLS].val != NULL &&
             strcmp(keylist[QKEY_JOB_CONTROLS].val, "")) {
@@ -4659,6 +4667,22 @@ do_Queues(struct lsConf *conf,
                 return FALSE;
             }
         }
+
+	/* Reserve slots and memory
+	 */
+	if (keylist[QKEY_SLOT_MEMORY_RESERVE].val != NULL) {
+	    if (keylist[QKEY_SLOT_RESERVE].val) {
+		ls_syslog(LOG_ERR, "\
+ %s: File %s in section Queue ending at line %d: SLOT_RESERVE cannot be specified with SLOT_MEMORY_RESERVE for queue <%s>;ignoring",
+			  __func__, fname, *lineNum,
+			  queue.queue);
+                lsberrno = LSBE_CONF_WARNING;
+	    } else {
+		getReserve(keylist[QKEY_SLOT_MEMORY_RESERVE].val, &queue, fname,
+			   *lineNum);
+		queue.qAttrib |= Q_ATTRIB_MEM_RESERVE;
+	    }
+	}
 
         if (info->numIndx
             && (queue.loadSched = calloc(info->numIndx,
