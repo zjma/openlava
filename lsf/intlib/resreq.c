@@ -706,7 +706,8 @@ parseUsage(char *usageReq, struct resVal *resVal, struct lsInfo *lsInfo)
             _free_(resVal->val);
 	    /* Copy the values as later we free them separately
 	     */
-            resVal->rusage_bit_map = calloc(GET_INTNUM(lsInfo->nRes), sizeof(int));
+            resVal->rusage_bit_map = calloc(GET_INTNUM(lsInfo->nRes),
+					    sizeof(int));
 	    memcpy(resVal->rusage_bit_map,
 		   rusage_bit_map,
 		   GET_INTNUM(lsInfo->nRes) * sizeof(int));
