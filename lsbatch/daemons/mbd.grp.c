@@ -523,6 +523,7 @@ copyHostGroup(struct gData *grp,
     groupInfoEnt->group_slots = grp->group_slots;
     if (groupInfoEnt->group_slots == NULL)
 	groupInfoEnt->group_slots = "";
+    groupInfoEnt->max_slots = grp->max_slots;
 }
 
 int
@@ -547,4 +548,26 @@ sizeofGroupInfoReply(struct groupInfoReply *ugroups)
 
     return(len);
 
+}
+
+void
+uDataGroupCreate(void)
+{
+    int i;
+
+    for (i = 0; i < numofugroups; i++) {
+	struct uData *u;
+
+	if ((u = getUserData(usergroups[i]->group)) == NULL) {
+	    ls_syslog(LOG_ERR, "\
+%s getUserData() failed for group %s", __func__, usergroups[i]->group);
+	    mbdDie(MASTER_FATAL);
+	}
+	u->flags |= USER_GROUP;
+
+	if (USER_GROUP_IS_ALL_USERS(usergroups[i]) == TRUE)
+	    u->flags |= USER_ALL;
+
+	u->gData = usergroups[i];
+    }
 }

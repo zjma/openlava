@@ -3159,6 +3159,8 @@ updUserList(int mbdInitFlags)
         ent = h_nextEnt_(&next);
     }
 
+    uDataGroupCreate();
+
     if (mbdInitFlags == RECONFIG_CONF || mbdInitFlags == WINDOW_CONF) {
         struct uData*  uData;
 
