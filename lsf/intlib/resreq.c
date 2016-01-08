@@ -860,7 +860,16 @@ validValue(char *value, struct lsInfo *lsInfo, int nentry)
 
 }
 
-
+/*
+ * resToClassNew()
+ *
+ * Convert the user specified selection string into a string that TCL
+ * may be able to process.
+ *  eg:
+ *  "mem > 0 || swap < 10 || type == Linux"
+ *  becomes:
+ *  "expr mem()>0||swap()< 10||[type "eq" "Linux"]
+ */
 static int
 resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
 {
@@ -869,7 +878,6 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
     int t;
     int len;
     int entry;
-    int hasFunction = FALSE;
     int hasQuote;
     char res[MAXLINELEN];
     char val[MAXLINELEN];
@@ -1071,7 +1079,6 @@ resToClassNew(char *resReq, struct resVal *resVal, struct lsInfo *lsInfo)
                 default:
                     break;
             }
-	    hasFunction = FALSE;
         } else { 	/* Character we don't recognize */
             return (PARSE_BAD_EXP);
         }
