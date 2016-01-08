@@ -26,9 +26,9 @@ void
 usage(const char *cmd)
 {
     if (strstr(cmd, "bugroup") != NULL)
-	fprintf(stderr, ": %s [-h] [-V] [group_name ...]\n", cmd);
+	fprintf(stderr, "%s [-h] [-V] [group_name ...]\n", cmd);
     else
-        fprintf(stderr, ": %s [-h] [-V] [-s] [group_name ...]\n", cmd);
+        fprintf(stderr, "%s [-h] [-V] [-s] [group_name ...]\n", cmd);
 }
 
 int
