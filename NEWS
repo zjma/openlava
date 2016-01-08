@@ -3,8 +3,9 @@ Release notes for OpenLava versions
 3.1.1
 =====
  
-Fix schedulign bug in which performance could drop if the lowest
+-- Fix schedulign bug in which performance could drop if the lowest
 priority queue was always full.
+-- Fix the incorrect encoding of bchkpnt command data structure.
 
 3.1.0
 ======
