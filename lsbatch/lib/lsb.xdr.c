@@ -1530,8 +1530,12 @@ xdr_groupInfoEnt(XDR *xdrs, struct groupInfoEnt *gInfo,
         FREEUP(gInfo->group_slots);
     }
 
-    if (! xdr_var_string(xdrs, &gInfo->group_slots))
-        return false;
+    if (hdr->version >= 32) {
+	if (! xdr_var_string(xdrs, &gInfo->group_slots))
+	    return false;
+	if (! xdr_int(xdrs, &gInfo->max_slots))
+	    return false;
+    }
 
     return true;
 
