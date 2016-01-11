@@ -308,6 +308,7 @@ bool_t
 xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
 {
     int jobArrId, jobArrElemId;
+    int itime;
 
     if (xdrs->x_op == XDR_ENCODE) {
         jobId64To32(signalReq->jobId, &jobArrId, &jobArrElemId);
@@ -316,13 +317,15 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
           xdr_int(xdrs, &jobArrId)))
         return false;
 
+    if (xdrs->x_op == XDR_ENCODE)
+	itime = signalReq->chkPeriod;
 
     if (signalReq->sigValue == SIG_CHKPNT
         || signalReq->sigValue == SIG_DELETE_JOB
         || signalReq->sigValue == SIG_ARRAY_REQUEUE) {
-        if (!(xdr_time_t(xdrs, &(signalReq->chkPeriod)) &&
-              xdr_int(xdrs, &(signalReq->actFlags)))) {
-            return false;
+        if (! xdr_int(xdrs, &itime)
+	    || !xdr_int(xdrs, &(signalReq->actFlags))) {
+	    return false;
         }
     }
 
@@ -332,13 +335,16 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
 
     if (xdrs->x_op == XDR_DECODE) {
         jobId32To64(&signalReq->jobId,jobArrId,jobArrElemId);
+	signalReq->chkPeriod = itime;
     }
 
     return true;
 }
 
 bool_t
-xdr_submitMbdReply(XDR *xdrs, struct submitMbdReply *reply, struct LSFHeader *hdr)
+xdr_submitMbdReply(XDR *xdrs,
+		   struct submitMbdReply *reply,
+		   struct LSFHeader *hdr)
 {
     static char queueName[MAX_LSB_NAME_LEN];
     static char jobName[MAX_CMD_DESC_LEN];
@@ -490,8 +496,8 @@ xdr_jobInfoHead(XDR *xdrs, struct jobInfoHead *jobInfoHead,
         if (jobInfoHead->numJobs > numJobs ) {
             FREEUP (jobIds);
             numJobs = 0;
-            if ((jobIds = (LS_LONG_INT *) calloc (jobInfoHead->numJobs,
-                                                  sizeof(LS_LONG_INT))) == NULL) {
+            if ((jobIds = calloc (jobInfoHead->numJobs,
+				  sizeof(LS_LONG_INT))) == NULL) {
                 lsberrno = LSBE_NO_MEM;
                 return false;
             }
@@ -503,8 +509,8 @@ xdr_jobInfoHead(XDR *xdrs, struct jobInfoHead *jobInfoHead,
                 FREEUP (hostNames[i]);
             numHosts = 0;
             FREEUP (hostNames);
-            if ((hostNames = (char **) calloc(jobInfoHead->numHosts,
-                                              sizeof(char *))) == NULL) {
+            if ((hostNames = calloc(jobInfoHead->numHosts,
+				    sizeof(char *))) == NULL) {
                 lsberrno = LSBE_NO_MEM;
                 return false;
             }

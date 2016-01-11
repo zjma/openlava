@@ -1620,8 +1620,6 @@ sigPFjob (struct jData *jData, int sigValue, time_t chkPeriod, int logIt)
             if (chkPeriod != LSB_CHKPERIOD_NOCHNG &&
                 chkPeriod != jData->chkpntPeriod) {
 
-
-
                 jData->chkpntPeriod = chkPeriod;
                 log_jobsigact (jData, NULL, 0);
             }

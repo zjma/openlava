@@ -4402,7 +4402,9 @@ scheduleAndDispatchJobs(void)
     }
 
     if (!(mSchedStage & M_STAGE_QUE_CAND)) {
+	int num;
 
+	numQUsable = 0;
 	/* Unlike jobs we want the queue with the highest
 	 * number.
 	 */
@@ -4412,8 +4414,9 @@ scheduleAndDispatchJobs(void)
                 continue;
 
             INC_CNT(PROF_CNT_getQUsable);
-            TIMEVAL(3, numQUsable = getQUsable(qp), tmpVal);
+            TIMEVAL(3, num = getQUsable(qp), tmpVal);
             timeGetQUsable += tmpVal;
+	    numQUsable = numQUsable + num;
 
             /* Initialize the slot fairshare scheduler.
              */
