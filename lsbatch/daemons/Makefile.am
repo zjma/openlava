@@ -49,9 +49,3 @@ libpreempt_la_SOURCES = libpreempt.c preempt.h
 libpreempt_la_LDFLAGS = -no-undefined -version-info 0:1
 libpreempt_la_LIBADD =  $(top_builddir)/lsf/intlib/libtools.la \
 	$(top_builddir)/lsf/lib/liblsf.la $(top_builddir)/lsbatch/lib/liblsbatch.la
-
-libownership_la_SOURCES = libownership.c fairshare.h
-libownership_la_LDFLAGS = -no-undefined -version-info 0:1
-libownership_la_LIBADD = $(top_builddir)/lsf/intlib/libtools.la \
-	$(top_builddir)/lsf/lib/liblsf.la
-
