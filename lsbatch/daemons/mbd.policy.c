@@ -4423,6 +4423,9 @@ scheduleAndDispatchJobs(void)
             if (qp->fsSched) {
                 (*qp->fsSched->fs_init_sched_session)(qp);
             }
+	    if (qp->own_sched) {
+		(*qp->own_sched->fs_init_own_sched_session)(qp);
+	    }
 
         }
         mSchedStage |= M_STAGE_QUE_CAND;
@@ -4606,6 +4609,26 @@ jiter_next_job(LIST_T *jRefList)
              * session.
              */
             (*qPtr->fsSched->fs_fin_sched_session)(qPtr);
+            continue;
+        }
+
+        if (jPtr->qPtr->qAttrib & Q_ATTRIB_OWNERSHIP) {
+            struct qData *qPtr = jPtr->qPtr;
+            (*qPtr->own_sched->fs_elect_job)(qPtr,
+					     jRefList,
+					     &jR0);
+            if (jR0) {
+                listRemoveEntry(jRefList,
+                                (LIST_ENTRY_T *)jR0);
+                jPtr0 = jR0->job;
+                free(jR0);
+                return jPtr0;
+            }
+            /* No more jobs from this fairshare queue
+             * so finalize the local plugin data for this
+             * session.
+             */
+            (*qPtr->own_sched->fs_fin_sched_session)(qPtr);
             continue;
         }
 

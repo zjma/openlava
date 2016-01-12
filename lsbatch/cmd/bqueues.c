@@ -319,7 +319,7 @@ prtQueuesLong(int numQueues, struct queueInfoEnt *queueInfo)
             if (qp->qAttrib & Q_ATTRIB_ONLY_INTERACTIVE)
                 printf("  ONLY_INTERACTIVE");
 	    if (qp->qAttrib & Q_ATTRIB_OWNERSHIP)
-		printf("  OWNERSHIP");
+		printf("  OWNED_SLOTS");
             if (qp->qAttrib & Q_ATTRIB_ROUND_ROBIN)
                 printf("ROUND_ROBIN_SCHEDULING:  yes\n");
             printf("\n");

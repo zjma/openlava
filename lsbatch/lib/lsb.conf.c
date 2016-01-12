@@ -4655,12 +4655,12 @@ do_Queues(struct lsConf *conf,
 	/* Support slot ownership in queue
 	 */
         if (keylist[QKEY_OWNERSHIP].val != NULL) {
-            if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USER_SHARES")) {
+            if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USER_GUARANTEE")) {
                 queue.ownership = strdup(keylist[QKEY_OWNERSHIP].val);
             } else  {
                 ls_syslog(LOG_ERR, "\
 %s: unsupported OWNERSHIP %s key, ignored",
-                          __func__,keylist[QKEY_FAIRSHARE].val);
+                          __func__,keylist[QKEY_OWNERSHIP].val);
                 lsberrno = LSBE_CONF_WARNING;
                 freekeyval(keylist);
                 freeQueueInfo(&queue);

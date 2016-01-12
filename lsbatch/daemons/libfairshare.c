@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -238,7 +238,14 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
     int nents;
     int i;
 
-    t = qPtr->fsSched->tree;
+    t = NULL;
+    if (qPtr->fsSched)
+	t = qPtr->fsSched->tree;
+    else if (qPtr->own_sched)
+	t = qPtr->own_sched->tree;
+
+    if (t == NULL)
+	return -1;
 
     /* First let's count the number of nodes
      */
@@ -350,4 +357,45 @@ get_user_node(struct hash_tab *node_tab,
     }
 
     return n->parent->child;
+}
+
+/* fs_own_init()
+ */
+int
+fs_own_init(struct qData *qPtr, struct userConf *uConf)
+{
+    qPtr->own_sched->tree
+        = sshare_make_tree(qPtr->ownership,
+                           (uint32_t )uConf->numUgroups,
+                           (struct group_acct *)uConf->ugroups);
+
+    if (qPtr->own_sched->tree == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: queues %s failed to ownership configuration, ownership disabled",
+                  __func__, qPtr->queue);
+        _free_(qPtr->ownership);
+        return -1;
+    }
+
+    return 0;
+}
+
+/* fs_init_own_sched_session()
+ */
+int
+fs_init_own_sched_session(struct qData *qPtr)
+{
+    struct tree_ *t;
+
+    if (qPtr->num_owned_slots == 0)
+	return 0;
+
+    t = qPtr->own_sched->tree;
+
+    /* Distribute the tokens all the way
+     * down the leafs
+     */
+    sshare_distribute_own_slots(t, qPtr->num_owned_slots);
+
+    return 0;
 }

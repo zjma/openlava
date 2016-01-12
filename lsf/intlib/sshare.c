@@ -225,6 +225,99 @@ znovu:
     return 0;
 }
 
+/* sshare_distribute_own_slots()
+ */
+int
+sshare_distribute_own_slots(struct tree_ *t,
+			    uint32_t slots)
+{
+    struct tree_node_ *n;
+    link_t *stack;
+    struct share_acct *sacct;
+    uint32_t avail;
+    int tried;
+    int first;
+
+    stack = make_link();
+    /* This must be emptied after every scheduling
+     * cycle. There could be still some leafs
+     * if not all jobs got dispatched.
+     */
+    while (pop_link(t->leafs))
+        ;
+    avail = slots;
+
+    sort_tree_by_deviate(t);
+    zero_out_sent(t);
+    tried = 0;
+    /* only after sort get the first child
+     */
+    n = t->root->child;
+znovu:
+
+    /* Iterate at each tree level but
+     * don't traverse branches without
+     * tokens.
+     */
+    first = 0;
+    while (n) {
+
+        sacct = n->data;
+        /* all is a dummy share account the
+         * tree is populated with real ones.
+         */
+        if (sacct->options & SACCT_USER_ALL) {
+            n = n->right;
+            continue;
+        }
+
+        /* enqueue as we want to traverse
+         * the tree by priority
+         */
+        if (n->child)
+            enqueue_link(stack, n);
+
+	/* Enforce the ownership/guarantee at the
+	 * first level of the tree.
+	 */
+	if (first == 0)
+	    sacct->sent = sacct->shares;
+	else
+	    avail = avail - compute_slots(n, slots, avail);
+
+        assert(avail >= 0);
+        /* As we traverse in priority order
+         * the leafs are also sorted
+         */
+        if (n->child == NULL)
+            enqueue_link(t->leafs, n);
+
+        n = n->right;
+    }
+
+    ++first;
+    n = pop_link(stack);
+    if (n) {
+        /* tokens come from the parent
+         */
+        sacct = n->data;
+        avail = slots = sacct->sent;
+        n = n->child;
+        goto znovu;
+    }
+
+    if (avail > 0
+        && tried == 0) {
+        ++tried;
+        n = t->root->child;
+        goto znovu;
+    }
+
+    fin_link(stack);
+
+    return 0;
+}
+
 /* sort_tree_by_shares()
  */
 static void
