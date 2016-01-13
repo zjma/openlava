@@ -182,8 +182,9 @@ struct inNames {
 static int resolveBatchNegHosts(char*, char**, int);
 static int fillCell(struct inNames**, char*, char*);
 static int expandWordAll(int*, int*, struct inNames**, char*);
-static int readHvalues_conf(struct keymap *, char *, struct lsConf *, char *, int *, int, char *);
-
+static int readHvalues_conf(struct keymap *, char *, struct lsConf *,
+			    char *, int *, int, char *);
+static link_t *host_base_name(const char *);
 
 static int
 readHvalues_conf(struct keymap *keyList, char *linep, struct lsConf *conf,
@@ -2497,7 +2498,9 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
     struct hTab *tmpHosts = NULL, *nonOverridableHosts = NULL;
     struct hostInfo *hostInfo;
     int override, num = 0, new, returnCode = FALSE, copyCPUFactor = FALSE;
-
+    link_t *hl;
+    char *host_name;
+    int hcount;
 
     if (conf == NULL)
         return FALSE;
@@ -2599,26 +2602,35 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             continue;
         }
 
+	hcount = 0;
         if (strcmp (keylist[HKEY_HNAME].val, "default") != 0) {
-            hp = Gethostbyname_(keylist[HKEY_HNAME].val);
+
+	    hl = host_base_name(keylist[HKEY_HNAME].val);
+	    if (hl) {
+		host_name = pop_link(hl);
+	    } else {
+		host_name = keylist[HKEY_HNAME].val;
+	    }
+	znovu:
+            hp = Gethostbyname_(host_name);
             if (!hp && options != CONF_NO_CHECK) {
 
                 for (i = 0; i <info->nModels; i++) {
-                    if (strcmp (keylist[HKEY_HNAME].val,
+                    if (strcmp (host_name,
                                 info->hostModels[i]) == 0) {
                         break;
                     }
                 }
                 if (i == info->nModels) {
                     for (i = 0; i < info->nTypes; i++) {
-                        if (strcmp (keylist[HKEY_HNAME].val,
+                        if (strcmp (host_name,
                                     info->hostTypes[i]) == 0) {
                             break;
                         }
                     }
                     if (i == info->nTypes) {
                         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5178,
-                                                         "%s: File %s at line %d: Invalid host/type/model name <%s>; ignoring line"), __func__, fname, *lineNum, keylist[HKEY_HNAME].val); /* catgets 5178 */
+                                                         "%s: File %s at line %d: Invalid host/type/model name <%s>; ignoring line"), __func__, fname, *lineNum, host_name); /* catgets 5178 */
                         lsberrno = LSBE_CONF_WARNING;
                         continue;
                     }
@@ -2627,9 +2639,9 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
                 for (i = 0; i < cConf.numHosts; i++) {
                     hostInfo = &(cConf.hosts[i]);
                     if ((strcmp(hostInfo->hostType,
-                                keylist[HKEY_HNAME].val) == 0 ||
+                                host_name) == 0 ||
                          strcmp(hostInfo->hostModel,
-                                keylist[HKEY_HNAME].val) == 0)
+                                host_name) == 0)
                         && hostInfo->isServer == TRUE) {
                         hostList[numSelectedHosts] = cConf.hosts[i];
                         numSelectedHosts++;
@@ -2637,29 +2649,30 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
                 }
                 if (!numSelectedHosts) {
                     ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5179,
-                                                     "%s: File %s at line %d: no server hosts of type/model <%s> are known by LSF; ignoring line"), __func__, fname, *lineNum, keylist[HKEY_HNAME].val); /* catgets 5179 */
+                                                     "%s: File %s at line %d: no server hosts of type/model <%s> are known by LSF; ignoring line"), __func__, fname, *lineNum, host_name); /* catgets 5179 */
                     lsberrno = LSBE_CONF_WARNING;
                     continue;
                 }
-                strcpy (hostname, keylist[HKEY_HNAME].val);
+                strcpy (hostname, host_name);
                 isTypeOrModel = TRUE;
             } else {
                 if (hp)
                     strcpy (hostname, hp->h_name);
                 else if (options == CONF_NO_CHECK)
-                    strcpy (hostname, keylist[HKEY_HNAME].val);
+                    strcpy (hostname, host_name);
             }
-        } else
+        } else { /* hostname is default */
             strcpy (hostname,  "default");
+	}
+
         h_addEnt_(tmpHosts, hostname, &new);
         if (!new) {
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5180,
-                                             "%s: File %s at line %d: Host name <%s> multiply specified; ignoring line"), __func__, fname, *lineNum, keylist[HKEY_HNAME].val /* catgets 5180 */
+                                             "%s: File %s at line %d: Host name <%s> multiply specified; ignoring line"), __func__, fname, *lineNum, host_name /* catgets 5180 */
                 );
             lsberrno = LSBE_CONF_WARNING;
             continue;
         }
-
 
         if (keylist[HKEY_MXJ].val != NULL
             && strcmp(keylist[HKEY_MXJ].val, "!") == 0) {
@@ -2730,21 +2743,34 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
         }
 
+	/* If we are dealing with the compact notation we reuse
+	 * the hostInfo data structure so make sure we don't
+	 * leak memory
+	 */
+        if (info->numIndx
+	    && hcount == 0) {
 
-        if (info->numIndx && (host.loadSched = (float *) malloc
-                              (info->numIndx*sizeof(float *))) == NULL) {
-            ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
-                      info->numIndx*sizeof(float *));
-            lsberrno = LSBE_NO_MEM;
-            goto Error1;
-        }
-        if (info->numIndx && (host.loadStop = (float *) malloc
-                              (info->numIndx*sizeof(float *))) == NULL) {
-            ls_syslog(LOG_ERR,  I18N_FUNC_D_FAIL_M, __func__, "malloc",
-                      info->numIndx*sizeof(float *));
-            lsberrno = LSBE_NO_MEM;
-            goto Error1;
-        }
+	    host.loadSched = calloc(info->numIndx, sizeof(float *));
+	    if (host.loadSched == NULL) {
+		ls_syslog(LOG_ERR, "%s: loadSched calloc() %dbytes failed %m",
+			  __func__, info->numIndx*sizeof(float *));
+		lsberrno = LSBE_NO_MEM;
+		goto Error1;
+	    }
+	}
+
+        if (info->numIndx
+	    && hcount == 0) {
+
+	    host.loadStop = calloc(info->numIndx, sizeof(float *));
+
+	    if (host.loadStop == NULL) {
+		ls_syslog(LOG_ERR, "%s: loadStop calloc() %dbytes failed %m",
+			  __func__, info->numIndx*sizeof(float *));
+		lsberrno = LSBE_NO_MEM;
+		goto Error1;
+	    }
+	}
 
         getThresh (info, keylist, host.loadSched, host.loadStop,
                    fname, lineNum, " in section Host ending");
@@ -2820,11 +2846,24 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
                 goto Error1;
             }
         }
+	/* If we expanded the hostname from its base name
+	 * free the processed name and get the next one
+	 */
+	if (hl && LINK_NUM_ENTRIES(hl) > 0) {
+	    _free_(host_name);
+	    host_name = pop_link(hl);
+	    ++hcount;
+	    goto znovu;
+	}
         FREEUP(host.windows);
         FREEUP(host.loadSched);
         FREEUP(host.loadStop);
+	if (hl) {
+	    fin_link(hl);
+	    _free_(host_name);
+	}
+    } /* while (linep = getnextline() */
 
-    }
     ls_syslog(LOG_ERR, I18N_FILE_PREMATURE, __func__, fname, *lineNum);
     lsberrno = LSBE_CONF_WARNING;
     returnCode = TRUE;
@@ -6852,4 +6891,57 @@ set_group_max_slots(struct groupInfoEnt *gp, const char *max_slots)
     }
 
     return 0;
+}
+
+/* host_base_name()
+ *
+ * Expand hostname a[n-N] into individual hostnames.
+ *
+ */
+static link_t *
+host_base_name(const char *name)
+{
+    char *basename;
+    char *hname;
+    char buf[MAXHOSTNAMELEN];
+    char name2[MAXHOSTNAMELEN];
+    int i;
+    int n;
+    int N;
+    int cc;
+    link_t *l;
+
+    /* Not in the forma we want
+     */
+    if (! strchr(name, '[')
+	|| ! strchr(name, ']')
+	|| ! strchr(name, '-')) {
+	return NULL;
+    }
+
+    basename = strdup(name);
+
+    for (i = 0; basename[i] != 0; i++) {
+	if (basename[i] == '['
+	    || basename[i] == ']'
+	    || basename[i] == '-')
+	    basename[i] = ' ';
+    }
+
+    cc = sscanf(basename, "%s%d%d", name2, &n, &N);
+    if (cc != 3) {
+	ls_syslog(LOG_ERR, "\
+%s: unrecognized format %s of host base name", __func__, name);
+	return NULL;
+    }
+
+    l = make_link();
+    for (i = n; i <= N; i++) {
+	sprintf(buf, "%s%d", name2, i);
+	hname = strdup(buf);
+	enqueue_link(l, hname);
+    }
+    free(basename);
+
+    return l;
 }
