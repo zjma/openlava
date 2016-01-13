@@ -39,7 +39,7 @@ mbatchd_LDADD += -lsocket -lnsl
 sbatchd_LDADD += -lsocket -lnsl
 endif
 
-lib_LTLIBRARIES = libfairshare.la libpreempt.la libownership.la
+lib_LTLIBRARIES = libfairshare.la libpreempt.la 
 libfairshare_la_SOURCES = libfairshare.c fairshare.h 
 libfairshare_la_LDFLAGS = -no-undefined -version-info 0:1
 libfairshare_la_LIBADD = $(top_builddir)/lsf/intlib/libtools.la \
