@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsb.queues 5 "OpenLava Version 3.1 - Aug 2015"
+.TH lsb.queues 5 "OpenLava Version 3.2 - Jan 2016"
 .br
 .SH NAME
 \fBlsb.queues\fR
@@ -1380,6 +1380,41 @@ either as 3:30, or 210.
 .PP
 .PP
 Unlimited
+.SH SLOT_MEMORY_RESERVE
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBSLOT_MEMORY_RESERVE = MAX_RESERVE_TIME[\fR\fIinteger\fR\fB]\fR
+.SS Description
+.BR
+.PP
+.PP
+Enables processor reservation and memory reservation for pending jobs for the queue.
+Specifies the number of dispatch turns (MAX_RESERVE_TIME) over which a job can
+reserve job slots and memory.
+.PP
+Overrides the SLOT_RESERVE parameter. If both SLOT_MEMORY_RESERVE and SLOT_RESERVE
+are defined in the same queue, an error is displayed when the cluster is reconfigured,
+and SLOT_RESERVE is ignored.
+.PP
+If a job has not accumulated enough memory or job slots to start by the time
+MAX_RESERVE_TIME expires, it releases all its reserved job slots or memory so that
+other pending jobs can run. After the reservation time expires, the job cannot
+reserve memory or slots for one scheduling session, so other jobs have a chance
+to be dispatched. After one scheduling session, the job can reserve available memory
+and job slots again for another period specified by MAX_RESERVE_TIME.
+.PP
+To reserve memory for a job, use the rusage string in the -R option to bsub or the
+RES_REQ parameter in lsb.queues to specify the amount of memory required for the job,
+and submit the job to a queue with SLOT_MEMORY_RESERVE configured.
+.SS Default
+.BR
+.PP
+.PP
+Unlimited (no memory reservation)
 .SH SLOT_RESERVE
 .BR
 .PP
@@ -1401,6 +1436,9 @@ slots for more than (\fIinteger \fR* MBD_SLEEP_TIME) seconds.
 .PP
 MBD_SLEEP_TIME is defined in lsb.params; the default value is 60
 seconds.
+.PP
+If both \fBSLOT_MEMORY_RESERVE\fR and \fBSLOT_RESERVE\fR are defined in the same queue,
+an error is displayed when the cluster is reconfigured, and \fBSLOT_RESERVE\fR is ignored.
 .SS Example
 .BR
 .PP
