@@ -250,7 +250,7 @@ znovu:
 
 /* ls_pclose()
  *
- * Closes a stream opened by ls_popen(). If a differnt
+ * Closes a stream opened by ls_popen(). If a different
  * FILE object is passed the behaviour is undefined.
  */
 int
