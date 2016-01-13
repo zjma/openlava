@@ -334,7 +334,8 @@ typedef enum {
     LIM_COMPUTE_ONLY,
     LSB_SHAREDIR,
     LIM_NO_MIGRANT_HOSTS,
-    LIM_DONT_FORK
+    LIM_DONT_FORK,
+    LIM_CPU_CORES
 } limParams_t;
 
 #define LOOP_ADDR       0x7F000001

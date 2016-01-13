@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2015 David Bigagli
+ * Copyright (C) 2011-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,6 +30,7 @@ static int numcpus;
 
 static int getmeminfo(void);
 static char *get_host_model(void);
+static int get_core_count(void);
 
 /* numCPUs()
  */
@@ -37,6 +38,7 @@ int
 numCPUs(void)
 {
     FILE *fp;
+    int numcores;
 
     fp = fopen("/proc/cpuinfo","r");
     if (fp == NULL) {
@@ -53,6 +55,16 @@ numCPUs(void)
         }
     }
     fclose(fp);
+
+    /* Some customers want to use physical cores ignoring
+     * hyperthreads.
+     */
+    if (limParams[LIM_CPU_CORES].paramValue) {
+	numcores = get_core_count();
+	if (numcpus > numcores) {
+	    numcpus = numcores;
+	}
+    }
 
     return numcpus;
 }
@@ -496,4 +508,36 @@ get_host_model(void)
 
     fclose(fp);
     return NULL;
+}
+
+/* get_core_count()
+ */
+static int
+get_core_count(void)
+{
+    char *cmd;
+    FILE *fp;
+    struct stat sbuf;
+    int numcores;
+
+    cmd = "\
+/usr/bin/lscpu --parse=core |/bin/grep -v '#'|/bin/sort -n |/usr/bin/uniq|/usr/bin/wc -l";
+
+    if (stat("/usr/bin/lscpu", &sbuf) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: stat(/usr/bin/lscpus) failed: %m use cpus from /proc/cpuinfo", __func__);
+	return 0;
+    }
+
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Ohmygosh ls_peopen() failed, no cpu info: %M", __func__);
+        return 0;
+    }
+
+    fscanf(fp, "%d", &numcores);
+    pclose(fp);
+
+    return numcores;
 }
