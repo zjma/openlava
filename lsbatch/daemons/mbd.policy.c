@@ -4252,7 +4252,8 @@ scheduleAndDispatchJobs(void)
 
                 listInsertEntryAtFront(jRefList,
                                        (struct _listEntry *)jR);
-		if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE) {
+		if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE
+		    || jPtr->qPtr->qAttrib & Q_ATTRIB_OWNERSHIP) {
 		    if (logclass & LC_FAIR) {
 			ls_syslog(LOG_INFO, "\
 %s: user %s job %s queue %s jref %p job %p", __func__, jPtr->userName,

@@ -57,7 +57,14 @@ fs_update_sacct(struct qData *qPtr,
     struct share_acct *sacct;
     int numRAN;
 
-    t = qPtr->fsSched->tree;
+    t = NULL;
+    if (qPtr->fsSched)
+	t = qPtr->fsSched->tree;
+    else if (qPtr->own_sched)
+	t = qPtr->own_sched->tree;
+
+    if (t == NULL)
+	return -1;
 
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
@@ -110,6 +117,7 @@ fs_elect_job(struct qData *qPtr,
              LIST_T *jRefList,
              struct jRef **jRef)
 {
+    struct tree_ *t;
     struct tree_node_ *n;
     struct share_acct *s;
     link_t *l;
@@ -122,7 +130,16 @@ fs_elect_job(struct qData *qPtr,
     int count;
     int found;
 
-    l = qPtr->fsSched->tree->leafs;
+    t = NULL;
+    if (qPtr->fsSched)
+	t = qPtr->fsSched->tree;
+    else if (qPtr->own_sched)
+	t = qPtr->own_sched->tree;
+
+    if (t == NULL)
+	return -1;
+
+    l = t->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
         *jRef = NULL;
         return -1;
