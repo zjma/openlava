@@ -6905,6 +6905,8 @@ host_base_name(const char *name)
     char *hname;
     char buf[MAXHOSTNAMELEN];
     char name2[MAXHOSTNAMELEN];
+    char *p;
+    char *p0;
     int i;
     int n;
     int N;
@@ -6919,19 +6921,26 @@ host_base_name(const char *name)
 	return NULL;
     }
 
-    basename = strdup(name);
+    p0 = basename = strdup(name);
 
-    for (i = 0; basename[i] != 0; i++) {
-	if (basename[i] == '['
-	    || basename[i] == ']'
-	    || basename[i] == '-')
-	    basename[i] = ' ';
+    /* get the hostname
+     */
+    p = strchr(basename, '[');
+    *p = 0;
+    ++p;
+    strcpy(name2, basename);
+
+    for (i = 0; p[i] != 0; i++) {
+	if (p[i] == ']'
+	    || p[i] == '-')
+	    p[i] = ' ';
     }
 
-    cc = sscanf(basename, "%s%d%d", name2, &n, &N);
-    if (cc != 3) {
+    cc = sscanf(p, "%d%d", &n, &N);
+    if (cc != 2) {
 	ls_syslog(LOG_ERR, "\
 %s: unrecognized format %s of host base name", __func__, name);
+	free(p0);
 	return NULL;
     }
 
@@ -6941,7 +6950,7 @@ host_base_name(const char *name)
 	hname = strdup(buf);
 	enqueue_link(l, hname);
     }
-    free(basename);
+    free(p0);
 
     return l;
 }
