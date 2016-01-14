@@ -253,13 +253,13 @@ sshare_distribute_own_slots(struct tree_ *t,
     /* only after sort get the first child
      */
     n = t->root->child;
-znovu:
+    first = 0;
 
+znovu:
     /* Iterate at each tree level but
      * don't traverse branches without
      * tokens.
      */
-    first = 0;
     while (n) {
 
         sacct = n->data;
