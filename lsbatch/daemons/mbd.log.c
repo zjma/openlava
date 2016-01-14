@@ -2097,6 +2097,11 @@ openEventFile(const char *fname)
     long pos;
     sigset_t newmask, oldmask;
 
+    /* init_log() has not been called yet.
+     */
+    if (elogFname[0] == 0)
+	return -1;
+
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
