@@ -3663,6 +3663,7 @@ sort_queues(void)
     v = calloc(n, sizeof(struct qData *));
     l = (LIST_T *)qDataList;
 
+    i = 0;
     while ((qPtr = (struct qData *)listPop(l))) {
         v[i] = qPtr;
         ++i;
