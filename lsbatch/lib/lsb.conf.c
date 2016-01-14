@@ -185,6 +185,8 @@ static int expandWordAll(int*, int*, struct inNames**, char*);
 static int readHvalues_conf(struct keymap *, char *, struct lsConf *,
 			    char *, int *, int, char *);
 static link_t *host_base_name(const char *);
+static int parse_ownership(struct queueInfoEnt *,
+			   const char *);
 
 static int
 readHvalues_conf(struct keymap *keyList, char *linep, struct lsConf *conf,
@@ -4659,18 +4661,28 @@ do_Queues(struct lsConf *conf,
         }
 
         if (keylist[QKEY_FAIRSHARE].val != NULL) {
-            if (strcasestr(keylist[QKEY_FAIRSHARE].val, "USER_SHARES")) {
-                queue.fairshare = strdup(keylist[QKEY_FAIRSHARE].val);
-            } else  {
-                ls_syslog(LOG_ERR, "\
-%s: unsupported FAIRSHARE %s key, ignored",
-                          __func__,keylist[QKEY_FAIRSHARE].val);
+
+	    if (keylist[QKEY_OWNERSHIP].val != NULL) {
+		ls_syslog(LOG_ERR, "\
+%s: FAIRSHARE and OWNERSHIP cannot be specified together in %s at line %d",
+			  __func__, fname, *lineNum);
+		FREEUP(queue.fairshare);
+		FREEUP(queue.ownership);
                 lsberrno = LSBE_CONF_WARNING;
-                freekeyval(keylist);
-                freeQueueInfo(&queue);
-                return FALSE;
-            }
-        }
+	    } else {
+		if (strcasestr(keylist[QKEY_FAIRSHARE].val, "USER_SHARES")) {
+		    queue.fairshare = strdup(keylist[QKEY_FAIRSHARE].val);
+		} else  {
+		    ls_syslog(LOG_ERR, "\
+%s: unsupported FAIRSHARE %s key, ignored",
+			      __func__,keylist[QKEY_FAIRSHARE].val);
+		    lsberrno = LSBE_CONF_WARNING;
+		    freekeyval(keylist);
+		    freeQueueInfo(&queue);
+		    return FALSE;
+		}
+	    }
+	}
 
         if (keylist[QKEY_PREEMPTION].val != NULL) {
             if (strcasestr(keylist[QKEY_PREEMPTION].val, "PREEMPTIVE")) {
@@ -4694,19 +4706,33 @@ do_Queues(struct lsConf *conf,
 	/* Support slot ownership in queue
 	 */
         if (keylist[QKEY_OWNERSHIP].val != NULL) {
-            if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USER_GUARANTEE")) {
-                queue.ownership = strdup(keylist[QKEY_OWNERSHIP].val);
-            } else  {
-                ls_syslog(LOG_ERR, "\
-%s: unsupported OWNERSHIP %s key, ignored",
-                          __func__,keylist[QKEY_OWNERSHIP].val);
-                lsberrno = LSBE_CONF_WARNING;
-                freekeyval(keylist);
-                freeQueueInfo(&queue);
-                return FALSE;
-            }
-        }
 
+	    if (keylist[QKEY_FAIRSHARE].val != NULL) {
+		ls_syslog(LOG_ERR, "\
+%s: FAIRSHARE and OWNERSHIP cannot be specified together in %s at line %d",
+			  __func__, fname, *lineNum);
+		lsberrno = LSBE_CONF_WARNING;
+		FREEUP(queue.fairshare);
+		FREEUP(queue.ownership);
+	    } else {
+		if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USERS")) {
+		    if (parse_ownership(&queue, keylist[QKEY_OWNERSHIP].val) < 0) {
+			ls_syslog(LOG_ERR, "\
+%s: failed parsing %s file %s at line, ignoring the keyword", __func__,
+				  keylist[QKEY_OWNERSHIP].val, fname, *lineNum);
+			lsberrno = LSBE_CONF_WARNING;
+			FREEUP(queue.ownership);
+		    }
+		} else  {
+		    ls_syslog(LOG_ERR, "\
+%s: unsupported OWNERSHIP %s key, file %s at line %d inignored",
+			      __func__,keylist[QKEY_OWNERSHIP].val,
+			      fname, *lineNum);
+		    lsberrno = LSBE_CONF_WARNING;
+		    FREEUP(queue.ownership);
+		}
+	    }
+	}
 	/* Reserve slots and memory
 	 */
 	if (keylist[QKEY_SLOT_MEMORY_RESERVE].val != NULL) {
@@ -4821,7 +4847,7 @@ freeQueueInfo(struct queueInfoEnt *qp)
     FREEUP(qp->resumeActCmd);
     FREEUP(qp->terminateActCmd);
     FREEUP(qp->fairshare);
-    _free_(qp->ownership);
+    FREEUP(qp->ownership);
 }
 
 char
@@ -6953,4 +6979,44 @@ host_base_name(const char *name)
     free(p0);
 
     return l;
+}
+
+/* parse_ownership()
+ *
+ * USERS[[G1, 20] [G2, 10]] LOAN_DURATION[31]
+ *
+ */
+static int
+parse_ownership(struct queueInfoEnt *queue,
+		const char *val)
+{
+    char *l;
+    char *p;
+
+    p = strdup(val);
+
+    /* first check for loan_duration
+     */
+    l = strstr(p, "LOAN_DURATION");
+    if (l) {
+	char *b;
+	char *b2;
+
+	*l = 0;
+	++l;
+	b = strchr(l,'[');
+	if (b == NULL)
+	    return -1;
+	b2 = strchr(l, ']');
+	if (b2 == NULL)
+	    return -1;
+	*b = 0;
+	++b;
+	*b2 = 0;
+	queue->loan_duration = atoi(b);
+    }
+
+    queue->ownership = p;
+
+    return 0;
 }

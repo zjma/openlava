@@ -146,6 +146,7 @@ static void check_same_priority_queues(void);
 static int init_preemption_scheduler(void);
 static int load_preempt_plugin(struct qData *);
 static int init_ownership_scheduler(void);
+static int get_ownership_policy_slots(struct qData *);
 
 int
 minit(int mbdInitFlags)
@@ -2306,6 +2307,7 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
 	     */
 	    qPtr->ownership = strdup(queue->ownership);
 	    qPtr->qAttrib |= Q_ATTRIB_OWNERSHIP;
+	    qPtr->loan_duration = queue->loan_duration;
 	}
     }
 
@@ -3868,9 +3870,36 @@ init_ownership_scheduler(void)
 	    return -1;
 	}
 
-        qPtr->num_owned_slots = getQueueSlots(qPtr);
+        qPtr->num_owned_slots = get_ownership_policy_slots(qPtr);
         (*qPtr->own_sched->fs_init_own_sched_session)(qPtr);
     }
 
     return 0;
+}
+
+/* get_ownership_policy_slots()
+ *
+ * Traverse the first level of the tree and sum
+ * up the slots the policy has.
+ */
+static int
+get_ownership_policy_slots(struct qData *qPtr)
+{
+    struct tree_node_ *n;
+    struct share_acct *s;
+    int num;
+
+    n = qPtr->own_sched->tree->root->child;
+
+    num = 0;
+    while (n) {
+	s = n->data;
+	/* We have not scheduled yet, which means we
+	 * have not moved the shares to sent.
+	 */
+	num = num + s->shares;
+	n = n->right;
+    }
+
+    return num;
 }

@@ -541,16 +541,17 @@ struct qData {
     char   *chkpntDir;
     int    minProcLimit;
     int    defProcLimit;
-    char   *fairshare;
-    uint32_t numFairSlots;
-    struct fair_sched *fsSched;
-    struct jData *lastJob;
-    char *preemption;
-    link_t *preemptable;
-    struct prm_sched *prmSched;
-    char *ownership;
-    uint32_t num_owned_slots;
-    struct fair_sched *own_sched;
+    char   *fairshare;            /* fairshare description */
+    uint32_t numFairSlots;        /* total number of slots to fairshare */
+    struct fair_sched *fsSched;   /* fairshare scheduler interface */
+    struct jData *lastJob;        /* queue's last job */
+    char *preemption;             /* preemption description */
+    link_t *preemptable;          /* list of preemtable queues */
+    struct prm_sched *prmSched;   /* preemption scheduler interface */
+    char *ownership;              /* ownership description */
+    uint32_t num_owned_slots;     /* number of owned slots */
+    struct fair_sched *own_sched; /* ownership scheduler interface */
+    uint32_t loan_duration;       /* resource loan max duration */
 };
 
 #define HOST_STAT_REMOTE       0x80000000

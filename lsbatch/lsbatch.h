@@ -764,11 +764,12 @@ struct queueInfoEnt {
     int    defProcLimit;
     char   *fairshare;
     int    numAccts;
-    uint32_t numFairSlots;
-    struct share_acct **saccts;
+    uint32_t numFairSlots;      /* number of share accounts */
+    struct share_acct **saccts; /* array of share accts */
     char *preemption;
-    char *ownership;
-    uint32_t num_owned_slots;
+    char *ownership;          /* queue slots ownership */
+    uint32_t loan_duration;   /* loan resources duration */
+    uint32_t num_owned_slots; /* number of owned slots */
 };
 
 #define ACT_NO              0

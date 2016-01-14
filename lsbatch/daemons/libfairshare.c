@@ -391,6 +391,7 @@ fs_own_init(struct qData *qPtr, struct userConf *uConf)
 %s: queues %s failed to ownership configuration, ownership disabled",
                   __func__, qPtr->queue);
         _free_(qPtr->ownership);
+	qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
         return -1;
     }
 
