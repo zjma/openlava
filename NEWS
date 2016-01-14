@@ -25,8 +25,8 @@ Release notes for OpenLava versions
    compact form, i.e. ol[1-3] the mbatchd will expand example this into 3
    hosts ol1, ol2, ol3.
 -- Allow OpenLava to use cores as cpus regardless is the machines has
-   hyperthreads or not. To enable this behaviour set the variable LIM_CPU_CORES
-   in lsf.conf.
+   hyperthreads or not. To enable this behaviour set the variable
+   LIM_DEFINE_NCPUS=cores|threads in lsf.conf. Default is threads.
 
 3.1.1
 =====

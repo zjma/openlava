@@ -59,7 +59,8 @@ numCPUs(void)
     /* Some customers want to use physical cores ignoring
      * hyperthreads.
      */
-    if (limParams[LIM_CPU_CORES].paramValue) {
+    if (limParams[LIM_DEFINE_NCPUS].paramValue
+	&& strcasecmp(limParams[LIM_DEFINE_NCPUS].paramValue, "cores") == 0) {
 	numcores = get_core_count();
 	if (numcpus > numcores) {
 	    numcpus = numcores;

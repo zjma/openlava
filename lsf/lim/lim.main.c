@@ -80,7 +80,7 @@ struct config_param limParams[] =
     {"LSB_SHAREDIR", NULL},
     {"LIM_NO_MIGRANT_HOSTS", NULL},
     {"LIM_DONT_FORK", NULL},
-    {"LIM_CPU_CORES", NULL},
+    {"LIM_DEFINE_NCPUS", NULL},
     {NULL, NULL},
 };
 
