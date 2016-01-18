@@ -280,10 +280,14 @@ znovu:
 	/* Enforce the ownership/guarantee at the
 	 * first level of the tree.
 	 */
-	if (first == 0)
-	    sacct->sent = sacct->shares;
-	else
+	if (first == 0) {
+	    if (sacct->numRUN > sacct->shares)
+		sacct->sent = 0;
+	    else
+		sacct->sent = sacct->shares - sacct->numRUN;
+	} else {
 	    avail = avail - compute_slots(n, slots, avail);
+	}
 
         assert(avail >= 0);
         /* As we traverse in priority order

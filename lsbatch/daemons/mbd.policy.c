@@ -329,6 +329,8 @@ static void empty_udata_jref(struct uData *);
 static void reserve_memory(struct jData *);
 static void free_reserve_memory(struct jData *);
 static void handle_reserve_memory(struct jData *, int);
+static struct jData *jiter_next_job2(LIST_T *);
+static bool_t run_time_ok(struct jData *);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -4187,6 +4189,7 @@ scheduleAndDispatchJobs(void)
     struct jRef *jR;
     struct jData *jPtr;
     int count;
+    bool_t has_ownership;
 
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
@@ -4402,6 +4405,7 @@ scheduleAndDispatchJobs(void)
         return -1;
     }
 
+    has_ownership = false;
     if (!(mSchedStage & M_STAGE_QUE_CAND)) {
 	int num;
 
@@ -4426,6 +4430,7 @@ scheduleAndDispatchJobs(void)
             }
 	    if (qp->own_sched) {
 		(*qp->own_sched->fs_init_own_sched_session)(qp);
+		has_ownership = true;
 	    }
 
         }
@@ -4483,6 +4488,25 @@ scheduleAndDispatchJobs(void)
             RESET_CNT();
             return -1;
         }
+    }
+
+    if (has_ownership) {
+	/* Run the feedback loop.
+	 */
+	for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
+
+	    if (qp->numPEND == 0 && qp->numRESERVE == 0)
+		continue;
+	    if (!qp->own_sched)
+		continue;
+	    if (qp->own_sched) {
+		(*qp->own_sched->fs_init_sched_session)(qp);
+	    }
+	    while ((jPtr = jiter_next_job2(jRefList))) {
+		TIMEVAL(0, scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
+		dispatchAJob0(jPtr, false);
+	    }
+	}
     }
 
     if (logclass & LC_SCHED) {
@@ -4552,7 +4576,6 @@ jiter_fin(LIST_T *jRefList)
         free(jR);
         jR = jR0;
     }
-
 }
 
 /* jiter_next_job()
@@ -4671,6 +4694,55 @@ jiter_next_job(LIST_T *jRefList)
         }
 
     } /* for (jRef = jRefList->back; ...;...) */
+
+    return NULL;
+}
+
+/* jiter_next_job2()
+ */
+static struct jData *
+jiter_next_job2(LIST_T *jRefList)
+{
+    struct jRef *jR;
+    struct jRef *jR0;
+    struct jData *jPtr0;
+    struct jData *jPtr;
+
+    jR0 = NULL;
+
+    for (jR = (struct jRef *)jRefList->back;
+         jR != (void *)jRefList;
+         jR = (struct jRef *)jR->back) {
+
+        /* Get the highest priority job
+         */
+        jPtr = jR->job;
+        assert(jPtr->uPtr->numPEND > 0);
+
+        if (jPtr->qPtr->qAttrib & Q_ATTRIB_OWNERSHIP) {
+            struct qData *qPtr = jPtr->qPtr;
+            (*qPtr->own_sched->fs_elect_job)(qPtr,
+					     jRefList,
+					     &jR0);
+            if (jR0) {
+                listRemoveEntry(jRefList,
+                                (LIST_ENTRY_T *)jR0);
+                jPtr0 = jR0->job;
+                free(jR0);
+		if (! run_time_ok(jPtr)) {
+		    jPtr->newReason = PEND_SYS_UNABLE;
+		    continue;
+		}
+                return jPtr0;
+            }
+            /* No more jobs from this fairshare queue
+             * so finalize the local plugin data for this
+             * session.
+             */
+            (*qPtr->own_sched->fs_fin_sched_session)(qPtr);
+            continue;
+        }
+    }
 
     return NULL;
 }
@@ -7075,4 +7147,30 @@ free_reserve_memory(struct jData *jPtr)
 	return;
 
     handle_reserve_memory(jPtr, -1);
+}
+
+/* run_time_ok()
+ *
+ * Check if the job in the ownership queue
+ * has a runtime shorter than the loan period.
+ */
+static bool_t
+run_time_ok(struct jData *jPtr)
+{
+    uint32_t loan;
+
+    loan = jPtr->qPtr->loan_duration;
+    /* If loan duration is not set don't loan
+     * anything
+     */
+    if (loan == 0)
+	return false;
+
+    if (jPtr->shared->jobBill.rLimits[LSF_RLIMIT_RUN] == -1)
+	return false;
+
+    if (jPtr->shared->jobBill.rLimits[LSF_RLIMIT_RUN] > loan)
+	return false;
+
+    return true;
 }
