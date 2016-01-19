@@ -26,6 +26,7 @@ Release notes for OpenLava versions
 -- Allow OpenLava to use cores as cpus regardless is the machines has
    hyperthreads or not. To enable this behaviour set the variable
    LIM_DEFINE_NCPUS=cores|threads in lsf.conf. Default is threads.
+-- Fix bsub bug in which if user specify -n min,max the max was ignored.
 
 3.1.2
 =====

@@ -97,6 +97,7 @@ static void postSubMsg(struct submit *, LS_LONG_INT, struct submitReply *);
 static int readOptFile(char *, char *);
 static const LSB_SPOOL_INFO_T * chUserCopySpoolFile(const char *,
                                                     spoolOptions_t);
+static int parse_num_slots(const char *, int *, int *);
 
 LS_LONG_INT
 lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
@@ -3066,7 +3067,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
                     break;
 
-                if (getValPair (&optarg, &v1, &v2) < 0) {
+                if (parse_num_slots(optarg, &v1, &v2) < 0) {
                     PRINT_ERRMSG0(errMsg, _i18n_msg_get(ls_catd,NL_SETN,414,
                                                         "Bad argument for option -n")); /* catgets 414 */
                     return -1;
@@ -5113,4 +5114,31 @@ static void trimSpaces(char *str)
         *ptr = '\0';
         ptr--;
     }
+}
+
+/* parse_num_slots()
+ */
+static int
+parse_num_slots(const char *arg, int *x, int *y)
+{
+    char *p;
+    char *p0;
+    char *c;
+
+    *x = *y = INFINIT_INT;
+    p0 = p = strdup(arg);
+
+    c = strchr(p, ',');
+    if (c == NULL) {
+       *x = atoi(p);
+       _free_(p0);
+       return 0;
+    }
+
+    *c = 0;
+    ++c;
+    *x = atoi(p);
+    *y = atoi(c);
+    _free_(p0);
+    return 0;
 }
