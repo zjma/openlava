@@ -735,7 +735,7 @@ jobId64To32(LS_LONG_INT interJobId, int *jobId, int *jobArrElemId)
 }
 
 void
-jobId32To64(LS_LONG_INT* interJobId, int jobId, int jobArrElemId)
+jobId32To64(LS_LONG_INT *interJobId, int jobId, int jobArrElemId)
 {
     *interJobId =  LSB_JOBID(jobId, jobArrElemId) ;
 }

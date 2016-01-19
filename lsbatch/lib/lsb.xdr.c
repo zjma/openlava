@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1956,6 +1956,32 @@ xdr_lsbMsg(XDR *xdrs,
 
     if (! xdr_wrapstring(xdrs, &m->msg))
         return false;
+
+    return true;
+}
+
+bool_t xdr_resizeJob(XDR *xdrs,
+		     struct resizeJobReq *rs,
+		     struct LSFHeader *hdr)
+{
+    int jobid;
+    int elem;
+
+    if (xdrs->x_op == XDR_ENCODE)
+        jobId64To32(rs->jobid, &jobid, &elem);
+
+    if (! xdr_int(xdrs, &jobid)
+	|| ! xdr_int(xdrs, &elem))
+        return false;
+
+    if (! xdr_int(xdrs, &rs->slots)
+	|| ! xdr_wrapstring(xdrs, &rs->hslots)
+	|| ! xdr_wrapstring(xdrs, &rs->cmd)
+	|| ! xdr_int(xdrs, (int *)&rs->opcode))
+	return false;
+
+    if (xdrs->x_op == XDR_DECODE)
+        jobId32To64(&rs->jobid, jobid, elem);
 
     return true;
 }

@@ -17,33 +17,58 @@
  *
  */
 
+/* bresize -a -n 6 -c "/x/y/z" 101
+ * bresize -a -H "1:ha" -c "/x/y/z" 101
+ * bresize -r -N "6:ha 3:hb" -c "/x/y/z" 101
+ * bresize -r -n 3 -c "/x/y/z" 101
+ */
+
 #include "cmd.h"
 
-static void print_messages(LS_LONG_INT, struct lsbMsg *, int);
 void
 usage(void)
 {
-    fprintf(stderr, "usage: bread [-V] [-h] jobID\n");
+    fprintf(stderr, "\
+usage: bresize [-V] [-h] -a|-r -n num_slots -H \"x:ha y:hb\" \
+-c \"/path/to/callback/cmd\", jobID\n");
 }
 
 int
 main(int argc, char **argv)
 {
     int cc;
-    int num;
+    int slots;
+    int opcode;
     LS_LONG_INT *jobIDs;
-    struct lsbMsg *msg;
+    char *hslots;
+    char *cmd;
 
     if (lsb_init(argv[0]) < 0) {
 	lsb_perror("lsb_init");
 	return -1;
     }
 
+    opcode = -1;
+    slots = 0;
+    hslots = cmd = NULL;
+
     while ((cc = getopt(argc, argv, "Vhd:")) != EOF) {
         switch (cc) {
             case 'V':
                 fputs(_LS_VERSION_, stderr);
                 return -1;
+	    case 'a':
+		opcode = JOB_RESIZE_ADD;
+		break;
+	    case 'r':
+		opcode = JOB_RESIZE_RELEASE;
+		break;
+	    case 'H':
+		hslots = strdup(optarg);
+		break;
+	    case 'c':
+		cmd = strdup(optarg);
+		break;
             case 'h':
                 usage();
                 return -1;
@@ -53,43 +78,25 @@ main(int argc, char **argv)
         }
     }
 
-    num = getJobIds(argc,
-                    argv,
-                    NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    &jobIDs,
-                    0);
+    cc = getJobIds(argc,
+		   argv,
+		   NULL,
+		   NULL,
+		   NULL,
+		   NULL,
+		   &jobIDs,
+		   0);
 
-    msg = lsb_readjobmsg(jobIDs[0], &num);
-    if (msg == NULL) {
-        if (lsberrno == LSBE_NO_ERROR) {
-            printf("\
-Job %s has no posted messages\n", lsb_jobid2str(jobIDs[0]));
-            return 0;
-        }
-        lsb_perror("lsb_getmsgjob()");
+    cc = lsb_resizejob(jobIDs[0], slots, hslots, cmd, opcode);
+    if (cc < 0) {
+        lsb_perror("lsb_resizejob()");
         return -1;
     }
 
-    print_messages(jobIDs[0], msg, num);
+    printf("Job %s is being resized.\n", lsb_jobid2str(jobIDs[0]));
+
+    _free_(hslots);
+    _free_(cmd);
 
     return 0;
-}
-
-static void
-print_messages(LS_LONG_INT jobID, struct lsbMsg *msg, int num)
-{
-    int cc;
-
-    /* JOBID     POST_TIME
-     * 1234567890123456789
-     * - jack bubu mortacci tua
-     */
-    printf("Messages posted to jobID %s\n", lsb_jobid2str(jobID));
-    for (cc = 0; cc < num; cc++) {
-        printf("POST_TIME: %s MESSAGE: %s\n",
-               ls_time(msg->t), msg[cc].msg);
-    }
 }

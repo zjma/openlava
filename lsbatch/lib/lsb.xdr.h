@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -18,7 +18,9 @@
  *
  */
 
+#if !defined(_LSB_XDR_)
 
+#define _LSB_XDR_
 #include <stdio.h>
 #include <rpc/types.h>
 #include <rpc/xdr.h>
@@ -159,3 +161,8 @@ extern bool_t xdr_shareAcct(XDR *,
 extern bool_t xdr_jobID(XDR *,
                         LS_LONG_INT *,
                         struct LSFHeader *);
+extern bool_t xdr_resizeJob(XDR *,
+			    struct resizeJobReq *,
+			    struct LSFHeader *);
+
+#endif

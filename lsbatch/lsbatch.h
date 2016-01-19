@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1412,6 +1412,20 @@ struct queueConf {
     struct queueInfoEnt *queues;
 };
 
+/* Operation for resizable job
+ */
+typedef enum {
+    JOB_RESIZE_ADD,
+    JOB_RESIZE_RELEASE
+}jresize_t;
+
+struct resizeJobReq {
+    LS_LONG_INT jobid;  /* what job to resize */
+    int slots;          /* number of slots to add or release */
+    char *hslots;       /* host slots "1:ha 2:hb" */
+    char *cmd;          /* callback command to run upon resize */
+    jresize_t opcode;   /* JOB_RESIZE_ADD or JOB_RESIZE_RELEASE */
+};
 
 #define  IS_PEND(s)  (((s) & JOB_STAT_PEND) || ((s) & JOB_STAT_PSUSP))
 
@@ -1490,18 +1504,20 @@ extern void lsb_perror(char *);
 extern char *lsb_sperror(char *);
 extern char *lsb_peekjob(LS_LONG_INT);
 
-extern int lsb_mig(struct submig *, int *badHostIdx);
+extern int lsb_mig(struct submig *, int *);
 
 extern struct hostInfoEnt *lsb_hostinfo( char **, int *);
 extern struct hostInfoEnt *lsb_hostinfo_ex( char **, int *, char *, int);
-extern int lsb_movejob(LS_LONG_INT jobId, int *, int);
-extern int lsb_switchjob(LS_LONG_INT jobId, char *queue);
+extern int lsb_movejob(LS_LONG_INT, int *, int);
+extern int lsb_switchjob(LS_LONG_INT, char *);
 extern int lsb_queuecontrol(char *, int);
 extern struct userInfoEnt *lsb_userinfo( char **, int *);
 extern struct groupInfoEnt *lsb_hostgrpinfo(char**, int *, int);
 extern struct groupInfoEnt *lsb_usergrpinfo(char **, int *, int);
 extern struct parameterInfo *lsb_parameterinfo(char **, int *, int);
-extern LS_LONG_INT lsb_modify(struct submit *, struct submitReply *, LS_LONG_INT);
+extern LS_LONG_INT lsb_modify(struct submit *,
+			      struct submitReply *,
+			      LS_LONG_INT);
 extern float * getCpuFactor(char *, int);
 extern char *lsb_suspreason(int, int, struct loadIndexLog *);
 extern char *lsb_pendreason(int, int *, struct jobInfoHead *,
@@ -1546,5 +1562,7 @@ int getMinSortIntList(struct sortIntList *, int *);
 int getMaxSortIntList(struct sortIntList *, int *);
 int getTotalSortIntList(struct sortIntList *);
 int updateJobIdIndexFile (char *, char *, int);
+
+int lsb_resizejob(LS_LONG_INT, int, char *, char *, jresize_t);
 
 #endif

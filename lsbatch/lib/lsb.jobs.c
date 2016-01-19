@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -525,4 +525,69 @@ lsb_jobidinstr(LS_LONG_INT jobId)
 
     sprintf(string, LS_LONG_FORMAT, jobId);
     return string;
+}
+
+/* lsb_resizejob()
+ */
+int
+lsb_resizejob(LS_LONG_INT jobid,
+	      int slots,
+	      char *hslots,
+	      char *cmd,
+	      jresize_t op)
+{
+    XDR xdrs;
+    struct LSFHeader hdr;
+    char request_buf[MSGSIZE/8];
+    struct lsfAuth auth;
+    int cc;
+    struct resizeJobReq rs;
+
+    if (authTicketTokens_(&auth, NULL) == -1) {
+        lsberrno = LSBE_BAD_USER;
+        return -1;
+    }
+
+    rs.jobid = jobid;
+    rs.slots = slots;
+    rs.hslots = hslots;
+    rs.cmd = cmd;
+    rs.opcode = op;
+
+    initLSFHeader_(&hdr);
+    hdr.opCode = BATCH_RESIZE_JOB;
+
+    xdrmem_create(&xdrs, request_buf, sizeof(request_buf), XDR_ENCODE);
+
+    if (! xdr_encodeMsg(&xdrs,
+                        (char *)&rs,
+                        &hdr,
+                        xdr_resizeJob,
+                        0,
+                        &auth)) {
+        xdr_destroy(&xdrs);
+        lsberrno = LSBE_XDR;
+        return -1;
+    }
+
+    cc = callmbd(NULL,
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 NULL,
+		 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
+    if (cc < 0) {
+	xdr_destroy(&xdrs);
+        lsberrno = LSBE_PROTOCOL;
+	return -1;
+    }
+    xdr_destroy(&xdrs);
+
+    lsberrno = hdr.opCode;
+    if (lsberrno == LSBE_NO_ERROR)
+	return lsberrno;
+
+    return -1;
 }
