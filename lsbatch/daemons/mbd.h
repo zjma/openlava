@@ -1122,13 +1122,14 @@ extern int                  do_jobPeekReq(XDR *, int, struct sockaddr_in *,
                                           struct lsfAuth *);
 extern int                  do_jobInfoReq(XDR *, int, struct sockaddr_in *,
                                           struct LSFHeader *, int);
-extern int                  do_queueInfoReq(XDR *, int, struct sockaddr_in *,
+extern int                  do_queueInfoReq(XDR *, int,
+					    struct sockaddr_in *,
                                             struct LSFHeader *);
-extern int                  do_debugReq(XDR * xdrs, int chfd,
-                                        struct sockaddr_in * from,
-                                        char *hostName,
-                                        struct LSFHeader * reqHdr,
-                                        struct lsfAuth * auth);
+extern int                  do_debugReq(XDR *, int,
+                                        struct sockaddr_in *,
+                                        char *,
+                                        struct LSFHeader *,
+                                        struct lsfAuth *);
 extern int                  do_groupInfoReq(XDR *, int, struct sockaddr_in *,
                                             struct LSFHeader *);
 extern int                  do_queueControlReq(XDR *, int,
@@ -1140,7 +1141,8 @@ extern int                  do_reconfigReq(XDR *, int, struct sockaddr_in *,
 extern int                  do_restartReq(XDR *, int, struct sockaddr_in *,
                                           struct LSFHeader *);
 extern int                  do_hostControlReq(XDR *, int,
-                                              struct sockaddr_in *, char *,
+                                              struct sockaddr_in *,
+					      char *,
                                               struct LSFHeader *,
                                               struct lsfAuth *);
 extern int                  do_jobMoveReq(XDR *, int, struct sockaddr_in *,
@@ -1170,6 +1172,13 @@ extern int                   do_runJobReq(XDR *,
                                          struct sockaddr_in *,
                                          struct lsfAuth *,
                                          struct LSFHeader   *);
+extern int                   do_resizeJob(XDR *,
+					  int,
+					  struct sockaddr_in *,
+					  char *,
+					  struct LSFHeader *,
+					  struct lsfAuth *);
+
 extern int                  getQUsable (struct qData *);
 extern void                 allocateRemote(struct jData *, int);
 extern void                 setExecHostsAcceptInterval(struct jData *);
@@ -1317,14 +1326,15 @@ extern int                  stripJobStarter(char *, int *, char *);
 
 extern sbdReplyType         start_job(struct jData *, struct qData *,
                                       struct jobReply *);
-extern sbdReplyType         signal_job(struct jData *jobPtr, struct jobSig *,
-                                       struct jobReply *jobReply);
-extern sbdReplyType         switch_job(struct jData *, int options);
+extern sbdReplyType         signal_job(struct jData *,
+				       struct jobSig *,
+                                       struct jobReply *);
+extern sbdReplyType         switch_job(struct jData *, int);
 extern sbdReplyType         msg_job(struct jData *, struct Buffer *,
                                     struct jobReply *);
-extern sbdReplyType         probe_slave(struct hData *, char sendJobs);
-extern sbdReplyType         rebootSbd(char *host);
-extern sbdReplyType         shutdownSbd(char *host);
+extern sbdReplyType         probe_slave(struct hData *, char);
+extern sbdReplyType         rebootSbd(char *);
+extern sbdReplyType         shutdownSbd(char *);
 extern struct dptNode       *parseDepCond(char *, struct lsfAuth * ,
                                           int *, char **,int *, int);
 extern int                  evalDepCond (struct dptNode *, struct jData *);

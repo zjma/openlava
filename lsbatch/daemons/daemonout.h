@@ -68,7 +68,7 @@ typedef enum {
     BATCH_UNUSED_39      = 39,
     BATCH_STATUS_CHUNK   = 40,
     BATCH_JOBMSG_INFO,
-    BATCH_RESIZE_JOB,
+    BATCH_JOB_RESIZE,
     BATCH_SET_JOB_ATTR   = 90,
     READY_FOR_OP         = 1023,
     PREPARE_FOR_OP       = 1024

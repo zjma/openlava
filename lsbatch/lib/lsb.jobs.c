@@ -539,9 +539,22 @@ lsb_resizejob(LS_LONG_INT jobid,
     XDR xdrs;
     struct LSFHeader hdr;
     char request_buf[MSGSIZE/8];
+    char *repbuf;
     struct lsfAuth auth;
     int cc;
     struct resizeJobReq rs;
+
+    if (cmd == NULL
+	|| jobid <= 0) {
+	lsberrno = LSBE_BAD_ARG;
+	return -1;
+    }
+
+    if (op != JOB_RESIZE_ADD
+	&& op != JOB_RESIZE_RELEASE) {
+	lsberrno = LSBE_BAD_ARG;
+	return -1;
+    }
 
     if (authTicketTokens_(&auth, NULL) == -1) {
         lsberrno = LSBE_BAD_USER;
@@ -550,12 +563,15 @@ lsb_resizejob(LS_LONG_INT jobid,
 
     rs.jobid = jobid;
     rs.slots = slots;
-    rs.hslots = hslots;
+    if (rs.hslots == NULL)
+	rs.hslots = "";
+    else
+	rs.hslots = hslots;
     rs.cmd = cmd;
     rs.opcode = op;
 
     initLSFHeader_(&hdr);
-    hdr.opCode = BATCH_RESIZE_JOB;
+    hdr.opCode = BATCH_JOB_RESIZE;
 
     xdrmem_create(&xdrs, request_buf, sizeof(request_buf), XDR_ENCODE);
 
@@ -573,7 +589,7 @@ lsb_resizejob(LS_LONG_INT jobid,
     cc = callmbd(NULL,
                  request_buf,
                  XDR_GETPOS(&xdrs),
-                 NULL,
+                 &repbuf,
 		 &hdr,
                  NULL,
                  NULL,

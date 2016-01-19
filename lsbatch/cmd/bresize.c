@@ -52,7 +52,7 @@ main(int argc, char **argv)
     slots = 0;
     hslots = cmd = NULL;
 
-    while ((cc = getopt(argc, argv, "Vhd:")) != EOF) {
+    while ((cc = getopt(argc, argv, "Vharn:N:c:")) != EOF) {
         switch (cc) {
             case 'V':
                 fputs(_LS_VERSION_, stderr);
@@ -68,6 +68,9 @@ main(int argc, char **argv)
 		break;
 	    case 'c':
 		cmd = strdup(optarg);
+		break;
+	    case 'n':
+		slots = atoi(optarg);
 		break;
             case 'h':
                 usage();

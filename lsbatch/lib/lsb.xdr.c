@@ -1974,14 +1974,14 @@ bool_t xdr_resizeJob(XDR *xdrs,
 	|| ! xdr_int(xdrs, &elem))
         return false;
 
+    if (xdrs->x_op == XDR_DECODE)
+        jobId32To64(&rs->jobid, jobid, elem);
+
     if (! xdr_int(xdrs, &rs->slots)
 	|| ! xdr_wrapstring(xdrs, &rs->hslots)
 	|| ! xdr_wrapstring(xdrs, &rs->cmd)
 	|| ! xdr_int(xdrs, (int *)&rs->opcode))
 	return false;
-
-    if (xdrs->x_op == XDR_DECODE)
-        jobId32To64(&rs->jobid, jobid, elem);
 
     return true;
 }

@@ -2049,7 +2049,6 @@ sendBack (int reply, struct submitReq *submitReq,
                   XDR_GETPOS(&xdrs2));
     xdr_destroy(&xdrs2);
     return 0;
-
 }
 
 
@@ -2897,6 +2896,99 @@ do_setJobAttr(XDR * xdrs, int s, struct sockaddr_in * from, char *hostName,
         return -1;
     }
     xdr_destroy(&xdrs2);
+    return 0;
+}
+
+/* do_resizeJob()
+ */
+int
+do_resizeJob(XDR *xdrs,
+	     int chfd,
+	     struct sockaddr_in *from,
+	     char *hostName,
+	     struct LSFHeader *reqHdr,
+	     struct lsfAuth *auth)
+{
+    char reply_buf[MSGSIZE];
+    XDR xdrs2;
+    int reply;
+    struct LSFHeader replyHdr;
+    struct jData *jPtr;
+    struct Buffer *buf;
+    struct resizeJobReq rs;
+
+    if (logclass & (LC_TRACE | LC_SIGNAL))
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
+
+    if (chanAllocBuf_(&buf, sizeof(struct LSFHeader)) < 0) {
+        ls_syslog(LOG_ERR, "%s: chanAllocBuf() failed: %m", __func__);
+        return -1;
+    }
+
+    rs.hslots = calloc(MAXLSFNAMELEN, sizeof(char));
+    rs.cmd = calloc(PATH_MAX, sizeof(char));
+    if (rs.hslots == NULL
+	|| rs.cmd == NULL) {
+	ls_syslog(LOG_ERR, "%s: calloc() failed: %m", __func__);
+	goto pryc;
+    }
+
+    if (! xdr_resizeJob(xdrs, &rs, reqHdr)) {
+	reply = LSBE_XDR;
+	ls_syslog(LOG_ERR, "%s: xdr_resizeJob() failed", __func__);
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+	goto pryc;
+    }
+
+    if ((jPtr = getJobData(rs.jobid)) == NULL) {
+        reply = LSBE_NO_JOB;
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+        goto pryc;
+    }
+
+    if (auth->uid != 0
+        && !jgrpPermitOk(auth, jPtr->jgrpNode)
+        && !isAuthQueAd(jPtr->qPtr, auth)) {
+        reply = LSBE_PERMISSION;
+        goto pryc;
+    }
+
+    reply = LSBE_NO_ERROR;
+pryc:
+
+    xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
+    initLSFHeader_(&replyHdr);
+    replyHdr.opCode = reply;
+
+    if (!xdr_encodeMsg(&xdrs2,
+                       NULL,
+                       &replyHdr,
+                       NULL,
+                       0,
+                       NULL)) {
+        ls_syslog(LOG_ERR, "%s: xdr encode failed", __func__);
+        xdr_destroy(&xdrs2);
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+        return -1;
+    }
+
+    buf->len = XDR_GETPOS(&xdrs2);
+
+    if (chanEnqueue_(chfd, buf) < 0) {
+        ls_syslog(LOG_ERR, "%s: chanEnque() failed %M", __func__);
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    _free_(rs.hslots);
+    _free_(rs.cmd);
+    xdr_destroy(&xdrs2);
+
     return 0;
 }
 
