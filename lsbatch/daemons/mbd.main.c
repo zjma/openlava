@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -21,7 +21,6 @@
 #include "mbd.h"
 #include "preempt.h"
 
-#define MBD_THREAD_MIN_STACKSIZE  512
 #define POLL_INTERVAL MAX(msleeptime/10, 1)
 char errbuf[MAXLINELEN];
 
@@ -29,7 +28,6 @@ int debug = 0;
 int lsb_CheckMode = 0;
 int lsb_CheckError = 0;
 int batchSock;
-#define MAX_THRNUM     3000
 
 time_t      lastForkTime;
 int         statusChanged = 0;
