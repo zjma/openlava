@@ -80,6 +80,11 @@ default.
 .PP
 The name of a host defined in lsf.cluster.\fIcluster_name\fR. The 
 official host name returned by \fBgethostbyname(3)\fR.
+.PP
+Host name pattern can be used. You can use square brackets with a hyphen 
+([integer1 – integer2]) to define a range of non-negative integers at 
+the end of a host name. For example, hostA[1-20] means every host of "hostA1,
+hostA2, hostA3, ..., hostA20".
 .SS host model
 .BR
 .PP

@@ -3344,3 +3344,29 @@ It is recommended that the MXJ configuration parameter for each host in the lsb.
 .PP
 .PP
 By default, SBD_BIND_CPU is set to "n", and OpenLava does not bind job processes to CPU cores.
+.SH LIM_DEFINE_NCPUS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBLIM_DEFINE_NCPUS=\fRcores | threads
+.SS Description
+.BR
+.PP
+.PP
+If defined, enables an administrator to define a value for ncpus to be the following:
+.PP
+LIM_DEFINE_NCPUS=cores
+.PP
+            ncpus=total number of cores on the host
+.PP
+LIM_DEFINE_NCPUS=threads
+.PP
+            ncpus=total number of hyperthreads on the host
+.PP
+.SS Default
+.BR
+.PP
+By default, LIM_DEFINE_NCPUS is set to "threads".
