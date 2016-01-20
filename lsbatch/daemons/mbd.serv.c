@@ -858,14 +858,14 @@ do_jobMsg(XDR *xdrs,
         ls_syslog(LOG_DEBUG1, "%s: Entering this routine ...", __func__);
 
     if (! xdr_jobID(xdrs, &jobID, hdr)) {
-        lsberrno = LSBE_XDR;
+        reply = LSBE_XDR;
         goto Reply;
     }
 
     msg = calloc(LSB_MAX_MSGSIZE, sizeof(char));
 
     if (! xdr_wrapstring(xdrs, &msg)) {
-        lsberrno = LSBE_XDR;
+        reply = LSBE_XDR;
         goto Reply;
     }
 
