@@ -534,7 +534,7 @@ static void
 print_slot_shares(struct queueInfoEnt *qp)
 {
     int i;
-    int numRUN;
+    uint32_t numRUN;
 
     numRUN = 0;
     for (i = 0; i < qp->numAccts; i++) {
@@ -543,7 +543,7 @@ print_slot_shares(struct queueInfoEnt *qp)
     }
 
     printf("\
-\nTOTAL_SLOTS: %u FREE_SLOTS: %d\n", qp->numFairSlots,
+\nTOTAL_SLOTS: %u FREE_SLOTS: %u\n", qp->numFairSlots,
            qp->numFairSlots - numRUN);
 
     printf("\
@@ -573,7 +573,7 @@ static void
 print_slot_owned(struct queueInfoEnt *qp)
 {
     int i;
-    int numRUN;
+    uint32_t numRUN;
 
     numRUN = 0;
     for (i = 0; i < qp->numAccts; i++) {
@@ -582,7 +582,7 @@ print_slot_owned(struct queueInfoEnt *qp)
     }
 
     printf("\
-\nTOTAL_SLOTS: %u FREE_SLOTS: %d\n", qp->num_owned_slots,
+\nTOTAL_SLOTS: %u FREE_SLOTS: %u\n", qp->num_owned_slots,
            qp->num_owned_slots - numRUN);
 
     printf("\
