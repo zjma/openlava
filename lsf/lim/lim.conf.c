@@ -3721,14 +3721,20 @@ addHostModel(char *model, char *arch, float factor)
     for (i = 0; i < allInfo.nModels; ++i) {
 
         if (strcmp(allInfo.hostModels[i], model) == 0) {
-            ls_syslog(LOG_ERR, "\
+	    /* If we have multiple arch definitions this
+	     * routine is invoked multiple times with the
+	     * same model however we only save the first arch.
+	     */
+            ls_syslog(LOG_DEBUG1, "\
 %s: host model %s multiply defined, ignored.", __func__, model);
             return TRUE;
         }
     }
 
     strcpy(allInfo.hostModels[allInfo.nModels], model);
-    strcpy(allInfo.hostArchs[allInfo.nModels], arch);
+    /* arch can be NULL if we just have () in arch column.
+     */
+    strcpy(allInfo.hostArchs[allInfo.nModels], arch ? arch : "");
     allInfo.cpuFactor[allInfo.nModels] = factor;
     shortInfo.hostModels[shortInfo.nModels]
         = allInfo.hostModels[allInfo.nModels];
