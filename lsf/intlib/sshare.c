@@ -46,6 +46,16 @@ static uint32_t compute_deviate(struct tree_node_ *, uint32_t, uint32_t);
 static void make_leafs(struct tree_ *);
 
 /* sshare_make_tree()
+ * In this function we match the user_shares as configured
+ * in the queue file with the groups configured in lsb.users.
+ * The fairshare configuration in the queues can be such
+ * that they don't match for example:
+ *
+ * FAIRSHARE = USER_SHARES[[crock ,2] [zebra, 1]]
+ * FAIRSHARE = USER_SHARES[[all, 1]]
+ *
+ * in these cases the shares are specified for users
+ * directly and no groups are involved.
  */
 struct tree_ *sshare_make_tree(const char *user_shares,
                                uint32_t num_grp,
@@ -66,6 +76,9 @@ struct tree_ *sshare_make_tree(const char *user_shares,
     t->root->data = make_sacct("/", 1);
     root = NULL;
 
+    /* First parse the user shares and make
+     * the first level of the tree
+     */
     l = parse_user_shares(user_shares);
 
 z:
@@ -671,7 +684,11 @@ parse_group_member(const char *gname,
     g = NULL;
     for (cc = 0; cc < num; cc++) {
 
-        if (strcmp(gname, grps[cc].group) == 0) {
+	/* Match the group name and the group
+	 * must have shares.
+	 */
+        if (strcmp(gname, grps[cc].group) == 0
+	    && grps[cc].user_shares) {
             g = calloc(1, sizeof(struct group_acct));
             assert(g);
             g->group = strdup(grps[cc].group);
