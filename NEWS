@@ -27,6 +27,7 @@ Release notes for OpenLava versions
    hyperthreads or not. To enable this behaviour set the variable
    LIM_DEFINE_NCPUS=cores|threads in lsf.conf. Default is threads.
 -- Fix bsub bug in which if user specify -n min,max the max was ignored.
+-- Make fairshare configuration compatible with the LSF one.
 
 3.1.2
 =====

@@ -331,8 +331,12 @@ get_user_node(struct hash_tab *node_tab,
          * so lookup all in any group
          */
         n = hash_lookup(node_tab, "all");
+	if (n == NULL)
+	    n = hash_lookup(node_tab, "default");
     }
 
+    /* No user, no all, no hope...
+     */
     if (n == NULL)
         return NULL;
 

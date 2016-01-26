@@ -126,8 +126,14 @@ z:
          */
         sacct = n->data;
         if (n->child == NULL) {
-            if (strcasecmp(sacct->name, "all") == 0)
+	    /* all and default are synonyms as they
+	     * both indicate a user that is not explicitly
+	     * defined.
+	     */
+            if (strcasecmp(sacct->name, "all") == 0
+		|| strcasecmp(sacct->name, "default") == 0) {
                 sacct->options |= SACCT_USER_ALL;
+	    }
             sacct->options |= SACCT_USER;
             sprintf(buf, "%s/%s", n->parent->name, n->name);
             hash_install(t->node_tab, buf, n, NULL);
