@@ -88,6 +88,9 @@ z:
         root = t->root;
 
     if (l == NULL) {
+	free_sacct(t->root->data);
+	fin_link(stack);
+	tree_free(t);
         return NULL;
     }
 

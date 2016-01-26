@@ -268,7 +268,7 @@ znovu:
 
 /* tree_rm_leaf()
  *
- * Remove the leftmost leaf.
+ * Walk down till you find a child and remove it
  */
 struct tree_node_ *
 tree_rm_leaf(struct tree_node_ *n)
@@ -302,6 +302,7 @@ tree_free(struct tree_ *t)
         _free_(n);
     }
 
+    fin_link(t->leafs);
     _free_(t->root->name);
     _free_(t->root);
     _free_(t->name);

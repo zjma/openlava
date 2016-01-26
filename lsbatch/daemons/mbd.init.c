@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -3454,8 +3454,11 @@ init_fairshare_scheduler(void)
 	if (cc < 0) {
             ls_syslog(LOG_ERR, "\
 %s: failed initializing fairshare plugin, fall back to fcfs", __func__);
-	    dlclose(qPtr->fsSched->handle);
-	    free(qPtr->fsSched);
+	     dlclose(qPtr->fsSched->handle);
+	    _free_(qPtr->fsSched->name);
+	    _free_(qPtr->fsSched);
+	    _free_(qPtr->fairshare);
+	    qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
 	    return -1;
 	}
 

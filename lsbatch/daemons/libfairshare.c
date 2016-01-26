@@ -35,8 +35,6 @@ fs_init(struct qData *qPtr, struct userConf *uConf)
         ls_syslog(LOG_ERR, "\
 %s: queues %s failed to fairshare configuration, fairshare disabled",
                   __func__, qPtr->queue);
-        _free_(qPtr->fairshare);
-        qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
         return -1;
     }
 
