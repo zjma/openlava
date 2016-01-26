@@ -2580,9 +2580,9 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
     h_initTab_(tmpHosts, 32);
     h_initTab_(nonOverridableHosts, 32);
     while ((linep = getNextLineC_conf(conf, lineNum, TRUE)) != NULL) {
-        freekeyval (keylist);
-        initHostInfo ( &host );
 
+        freekeyval(keylist);
+        initHostInfo(&host);
 
         isTypeOrModel = FALSE;
         numSelectedHosts = 0;
@@ -2809,16 +2809,16 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
             if (i == cConf.numHosts) {
                 num = 0;
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5189,
-                                                 "%s: File %s at line %d: Can't find the information of host <%s>"), __func__, fname, *lineNum, hostname); /* catgets 5189 */
+                ls_syslog(LOG_ERR, "\
+%s: File %s at line %d: Can't find the information of host <%s>",
+			  __func__, fname, *lineNum, hostname);
                 lsberrno = LSBE_CONF_WARNING;
-                freeHostInfo ( &host );
             } else if (cConf.hosts[i].isServer != TRUE) {
                 num = 0;
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5190,
-                                                 "%s: File %s at line %d: Host <%s> is not a server;ignoring"), __func__, fname, *lineNum, hostname); /* catgets 5190 */
+                ls_syslog(LOG_ERR, "\
+%s: File %s at line %d: Host <%s> is not a server;ignoring",
+			  __func__, fname, *lineNum, hostname);
                 lsberrno = LSBE_CONF_WARNING;
-                freeHostInfo ( &host );
             } else {
                 num = 1;
                 override = TRUE;
@@ -2857,7 +2857,10 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
 	    ++hcount;
 	    goto znovu;
 	}
-        FREEUP(host.windows);
+	/* Don't use freeHostInfo()
+	 * host.host will be double freed
+	 */
+	FREEUP(host.windows);
         FREEUP(host.loadSched);
         FREEUP(host.loadStop);
 	if (hl) {
