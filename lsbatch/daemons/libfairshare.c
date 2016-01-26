@@ -191,11 +191,13 @@ dalsi:
 
 	assert(jPtr->userId == s->uid);
         if (jPtr->qPtr == qPtr) {
-	    ls_syslog(LOG_INFO, "\
+	    if (logclass & LC_FAIR) {
+		ls_syslog(LOG_INFO, "\
 %s: jqueue %s %p queue %s %p job %p ref %p %d", __func__,
-		      jPtr->qPtr->queue, jPtr->qPtr,
-		      qPtr->queue, qPtr,
-		      jPtr, jref, count);
+			  jPtr->qPtr->queue, jPtr->qPtr,
+			  qPtr->queue, qPtr,
+			  jPtr, jref, count);
+	    }
 	    dlink_rm_ent(uPtr->jobs, dl);
 	    found = true;
 	    break;
@@ -208,12 +210,13 @@ dalsi:
 	 * is configured or if the user has no
 	 * jobs in the current queue.
 	 */
-
-	ls_syslog(LOG_INFO, "\
+	if (logclass & LC_FAIR) {
+	    ls_syslog(LOG_INFO, "\
 %s: user %s is chosen %d in queue %s but has no jobs count %d numpend %d numj %d",
-		  __func__, s->name,
-		  s->sent + 1, qPtr->queue,
-		  count, uPtr->numPEND, dl->num);
+		      __func__, s->name,
+		      s->sent + 1, qPtr->queue,
+		      count, uPtr->numPEND, dl->num);
+	}
 	goto dalsi;
     }
 
