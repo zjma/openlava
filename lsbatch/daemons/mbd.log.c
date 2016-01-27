@@ -1596,6 +1596,7 @@ log_startjob(struct jData * job, int preExecStart)
     jobStartLog->numExHosts = job->numHostPtr;
     jobStartLog->jobPid = job->jobPid;
     jobStartLog->jobPGid = job->jobPGid;
+    execHosts = NULL;
 
     if (job->numHostPtr > 0) {
 
