@@ -3,12 +3,13 @@ Release notes for OpenLava versions
 3.1.2
 =====
 -- Fix a critical mbatchd bug when sorting queues.
+-- Enable the openlava.spec file and the rpm.sh script
+   which builds the rpm.
 
 3.1.1
 =====
- 
--- Fix schedulign bug in which performance could drop if the lowest
-priority queue was always full.
+-- Fix scheduling bug in which performance could drop if the lowest
+   priority queue was always full.
 -- Fix the incorrect encoding of bchkpnt command data structure.
 
 3.1.0
