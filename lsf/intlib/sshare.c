@@ -59,6 +59,7 @@ struct tree_ *sshare_make_tree(const char *user_shares,
     struct tree_node_ *n;
     struct tree_node_ *root;
 
+    n = NULL;
     stack = make_link();
     t = tree_init("");
     /* root summarizes all the tree counters
