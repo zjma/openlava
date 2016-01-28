@@ -2605,6 +2605,8 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
         }
 
 	hcount = 0;
+	hl = NULL;
+	host_name = NULL;
         if (strcmp (keylist[HKEY_HNAME].val, "default") != 0) {
 
 	    hl = host_base_name(keylist[HKEY_HNAME].val);
