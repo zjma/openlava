@@ -4097,9 +4097,10 @@ setup_mem_cgroup(struct jobCard *jPtr)
 
     lsb_constrain_mem(job_id, rlimit.rlim_cur, jPtr->jobSpecs.jobPid);
 
-    ls_syslog(LOG_INFO, "%s: job %s cur %lu max %lu", __func__,
-              job_id,rlimit.rlim_cur, rlimit.rlim_max);
-
+    if (logclass & LC_EXEC) {
+	ls_syslog(LOG_INFO, "%s: job %s cur %lu max %lu", __func__,
+		  job_id,rlimit.rlim_cur, rlimit.rlim_max);
+    }
 }
 
 /* rm_mem_cgroup()
@@ -4112,7 +4113,9 @@ rm_mem_cgroup(struct jobCard *jPtr)
     sprintf(job_id, "%s", lsb_jobid2str(jPtr->jobSpecs.jobId));
     lsb_rmcgroup_mem(job_id, jPtr->jobSpecs.jobPid);
 
-    ls_syslog(LOG_INFO, "%s: cleanup job %s", __func__, job_id);
+    if (logclass & LC_EXEC) {
+	ls_syslog(LOG_INFO, "%s: cleanup job %s", __func__, job_id);
+    }
 }
 
 /* setup_cpu_bind()
@@ -4142,8 +4145,11 @@ setup_cpu_bind(struct jobCard *jPtr)
         return;
     }
 
-    ls_syslog(LOG_DEBUG, "%s: job %d pid %d bound to core %d", __func__,
-              jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid, num);
+    if (logclass & LC_EXEC) {
+	ls_syslog(LOG_INFO, "%\
+s: job %d pid %d bound to core %d", __func__, jPtr->jobSpecs.jobId,
+		  jPtr->jobSpecs.jobPid, num);
+    }
 
     jPtr->core_num = num;
 }
