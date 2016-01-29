@@ -416,7 +416,7 @@ static void resetSchedulerSession(void);
 static struct _list *jRefList;
 
 static int
-readyToDisp (struct jData *jpbw, int *numAvailSlots)
+readyToDisp (struct jData *jPtr, int *numAvailSlots)
 {
     int jReason = 0;
     time_t deadline;
@@ -424,80 +424,81 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
     if (logclass & (LC_PEND))
         ls_syslog(LOG_DEBUG3, "\
 %s: jobId=%s processed=%x oldReason=%d newReason=%d", __func__,
-                  lsb_jobid2str(jpbw->jobId), jpbw->processed,
-                  jpbw->oldReason, jpbw->newReason);
+                  lsb_jobid2str(jPtr->jobId), jPtr->processed,
+                  jPtr->oldReason, jPtr->newReason);
 
     INC_CNT(PROF_CNT_readyToDisp);
 
-    if (0 && !IS_PEND(jpbw->jStatus)) {
+    if (!IS_PEND(jPtr->jStatus)
+	&& ! (jPtr->jStatus & JOB_STAT_GROW)) {
         return FALSE;
     }
 
-    if (!(jpbw->jFlags & JFLAG_READY2)) {
-        jpbw->numReasons = 0;
-        FREEUP (jpbw->reasonTb);
-        jpbw->numSlots = 0;
+    if (!(jPtr->jFlags & JFLAG_READY2)) {
+        jPtr->numReasons = 0;
+        FREEUP (jPtr->reasonTb);
+        jPtr->numSlots = 0;
         *numAvailSlots = 0;
         if (logclass & (LC_PEND))
             ls_syslog(LOG_DEBUG2, "\
 %s: Job %s isn't ready for scheduling; newReason=%d", __func__,
-                      lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+                      lsb_jobid2str(jPtr->jobId), jPtr->newReason);
         return FALSE;
     }
 
-    if (jpbw->shared->jobBill.termTime) {
-        if (now_disp >= jpbw->shared->jobBill.termTime) {
-            job_abort (jpbw, TOO_LATE);
+    if (jPtr->shared->jobBill.termTime) {
+        if (now_disp >= jPtr->shared->jobBill.termTime) {
+            job_abort (jPtr, TOO_LATE);
             return FALSE;
         }
-        if (jobCantFinshBeforeDeadline(jpbw,
-                                       jpbw->shared->jobBill.termTime)) {
-            job_abort(jpbw, MISS_DEADLINE);
+        if (jobCantFinshBeforeDeadline(jPtr,
+                                       jPtr->shared->jobBill.termTime)) {
+            job_abort(jPtr, MISS_DEADLINE);
             return FALSE;
         }
     }
 
-    if (jpbw->jStatus & JOB_STAT_PSUSP) {
+    if (jPtr->jStatus & JOB_STAT_PSUSP) {
         jReason = PEND_USER_STOP;
 
-        if (jpbw->newReason == PEND_JOB_NO_PASSWD ){
-            jReason = jpbw->newReason;
+        if (jPtr->newReason == PEND_JOB_NO_PASSWD ){
+            jReason = jPtr->newReason;
         }
-    } else if (OUT_SCHED_RS(jpbw->qPtr->reasonTb[1][0])) {
-        jReason = jpbw->qPtr->reasonTb[1][0];
-    } else if (OUT_SCHED_RS(jpbw->uPtr->reasonTb[1][0])) {
-        jReason = jpbw->uPtr->reasonTb[1][0];
-    } else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_ACTIVE)) {
+    } else if (OUT_SCHED_RS(jPtr->qPtr->reasonTb[1][0])) {
+        jReason = jPtr->qPtr->reasonTb[1][0];
+    } else if (OUT_SCHED_RS(jPtr->uPtr->reasonTb[1][0])) {
+        jReason = jPtr->uPtr->reasonTb[1][0];
+    } else if (!(jPtr->qPtr->qStatus & QUEUE_STAT_ACTIVE)) {
         jReason = PEND_QUE_INACT;
-    } else if (!(jpbw->qPtr->qStatus & QUEUE_STAT_RUN)) {
+    } else if (!(jPtr->qPtr->qStatus & QUEUE_STAT_RUN)) {
         jReason = PEND_QUE_WINDOW;
-    } else if ((jpbw->qPtr->maxJobs != INFINIT_INT)
-               && (jpbw->numSlots = jpbw->qPtr->maxJobs - jpbw->qPtr->numJobs
-                   + jpbw->qPtr->numPEND) <= 0) {
+    } else if ((jPtr->qPtr->maxJobs != INFINIT_INT)
+               && (jPtr->numSlots = jPtr->qPtr->maxJobs - jPtr->qPtr->numJobs
+                   + jPtr->qPtr->numPEND) <= 0) {
         jReason = PEND_QUE_JOB_LIMIT;
-    } else if ((deadline = jpbw->qPtr->runWinCloseTime) > 0 &&
-               jobCantFinshBeforeDeadline(jpbw, deadline)) {
+    } else if ((deadline = jPtr->qPtr->runWinCloseTime) > 0 &&
+               jobCantFinshBeforeDeadline(jPtr, deadline)) {
         if (logclass & (LC_SCHED | LC_PEND)) {
             char *timebuf = ctime(&deadline);
             timebuf[strlen(timebuf) - 1] = '\0';
             ls_syslog(LOG_DEBUG2, "\
 %s: job <%s> can't finish before deadline: %s", __func__,
-                      lsb_jobid2str(jpbw->jobId), timebuf);
+                      lsb_jobid2str(jPtr->jobId), timebuf);
         }
         jReason = PEND_QUE_WINDOW_WILL_CLOSE;
-    } else if (now_disp < jpbw->shared->jobBill.beginTime) {
-        if (jpbw->jFlags & JFLAG_JOB_PREEMPTED)
+    } else if (now_disp < jPtr->shared->jobBill.beginTime) {
+        if (jPtr->jFlags & JFLAG_JOB_PREEMPTED)
             jReason = PEND_JOB_PREEMPTED;
         else
             jReason = PEND_JOB_START_TIME;
-    } else if (jpbw->jFlags & JFLAG_DEPCOND_INVALID) {
+    } else if (jPtr->jFlags & JFLAG_DEPCOND_INVALID) {
         jReason = PEND_JOB_DEP_INVALID;
-    } else if (now_disp < jpbw->dispTime) {
+    } else if (now_disp < jPtr->dispTime) {
         jReason = PEND_JOB_DELAY_SCHED;
     } else {
         int i;
-        for (i = 0; i < jpbw->uPtr->numGrpPtr; i++) {
-            struct uData *ugp = jpbw->uPtr->gPtr[i];
+        for (i = 0; i < jPtr->uPtr->numGrpPtr; i++) {
+            struct uData *ugp = jPtr->uPtr->gPtr[i];
             if (OUT_SCHED_RS(ugp->reasonTb[1][0])) {
                 jReason = ugp->reasonTb[1][0];
                 break;
@@ -505,66 +506,66 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         }
     }
 
-    if (!jReason && jpbw->qPtr->uJobLimit < INFINIT_INT
-        && jpbw->shared->jobBill.maxNumProcessors == 1) {
+    if (!jReason && jPtr->qPtr->uJobLimit < INFINIT_INT
+        && jPtr->shared->jobBill.maxNumProcessors == 1) {
         struct userAcct *uAcct;
-        uAcct = getUAcct(jpbw->qPtr->uAcct, jpbw->uPtr);
+        uAcct = getUAcct(jPtr->qPtr->uAcct, jPtr->uPtr);
         if (uAcct && (OUT_SCHED_RS(uAcct->reason)))
             jReason = uAcct->reason;
     }
 
-    if (jpbw->shared->jobBill.options2 & SUB2_USE_DEF_PROCLIMIT) {
-        jpbw->shared->jobBill.numProcessors =
-            jpbw->shared->jobBill.maxNumProcessors =
-            (jpbw->qPtr->defProcLimit > 0 ? jpbw->qPtr->defProcLimit : 1);
+    if (jPtr->shared->jobBill.options2 & SUB2_USE_DEF_PROCLIMIT) {
+        jPtr->shared->jobBill.numProcessors =
+            jPtr->shared->jobBill.maxNumProcessors =
+            (jPtr->qPtr->defProcLimit > 0 ? jPtr->qPtr->defProcLimit : 1);
     }
 
-    jpbw->numSlots = INFINIT_INT;
+    jPtr->numSlots = INFINIT_INT;
     *numAvailSlots = INFINIT_INT;
-    if (!jReason && jpbw->shared->jobBill.maxNumProcessors > 1) {
-        jpbw->numSlots = cntUQSlots(jpbw, numAvailSlots);
-        if (jpbw->numSlots == 0) {
-            jReason = jpbw->newReason;
+    if (!jReason && jPtr->shared->jobBill.maxNumProcessors > 1) {
+        jPtr->numSlots = cntUQSlots(jPtr, numAvailSlots);
+        if (jPtr->numSlots == 0) {
+            jReason = jPtr->newReason;
         }
     }
 
-    if (jpbw->qPtr->procLimit > 0) {
-        jpbw->numSlots = MIN(jpbw->numSlots, jpbw->qPtr->procLimit);
-        *numAvailSlots = MIN(*numAvailSlots, jpbw->qPtr->procLimit);
+    if (jPtr->qPtr->procLimit > 0) {
+        jPtr->numSlots = MIN(jPtr->numSlots, jPtr->qPtr->procLimit);
+        *numAvailSlots = MIN(*numAvailSlots, jPtr->qPtr->procLimit);
     }
 
-    if (jpbw->qPtr->procLimit > 0 &&
-        (jpbw->shared->jobBill.maxNumProcessors < jpbw->qPtr->minProcLimit ||
-         jpbw->shared->jobBill.numProcessors > jpbw->qPtr->procLimit)) {
+    if (jPtr->qPtr->procLimit > 0 &&
+        (jPtr->shared->jobBill.maxNumProcessors < jPtr->qPtr->minProcLimit ||
+         jPtr->shared->jobBill.numProcessors > jPtr->qPtr->procLimit)) {
         jReason = PEND_QUE_PROCLIMIT;
     }
 
-    if (LSB_ARRAY_IDX(jpbw->jobId) &&
-        (ARRAY_DATA(jpbw->jgrpNode)->counts[JGRP_COUNT_NRUN] +
-         ARRAY_DATA(jpbw->jgrpNode)->counts[JGRP_COUNT_NSSUSP] +
-         ARRAY_DATA(jpbw->jgrpNode)->counts[JGRP_COUNT_NUSUSP]) >=
-        ARRAY_DATA(jpbw->jgrpNode)->maxJLimit) {
+    if (LSB_ARRAY_IDX(jPtr->jobId) &&
+        (ARRAY_DATA(jPtr->jgrpNode)->counts[JGRP_COUNT_NRUN] +
+         ARRAY_DATA(jPtr->jgrpNode)->counts[JGRP_COUNT_NSSUSP] +
+         ARRAY_DATA(jPtr->jgrpNode)->counts[JGRP_COUNT_NUSUSP]) >=
+        ARRAY_DATA(jPtr->jgrpNode)->maxJLimit) {
         jReason = PEND_JOB_ARRAY_JLIMIT;
     }
 
     if (jReason) {
-        jpbw->newReason = jReason;
-        jpbw->numReasons = 0;
-        FREEUP (jpbw->reasonTb);
-        jpbw->numSlots = 0;
+        jPtr->newReason = jReason;
+        jPtr->numReasons = 0;
+        FREEUP (jPtr->reasonTb);
+        jPtr->numSlots = 0;
         *numAvailSlots = 0;
         if (logclass & (LC_PEND))
             ls_syslog(LOG_DEBUG2, "\
 %s: Job %s isn't ready for dispatch; newReason=%d", __func__,
-                      lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+                      lsb_jobid2str(jPtr->jobId), jPtr->newReason);
         return FALSE;
     }
 
-    jpbw->newReason = 0;
-    jpbw->jFlags &= ~JFLAG_JOB_PREEMPTED;
+    jPtr->newReason = 0;
+    jPtr->jFlags &= ~JFLAG_JOB_PREEMPTED;
 
     if (logclass & (LC_PEND))
-        ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__, lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
+        ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__, lsb_jobid2str(jPtr->jobId), jPtr->numSlots, *numAvailSlots);
 
     INC_CNT(PROF_CNT_numReadyJobsPerSession);
 
@@ -585,7 +586,7 @@ getMinGSlots(struct uData *uPtr, struct qData *qPtr, int *numGAvailSlots)
     numGUnUsedSlots = MAX(0, uPtr->maxJobs
 			  - (uPtr->numJobs - uPtr->numPEND));
     *numGAvailSlots = MIN(grpUAcct->numAvailSUSP + numGUnUsedSlots,
-			 uPtr->maxJobs - (uPtr->numRUN - uPtr->numRESERVE));
+			  uPtr->maxJobs - (uPtr->numRUN - uPtr->numRESERVE));
     minNumAvailSlots = MIN(minNumAvailSlots, *numGAvailSlots);
 
     if (uPtr->maxJobs == INFINIT_INT)
@@ -815,11 +816,13 @@ getCandHosts (struct jData *jpbw)
 
 
 
-    if ( (jpbw->shared != NULL) &&
-         (jpbw->shared->jobBill.numProcessors <=1 ||
-          jpbw->shared->resValPtr == NULL ||
-          jpbw->shared->resValPtr->pTile == INFINIT_INT)) {
-        if (0 && getPeerCand (jpbw)) {
+    if ((jpbw->shared != NULL)
+	&& (jpbw->shared->jobBill.numProcessors <= 1
+	    || jpbw->shared->resValPtr == NULL
+	    || jpbw->shared->resValPtr->pTile == INFINIT_INT)) {
+
+        if (getPeerCand(jpbw)) {
+
             if (jpbw->candPtr) {
                 enum candRetCode retCode;
                 INC_CNT(PROF_CNT_getPeerCandFound);
@@ -840,7 +843,9 @@ getCandHosts (struct jData *jpbw)
                     jpbw->numCandPtr = 0;
                     FREEUP(jpbw->candPtr);
                     if (logclass & (LC_SCHED | LC_PEND)) {
-                        ls_syslog(LOG_DEBUG2, "%s: job <%s> got peer's candHost but candHost are not usable to job", fname, lsb_jobid2str(jpbw->jobId));
+                        ls_syslog(LOG_DEBUG2, "\
+%s: job <%s> got peer's candHost but candHost are not usable to job",
+				  fname, lsb_jobid2str(jpbw->jobId));
                     }
                 }
                 return retCode;
@@ -863,8 +868,6 @@ getCandHosts (struct jData *jpbw)
         resValPtr = jpbw->shared->resValPtr;
     else
         resValPtr = jpbw->qPtr->resValPtr;
-
-
 
     TIMEVAL(3, jUsable = getJUsable(jpbw, &numJUsable, &nProc), tmpVal);
     timeGetJUsable += tmpVal;
@@ -1696,10 +1699,10 @@ ckResReserve(struct hData *hPtr,
                         use_val = (int)((hPtr->lsbLoad[cc]
                                          - hPtr->loadStop[cc])/r2.val[cc]);
 		    if (use_val <= 0) {
-                            /* state = !ok
-                             */
-                            state = 0;
-                            break;
+			/* state = !ok
+			 */
+			state = 0;
+			break;
                     }
                 }
                 if (cc == MEM
@@ -1807,12 +1810,21 @@ getPeerCand(struct jData *jobp)
     int jobDCS, peerDCS, isWinDeadline, jobRunLimit, peerRunLimit;
     time_t jobDeadline, peerDeadline;
 
+    /* Don't care about peers when flexing a job.
+     * This job is already JOB_STAT_RUN
+     */
+    if (jobp->jStatus & JOB_STAT_GROW)
+	return false;
+
     jobp->usePeerCand = FALSE;
 
     INC_CNT(PROF_CNT_getPeerCand);
 
-
-
+    /* Search from the job in front of me to the first job in my queue.
+     * Quit the loop if 100 jobs have been searched through as the job is
+     * unlikely to have peer and we don't want to spend much time here.
+     * (job peers in most cases are submitted and queued together).
+     */
     for (jpbw = jobp->forw;
          (numJobs < 100 && jpbw != jDataList[PJL]
           && jpbw != jDataList[MJL]);
@@ -4426,7 +4438,7 @@ scheduleAndDispatchJobs(void)
 	 */
         for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
 
-            if (0 && qp->numPEND == 0 && qp->numRESERVE == 0)
+            if (qp->numPEND == 0 && qp->numRESERVE == 0)
                 continue;
 
             INC_CNT(PROF_CNT_getQUsable);
@@ -4460,7 +4472,7 @@ scheduleAndDispatchJobs(void)
                   __func__, numQUsable, timeGetQUsable);
     }
 
-    if (0 && LIST_NUM_ENTRIES(jRefList) == 0) {
+    if (LIST_NUM_ENTRIES(jRefList) == 0) {
         ls_syslog(LOG_DEBUG, "\
 %s: no pending or migrating to jobs to schedule at the moment.", __func__);
         resetSchedulerSession();
@@ -4553,19 +4565,6 @@ scheduleAndDispatchJobs(void)
     DUMP_TIMERS(__func__);
     DUMP_CNT();
     RESET_CNT();
-
-    if (0) {
-    for (jPtr = jDataList[SJL]->back;
-	 jPtr != jDataList[SJL];
-	 jPtr = jPtr->back) {
-
-	if (! need_grow(jPtr))
-	    continue;
-
-	TIMEVAL(0, scheduleAJob(jPtr, true, true), tmpVal);
-	grow_job(jPtr);
-    }
-    }
 
     return 0;
 }
@@ -6012,21 +6011,19 @@ clearJobReason(void)
     struct jData *jp;
     int i;
 
-    if (0) {
-        for (i = MJL; i <= PJL; i++) {
-            for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
+    for (i = MJL; i <= PJL; i++) {
+	for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
 
-                if (jp->jFlags & JFLAG_READY2) {
-                    if (jp->qPtr->reasonTb[1][0]) {
+	    if (jp->jFlags & JFLAG_READY2) {
+		if (jp->qPtr->reasonTb[1][0]) {
 
-                        jp->newReason = jp->qPtr->reasonTb[1][0];
-                    } else {
-                        jp->newReason = 0;
-                    }
-                    jp->oldReason = jp->newReason;
-                }
-            }
-        }
+		    jp->newReason = jp->qPtr->reasonTb[1][0];
+		} else {
+		    jp->newReason = 0;
+		}
+		jp->oldReason = jp->newReason;
+	    }
+	}
     }
 }
 
@@ -7409,8 +7406,16 @@ mbd_grow_job(struct jData *jPtr, struct resizeJobReq *rs)
     if (! need_grow(jPtr))
 	return LSBE_NO_RESIZE_JOB;
 
-    if (scheduleAJob(jPtr, true, true) == 0)
+    /* temporary status for the scheduling
+     * functions
+     */
+    jPtr->jStatus |= JOB_STAT_GROW;
+    if (scheduleAJob(jPtr, true, true) == 0) {
+	jPtr->jStatus &= ~JOB_STAT_GROW;
 	return LSBE_NO_RESIZE_JOB;
+    }
+
+    jPtr->jStatus &= ~JOB_STAT_GROW;
 
     if (grow_job(jPtr) != DISP_OK)
 	return LSBE_NO_RESIZE_JOB;
