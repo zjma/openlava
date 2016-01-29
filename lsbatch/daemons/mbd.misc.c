@@ -96,6 +96,10 @@ updCounters(struct jData *jData, int oldStatus, time_t eventTime)
                 updQaccount(jData, num, 0, num, 0, 0, 0);
                 updUserData(jData, num, 0, num, 0, 0, 0);
                 updHostData(true, jData, 1, 1, 0, 0, 0);
+	    } else if (oldStatus & JOB_STAT_SHRINK) {
+                updQaccount(jData, -num, 0, -num, 0, 0, 0);
+                updUserData(jData, -num, 0, -num, 0, 0, 0);
+                updHostData(true, jData, -1, -1, 0, 0, 0);
             } else {
                 ls_syslog(LOG_ERR, "\
 %s: Job <%s> transited from %d to JOB_STAT_RUN", __func__,
@@ -168,8 +172,10 @@ updCounters(struct jData *jData, int oldStatus, time_t eventTime)
                 updUserData(jData, -numReq, -numReq, 0, 0, 0, 0);
             }
             else {
-                ls_syslog(LOG_ERR, "%s: Job <%s> transited from %x to %x",
-                          __func__, lsb_jobid2str(jData->jobId), oldStatus, jData->jStatus);
+                ls_syslog(LOG_ERR, "\
+%s: Job <%s> transited from %x to %x",
+                          __func__, lsb_jobid2str(jData->jobId), oldStatus,
+			  jData->jStatus);
             }
             break;
         case JOB_STAT_PEND:

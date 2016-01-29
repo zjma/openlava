@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2015 David Bigagli
+ * Copyright (C) 2011 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -42,7 +42,7 @@
 #define  DEF_EXCLUSIVE        FALSE
 #define  DEF_EVENT_WATCH_TIME 60
 #define  DEF_COND_CHECK_TIME  600
-#define DEF_MAX_SBD_CONNS     4096  /* Increase in lsb.params for high performance */
+#define DEF_MAX_SBD_CONNS     4096  /* In lsb.params for high performance */
 #define DEF_SCHED_STAY        3
 #define DEF_FRESH_PERIOD     15
 #define DEF_PEND_EXIT       512
@@ -1471,5 +1471,8 @@ extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
 extern int postMsg2Job(char **, struct jData *);
+
+extern int mbd_grow_job(struct jData *, struct resizeJobReq *);
+extern int mbd_shrink_job(struct jData *, struct resizeJobReq *);
 
 #endif /* _MBD_HEADER_ */

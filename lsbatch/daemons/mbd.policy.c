@@ -331,9 +331,9 @@ static void free_reserve_memory(struct jData *);
 static void handle_reserve_memory(struct jData *, int);
 static struct jData *jiter_next_job2(LIST_T *);
 static bool_t run_time_ok(struct jData *);
-static enum dispatchAJobReturnCode resize_job(struct jData *);
+static enum dispatchAJobReturnCode grow_job(struct jData *);
 static void get_num_procs(struct jData *);
-static int need_resize(struct jData *);
+static int need_grow(struct jData *);
 static struct hData **save_exec_hosts(struct jData *, int *);
 static int merge_hosts(struct jData *, struct hData **, int);
 
@@ -4554,15 +4554,17 @@ scheduleAndDispatchJobs(void)
     DUMP_CNT();
     RESET_CNT();
 
+    if (0) {
     for (jPtr = jDataList[SJL]->back;
 	 jPtr != jDataList[SJL];
 	 jPtr = jPtr->back) {
 
-	if (! need_resize(jPtr))
+	if (! need_grow(jPtr))
 	    continue;
 
 	TIMEVAL(0, scheduleAJob(jPtr, true, true), tmpVal);
-	resize_job(jPtr);
+	grow_job(jPtr);
+    }
     }
 
     return 0;
@@ -7198,7 +7200,7 @@ run_time_ok(struct jData *jPtr)
 }
 
 static enum dispatchAJobReturnCode
-resize_job(struct jData *jPtr)
+grow_job(struct jData *jPtr)
 {
     struct hData **hPtr;
     int num;
@@ -7236,7 +7238,7 @@ resize_job(struct jData *jPtr)
 
     /* updJgrpCountByJStatus(jPtr, JOB_STAT_PEND, JOB_STAT_RUN);
      */
-    updCounters(jPtr, JOB_STAT_GROW, eventTime);
+    updCounters(jPtr, JOB_STAT_GROW, LOG_IT);
     log_startjob(jPtr, false);
     merge_hosts(jPtr, hPtr, num);
     _free_(hPtr);
@@ -7362,10 +7364,10 @@ merge_hosts(struct jData *jPtr, struct hData **hPtr, int num)
     return DISP_OK;
 }
 
-/* need_resize()
+/* need_grow()
  */
 static int
-need_resize(struct jData *jPtr)
+need_grow(struct jData *jPtr)
 {
     if (jPtr->shared->jobBill.maxNumProcessors > jPtr->numHostPtr)
 	return true;
@@ -7390,4 +7392,66 @@ save_exec_hosts(struct jData *jPtr, int *num)
     jPtr->numHostPtr = 0;
 
     return hPtr;
+}
+
+/* mbd_grow_job()
+ */
+int
+mbd_grow_job(struct jData *jPtr, struct resizeJobReq *rs)
+{
+    if (! (jPtr->jStatus & JOB_STAT_RUN))
+	return LSBE_NO_RESIZE_JOB;
+
+    if ((jPtr->jStatus & JOB_STAT_USUSP)
+	|| (jPtr->jStatus & JOB_STAT_PSUSP))
+	return LSBE_NO_RESIZE_JOB;
+
+    if (! need_grow(jPtr))
+	return LSBE_NO_RESIZE_JOB;
+
+    if (scheduleAJob(jPtr, true, true) == 0)
+	return LSBE_NO_RESIZE_JOB;
+
+    if (grow_job(jPtr) != DISP_OK)
+	return LSBE_NO_RESIZE_JOB;
+
+    return LSBE_NO_ERROR;
+}
+
+/* mbd_shrink_job()
+ */
+int
+mbd_shrink_job(struct jData *jPtr, struct resizeJobReq *rs)
+{
+    int numslots;
+    int i;
+    int j;
+    struct hData **hPtr;
+
+    if (jPtr->numHostPtr <= rs->slots
+	|| rs->slots <= 0)
+	return LSBE_NO_RESIZE_JOB;
+
+    /* save the current value of slots
+     */
+    numslots = jPtr->numHostPtr;
+
+    /* set the new value of slots
+     */
+    jPtr->numHostPtr = rs->slots;
+
+    updCounters(jPtr, JOB_STAT_SHRINK, eventTime);
+
+    hPtr = calloc(rs->slots, sizeof(struct hData *));
+
+    j = 0;
+    for (i = rs->slots; i < numslots; i++) {
+	hPtr[j] = jPtr->hPtr[i];
+	++j;
+    }
+
+    _free_(jPtr->hPtr);
+    jPtr->hPtr = hPtr;
+
+    return LSBE_NO_ERROR;
 }

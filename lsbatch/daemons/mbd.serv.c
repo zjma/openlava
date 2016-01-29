@@ -2930,6 +2930,9 @@ do_resizeJob(XDR *xdrs,
     if (rs.hslots == NULL
 	|| rs.cmd == NULL) {
 	ls_syslog(LOG_ERR, "%s: calloc() failed: %m", __func__);
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+	reply = LSBE_NO_MEM;
 	goto pryc;
     }
 
@@ -2948,6 +2951,14 @@ do_resizeJob(XDR *xdrs,
         goto pryc;
     }
 
+    if (IS_PEND(jPtr->jStatus)
+	|| IS_FINISH(jPtr->jStatus)) {
+	reply = LSBE_NO_RESIZE_JOB;
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+        goto pryc;
+    }
+
     if (auth->uid != 0
         && !jgrpPermitOk(auth, jPtr->jgrpNode)
         && !isAuthQueAd(jPtr->qPtr, auth)) {
@@ -2955,7 +2966,17 @@ do_resizeJob(XDR *xdrs,
         goto pryc;
     }
 
-    reply = LSBE_NO_ERROR;
+    if (rs.opcode == JOB_RESIZE_ADD) {
+	reply = mbd_grow_job(jPtr, &rs);
+    } else if (rs.opcode == JOB_RESIZE_RELEASE) {
+	reply = mbd_shrink_job(jPtr, &rs);
+    } else {
+	reply = LSBE_BAD_ARG;
+	_free_(rs.hslots);
+	_free_(rs.cmd);
+	goto pryc;
+    }
+
 pryc:
 
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);

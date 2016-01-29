@@ -330,22 +330,28 @@
 #define EXIT_VALUE_REQUEUE  0x00001000
 
 #define LSB_MODE_BATCH    0x1
-
-#define    LSBE_NO_ERROR      00
-#define    LSBE_NO_JOB        01
-#define    LSBE_NOT_STARTED   02
-#define    LSBE_JOB_STARTED   03
-#define    LSBE_JOB_FINISH    04
-#define    LSBE_STOP_JOB      05
-#define    LSBE_DEPEND_SYNTAX  6
-#define    LSBE_EXCLUSIVE      7
-#define    LSBE_ROOT           8
-#define    LSBE_MIGRATION      9
-#define    LSBE_J_UNCHKPNTABLE 10
-#define    LSBE_NO_OUTPUT      11
-#define    LSBE_NO_JOBID       12
-#define    LSBE_ONLY_INTERACTIVE 13
-#define    LSBE_NO_INTERACTIVE   14
+/*
+ * Error codes for lsblib calls
+ * Each error code has its corresponding error message defined in lsb.err.c
+ * The code number is just the position number of its message.
+ * Adding a new code here must add its message there in the corresponding
+ * position.  Changing any code number here must change the position there.
+ */
+#define    LSBE_NO_ERROR      00  /* No error at all */
+#define    LSBE_NO_JOB        01  /* No matching job found */
+#define    LSBE_NOT_STARTED   02  /* Job not started yet */
+#define    LSBE_JOB_STARTED   03  /* Job already started */
+#define    LSBE_JOB_FINISH    04  /* Job already finished */
+#define    LSBE_STOP_JOB      05  /* Ask sbatchd to stop the wrong job */
+#define    LSBE_DEPEND_SYNTAX  6  /* Depend_cond syntax error */
+#define    LSBE_EXCLUSIVE      7  /* Queue doesn't accept EXCLUSIVE job */
+#define    LSBE_ROOT           8  /* Root is not allowed to submit jobs */
+#define    LSBE_MIGRATION      9  /* Job is already being migrated */
+#define    LSBE_J_UNCHKPNTABLE 10 /* Job is not chkpntable */
+#define    LSBE_NO_OUTPUT      11 /* Job has no output so far */
+#define    LSBE_NO_JOBID       12 /* No jobId can be used now */
+#define    LSBE_ONLY_INTERACTIVE 13  /* Queue only accepts bsub -I job */
+#define    LSBE_NO_INTERACTIVE   14 /* Queue doesn't accept bsub -I job */
 #define    LSBE_NO_USER       15
 #define    LSBE_BAD_USER      16
 #define    LSBE_PERMISSION    17
@@ -463,7 +469,8 @@
 #define    LSBE_MOD_ERRFILE         129
 #define    LSBE_LOCKED_MASTER       130
 #define    LSBE_DEP_ARRAY_SIZE      131
-#define    LSBE_NUM_ERR             131
+#define    LSBE_NO_RESIZE_JOB       132  /* The job cannot be resized */
+#define    LSBE_NUM_ERR             133
 
 #define  SUB_JOB_NAME       0x01
 #define  SUB_QUEUE          0x02
