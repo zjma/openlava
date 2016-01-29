@@ -77,21 +77,25 @@ updCounters(struct jData *jData, int oldStatus, time_t eventTime)
 
     switch (MASK_STATUS (jData->jStatus & ~JOB_STAT_UNKWN)) {
         case JOB_STAT_RUN:
-            if ((oldStatus & JOB_STAT_PEND) || (oldStatus & JOB_STAT_PSUSP) ) {
+            if ((oldStatus & JOB_STAT_PEND) || (oldStatus & JOB_STAT_PSUSP)) {
                 updQaccount (jData, -numReq+num, -numReq, num, 0, 0, 0);
                 updUserData(jData, -numReq+num, -numReq, num, 0, 0, 0);
                 updHostData(TRUE, jData, 1, 1, 0, 0, 0);
             } else if (oldStatus & JOB_STAT_SSUSP) {
-                updQaccount (jData, 0, 0, num, -num, 0, 0);
+                updQaccount(jData, 0, 0, num, -num, 0, 0);
                 updUserData(jData, 0, 0, num, -num, 0, 0);
                 updHostData(FALSE, jData, 0, 1, -1, 0, 0);
             } else if (oldStatus & JOB_STAT_USUSP) {
-                updQaccount (jData, 0, 0, num, 0, -num, 0);
+                updQaccount(jData, 0, 0, num, 0, -num, 0);
                 updUserData(jData, 0, 0, num, 0, -num, 0);
                 updHostData(FALSE, jData, 0, 1, 0, -1, 0);
-            } else if ( (oldStatus & ( JOB_STAT_RUN | JOB_STAT_WAIT)) ) {
+            } else if ((oldStatus & ( JOB_STAT_RUN | JOB_STAT_WAIT))) {
                 ls_syslog(LOG_DEBUG2, "%s: Job %s RWAIT to RUN",
                           __func__, lsb_jobid2str(jData->jobId));
+	    } else if (oldStatus & JOB_STAT_GROW) {
+                updQaccount(jData, num, 0, num, 0, 0, 0);
+                updUserData(jData, num, 0, num, 0, 0, 0);
+                updHostData(true, jData, 1, 1, 0, 0, 0);
             } else {
                 ls_syslog(LOG_ERR, "\
 %s: Job <%s> transited from %d to JOB_STAT_RUN", __func__,
@@ -1459,7 +1463,8 @@ updHostLeftRusageMem(struct jData *jobP, int order)
     if (logclass & (LC_TRACE))
         ls_syslog(LOG_DEBUG, "%s: Enter this function ...", fname);
 
-    resValPtr = getReserveValues (jobP->shared->resValPtr, jobP->qPtr->resValPtr);
+    resValPtr = getReserveValues (jobP->shared->resValPtr,
+				  jobP->qPtr->resValPtr);
     if (resValPtr != NULL) {
         resMem = resValPtr->val[MEM];
 
@@ -1481,14 +1486,19 @@ updHostLeftRusageMem(struct jData *jobP, int order)
                             break;
                     }
                     if (i < numLIMhosts && LIMhosts[i].maxMem != 0)
-                        jobP->hPtr[numHost]->leftRusageMem = LIMhosts[i].maxMem;
+                        jobP->hPtr[numHost]->leftRusageMem =
+			    LIMhosts[i].maxMem;
                     else
                         return;
                 }
                 jobP->hPtr[numHost]->leftRusageMem +=  resMem * order;
                 if (logclass & (LC_TRACE | LC_SCHED ))
-                    ls_syslog(LOG_DEBUG, "%s: job <%s> reserved mem is %f, execution host <%s>, new leftRusageMem is %f, order is %d", fname, lsb_jobid2str(jobP->jobId),  resMem, jobP->hPtr[numHost]->host, jobP->hPtr[numHost]->leftRusageMem, order);
-
+                    ls_syslog(LOG_DEBUG, "\
+%s: job %s rsv mem %f, exec host %s new leftRusageMem is %f, order is %d",
+			      fname, lsb_jobid2str(jobP->jobId),  resMem,
+			      jobP->hPtr[numHost]->host,
+			      jobP->hPtr[numHost]->leftRusageMem,
+			      order);
             }
         }
     }

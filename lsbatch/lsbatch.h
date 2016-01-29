@@ -118,6 +118,8 @@
 #define MASTER_MEM            204
 #define MASTER_CONF           205
 
+/* Job states
+ */
 #define JOB_STAT_NULL         0x00
 #define JOB_STAT_PEND         0x01
 #define JOB_STAT_PSUSP        0x02
@@ -126,9 +128,11 @@
 #define JOB_STAT_USUSP        0x10
 #define JOB_STAT_EXIT         0x20
 #define JOB_STAT_DONE         0x40
-#define JOB_STAT_PDONE        (0x80)
-#define JOB_STAT_PERR         (0x100)
-#define JOB_STAT_WAIT         (0x200)
+#define JOB_STAT_PDONE        0x80
+#define JOB_STAT_PERR         0x100
+#define JOB_STAT_WAIT         0x200
+#define JOB_STAT_GROW         0x400
+#define JOB_STAT_SHRINK       0x800
 #define JOB_STAT_UNKWN        0x10000
 
 /* Event in the lsb.events file

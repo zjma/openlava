@@ -331,6 +331,11 @@ static void free_reserve_memory(struct jData *);
 static void handle_reserve_memory(struct jData *, int);
 static struct jData *jiter_next_job2(LIST_T *);
 static bool_t run_time_ok(struct jData *);
+static enum dispatchAJobReturnCode resize_job(struct jData *);
+static void get_num_procs(struct jData *);
+static int need_resize(struct jData *);
+static struct hData **save_exec_hosts(struct jData *, int *);
+static int merge_hosts(struct jData *, struct hData **, int);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -424,7 +429,7 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
 
     INC_CNT(PROF_CNT_readyToDisp);
 
-    if (!IS_PEND(jpbw->jStatus)) {
+    if (0 && !IS_PEND(jpbw->jStatus)) {
         return FALSE;
     }
 
@@ -814,7 +819,7 @@ getCandHosts (struct jData *jpbw)
          (jpbw->shared->jobBill.numProcessors <=1 ||
           jpbw->shared->resValPtr == NULL ||
           jpbw->shared->resValPtr->pTile == INFINIT_INT)) {
-        if (getPeerCand (jpbw)) {
+        if (0 && getPeerCand (jpbw)) {
             if (jpbw->candPtr) {
                 enum candRetCode retCode;
                 INC_CNT(PROF_CNT_getPeerCandFound);
@@ -889,7 +894,8 @@ getCandHosts (struct jData *jpbw)
         jpbw->candPtr[i] = jUsable[i];
     }
 
-    if ((firstHostId = handleFirstHost(jpbw, jpbw->numCandPtr, jpbw->candPtr))) {
+    if ((firstHostId = handleFirstHost(jpbw, jpbw->numCandPtr,
+				       jpbw->candPtr))) {
 
         addReason(jpbw, firstHostId, PEND_FIRST_HOST_INELIGIBLE);
         return CAND_FIRST_RES;
@@ -3207,9 +3213,11 @@ jobStarted(struct jData *jp, struct jobReply *jobReply)
     int i;
     int hostAcceptJobTime;
 
-    if (IS_FINISH(jp->jStatus)
-        || IS_FINISH(jobReply->jStatus))
+    if (IS_FINISH(jp->jStatus))
         return;
+
+    if (jobReply && (IS_FINISH(jobReply->jStatus)))
+	return;
 
     jp->newReason = 0;
     jp->oldReason = 0;
@@ -3222,10 +3230,13 @@ jobStarted(struct jData *jp, struct jobReply *jobReply)
 
     FREEUP(jp->reasonTb);
 
-    jp->dispCount ++;
-    jp->jobPid = jobReply->jobPid;
-    jp->jobPGid = jobReply->jobPGid;
-
+    /* Set to NULL when resizing a job
+     */
+    if (jobReply) {
+	jp->dispCount++;
+	jp->jobPid = jobReply->jobPid;
+	jp->jobPGid = jobReply->jobPGid;
+    }
 
     if (jp->shared->jobBill.options & SUB_EXCLUSIVE) {
         for (i = 0; i < jp->numHostPtr; i ++)
@@ -4415,7 +4426,7 @@ scheduleAndDispatchJobs(void)
 	 */
         for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
 
-            if (qp->numPEND == 0 && qp->numRESERVE == 0)
+            if (0 && qp->numPEND == 0 && qp->numRESERVE == 0)
                 continue;
 
             INC_CNT(PROF_CNT_getQUsable);
@@ -4449,7 +4460,7 @@ scheduleAndDispatchJobs(void)
                   __func__, numQUsable, timeGetQUsable);
     }
 
-    if (LIST_NUM_ENTRIES(jRefList) == 0) {
+    if (0 && LIST_NUM_ENTRIES(jRefList) == 0) {
         ls_syslog(LOG_DEBUG, "\
 %s: no pending or migrating to jobs to schedule at the moment.", __func__);
         resetSchedulerSession();
@@ -4542,6 +4553,17 @@ scheduleAndDispatchJobs(void)
     DUMP_TIMERS(__func__);
     DUMP_CNT();
     RESET_CNT();
+
+    for (jPtr = jDataList[SJL]->back;
+	 jPtr != jDataList[SJL];
+	 jPtr = jPtr->back) {
+
+	if (! need_resize(jPtr))
+	    continue;
+
+	TIMEVAL(0, scheduleAJob(jPtr, true, true), tmpVal);
+	resize_job(jPtr);
+    }
 
     return 0;
 }
@@ -7173,4 +7195,199 @@ run_time_ok(struct jData *jPtr)
 	return false;
 
     return true;
+}
+
+static enum dispatchAJobReturnCode
+resize_job(struct jData *jPtr)
+{
+    struct hData **hPtr;
+    int num;
+
+    getNumSlots(jPtr);
+
+    get_num_procs(jPtr);
+
+    if (jPtr->numAvailEligProc < MAX(jPtr->shared->jobBill.numProcessors,
+				     jPtr->qPtr->minProcLimit)) {
+
+	if (logclass & (LC_PEND | LC_SCHED)) {
+	    ls_syslog(LOG_DEBUG1, "\
+%s: job %s can't get enough slots requested %d available %d",
+		      __func__, lsb_jobid2str(jPtr->jobId),
+		      jPtr->shared->jobBill.numProcessors,
+		      jPtr->numAvailEligProc);
+	}
+
+	if (jPtr->shared->resValPtr
+	    && jPtr->shared->resValPtr->pTile != INFINIT_INT) {
+	    addReason (jPtr, 0, PEND_JOB_SPREAD_TASK);
+	} else if (((jPtr->shared->resValPtr == NULL)
+		    || (jPtr->shared->resValPtr->maxNumHosts != 1))
+		   && jPtr->qPtr->resValPtr
+		   && (jPtr->qPtr->resValPtr->pTile != INFINIT_INT)) {
+	    addReason(jPtr, 0, PEND_QUE_SPREAD_TASK);
+	}
+
+	return DISP_NO_JOB;
+    }
+
+    hPtr = save_exec_hosts(jPtr, &num);
+    allocHosts(jPtr);
+
+    /* updJgrpCountByJStatus(jPtr, JOB_STAT_PEND, JOB_STAT_RUN);
+     */
+    updCounters(jPtr, JOB_STAT_GROW, eventTime);
+    log_startjob(jPtr, false);
+    merge_hosts(jPtr, hPtr, num);
+    _free_(hPtr);
+
+    return DISP_OK;
+}
+
+static void
+get_num_procs(struct jData *jPtr)
+{
+    int i;
+    int nSlots;
+    int nAvailSlots;
+    struct candHost *execCandPtr;
+
+    jPtr->numEligProc = 0;
+    jPtr->numAvailEligProc = 0;
+
+    execCandPtr = my_calloc(jPtr->numCandPtr,
+			    sizeof(struct candHost), __func__);
+    for (i = 0;
+	 i < jPtr->numCandPtr &&
+	     jPtr->numAvailEligProc < jPtr->numAvailSlots &&
+	     jPtr->numAvailEligProc < jPtr->shared->jobBill.maxNumProcessors;
+	 i++) {
+	nAvailSlots = MIN(jPtr->candPtr[i].numAvailSlots,
+			  jPtr->shared->jobBill.maxNumProcessors -
+			  jPtr->numAvailEligProc);
+
+
+	nAvailSlots = MIN(nAvailSlots,
+			  jPtr->numAvailSlots - jPtr->numAvailEligProc);
+
+	execCandPtr[i].numAvailSlots = nAvailSlots;
+	execCandPtr[i].numSlots = nAvailSlots;
+	execCandPtr[i].hData = jPtr->candPtr[i].hData;
+	jPtr->numAvailEligProc += nAvailSlots;
+    }
+    jPtr->numExecCandPtr = i;
+    jPtr->numEligProc = jPtr->numAvailEligProc;
+
+    if (jPtr->numAvailEligProc < jPtr->shared->jobBill.numProcessors) {
+
+	for (i = 0;
+	     i < jPtr->numExecCandPtr &&
+		 jPtr->numEligProc < jPtr->numSlots &&
+		 jPtr->numEligProc < jPtr->shared->jobBill.numProcessors;
+	     i++) {
+
+	    if ( (jPtr->candPtr[i].hData)->maxJobs <=
+		 (jPtr->candPtr[i].hData)->numRESERVE) {
+		continue;
+	    }
+
+	    nSlots = MIN(jPtr->candPtr[i].numSlots -
+			 execCandPtr[i].numAvailSlots,
+			 jPtr->shared->jobBill.numProcessors -
+			 jPtr->numEligProc);
+	    execCandPtr[i].numSlots += nSlots;
+	    jPtr->numEligProc += nSlots;
+	}
+
+	if (jPtr->numEligProc < jPtr->numSlots &&
+	    jPtr->numEligProc < jPtr->shared->jobBill.numProcessors) {
+	    for (i = jPtr->numExecCandPtr;
+		 i < jPtr->numCandPtr &&
+		     jPtr->numEligProc < jPtr->numSlots &&
+		     jPtr->numEligProc < jPtr->shared->jobBill.numProcessors;
+		 i++) {
+
+		if ( (jPtr->candPtr[i].hData)->maxJobs <=
+		     (jPtr->candPtr[i].hData)->numRESERVE) {
+		    continue;
+		}
+
+		nSlots = MIN(jPtr->candPtr[i].numSlots,
+			     jPtr->shared->jobBill.numProcessors -
+			     jPtr->numEligProc);
+
+		execCandPtr[i].numAvailSlots =
+		    MIN(jPtr->candPtr[i].numAvailSlots, nSlots);
+		execCandPtr[i].numSlots = nSlots;
+		execCandPtr[i].hData = jPtr->candPtr[i].hData;
+		jPtr->numEligProc += nSlots;
+	    }
+	    jPtr->numExecCandPtr = i;
+	}
+    }
+
+    FREEUP(jPtr->execCandPtr);
+    jPtr->execCandPtr = execCandPtr;
+}
+
+/* merge_hosts()
+ *
+ * Merge together job's hPtr and newly
+ * allocated hosts
+ */
+static int
+merge_hosts(struct jData *jPtr, struct hData **hPtr, int num)
+{
+    int num_hosts;
+    int i;
+    int j;
+    struct hData **hPtr2;
+
+    num_hosts = jPtr->numHostPtr + num;
+    hPtr2 = calloc(num_hosts, sizeof(struct hData *));
+
+    for (i = 0; i < jPtr->numHostPtr; i++) {
+	hPtr2[i] = jPtr->hPtr[i];
+    }
+
+    for (j = 0; j < num; j++) {
+	hPtr2[i] = hPtr[j];
+	++i;
+    }
+
+    _free_(jPtr->hPtr);
+    jPtr->hPtr = hPtr2;
+    jPtr->numHostPtr = num_hosts;
+
+    return DISP_OK;
+}
+
+/* need_resize()
+ */
+static int
+need_resize(struct jData *jPtr)
+{
+    if (jPtr->shared->jobBill.maxNumProcessors > jPtr->numHostPtr)
+	return true;
+
+    return false;
+}
+
+/* save_exec_hosts()
+ */
+static struct hData **
+save_exec_hosts(struct jData *jPtr, int *num)
+{
+    struct hData **hPtr;
+    int i;
+
+    hPtr = calloc(jPtr->numHostPtr, sizeof(struct hPtr *));
+    for (i = 0; i < jPtr->numHostPtr; i++)
+	hPtr[i] = jPtr->hPtr[i];
+
+    *num = jPtr->numHostPtr;
+    _free_(jPtr->hPtr[i]);
+    jPtr->numHostPtr = 0;
+
+    return hPtr;
 }

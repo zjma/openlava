@@ -267,7 +267,7 @@ struct jData {
     int     *reasonTb;
     int     numReasons;
     struct  qData *qPtr;
-    struct  hData **hPtr;
+    struct  hData **hPtr;  /* execution hosts (processors) list */
     int     numHostPtr;
     struct  askedHost *askedPtr;
     int     numAskedPtr;
