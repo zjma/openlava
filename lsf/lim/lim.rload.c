@@ -140,6 +140,7 @@ readLoad(int kernelPerm)
     float avrun1m;
     float avrun15m;
     static time_t next;
+    time_t t;
 
     if (next == 0)
         next = time(NULL) - 1;
@@ -161,9 +162,11 @@ readLoad(int kernelPerm)
     myHostPtr->loadIndex[MEM] = myHostPtr->loadIndex[MEM]/1024.0;
     myHostPtr->loadIndex[SWP] = myHostPtr->loadIndex[SWP]/1024.0;
 
-    /* call sendload() only evry exchange interval.
+    /* call sendload() only every exchange interval.
      */
-    if (time(NULL) < next)
+    t = time(NULL);
+
+    if (t < next)
         return;
 
     extrafactor = 0;
@@ -267,11 +270,10 @@ readLoad(int kernelPerm)
             myHostPtr->uloadIndex[i] = myHostPtr->loadIndex[i];
         }
     }
+
     /* Reload the timer.
      */
-    next = time(NULL) + exchIntvl;
-
-    return;
+    next = t + (int)exchIntvl;
 }
 
 static FILE *

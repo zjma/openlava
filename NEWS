@@ -32,6 +32,17 @@ Release notes for OpenLava versions
 -- Fix bsub bug in which if user specify -n min,max the max was ignored.
 -- Make fairshare configuration compatible with the LSF one.
 
+3.1.3
+======
+-- Corrected the lsf.cluster man page describing LIM communication
+   parameters.
+-- Enable LIM communication debugging using LC_COMM class and
+   LOG_INFO level.
+-- Fix bug in announceMaster() which was slowing down announcement
+   of slave hosts.
+-- Fix a bug in the slave host timer causing slave to send load
+   to master more frequently then necessary.
+
 3.1.2
 =====
 -- Fix a critical mbatchd bug when sorting queues.

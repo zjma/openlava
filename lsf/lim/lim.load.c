@@ -25,11 +25,14 @@
 
 enum loadstruct {e_vec, e_mat};
 
-float  exchIntvl = EXCHINTVL;
-float  sampleIntvl = SAMPLINTVL;
-short  hostInactivityLimit = HOSTINACTIVITYLIMIT;
-short  masterInactivityLimit = MASTERINACTIVITYLIMIT;
-short  resInactivityLimit    = RESINACTIVITYLIMIT;
+/* Globals that can be set in the parameters section
+ * in the cluster file.
+ */
+float  exchIntvl = EXCHINTVL;       /* 15 */
+float  sampleIntvl = SAMPLINTVL;    /* 5 */
+short  hostInactivityLimit = HOSTINACTIVITYLIMIT; /* 5 */
+short  masterInactivityLimit = MASTERINACTIVITYLIMIT;  /* 2 */
+short  resInactivityLimit    = RESINACTIVITYLIMIT;     /* 9 */
 short  retryLimit = RETRYLIMIT;
 short  keepTime = KEEPTIME;
 
@@ -83,9 +86,12 @@ sendLoad(void)
 
                 if (! LS_ISUNAVAIL(hPtr->status)) {
                     if (hPtr->hostInactivityCount > (hostInactivityLimit + retryLimit)) {
-                        ls_syslog(LOG_DEBUG, "\
+
+			if (logclass & LC_COMM) {
+			    ls_syslog(LOG_INFO, "\
 %s: Declaring %s unavailable inactivity Count=%d", __func__,
                                   hPtr->hostName, hPtr->hostInactivityCount);
+			}
 
                         hPtr->status[0] |= LIM_UNAVAIL;
                         hPtr->infoValid = FALSE;
@@ -122,17 +128,20 @@ sendLoad(void)
 
         myClusterPtr->masterInactivityCount++;
 
-        ls_syslog (LOG_DEBUG, "\
+	if (logclass & LC_COMM) {
+	    ls_syslog (LOG_INFO, "\
 %s: masterInactivityCount=%d, hostInactivityLimit=%d, masterKnown=%d, retryLimit=%d",
-                   __func__, myClusterPtr->masterInactivityCount,
-                   hostInactivityLimit,  myClusterPtr->masterKnown,
-                   retryLimit);
+		       __func__, myClusterPtr->masterInactivityCount,
+		       hostInactivityLimit,  myClusterPtr->masterKnown,
+		       retryLimit);
+	}
 
         if (myClusterPtr->masterInactivityCount > hostInactivityLimit) {
 
             if (myClusterPtr->masterKnown
                 && myClusterPtr->masterInactivityCount > hostInactivityLimit
-                && (myClusterPtr->masterInactivityCount <= hostInactivityLimit + retryLimit)) {
+                && (myClusterPtr->masterInactivityCount <= hostInactivityLimit
+		    + retryLimit)) {
                 ls_syslog(LOG_WARNING, "\
 %s: Attempting to probe master %s", __func__,
                           myClusterPtr->masterPtr->hostName);
@@ -267,7 +276,7 @@ sendLoad(void)
                sizeof(in_addr_t));
 
         if (logclass & LC_COMM)
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 sendLoad: sending to %s (len=%d,port=%d)",
                       sockAdd2Str_(&toAddr), XDR_GETPOS(&xdrs),
                       lim_port);
@@ -399,8 +408,10 @@ rcvLoadVector(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *hdr)
         return;
     }
 
-    ls_syslog(LOG_DEBUG,"\
+    if (logclass & LC_COMM) {
+	ls_syslog(LOG_INFO,"\
 %s: Received load update from host %s", __func__, hPtr->hostName);
+    }
 
     hPtr->hostInactivityCount = 0;
 

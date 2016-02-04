@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2016 David Bigagli
 #
 #
 
@@ -7,7 +7,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsbatch
 
 SUBDIRS = docker
 noinst_PROGRAMS = client gethostbyaddr gethostbyname \
-                  hdr msg pimme qstring readevent server sobufsiz
+                  hdr msg pimme qstring readevent server sobufsiz \
+	 	  master
 
 client_SOURCES = client.c proto.h
 if SOLARIS
@@ -43,3 +44,8 @@ sobufsiz_SOURCES = sobufsiz.c
 if SOLARIS
 sobufsiz_LDADD = -lsocket -lnsl
 endif
+
+master_SOURCES = master.c
+master_LDADD = ../lsf/lib/.libs/liblsf.a -lnsl
+
+
