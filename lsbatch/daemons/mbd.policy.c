@@ -4247,7 +4247,7 @@ scheduleAndDispatchJobs(void)
                  * list is to make sure that each pending job
                  * is looked at by the scheduler only once.
                  */
-                if (0 && (! jobIsReady(jPtr)))
+                if (! jobIsReady(jPtr))
                     continue;
 
                 jR = calloc(1, sizeof(struct jRef));
