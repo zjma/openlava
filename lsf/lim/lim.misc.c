@@ -321,6 +321,7 @@ logInit(void)
     htab = loadEvents();
     if (HTAB_NUM_ELEMENTS(htab) == 0) {
 	h_freeRefTab_(htab);
+	_free_(htab);
         return 0;
     }
 
@@ -334,6 +335,7 @@ logInit(void)
 %s: Ohmygosh stat() failed on %s.. %m",
                   __func__, eFile);
 	h_freeRefTab_(htab);
+	_free_(htab);
         return -1;
     }
 
@@ -341,6 +343,7 @@ logInit(void)
 
     if (! (sbuf.st_size > LIM_EVENT_MAXSIZE)) {
 	h_freeRefTab_(htab);
+	_free_(htab);
         return 0;
     }
 
@@ -364,6 +367,7 @@ logInit(void)
 %s: failed to rename %s in %s %m, keeping the old file",
                   __func__, eFile, eFile2);
 	h_freeRefTab_(htab);
+	_free_(htab);
 	return -1;
     }
 
@@ -372,6 +376,7 @@ logInit(void)
         ls_syslog(LOG_ERR, "\
 %s: failed opening %s: %m", __func__, eFile);
 	h_freeRefTab_(htab);
+	_free_(htab);
         return -1;
     }
 
@@ -386,6 +391,7 @@ logInit(void)
 
     logLIMStart();
     h_freeRefTab_(htab);
+    _free_(htab);
 
     return 0;
 }
