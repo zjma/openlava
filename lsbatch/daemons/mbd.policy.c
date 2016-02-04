@@ -4247,7 +4247,7 @@ scheduleAndDispatchJobs(void)
                  * list is to make sure that each pending job
                  * is looked at by the scheduler only once.
                  */
-                if (! jobIsReady(jPtr))
+                if (0 && (! jobIsReady(jPtr)))
                     continue;
 
                 jR = calloc(1, sizeof(struct jRef));
@@ -7159,17 +7159,25 @@ run_time_ok(struct jData *jPtr)
 {
     uint32_t loan;
 
-    loan = jPtr->qPtr->loan_duration;
+    /* Use seconds.
+     */
+    loan = jPtr->qPtr->loan_duration * 60;
     /* If loan duration is not set don't loan
      * anything
      */
     if (loan == 0)
 	return false;
 
-    if (jPtr->shared->jobBill.rLimits[LSF_RLIMIT_RUN] == -1)
+    if (logclass & LC_FAIR) {
+	ls_syslog(LOG_INFO, "\
+%s: loan period %d job runlimit %d", __func__, loan,
+		  jPtr->abs_run_limit);
+    }
+
+    if (jPtr->abs_run_limit == -1)
 	return false;
 
-    if (jPtr->shared->jobBill.rLimits[LSF_RLIMIT_RUN] > loan)
+    if (jPtr->abs_run_limit > loan)
 	return false;
 
     return true;

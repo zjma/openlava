@@ -848,6 +848,9 @@ getCpuLimit (struct jData *job, struct submitReq *subReq)
             return (LSBE_BAD_LIMIT);
         }
 
+	/* Save the absolute, unscaled run limit
+	 */
+	job->abs_run_limit = job->shared->jobBill.rLimits[LSF_RLIMIT_RUN];
 
         if (runLimit > (INFINIT_INT /(*cpuFactor))) {
             return (LSBE_BAD_LIMIT);
@@ -4766,6 +4769,7 @@ initJData(struct jShared  *shared)
     job->groupCands = NULL;
     job->inEligibleGroups = NULL;
     job->run_rusage = NULL;
+    job->abs_run_limit = -1;
 
     return job;
 }

@@ -71,6 +71,14 @@ fs_update_sacct(struct qData *qPtr,
     sacct = n->data;
     sacct->uid = jPtr->userId;
 
+    /* The job is starting so decrease the
+     * counter of slots this can use.
+     */
+    if (numPEND < 0
+	&& numRUN  > 0) {
+	sacct->sent--;
+    }
+
     /* Hoard the running jobs
      */
     numRAN = 0;
@@ -149,19 +157,18 @@ fs_elect_job(struct qData *qPtr,
 
     /* pop() so if the num sent drops
      * to zero we remove it and never traverse
-     * it again.
+     * it again. The s->sent is updated in
+     * fs_update_sacct() when the job is started.
      */
 dalsi:
     sent = 0;
     while ((n = pop_link(l))) {
         s = n->data;
         if (s->sent > 0) {
-            s->sent--;
             ++sent;
             break;
         }
     }
-
     /* No more jobs to sent
      */
     if (sent == 0) {
@@ -230,8 +237,7 @@ dalsi:
     /* More to dispatch from this node
      * so back to the leaf link
      */
-    if (s->sent > 0)
-        push_link(l, n);
+    push_link(l, n);
 
     *jRef = jref;
 

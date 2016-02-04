@@ -353,6 +353,7 @@ struct jData {
     int numMsg;
     struct lsbMsg **msgs;
     char *run_rusage;   /* "rusage[x=1:y=2||z=3:w=4]" */
+    int abs_run_limit; /* absolute run limit in seconds */
 };
 
 

@@ -1,5 +1,13 @@
 Release notes for OpenLava versions
 
+cadence
+=======
+-- Fix fairshare algorithm to decrease the number of jobs per user
+   only if the job has been started.
+-- Fix a bug in ownership policy where wrong runtime comparison was
+   performed.
+-- Implement the replay of job absolute runtime for ownership policy.
+
 3.2.0
 =====
 -- badmin ckconfig/reconfig displays configuration error and warning

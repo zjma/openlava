@@ -722,9 +722,6 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     int  i, cc, ccount;
     int  tmpSubmit, tmpBegin, tmpTerm;
 
-
-
-
     cc = sscanf(line, "%d%d%d%d%d%d%d%d%d%d%n",
                 &(jobNewLog->jobId),
                 &(jobNewLog->userId),
@@ -853,6 +850,7 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
                 &(jobNewLog->idx),  &ccount);
     if (cc != 2)
         return LSBE_EVENT_FORMAT;
+    line += ccount + 1;
 
     if ((jobNewLog->options2 & SUB2_BSUB_BLOCK)){
         line += ccount;
@@ -874,11 +872,21 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     cc = sscanf(line, "%d%n", &jobNewLog->userPriority, &ccount);
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
+    line += ccount + 1;
 
     if (version >= OPENLAVA_XDR_VERSION) {
         saveQStr(line, jobNewLog->userGroup);
     } else {
         jobNewLog->userGroup = strdup("");
+    }
+
+    if (version >= OPENLAVA_XDR_VERSION) {
+	cc = sscanf(line, "%d%n", &jobNewLog->abs_run_limit, &ccount);
+	if (cc != 1)
+	    return LSBE_EVENT_FORMAT;
+        line += ccount + 1;
+    } else {
+	jobNewLog->abs_run_limit = -1;
     }
 
     return LSBE_NO_ERROR;
@@ -2028,6 +2036,9 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
         return LSBE_SYS_CALL;
 
     if (addQStr (log_fp, jobNewLog->userGroup) < 0)
+        return LSBE_SYS_CALL;
+
+    if (fprintf(log_fp, " %d", jobNewLog->abs_run_limit) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)

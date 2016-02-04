@@ -961,6 +961,7 @@ struct jobNewLog {
     int    idx;
     int    userPriority;
     char *userGroup;
+    int abs_run_limit;
 };
 
 struct jobModLog {

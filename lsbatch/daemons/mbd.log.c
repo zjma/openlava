@@ -1504,6 +1504,7 @@ log_jobdata(struct jData *job, char *fname1, int type)
 
     jobNewLog->userPriority = jobBill->userPriority;
     jobNewLog->userGroup = jobBill->userGroup;
+    jobNewLog->abs_run_limit = job->abs_run_limit;
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -3782,6 +3783,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     job->jobPriority = jobBill->userPriority;
 
     jobBill->userGroup = strdup(jobNewLog->userGroup);
+
+    job->abs_run_limit = jobNewLog->abs_run_limit;
 
     return job;
 }
