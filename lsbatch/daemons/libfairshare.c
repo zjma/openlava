@@ -20,6 +20,12 @@
 
 static struct tree_node_ *get_user_node(struct hash_tab *,
                                         struct jData *);
+static int
+update_borrowed_slots(struct tree_node_ *,
+		      struct jData *,
+		      int,
+		      int,
+		      int);
 
 /* fs_init()
  */
@@ -73,8 +79,6 @@ fs_update_sacct(struct qData *qPtr,
     if (t == NULL)
 	return -1;
 
-    t = qPtr->fsSched->tree;
-
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
         return -1;
@@ -90,7 +94,11 @@ fs_update_sacct(struct qData *qPtr,
 	sacct->sent--;
     }
 
-    /* Hoard the running jobs
+    if (update_borrowed_slots(n, jPtr, numJobs, numPEND, numRUN))
+	return 0;
+
+    /* Hoard the running jobs initialize numRAN
+     * in case of negative numRUN
      */
     numRAN = 0;
     if (numRUN > 0)
@@ -447,4 +455,72 @@ fs_init_own_sched_session(struct qData *qPtr)
     sshare_distribute_own_slots(t, qPtr->num_owned_slots);
 
     return 0;
+}
+
+/* update_borrowed_slots()
+ */
+static int
+update_borrowed_slots(struct tree_node_ *n,
+		      struct jData *jPtr,
+		      int numJobs,
+		      int numPEND,
+		      int numRUN)
+{
+    struct tree_node_ *n2;
+    struct share_acct *s;
+    struct share_acct *sacct;
+    int numRAN;
+
+    /* No ownership policy
+     */
+    if (jPtr->qPtr->own_sched == NULL)
+	return false;
+
+    if (! numRUN > 0
+	&& ! numRUN < 0)
+	return false;
+
+    /* A job has finished or being requeued but it was not
+     * marked as borrower
+     */
+    if (numRUN < 0
+	&& !(jPtr->jFlags & JFLAG_BORROWED_SLOTS))
+	return false;
+
+    n2 = n;
+    while (n2->parent->parent)
+	n2 = n2->parent;
+
+    s = n2->data;
+    if (s->numRUN < s->shares)
+	return false;
+
+    /* initialize numRAN in case of negative numRUN
+     */
+    numRAN = 0;
+    if (numRUN > 0)
+        numRAN = numRUN;
+
+    sacct = n->data;
+    while (n) {
+        sacct = n->data;
+        sacct->numPEND = sacct->numPEND + numPEND;
+        sacct->numBORROWED = sacct->numBORROWED + numRUN;
+        sacct->numRAN = sacct->numRAN + numRAN;
+        n = n->parent;
+    }
+
+    /* Mark this job as slot borrower
+     */
+    if (numPEND < 0
+	&& numRUN > 0)
+	jPtr->jFlags |= JFLAG_BORROWED_SLOTS;
+
+    /* Unmark the job
+     */
+    if (numRUN < 0
+	&& jPtr->jFlags & JFLAG_BORROWED_SLOTS)
+	jPtr->jFlags &= ~JFLAG_BORROWED_SLOTS;
+
+    return true;
 }

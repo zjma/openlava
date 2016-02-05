@@ -2056,52 +2056,48 @@ sendBack (int reply, struct submitReq *submitReq,
 void
 doNewJobReply(struct sbdNode *sbdPtr, int exception)
 {
-    static char fname[] = "doNewJobReply";
     struct LSFHeader replyHdr;
     XDR xdrs;
     struct jData *jData = sbdPtr->jData;
-
     struct jobReply jobReply;
     struct Buffer *buf;
     struct LSFHeader hdr;
     int cc, s, svReason, replayReason;
 
     if (logclass & LC_COMM)
-        ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering ...", __func__);
 
-
+    /* If we already got the jobPid, we don't need to do anything.  This
+     * can happen if a status report arrives before the jobaccept reply.
+     */
     if (jData->jobPid != 0)
         return;
 
     if (exception == TRUE || chanRecv_(sbdPtr->chanfd, &buf) < 0) {
         if (exception == TRUE)
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7887,
-                                             "%s: Exception bit of <%d> is set for job <%s>"), /* catgets 7887 */
-                      fname, sbdPtr->chanfd, lsb_jobid2str(jData->jobId));
+            ls_syslog(LOG_ERR, "\
+%s: Exception bit of <%d> is set for job <%s>",
+                      __func__, sbdPtr->chanfd,
+		      lsb_jobid2str(jData->jobId));
         else
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                      fname,
-                      lsb_jobid2str(jData->jobId),
-                      "chanRecv_");
+            ls_syslog(LOG_ERR, "\
+%s: chanRecv_() failed for job %s", __func__, lsb_jobid2str(jData->jobId));
 
         if (IS_START(jData->jStatus)) {
             jData->newReason = PEND_JOB_START_FAIL;
-            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, fname);
+            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, __func__);
         }
         return;
     }
 
     xdrmem_create(&xdrs, buf->data, buf->len, XDR_DECODE);
-
-    if (!xdr_LSFHeader(&xdrs, &replyHdr)) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(jData->jobId),
-                  "xdr_LSFHeader");
-
+    if (! xdr_LSFHeader(&xdrs, &replyHdr)) {
+        ls_syslog(LOG_ERR, "\
+%s: xdr_LSFHeader() failed for job %s", __func__,
+                  lsb_jobid2str(jData->jobId));
         if (IS_START(jData->jStatus)) {
             jData->newReason = PEND_JOB_START_FAIL;
-            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, fname);
+            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, __func__);
         }
         goto Leave;
     }
@@ -2109,21 +2105,23 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
     if (replyHdr.opCode != ERR_NO_ERROR) {
         if (IS_START(jData->jStatus)) {
 
-            replayReason = jobStartError(jData, (sbdReplyType) replyHdr.opCode);
+            replayReason = jobStartError(jData,
+					 (sbdReplyType)replyHdr.opCode);
             svReason = jData->newReason;
             jData->newReason = replayReason;
-            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, fname);
+            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, __func__);
             jData->newReason = svReason;
         }
         goto Leave;
     }
 
-    if(!xdr_jobReply(&xdrs, &jobReply, &replyHdr)) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname, lsb_jobid2str(jData->jobId), "xdr_jobReply");
+    if (! xdr_jobReply(&xdrs, &jobReply, &replyHdr)) {
+        ls_syslog(LOG_ERR, "\
+%s: xdr_jobReply() for job %s", __func__,
+                  lsb_jobid2str(jData->jobId));
         if (IS_START(jData->jStatus)) {
             jData->newReason =  PEND_JOB_START_FAIL;
-            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, fname);
+            jStatusChange(jData, JOB_STAT_PEND, LOG_IT, __func__);
         }
         goto Leave;
     }
@@ -2138,20 +2136,22 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             struct Buffer *replyBuf;
 
             if (chanAllocBuf_(&replyBuf, sizeof(struct LSFHeader)) < 0) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanAllocBuf_");
+		ls_syslog(LOG_ERR, "\
+%s: chanAllocBuf_() for job %s", __func__,
+			  lsb_jobid2str(jData->jobId));
                 goto Leave;
             }
 
-            memcpy((char *) replyBuf->data, (char *) buf->data,
-                   LSF_HEADER_LEN);
+            memcpy(replyBuf->data, buf->data, LSF_HEADER_LEN);
 
             replyBuf->len = LSF_HEADER_LEN;
 
             if (chanEnqueue_(sbdPtr->chanfd, replyBuf) < 0) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanEnqueue");
+		ls_syslog(LOG_ERR, "\
+%s: chanEnqueue_() for job %s", __func__,
+			  lsb_jobid2str(jData->jobId));
                 chanFreeBuf_(replyBuf);
             } else {
-
                 sbdPtr->reqCode = MBD_NEW_JOB_KEEP_CHAN;
             }
         } else {
@@ -2162,8 +2162,9 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             io_block_(s);
 
             if ((cc = writeEncodeHdr_(sbdPtr->chanfd, &hdr, chanWrite_)) < 0) {
-                ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_MM,
-                          fname, lsb_jobid2str(jData->jobId), "writeEncodeHdr");
+		ls_syslog(LOG_ERR, "\
+%s: writeEncodeHEader_() for job %s", __func__,
+			  lsb_jobid2str(jData->jobId));
             }
         }
     }

@@ -300,8 +300,6 @@ static int handleFirstHost(struct jData *, int, struct candHost * );
 static int needHandleFirstHost(struct jData *);
 static bool_t jobIsReady(struct jData *);
 static bool_t isCandHost (char *, struct jData *);
-void updPreemptResourceByRUNJob(struct jData *);
-void checkAndReserveForPreemptWait(struct jData *);
 int markPreemptForPRHQValues(struct resVal *, int, struct hData **,
                              struct qData *);
 int markPreemptForPRHQInstance(int, float,
@@ -3036,7 +3034,6 @@ deallocHosts(struct jData *jp)
 bool_t
 dispatch_it (struct jData *jp)
 {
-    static char fname[] = "dispatch_it";
     sbdReplyType reply;
     struct jobReply jobReply;
     struct jData   *jpbw, *jptr;
@@ -3064,17 +3061,14 @@ dispatch_it (struct jData *jp)
             case ERR_NO_ERROR:
                 jobStarted (jptr, &jobReply);
                 jptr->newReason = 0;
-
                 continue;
 
             case ERR_NULL:
-
                 jobSig.sigValue = 0;
                 jobSig.actFlags  = 0;
                 jobSig.chkPeriod = 0;
                 jobSig.actCmd = "";
                 reply = signal_job (jptr, &jobSig, &jobReply);
-
                 switch (reply) {
                     case ERR_NO_ERROR:
                         jobStarted (jptr, &jobReply);
@@ -3082,23 +3076,20 @@ dispatch_it (struct jData *jp)
                         continue;
                     case ERR_NO_JOB:
                         jptr->newReason = PEND_JOB_START_FAIL;
-                        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7221,
-                                                         "%s: Failed to start job <%s> on host <%s>"), /* catgets 7221 */
-                                  fname,
+                        ls_syslog(LOG_ERR, "\
+%s: Failed to start job %s on host %s", __func__,
                                   lsb_jobid2str(jptr->jobId),
                                   jptr->hPtr[0]->host);
                         return FALSE;
                     default:
                         jptr->newReason = PEND_JOB_START_UNKNWN;
-                        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7222,
-                                                         "%s: mbatchd does not know job <%s> is started or not on host <%s> (reply=%d) - assuming job not started"), /* catgets 7222 */
-                                  fname,
-                                  lsb_jobid2str(jptr->jobId),
+			ls_syslog(LOG_ERR, "\
+%s: mbatchd does not know job %s is started or not on host <%s> (reply=%d) \
+assuming job not started", __func__, lsb_jobid2str(jptr->jobId),
                                   jptr->hPtr[0]->host,
                                   reply);
                         return FALSE;
                 }
-
             default:
                 jobStartError(jptr, reply);
                 return FALSE;
@@ -5129,13 +5120,12 @@ getNumSlots(struct jData *jp)
 static enum dispatchAJobReturnCode
 dispatchToCandHost(struct jData *jp)
 {
-    static char fname[] = "dispatchToCandHost";
     int tmpVal;
 
     if (allocHosts(jp) < 0) {
         if (logclass & (LC_SCHED | LC_PEND)) {
             ls_syslog(LOG_DEBUG1, "%s: allocHosts() failed for job <%s>",
-                      fname, lsb_jobid2str(jp->jobId));
+                      __func__, lsb_jobid2str(jp->jobId));
         }
         return DISP_NO_JOB;
     }
@@ -5143,14 +5133,14 @@ dispatchToCandHost(struct jData *jp)
     if (jp->numHostPtr < jp->shared->jobBill.numProcessors) {
         if (logclass & (LC_SCHED | LC_PEND)) {
             ls_syslog(LOG_DEBUG1, "%s: No enough hosts for job %s",
-                      fname, lsb_jobid2str(jp->jobId));
+                      __func__, lsb_jobid2str(jp->jobId));
         }
         deallocHosts(jp);
         return DISP_NO_JOB;
     }
     if (logclass & LC_SCHED) {
         ls_syslog(LOG_DEBUG2, "%s: Try to dispatch job %s to host %s",
-                  fname, lsb_jobid2str(jp->jobId), jp->hPtr[0]->host);
+                  __func__, lsb_jobid2str(jp->jobId), jp->hPtr[0]->host);
     }
 
     jp->newReason = 0;
@@ -5162,7 +5152,7 @@ dispatchToCandHost(struct jData *jp)
         if (logclass & LC_SCHED) {
             ls_syslog(LOG_DEBUG2, "\
 %s: Job %s has been  dispatched to host %s",
-                      fname, lsb_jobid2str(jp->jobId),
+                      __func__, lsb_jobid2str(jp->jobId),
                       jp->hPtr[0]->host);
         }
 
@@ -5171,14 +5161,15 @@ dispatchToCandHost(struct jData *jp)
     } else {
 
         if (logclass & (LC_SCHED | LC_PEND)) {
-            ls_syslog(LOG_DEBUG1, "%s: Job %s failed to start on host %s; reason=%d", fname, lsb_jobid2str(jp->jobId), jp->hPtr[0]->host, jp->newReason);
+            ls_syslog(LOG_DEBUG1, "\
+%s: Job %s failed to start on host %s; reason=%d", __func__,
+		      lsb_jobid2str(jp->jobId), jp->hPtr[0]->host,
+		      jp->newReason);
         }
 
         deallocHosts(jp);
         if (!(jp->newReason & PEND_JOB_NO_FILE)) {
-
             removeCandHost(jp, 0);
-
         }
         return DISP_FAIL;
     }
@@ -6539,56 +6530,6 @@ deallocReservePreemptResources(struct jData *jp)
     }
     jp->numRsrcPreemptHPtr = 0;
     return 0;
-}
-
-void
-updPreemptResourceByRUNJob(struct jData *jp)
-{
-    int hostn, resn;
-    float val;
-
-
-    if (!(jp->jStatus & JOB_STAT_RUN)) {
-        return;
-    }
-    if (MARKED_WILL_BE_PREEMPTED(jp)) {
-        return;
-    }
-
-    if (CANNOT_BE_PREEMPTED_FOR_RSRC(jp)) {
-        return;
-    }
-
-    if (!jp->numHostPtr || jp->hPtr == NULL) {
-        return;
-    }
-
-
-    for (hostn = 0; hostn < jp->numHostPtr; hostn++) {
-        if (jp->hPtr[hostn]->hStatus & HOST_STAT_UNAVAIL) {
-            continue;
-        }
-        FORALL_PRMPT_RSRCS(resn) {
-            GET_RES_RSRC_USAGE(resn, val, jp->shared->resValPtr,
-                               jp->qPtr->resValPtr);
-            if (val <= 0.0)
-                continue;
-
-            addRunJobUsedPRHQValue(resn, val, jp->hPtr[hostn], jp->qPtr);
-            if (logclass & (LC_SCHED))
-                printPRMOValues();
-
-        } ENDFORALL_PRMPT_RSRCS;
-
-    }
-    return;
-}
-
-void
-checkAndReserveForPreemptWait(struct jData *jp)
-{
-
-    return;
 }
 
 int

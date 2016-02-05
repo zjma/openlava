@@ -647,6 +647,7 @@ replay_startjob(char *filename, int lineNum, int preExecStart)
     if (jp->hPtr)
         FREEUP(jp->hPtr);
     jp->hPtr = job.hPtr;
+    jp->jFlags = logPtr->eventLog.jobStartLog.jFlags;
 
     if (!preExecStart
         && (jp->shared->jobBill.options & SUB_PRE_EXEC)
@@ -1593,7 +1594,7 @@ log_startjob(struct jData * job, int preExecStart)
     jobStartLog->jobId = LSB_ARRAY_JOBID(job->jobId);
     jobStartLog->idx = LSB_ARRAY_IDX(job->jobId);
     jobStartLog->jStatus = JOB_STAT_RUN;
-    jobStartLog->jFlags  = 0;
+    jobStartLog->jFlags  = job->jFlags;
     jobStartLog->numExHosts = job->numHostPtr;
     jobStartLog->jobPid = job->jobPid;
     jobStartLog->jobPGid = job->jobPGid;

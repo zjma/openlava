@@ -31,20 +31,23 @@
  * share tree representing each user and group.
  */
 struct share_acct {
-    char *name;
-    int uid;
-    uint32_t shares;
-    double dshares;
-    uint32_t sent;
-    int numPEND;
-    int numRUN;
-    int numRAN;
-    int32_t dsrv2;
-    uint32_t options;
+    char *name;       /* account name */
+    int uid;          /* account user id */
+    uint32_t shares;  /* shares as configured */
+    double dshares;   /* computed shares with siblings */
+    uint32_t sent;    /* number of jobs to sent by this acct */
+    int numPEND;      /* number of pending jobs */
+    int numRUN;       /* number of running jobs */
+    int numRAN;       /* number of jobs the account ran */
+    int numBORROWED;  /* number of slots the account is borrowing */
+    int32_t dsrv2;    /* slot the account deserve based on ran */
+    uint32_t options; /* SACCT_USER | SACCT_GROUP | SACCT_USER_ALL ... */
 };
 
 /* Support data structure equivalent of groupInfoEnt
  * every change to groupInfoEnt must be added here.
+ * This is a support data structure when building the
+ * hierarchy.
  */
 struct group_acct {
     char *group;

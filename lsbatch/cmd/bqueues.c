@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -586,8 +586,8 @@ print_slot_owned(struct queueInfoEnt *qp)
            qp->num_owned_slots - numRUN);
 
     printf("\
-%9s   %6s   %6s   %6s\n",
-           "USER/GROUP", "OWNED", "PEND", "RUN");
+%9s   %6s   %6s   %6s   %8s\n",
+           "USER/GROUP", "OWNED", "PEND", "RUN", "BORROWED");
     for (i = 0; i < qp->numAccts; i++) {
         char buf[MAXLSFNAMELEN];
 
@@ -599,8 +599,9 @@ print_slot_owned(struct queueInfoEnt *qp)
         printf("%-9s   %6d",
                buf,
                qp->saccts[i]->shares);
-        printf("   %6d   %6d\n",
+        printf("   %6d   %6d   %8d\n",
                qp->saccts[i]->numPEND,
-               qp->saccts[i]->numRUN);
+               qp->saccts[i]->numRUN,
+	       qp->saccts[i]->numBORROWED);
     }
 }

@@ -3339,29 +3339,7 @@ cleanSbdNode(struct jData *jpbw)
 static void
 updateStopJobPreemptResources(struct jData *jp)
 {
-    int resn;
 
-    if (MARKED_WILL_BE_PREEMPTED(jp)) {
-        jp->jFlags &= ~JFLAG_WILL_BE_PREEMPTED;
-        return;
-    }
-
-    FORALL_PRMPT_RSRCS(resn) {
-        int hostn;
-        float val;
-        GET_RES_RSRC_USAGE(resn, val, jp->shared->resValPtr,
-                           jp->qPtr->resValPtr);
-        if (val <= 0.0)
-            continue;
-
-        for (hostn = 0;
-             hostn == 0 || (slotResourceReserve && hostn < jp->numHostPtr);
-             hostn++) {
-            addAvailableByPreemptPRHQValue(resn, val, jp->hPtr[hostn], jp->qPtr);
-        }
-    } ENDFORALL_PRMPT_RSRCS;
-
-    return;
 }
 
 static void

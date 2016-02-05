@@ -907,28 +907,8 @@ void delPRMO()
 
 }
 
-void mbdReconfPRMO()
+void mbdReconfPRMO(void)
 {
-    struct jData *jp;
-    int i;
-
-
-    delPRMO();
-
-
-    for (jp = jDataList[SJL]->forw; jp != jDataList[SJL]; jp = jp->forw) {
-        jp->jFlags &= ~JFLAG_WILL_BE_PREEMPTED;
-    }
-
-
-    for (i = SJL; i <= PJL; i++) {
-        for (jp = jDataList[i]->back; jp != jDataList[i]; jp = jp->back) {
-            if (JOB_PREEMPT_WAIT(jp)) {
-
-                deallocReservePreemptResources(jp);
-            }
-        }
-    }
 }
 
 void resetPRMOValues(int valueSelectFlag)
