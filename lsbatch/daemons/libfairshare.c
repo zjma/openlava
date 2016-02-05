@@ -73,8 +73,6 @@ fs_update_sacct(struct qData *qPtr,
     if (t == NULL)
 	return -1;
 
-    t = qPtr->fsSched->tree;
-
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
         return -1;
