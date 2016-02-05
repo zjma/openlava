@@ -48,12 +48,21 @@ fs_update_sacct(struct qData *qPtr,
                 struct jData *jPtr,
                 int numJobs,
                 int numPEND,
-                int numRUN)
+                int numRUN,
+		int numUSUSP,
+		int numSSUSP)
 {
     struct tree_ *t;
     struct tree_node_ *n;
     struct share_acct *sacct;
     int numRAN;
+
+    /* Suspended jobs are still running so we
+     * ignore their state transition.
+     */
+    if (numUSUSP != 0
+	|| numSSUSP != 0)
+	return 0;
 
     t = NULL;
     if (qPtr->fsSched)
@@ -63,6 +72,8 @@ fs_update_sacct(struct qData *qPtr,
 
     if (t == NULL)
 	return -1;
+
+    t = qPtr->fsSched->tree;
 
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)

@@ -44,6 +44,8 @@ Release notes for OpenLava versions
    of slave hosts.
 -- Fix a bug in the slave host timer causing slave to send load
    to master more frequently then necessary.
+-- Fix counter update in fairshare policy when jobs are suspended
+   and resumed.
 
 3.1.2
 =====

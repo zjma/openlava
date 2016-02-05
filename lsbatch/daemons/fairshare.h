@@ -32,9 +32,11 @@ struct fair_sched {
     int (*fs_own_init)(struct qData *, struct userConf *);
     int (*fs_update_sacct)(struct qData *,
                            struct jData *,
-                           int,
-                           int,
-                           int);
+                           int,  /* numJobs */
+                           int,  /* numPEND */
+                           int,  /* numRUN */
+			   int,  /* numUSUSP */
+			   int); /* numSSUSP */
     int (*fs_init_sched_session)(struct qData *);
     int (*fs_init_own_sched_session)(struct qData *);
     int (*fs_elect_job)(struct qData *, LIST_T *, struct jRef **);
