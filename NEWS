@@ -8,6 +8,11 @@ cadence
    performed.
 -- Implement the replay of job absolute runtime for ownership policy.
 
+3.2.beta1
+=========
+-- Hosts member od a host group can now be specified in a compact format
+   for example: (ol[1-3]).
+
 3.2.0
 =====
 -- badmin ckconfig/reconfig displays configuration error and warning
@@ -36,6 +41,19 @@ cadence
    LIM_DEFINE_NCPUS=cores|threads in lsf.conf. Default is threads.
 -- Fix bsub bug in which if user specify -n min,max the max was ignored.
 -- Make fairshare configuration compatible with the LSF one.
+
+3.1.3
+======
+-- Corrected the lsf.cluster man page describing LIM communication
+   parameters.
+-- Enable LIM communication debugging using LC_COMM class and
+   LOG_INFO level.
+-- Fix bug in announceMaster() which was slowing down announcement
+   of slave hosts.
+-- Fix a bug in the slave host timer causing slave to send load
+   to master more frequently then necessary.
+-- Fix counter update in fairshare policy when jobs are suspended
+   and resumed.
 
 3.1.2
 =====

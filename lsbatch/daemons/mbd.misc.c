@@ -347,11 +347,23 @@ updQaccount(struct jData *jp, int numJobs, int numPEND,
     /* update fairshare counters
      */
     if (qp->fsSched) {
-        (*qp->fsSched->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN);
+        (*qp->fsSched->fs_update_sacct)(qp,
+					jp,
+					numJobs,
+					numPEND,
+					numRUN,
+					numUSUSP,
+					numSSUSP);
     }
 
     if (qp->own_sched) {
-        (*qp->own_sched->fs_update_sacct)(qp, jp, numJobs, numPEND, numRUN);
+        (*qp->own_sched->fs_update_sacct)(qp,
+					  jp,
+					  numJobs,
+					  numPEND,
+					  numRUN,
+					  numUSUSP,
+					  numSSUSP);
     }
 
     if (!newJob) {

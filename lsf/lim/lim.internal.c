@@ -69,6 +69,13 @@ Run lim -C on this host to find more information",
                   __func__, masterReg.hostName);
         return;
     }
+
+    if (logclass & LC_COMM) {
+	ls_syslog(LOG_INFO, "\
+%s: master %s lastSeqNo=%d seqNo=%d", __func__, hPtr->hostName,
+		  hPtr->lastSeqNo, masterReg.seqNo);
+    }
+
     /* Regular announce from the master.
      */
     if (myClusterPtr->masterKnown
@@ -146,9 +153,11 @@ Run lim -C on this host to find more information",
 
         if (masterReg.flags & SEND_LOAD_INFO) {
             mustSendLoad = 1;
-            ls_syslog(LOG_DEBUG, "\
+	    if (logclass & LC_COMM) {
+		ls_syslog(LOG_INFO, "\
 %s: Master lim is probing me. Send my load in next interval", __func__);
-        }
+	    }
+	}
 
         return;
     }
@@ -191,6 +200,14 @@ announceElimInstance(struct clusterNode *clPtr)
     }
 }
 
+/* announceMaster()
+ *
+ * The algorithm announces all hosts in 60 seconds and this function is
+ * called every 5 seconds. This means that in 12 periods all hosts must
+ * be announced as 12 * 5 = 60. The function then computes how many hosts
+ * have to be announce in each interval by computing numHosts/periods.
+ * The number of periods can be increased by configuring larger exchIntvl.
+ */
 void
 announceMaster(struct clusterNode *clPtr, char broadcast, char all)
 {
@@ -205,7 +222,7 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
     char   buf4[MSGSIZE/4];
     enum limReqCode limReqCode;
     struct masterReg masterReg;
-    static int cnt = 0;
+    static int cnt;
     struct LSFHeader reqHdr;
     int announceInIntvl;
     int numAnnounce;
@@ -222,7 +239,7 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
      *         = 4 * 60/5 = 48
      */
     periods = (hostInactivityLimit - 1) * exchIntvl/sampleIntvl;
-    if (!all && (++cnt > (periods - 1))) {
+    if (!all && (cnt > (periods - 1))) {
         cnt = 0;
         masterAnnSeqNo++;
     }
@@ -288,8 +305,9 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
     if (clPtr->masterKnown && ! broadcast) {
 
         memcpy(&toAddr.sin_addr, &clPtr->masterPtr->addr[0], sizeof(u_int));
+
         if (logclass & LC_COMM)
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 %s: Sending request to LIM on %s: %m", __func__, sockAdd2Str_(&toAddr));
 
         if (chanSendDgram_(limSock,
@@ -326,9 +344,11 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
             announceInIntvl = clPtr->numHosts;
     }
 
-    ls_syslog(LOG_DEBUG, "\
-%s: all %d cnt %d announceInIntvl %d",
-              __func__, all, cnt, announceInIntvl);
+    if (logclass & LC_COMM) {
+	ls_syslog(LOG_INFO, "\
+%s: all %d periods %d cnt %d announceInIntvl %d numHosts %d",
+		  __func__, all, periods, cnt, announceInIntvl, clPtr->numHosts);
+    }
 
     for (numAnnounce = 0;
          hPtr && (numAnnounce < announceInIntvl);
@@ -342,7 +362,7 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
         if (hPtr->infoValid == TRUE) {
 
             if (logclass & LC_COMM)
-                ls_syslog(LOG_DEBUG, "\
+                ls_syslog(LOG_INFO, "\
 %s: send announce (normal) to %s %s, inactivityCount=%d",
                           __func__,
                           hPtr->hostName, sockAdd2Str_(&toAddr),
@@ -350,11 +370,12 @@ announceMaster(struct clusterNode *clPtr, char broadcast, char all)
 
             if (hPtr->callElim){
 
-                if (logclass & LC_COMM)
-                    ls_syslog(LOG_DEBUG,"\
+                if (logclass & LC_COMM) {
+                    ls_syslog(LOG_INFO,"\
 %s: announcing SEND_ELIM_REQ to host %s %s",
                               __func__, hPtr->hostName,
                               sockAdd2Str_(&toAddr));
+		}
 
                 if (chanSendDgram_(limSock,
                                    buf4,
@@ -378,13 +399,14 @@ announceMaster: Failed to send request 1 to LIM on %s: %m", hPtr->hostName);
 
         } else {
 
-            if (logclass & LC_COMM)
-                ls_syslog(LOG_DEBUG,"\
+            if (logclass & LC_COMM) {
+                ls_syslog(LOG_INFO,"\
 %s: send announce (SEND_CONF) to %s %s %x, inactivityCount=%d",
                           __func__,
                           hPtr->hostName, sockAdd2Str_(&toAddr),
                           hPtr->addr[0],
                           hPtr->hostInactivityCount);
+	    }
 
             if (chanSendDgram_(limSock,
                                buf2,
@@ -400,9 +422,9 @@ announceMaster: Failed to send request 1 to LIM on %s: %m", hPtr->hostName);
     xdr_destroy(&xdrs1);
     xdr_destroy(&xdrs2);
     xdr_destroy(&xdrs4);
-
-    return;
-
+    /* Now increase the iteration counter.
+     */
+    ++cnt;
 }
 
 void
