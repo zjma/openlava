@@ -355,6 +355,10 @@ because hosts can belong to multiple groups. The reserved name all
 specifies all hosts in the cluster. Use an exclamation mark (!) to specify
 that the group membership should be retrieved via egroup. Use a tilde
 (~) to exclude specified hosts or host groups from the list.
+Host  name  pattern  can be used. You can use square brackets with a
+hyphen ([integer1 – integer2]) to define a  range  of  non-negative
+integers  at  the end of a host name. For example, hostA[1-20] means
+every host of "hostA1, hostA2, hostA3, ..., hostA20".
 .SH Examples of HostGroup Sections
 .BR
 .PP
@@ -372,6 +376,8 @@ groupA      (hostA hostD)
 groupB      (hostF groupA hostK)
 .br
 groupC      (!)
+.br
+simba       (ol[1-3])
 .br
 End HostGroup
 

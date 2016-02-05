@@ -1349,6 +1349,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
     int allFlag = FALSE;
     struct passwd *pw;
     int nGrpOverFlow = 0;
+    link_t *hl;
 
     if (groups == NULL || conf == NULL || ngroups == NULL)
         return FALSE;
@@ -1517,12 +1518,45 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 allFlag = TRUE;
             }
 
-            while (!allFlag && (wp = getNextWord_(&sp)) != NULL) {
-                if (!addMember(gp, wp, type, fname, *lineNum, "", options, TRUE)
+	    /* Support the compact hostname notation
+	     * a[n-N]
+	     */
+	    hl = host_base_name(sp);
+	    if (hl) {
+		while ((wp = pop_link(hl))) {
+		    if (! addMember(gp,
+				    wp,
+				    type,
+				    fname,
+				    *lineNum,
+				    "",
+				    options,
+				    true)
+			&& lsberrno == LSBE_NO_MEM) {
+			_free_(wp);
+			while ((wp = pop_link(hl)))
+			    _free_(wp);
+			fin_link(hl);
+			return false;
+		    }
+		    _free_(wp);
+		}
+		fin_link(hl);
+	    } else {
+		while (!allFlag && (wp = getNextWord_(&sp)) != NULL) {
+		    if (!addMember(gp,
+				   wp,
+				   type,
+				   fname,
+				   *lineNum,
+				   "",
+				   options,
+				   TRUE)
                     && lsberrno == LSBE_NO_MEM) {
-                    return FALSE;
-                }
-            }
+			return FALSE;
+		    }
+		}
+	    }
 
             if (allFlag) {
                 if (!addMember (gp,
