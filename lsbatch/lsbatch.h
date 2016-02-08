@@ -1038,10 +1038,11 @@ struct jobStartLog {
 };
 
 struct jobStartAcceptLog {
-    int    jobId;
-    int    jobPid;
-    int    jobPGid;
-    int    idx;
+    int jobId;
+    int jobPid;
+    int jobPGid;
+    int idx;
+    int jflags;
 };
 
 

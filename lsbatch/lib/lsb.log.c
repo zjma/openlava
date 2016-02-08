@@ -1123,15 +1123,23 @@ readJobStartAccept(char *line, struct jobStartAcceptLog *jobStartAcceptLog)
                 &(jobStartAcceptLog->jobId),
                 &(jobStartAcceptLog->jobPid),
                 &(jobStartAcceptLog->jobPGid),
-                &ccount );
+                &ccount);
     if (cc != 3)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
 
-    cc = sscanf(line, "%d%n", &(jobStartAcceptLog->idx), &ccount );
+    cc = sscanf(line, "%d%n", &(jobStartAcceptLog->idx), &ccount);
     if (cc != 1)
         return LSBE_EVENT_FORMAT;
     line += ccount + 1;
+
+    if (version >= 32) {
+	cc = sscanf(line, "%d%n", &(jobStartAcceptLog->jflags), &ccount);
+	if (cc != 1)
+	    return LSBE_EVENT_FORMAT;
+	line += ccount + 1;
+    }
+
     return LSBE_NO_ERROR;
 
 }
@@ -2236,6 +2244,9 @@ writeJobStartAccept(FILE *log_fp, struct jobStartAcceptLog *jobStartAcceptLog)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobStartAcceptLog->idx) < 0 )
+        return LSBE_SYS_CALL;
+
+    if (fprintf(log_fp, " %d", jobStartAcceptLog->jflags) < 0 )
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)

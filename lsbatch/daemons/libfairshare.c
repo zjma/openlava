@@ -484,16 +484,19 @@ update_borrowed_slots(struct tree_node_ *n,
      * marked as borrower
      */
     if (numRUN < 0
-	&& !(jPtr->jFlags & JFLAG_BORROWED_SLOTS))
+	&& !(jPtr->jFlags & JFLAG_BORROWED_SLOTS)) {
 	return false;
+    }
 
-    n2 = n;
-    while (n2->parent->parent)
-	n2 = n2->parent;
+    if (numRUN > 0) {
+	n2 = n;
+	while (n2->parent->parent)
+	    n2 = n2->parent;
 
-    s = n2->data;
-    if (s->numRUN < s->shares)
-	return false;
+	s = n2->data;
+	if (s->numRUN < s->shares)
+	    return false;
+    }
 
     /* initialize numRAN in case of negative numRUN
      */
@@ -512,14 +515,13 @@ update_borrowed_slots(struct tree_node_ *n,
 
     /* Mark this job as slot borrower
      */
-    if (numPEND < 0
-	&& numRUN > 0)
+    if (numRUN > 0)
 	jPtr->jFlags |= JFLAG_BORROWED_SLOTS;
 
     /* Unmark the job
      */
     if (numRUN < 0
-	&& jPtr->jFlags & JFLAG_BORROWED_SLOTS)
+	&& (jPtr->jFlags & JFLAG_BORROWED_SLOTS))
 	jPtr->jFlags &= ~JFLAG_BORROWED_SLOTS;
 
     return true;
