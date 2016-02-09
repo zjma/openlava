@@ -4196,13 +4196,19 @@ scheduleAndDispatchJobs(void)
 
     if (qsort_jobs) {
 	sort_job_list(MJL);
-	sort_job_list(PJL);
+	TIMEIT(0, sort_job_list(PJL), "sort_job_list()");
     }
 
     if (jRefList == NULL)
         jRefList = listCreate("job reference list");
 
     if (mSchedStage == 0) {
+
+        if (logclass & LC_SCHED) {
+            gettimeofday(&scheduleStartTime, NULL);
+            ls_syslog(LOG_INFO, "\
+%s: begin a new schedule and dispatch session", __func__);
+        }
 
         freedSomeReserveSlot = FALSE;
         updateAccountsInQueue = TRUE;
@@ -4267,18 +4273,15 @@ scheduleAndDispatchJobs(void)
 		}
 		++count;
 		if (count >= max_job_sched) {
-		    ls_syslog(LOG_INFO, "\
+		    if (logclass & LC_SCHED) {
+			ls_syslog(LOG_INFO, "\
 %s: bailed out at %d max %d", __func__, count, max_job_sched);
+		    }
 		    goto ven;
 		}
             }
         }
     ven:
-        if (logclass & LC_SCHED) {
-            gettimeofday(&scheduleStartTime, NULL);
-            ls_syslog(LOG_DEBUG, "\
-%s: begin a new schedule and dispatch session", __func__);
-        }
 
         mSchedStage |= M_STAGE_INIT;
     }
@@ -4322,7 +4325,7 @@ scheduleAndDispatchJobs(void)
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 %s: Stayed too long in M_STAGE_GOT_LOAD", __func__);
         }
         DUMP_CNT();
@@ -4336,7 +4339,7 @@ scheduleAndDispatchJobs(void)
                       + msleeptime/sharedResourceUpdFactor))) {
 
         if (logclass & LC_SCHED) {
-            ls_syslog(LOG_DEBUG,"\
+            ls_syslog(LOG_INFO,"\
 %s: now_disp=%d lastSharedResourceUpdateTime=%d diff=%d, mSchedStage=%x",
                       __func__, now_disp,
                       lastSharedResourceUpdateTime,
@@ -4363,14 +4366,14 @@ scheduleAndDispatchJobs(void)
     }
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_INFO, "\
 %s: M_STAGE_RESUME_SUSP tryResumed",
                   __func__);
     }
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 %s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
         }
         DUMP_CNT();
@@ -4390,14 +4393,14 @@ scheduleAndDispatchJobs(void)
     }
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_INFO, "\
 %s: M_STAGE_LSB_CAND got numLsbUsable=%d",
                   __func__, numLsbUsable);
     }
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 %s: Stayed too long in M_STAGE_LSB_CAND", __func__);
         }
         DUMP_CNT();
@@ -4444,13 +4447,13 @@ scheduleAndDispatchJobs(void)
     }
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG,"\
+        ls_syslog(LOG_INFO,"\
 %s M_STAGE_QUE_CAND numQUsable=%d timeGetQUsable %d ms",
                   __func__, numQUsable, timeGetQUsable);
     }
 
     if (LIST_NUM_ENTRIES(jRefList) == 0) {
-        ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_INFO, "\
 %s: no pending or migrating to jobs to schedule at the moment.", __func__);
         resetSchedulerSession();
         return 0;
@@ -4458,7 +4461,7 @@ scheduleAndDispatchJobs(void)
 
     if (STAY_TOO_LONG) {
         if (logclass & LC_SCHED) {
-            ls_syslog(LOG_DEBUG, "\
+            ls_syslog(LOG_INFO, "\
 %s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
         }
         DUMP_CNT();
@@ -4481,7 +4484,7 @@ scheduleAndDispatchJobs(void)
         XORDispatch(jPtr, FALSE, dispatchAJob0);
         if (STAY_TOO_LONG) {
             if (logclass & LC_SCHED) {
-                ls_syslog(LOG_DEBUG, "\
+                ls_syslog(LOG_INFO, "\
 %s: Stayed too long in M_STAGE_RESUME_SUSP", __func__);
             }
             DUMP_CNT();
@@ -4510,7 +4513,7 @@ scheduleAndDispatchJobs(void)
     }
 
     if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG,"\
+        ls_syslog(LOG_INFO,"\
 %s out of pickAJob/scheduleAJob loopCount <%d>", __func__, loopCount);
         DUMP_TIMERS(__func__);
         DUMP_CNT();
@@ -4526,7 +4529,7 @@ scheduleAndDispatchJobs(void)
         scheduleTime =
             (scheduleFinishTime.tv_sec - scheduleStartTime.tv_sec)*1000 +
             (scheduleFinishTime.tv_usec - scheduleStartTime.tv_usec)/1000;
-        ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_INFO, "\
 %s: Completed a schedule and dispatch session seqNo=%d, time used: %d ms",
                   __func__, schedSeqNo, scheduleTime);
     }
