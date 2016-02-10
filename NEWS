@@ -4,6 +4,8 @@ Release notes for OpenLava versions
 =========
 -- Hosts member od a host group can now be specified in a compact format
    for example: (ol[1-3]).
+-- Implement configure option --enable-debug. If set the compilation will
+   have the -Werror option enabled. By default this option is not set.
 
 3.2.pre
 ========

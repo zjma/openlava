@@ -5,6 +5,9 @@
 #
 AC_INIT(openlava, 3.2)
 AC_CONFIG_HEADERS(config.h)
+AC_CONFIG_SRCDIR([configure.ac])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR([m4])
 
 AC_PREFIX_DEFAULT([/opt/openlava-3.2])
 AC_DEFINE(_OPENLAVA_PROJECT_, "OpenLava 3.2.beta1", "Set project string in binaries.")
@@ -22,7 +25,7 @@ case "${target_os}" in
     AM_CONDITIONAL([SOLARIS], [true]) ;;
 esac
 
-# Initialize the automake
+# Initialize automake
 AM_INIT_AUTOMAKE
 
 # Experimental scheduling module
@@ -42,11 +45,8 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
-# Force warnings on for gcc and make sure main
-# daemons export their symbols to so plugins
-if test "x$ac_compiler_gnu" = xyes; then
-    CFLAGS="$CFLAGS -Wall -Werror -Wno-switch -fPIC -rdynamic"
-fi
+# --enable-debug to turn on -Werror and enable assert()
+OL_DEBUG
 
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
  AC_MSG_ERROR([cannot build openlava without ncurses])
@@ -104,6 +104,7 @@ LDFLAGS="$LDFLAGS -lm -lpthread -ldl -no-install"
 
 AC_CONFIG_FILES([
 	Makefile                 \
+	m4/Makefile              \
 	config/Makefile          \
 	lsf/Makefile             \
 	lsf/intlib/Makefile      \
