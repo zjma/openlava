@@ -7,6 +7,9 @@ cadence
 -- Fix a bug in ownership policy where wrong runtime comparison was
    performed.
 -- Implement the replay of job absolute runtime for ownership policy.
+-- Implement floating client feature. If the user configures in lsf.conf
+   LIM_ACCEPT_FLOAT_CLIENT=y any host can submit jobs and query the
+   daemons without being registered in the lsf.cluster file.
 
 3.2.beta1
 =========

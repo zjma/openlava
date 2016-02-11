@@ -57,6 +57,12 @@ findHost(char *hostName)
     if (hPtr)
         return hPtr;
 
+    /* Host unknow let's check is we allow
+     * slaves only
+     */
+    if (limParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
+       return myHostPtr;
+
     return NULL;
 
 }

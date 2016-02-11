@@ -135,6 +135,7 @@ static void inPendJobList2(struct jData *,
                            struct jData *,
                            struct jData **);
 static int jcompare(const void *, const void *);
+static struct hData *handle_float_client(struct submitReq *);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
@@ -160,7 +161,11 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     if ((nextId = getNextJobId()) < 0)
         return (LSBE_NO_JOBID);
 
-    hData = getHostData (subReq->fromHost);
+    hData = getHostData(subReq->fromHost);
+    if (hData == NULL
+	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue) {
+	hData = handle_float_client(subReq);
+    }
     if (hData == NULL) {
 
         if ((hinfo = getLsfHostData (subReq->fromHost)) == NULL) {
@@ -169,10 +174,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         }
         if (hinfo == NULL) {
             if (!(subReq->options & SUB_RESTART)) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6500,
-                                                 "%s: Host <%s> is not used by LSF"), /* catgets 6500 */
-                          fname, subReq->fromHost);
-                return (LSBE_MBATCHD);
+                ls_syslog(LOG_ERR, "\
+%s: Host <%s> is not used by LSF", __func__, subReq->fromHost);
+                return LSBE_BAD_SUBMISSION_HOST;
             }
             if (getHostByType (subReq->schedHostType) == NULL) {
                 ls_syslog(LOG_ERR, "\
@@ -196,7 +200,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     else if (auth->options == AUTH_HOST_UX)
         subReq->options2 |= SUB2_HOST_UX;
 
-    newjob = initJData((struct jShared *) my_calloc(1, sizeof(struct jShared), "newJob"));
+    newjob = initJData((struct jShared *)my_calloc(1,
+						   sizeof(struct jShared),
+						   "newJob"));
     newjob->jobId = nextId;
     returnErr = checkJobParams(newjob, subReq, Reply, auth);
 
@@ -8556,6 +8562,10 @@ static int checkSubHost(struct jData *job)
     }
 
     submitHost = getLsfHostData(job->shared->jobBill.fromHost);
+    if (submitHost == NULL
+	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
+	return LSBE_NO_ERROR;
+
     if (submitHost == NULL) {
         return LSBE_BAD_SUBMISSION_HOST;
     }
@@ -8858,4 +8868,30 @@ jcompare(const void *j1, const void *j2)
     abort();
 
     return 0;
+}
+
+/* handle_float_client()
+ *
+ * Floating clients are not in the openlava
+ * host list or know to mbatchd. Use the master
+ * as the from host and set the resreq to any host
+ * type unless the job has resource requirement.
+ */
+static struct hData *
+handle_float_client(struct submitReq *req)
+{
+    struct hData *hPtr;
+
+    hPtr = getHostData(masterHost);
+    if (hPtr == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: masterHosts %s host data not found?", __func__);
+	return NULL;
+    }
+
+    if (req->resReq == 0) {
+	req->resReq = strdup("type == any");
+    }
+
+    return hPtr;
 }
