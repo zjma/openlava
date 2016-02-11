@@ -142,7 +142,6 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
        struct lsfAuth *auth, int *schedule, int dispatch,
        struct jData **jobData)
 {
-    static char fname[] = "newJob";
     static struct jData *newjob;
     int returnErr;
     LS_LONG_INT nextId;
@@ -151,12 +150,11 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     struct hData *hData;
     struct hostInfo *hinfo;
     char hostType[MAXHOSTNAMELEN];
-
     struct idxList *idxList;
     int    maxJLimit = 0;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
 
     if ((nextId = getNextJobId()) < 0)
         return (LSBE_NO_JOBID);
@@ -242,9 +240,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
 
 
     if ((mbdRcvJobFile(chan, &jf)) == -1) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6502,
-                                         "%s: %s() failed for user ID <%d>: %M"), /* catgets 6502 */
-                  fname, "mbdRcvJobFile", auth->uid);
+        ls_syslog(LOG_ERR, "\
+%s: failed receiving job file for userid %d: %M",
+                  __func__, auth->uid);
         freeNewJob (newjob);
         if (returnErr != LSBE_NO_ERROR)
             return (returnErr);
@@ -290,8 +288,10 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     *jobData = newjob;
 
     if (logclass & (LC_TRACE | LC_EXEC | LC_SCHED))
-        ls_syslog(LOG_DEBUG1, "%s: New job <%s> submitted to queue <%s>",
-                  fname, lsb_jobid2str(newjob->jobId), newjob->qPtr->queue);
+        ls_syslog(LOG_DEBUG1, "\
+%s: New job <%s> submitted to queue <%s>",
+                  __func__, lsb_jobid2str(newjob->jobId),
+		  newjob->qPtr->queue);
 
     return LSBE_NO_ERROR;
 }
