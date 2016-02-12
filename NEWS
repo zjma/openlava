@@ -1,5 +1,9 @@
 Release notes for OpenLava versions
 
+3.2.0
+======
+-- Fix main Makefile.am to include the m4 directory.
+
 3.2.beta1
 =========
 -- Hosts member od a host group can now be specified in a compact format
@@ -48,6 +52,7 @@ Release notes for OpenLava versions
    to master more frequently then necessary.
 -- Fix counter update in fairshare policy when jobs are suspended
    and resumed.
+-- Remove spurious res log messages.
 
 3.1.2
 =====
