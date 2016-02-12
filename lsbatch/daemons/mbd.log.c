@@ -647,6 +647,7 @@ replay_startjob(char *filename, int lineNum, int preExecStart)
     if (jp->hPtr)
         FREEUP(jp->hPtr);
     jp->hPtr = job.hPtr;
+    jp->jFlags = logPtr->eventLog.jobStartLog.jFlags;
 
     if (!preExecStart
         && (jp->shared->jobBill.options & SUB_PRE_EXEC)
@@ -678,7 +679,6 @@ replay_startjob(char *filename, int lineNum, int preExecStart)
 static int
 replay_executejob(char *filename, int lineNum)
 {
-    static char            fname[] = "replay_executejob";
     struct jobExecuteLog   *jobExecuteLog;
     struct jData           *jp;
     LS_LONG_INT            jobId;
@@ -686,12 +686,14 @@ replay_executejob(char *filename, int lineNum)
     jobExecuteLog = &logPtr->eventLog.jobExecuteLog;
 
     jobId = LSB_JOBID(jobExecuteLog->jobId, jobExecuteLog->idx);
+
     if ((jp = getJobData(jobId)) == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6715,
-                                         "%s: Job <%d> not found in job list"),
-                  fname, jobExecuteLog->jobId);
+        ls_syslog(LOG_ERR, "\
+%s: Job %s not found in job list",
+                  __func__, lsb_jobid2str(jobId));
         return false;
     }
+
     jp->execUid = jobExecuteLog->execUid;
     jp->jobPGid = jobExecuteLog->jobPGid;
 
@@ -712,22 +714,22 @@ replay_executejob(char *filename, int lineNum)
     jp->execUsername = safeSave(jobExecuteLog->execUsername);
 
     return true;
-
 }
 
 static int
 replay_startjobaccept(char *filename, int lineNum)
 {
-    static char             fname[] = "replay_startjobaccept";
-    struct jobStartAcceptLog   *jobStartAcceptLog;
-    struct jData           *jp;
-    LS_LONG_INT            jobId;
+    struct jobStartAcceptLog *jobStartAcceptLog;
+    struct jData *jp;
+    LS_LONG_INT jobId;
+
     jobStartAcceptLog = &logPtr->eventLog.jobStartAcceptLog;
     jobId = LSB_JOBID(jobStartAcceptLog->jobId, jobStartAcceptLog->idx);
+
     if ((jp = getJobData(jobId)) == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6715,
-                                         "%s: Job <%d> not found in job list"),
-                  fname, jobStartAcceptLog->jobId);
+        ls_syslog(LOG_ERR, "\
+%s: Job %s not found in job list",
+                  __func__, lsb_jobid2str(jobId));
         return false;
     }
 
@@ -737,8 +739,9 @@ replay_startjobaccept(char *filename, int lineNum)
         (ARRAY_DATA(jp->jgrpNode)->jobArray->startTime == 0)){
         ARRAY_DATA(jp->jgrpNode)->jobArray->startTime = jp->startTime;
     }
-    return true;
+    jp->jFlags = jobStartAcceptLog->jflags;
 
+    return true;
 }
 
 
@@ -1504,6 +1507,7 @@ log_jobdata(struct jData *job, char *fname1, int type)
 
     jobNewLog->userPriority = jobBill->userPriority;
     jobNewLog->userGroup = jobBill->userGroup;
+    jobNewLog->abs_run_limit = job->abs_run_limit;
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -1592,7 +1596,7 @@ log_startjob(struct jData * job, int preExecStart)
     jobStartLog->jobId = LSB_ARRAY_JOBID(job->jobId);
     jobStartLog->idx = LSB_ARRAY_IDX(job->jobId);
     jobStartLog->jStatus = JOB_STAT_RUN;
-    jobStartLog->jFlags  = 0;
+    jobStartLog->jFlags  = job->jFlags;
     jobStartLog->numExHosts = job->numHostPtr;
     jobStartLog->jobPid = job->jobPid;
     jobStartLog->jobPGid = job->jobPGid;
@@ -1668,16 +1672,14 @@ log_executejob(struct jData * job)
 }
 
 void
-log_startjobaccept(struct jData * job)
+log_startjobaccept(struct jData *job)
 {
-    static char             fname[] = "log_startjobaccept";
-    struct jobStartAcceptLog   *jobStartAcceptLog;
+    struct jobStartAcceptLog *jobStartAcceptLog;
 
-    if (openEventFile(fname) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "openEventFile");
+    if (openEventFile(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: openEventFile() failed for job %s",
+                  __func__, lsb_jobid2str(job->jobId));
         mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_START_ACCEPT;
@@ -1687,16 +1689,17 @@ log_startjobaccept(struct jData * job)
     jobStartAcceptLog->idx = LSB_ARRAY_IDX(job->jobId);
     jobStartAcceptLog->jobPGid = job->jobPGid;
     jobStartAcceptLog->jobPid = job->jobPid;
+    jobStartAcceptLog->jflags = job->jFlags;
 
     if ((job->jgrpNode->nodeType == JGRP_NODE_ARRAY) &&
         (ARRAY_DATA(job->jgrpNode)->jobArray->startTime == 0)) {
         ARRAY_DATA(job->jgrpNode)->jobArray->startTime = job->startTime;
     }
+
     if (putEventRec("log_startjobaccept") < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "putEventRec");
+        ls_syslog(LOG_ERR, "\
+%s: putEventRec() failed for job job %s",
+                  __func__, lsb_jobid2str(job->jobId));
         mbdDie(MASTER_FATAL);
     }
 }
@@ -3782,6 +3785,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     job->jobPriority = jobBill->userPriority;
 
     jobBill->userGroup = strdup(jobNewLog->userGroup);
+
+    job->abs_run_limit = jobNewLog->abs_run_limit;
 
     return job;
 }

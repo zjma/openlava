@@ -961,6 +961,7 @@ struct jobNewLog {
     int    idx;
     int    userPriority;
     char *userGroup;
+    int abs_run_limit;
 };
 
 struct jobModLog {
@@ -1037,10 +1038,11 @@ struct jobStartLog {
 };
 
 struct jobStartAcceptLog {
-    int    jobId;
-    int    jobPid;
-    int    jobPGid;
-    int    idx;
+    int jobId;
+    int jobPid;
+    int jobPGid;
+    int idx;
+    int jflags;
 };
 
 

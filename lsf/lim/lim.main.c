@@ -70,10 +70,7 @@ struct config_param limParams[] =
     {"LSF_LOG_MASK",NULL},
     {"LSF_CONF_RETRY_MAX", NULL},
     {"LSF_CONF_RETRY_INT", NULL},
-    {"LSF_CROSS_UNIX_NT", NULL},
     {"LSF_LIM_IGNORE_CHECKSUM", NULL},
-    {"LSF_MASTER_LIST", NULL},
-    {"LSF_REJECT_NONLSFHOST", NULL},
     {"LSF_LIM_JACKUP_BUSY", NULL},
     {"LIM_RSYNC_CONFIG", NULL},
     {"LIM_COMPUTE_ONLY", NULL},
@@ -81,6 +78,7 @@ struct config_param limParams[] =
     {"LIM_NO_MIGRANT_HOSTS", NULL},
     {"LIM_DONT_FORK", NULL},
     {"LIM_DEFINE_NCPUS", NULL},
+    {"LIM_ACCEPT_FLOAT_CLIENT", NULL},
     {NULL, NULL},
 };
 
@@ -552,7 +550,8 @@ doAcceptConn(void)
     ch = chanAccept_(limTcpSock, &from);
     if (ch < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed accept() new connection socket %d: %M", __func__, limTcpSock);
+%s: failed accept() new connection socket %d: %M", __func__,
+		  limTcpSock);
         return;
     }
 
@@ -567,6 +566,10 @@ doAcceptConn(void)
                           __func__, sockAdd2Str_(&from));
         return;
     }
+
+    if (fromHost == NULL
+	&& limParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
+	fromHost = myHostPtr;
 
     client = calloc(1, sizeof(struct clientNode));
     if (!client) {

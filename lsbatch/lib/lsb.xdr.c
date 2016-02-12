@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1089,6 +1089,11 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
         || ! xdr_int(xdrs, &s->numRUN)
         || ! xdr_uint32_t(xdrs, &s->options))
         return false;
+
+    if (hdr->version >= 32) {
+	if (! xdr_int(xdrs, &s->numBORROWED))
+	    return false;
+    }
 
     return true;
 }

@@ -156,6 +156,7 @@
 #define SBD_BIND_CPU           56
 #define MBD_MAX_JOBS_SCHED     57
 #define MBD_NO_QSORT_JOBS      58
+#define LIM_ACCEPT_FLOAT_CLIENT 59
 
 #define NOT_LOG  INFINIT_INT
 

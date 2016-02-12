@@ -98,7 +98,7 @@ typedef enum {
 #define JFLAG_REQUEUE           0x1000000
 #define JFLAG_HAS_BEEN_REQUEUED 0x2000000
 #define JFLAG_JOB_PREEMPTED     0x20000000
-#define JFLAG_WILL_BE_PREEMPTED 0x40000000
+#define JFLAG_BORROWED_SLOTS    0x40000000
 #define JFLAG_WAIT_SWITCH       0x80000000
 
 
@@ -353,6 +353,7 @@ struct jData {
     int numMsg;
     struct lsbMsg **msgs;
     char *run_rusage;   /* "rusage[x=1:y=2||z=3:w=4]" */
+    int abs_run_limit; /* absolute run limit in seconds */
 };
 
 

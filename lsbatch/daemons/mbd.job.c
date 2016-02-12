@@ -135,13 +135,13 @@ static void inPendJobList2(struct jData *,
                            struct jData *,
                            struct jData **);
 static int jcompare(const void *, const void *);
+static struct hData *handle_float_client(struct submitReq *);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
        struct lsfAuth *auth, int *schedule, int dispatch,
        struct jData **jobData)
 {
-    static char fname[] = "newJob";
     static struct jData *newjob;
     int returnErr;
     LS_LONG_INT nextId;
@@ -150,17 +150,20 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     struct hData *hData;
     struct hostInfo *hinfo;
     char hostType[MAXHOSTNAMELEN];
-
     struct idxList *idxList;
     int    maxJLimit = 0;
 
     if (logclass & (LC_TRACE | LC_EXEC))
-        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
 
     if ((nextId = getNextJobId()) < 0)
         return (LSBE_NO_JOBID);
 
-    hData = getHostData (subReq->fromHost);
+    hData = getHostData(subReq->fromHost);
+    if (hData == NULL
+	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue) {
+	hData = handle_float_client(subReq);
+    }
     if (hData == NULL) {
 
         if ((hinfo = getLsfHostData (subReq->fromHost)) == NULL) {
@@ -169,10 +172,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         }
         if (hinfo == NULL) {
             if (!(subReq->options & SUB_RESTART)) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6500,
-                                                 "%s: Host <%s> is not used by LSF"), /* catgets 6500 */
-                          fname, subReq->fromHost);
-                return (LSBE_MBATCHD);
+                ls_syslog(LOG_ERR, "\
+%s: Host <%s> is not used by LSF", __func__, subReq->fromHost);
+                return LSBE_BAD_SUBMISSION_HOST;
             }
             if (getHostByType (subReq->schedHostType) == NULL) {
                 ls_syslog(LOG_ERR, "\
@@ -196,7 +198,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     else if (auth->options == AUTH_HOST_UX)
         subReq->options2 |= SUB2_HOST_UX;
 
-    newjob = initJData((struct jShared *) my_calloc(1, sizeof(struct jShared), "newJob"));
+    newjob = initJData((struct jShared *)my_calloc(1,
+						   sizeof(struct jShared),
+						   "newJob"));
     newjob->jobId = nextId;
     returnErr = checkJobParams(newjob, subReq, Reply, auth);
 
@@ -236,9 +240,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
 
 
     if ((mbdRcvJobFile(chan, &jf)) == -1) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6502,
-                                         "%s: %s() failed for user ID <%d>: %M"), /* catgets 6502 */
-                  fname, "mbdRcvJobFile", auth->uid);
+        ls_syslog(LOG_ERR, "\
+%s: failed receiving job file for userid %d: %M",
+                  __func__, auth->uid);
         freeNewJob (newjob);
         if (returnErr != LSBE_NO_ERROR)
             return (returnErr);
@@ -284,8 +288,10 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     *jobData = newjob;
 
     if (logclass & (LC_TRACE | LC_EXEC | LC_SCHED))
-        ls_syslog(LOG_DEBUG1, "%s: New job <%s> submitted to queue <%s>",
-                  fname, lsb_jobid2str(newjob->jobId), newjob->qPtr->queue);
+        ls_syslog(LOG_DEBUG1, "\
+%s: New job <%s> submitted to queue <%s>",
+                  __func__, lsb_jobid2str(newjob->jobId),
+		  newjob->qPtr->queue);
 
     return LSBE_NO_ERROR;
 }
@@ -848,6 +854,9 @@ getCpuLimit (struct jData *job, struct submitReq *subReq)
             return (LSBE_BAD_LIMIT);
         }
 
+	/* Save the absolute, unscaled run limit
+	 */
+	job->abs_run_limit = job->shared->jobBill.rLimits[LSF_RLIMIT_RUN];
 
         if (runLimit > (INFINIT_INT /(*cpuFactor))) {
             return (LSBE_BAD_LIMIT);
@@ -3336,29 +3345,7 @@ cleanSbdNode(struct jData *jpbw)
 static void
 updateStopJobPreemptResources(struct jData *jp)
 {
-    int resn;
 
-    if (MARKED_WILL_BE_PREEMPTED(jp)) {
-        jp->jFlags &= ~JFLAG_WILL_BE_PREEMPTED;
-        return;
-    }
-
-    FORALL_PRMPT_RSRCS(resn) {
-        int hostn;
-        float val;
-        GET_RES_RSRC_USAGE(resn, val, jp->shared->resValPtr,
-                           jp->qPtr->resValPtr);
-        if (val <= 0.0)
-            continue;
-
-        for (hostn = 0;
-             hostn == 0 || (slotResourceReserve && hostn < jp->numHostPtr);
-             hostn++) {
-            addAvailableByPreemptPRHQValue(resn, val, jp->hPtr[hostn], jp->qPtr);
-        }
-    } ENDFORALL_PRMPT_RSRCS;
-
-    return;
 }
 
 static void
@@ -4766,6 +4753,7 @@ initJData(struct jShared  *shared)
     job->groupCands = NULL;
     job->inEligibleGroups = NULL;
     job->run_rusage = NULL;
+    job->abs_run_limit = -1;
 
     return job;
 }
@@ -8574,6 +8562,10 @@ static int checkSubHost(struct jData *job)
     }
 
     submitHost = getLsfHostData(job->shared->jobBill.fromHost);
+    if (submitHost == NULL
+	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
+	return LSBE_NO_ERROR;
+
     if (submitHost == NULL) {
         return LSBE_BAD_SUBMISSION_HOST;
     }
@@ -8876,4 +8868,30 @@ jcompare(const void *j1, const void *j2)
     abort();
 
     return 0;
+}
+
+/* handle_float_client()
+ *
+ * Floating clients are not in the openlava
+ * host list or know to mbatchd. Use the master
+ * as the from host and set the resreq to any host
+ * type unless the job has resource requirement.
+ */
+static struct hData *
+handle_float_client(struct submitReq *req)
+{
+    struct hData *hPtr;
+
+    hPtr = getHostData(masterHost);
+    if (hPtr == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: masterHosts %s host data not found?", __func__);
+	return NULL;
+    }
+
+    if (req->resReq == 0) {
+	req->resReq = strdup("type == any");
+    }
+
+    return hPtr;
 }
