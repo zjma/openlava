@@ -1,5 +1,8 @@
 Release notes for OpenLava versions
 
+3.3.pre.1
+=========
+
 3.2.0
 ======
 -- Fix main Makefile.am to include the m4 directory.
