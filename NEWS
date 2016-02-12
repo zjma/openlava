@@ -52,6 +52,7 @@ Release notes for OpenLava versions
    to master more frequently then necessary.
 -- Fix counter update in fairshare policy when jobs are suspended
    and resumed.
+-- Remove spurious res log messages.
 
 3.1.2
 =====
