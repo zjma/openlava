@@ -374,7 +374,6 @@ main(int argc, char **argv)
 	if (res_interrupted > 0) {
 	    block_sig_chld();
 	    res_interrupted = 0;
-            ls_syslog(LOG_ERR, "%s: 0 interrupted %d", __func__, res_interrupted);
 	    continue;
 	}
 
@@ -383,8 +382,6 @@ main(int argc, char **argv)
 
 	nready = select(maxfd, &readmask, &writemask, &exceptmask, &tv);
 	selectError = errno;
-        ls_syslog(LOG_ERR, "\
-%s: 0 interrupted %d nready %d", __func__, res_interrupted, nready);
 	block_sig_chld();
 
 	if (nready == 0) {
