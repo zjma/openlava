@@ -3,15 +3,17 @@
 #
 # Copyright (C) 2011-2016 David Bigagli
 #
-AC_INIT(openlava, 3.2)
+AC_INIT(openlava, 3.3)
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([m4])
 
-AC_PREFIX_DEFAULT([/opt/openlava-3.2])
+AC_PREFIX_DEFAULT([/opt/openlava-3.3])
 
-AC_DEFINE(_OPENLAVA_PROJECT_, "OpenLava 3.2.0", "Set project string in AC_DEFINE(OPENLAVA_VERSION, 32, "Current openlava version.")
+AC_PREFIX_DEFAULT([/opt/openlava-3.3])
+AC_DEFINE(_OPENLAVA_PROJECT_, "OpenLava 3.3.pre1", "Set project string in binaries.")
+AC_DEFINE(OPENLAVA_VERSION, 33, "Current openlava version.")
 #AC_DEFINE(REL_DATE, "Nov 11 2013", "Set the release date.")
 
 # Non Linux support
