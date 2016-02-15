@@ -2423,7 +2423,8 @@ checkAcctLog(void)
             }
 
             if ((lastAcctCreationTime > 0)
-                && ((now - lastAcctCreationTime) > (acctArchiveInDays*DAYSECONDS))) {
+                && ((now - lastAcctCreationTime)
+		    > (acctArchiveInDays*DAYSECONDS))) {
                 needArchive = 1;
             }
         }
@@ -2449,6 +2450,9 @@ switchAcctLog(void)
     int errnoSv;
     int totalAcctFile;
 
+    if (joblog_fp)
+	_fclose_(&joblog_fp);
+
     if (createAcct0File() == -1) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "createAcct0File");
         goto Acct_exiterr;
@@ -2468,7 +2472,8 @@ switchAcctLog(void)
         goto Acct_exiterr;
     }
 
-    _fclose_(&joblog_fp);
+    /* after switch keep the joblog_fp file open.
+     */
 
     errnoSv = errno;
     chmod(jlogFname, 0644);
@@ -4687,7 +4692,8 @@ renameAcctLogFiles(int fileLimit)
             return -1;
         }
     }
-    return (max);
+
+    return max;
 }
 
 static void
