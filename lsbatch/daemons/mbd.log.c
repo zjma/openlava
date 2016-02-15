@@ -82,7 +82,7 @@ static int              openEventFile2(const char *);
 static int              putEventRec(const char *);
 static int              putEventRecTime(const char *, time_t);
 static int              putEventRec1(const char *);
-static int              log_jobdata(struct jData *, char *, int);
+static int              log_jobdata(struct jData *, const char *, int);
 static int              createEvent0File(void);
 static int              renameElogFiles(void);
 static int              createAcct0File(void);
@@ -159,7 +159,6 @@ init_log(void)
     char dirbuf[MAXPATHLEN];
     char infoDir[MAXPATHLEN];
     struct stat sbuf;
-    struct stat ebuf;
 
     mSchedStage = M_STAGE_REPLAY;
 
@@ -179,7 +178,6 @@ init_log(void)
         }
         ConfigError = -1;
     }
-
 
     if (sbuf.st_uid != managerId) {
         ls_syslog(LOG_ERR, "\
@@ -230,108 +228,127 @@ init_log(void)
         mbdDie(MASTER_FATAL);
     }
 
-    stat(elogFname, &ebuf);
-    log_fp = fopen(elogFname, "r");
-
-    if (log_fp != NULL) {
-
-        if (lsberrno == LSBE_EOF)
-            lsberrno = LSBE_NO_ERROR;
-
-
-        while (lsberrno != LSBE_EOF) {
-
-	    /* Use single purpose reading getc2() routine.
-	     */
-            if ((logPtr = lsb_geteventrecord(log_fp, &lineNum)) == NULL) {
-
-                if (lsberrno != LSBE_EOF) {
-                    ls_syslog(LOG_ERR, "\
-%s: Reading event file <%s> at line <%d>: %s",
-                              __func__,
-                              elogFname,
-                              lineNum,
-                              lsb_sysmsg());
-                    first = FALSE;
-                    if (lsberrno == LSBE_NO_MEM) {
-                        mbdDie(MASTER_MEM);
-                    }
-
-                } else {
-                    _fclose_(&log_fp);
-		    reset_getc2();
-                    log_fp = NULL;
-                }
-                continue;
-            }
-
-            eventTime = logPtr->eventTime;
-            if (!replay_event(elogFname, lineNum) && first) {
-                ls_syslog(LOG_ERR, "\
-%s: File %s at line %d: First replay_event() failed; line ignored",
-                          __func__,
-                          elogFname,
-                          lineNum);
-                first = FALSE;
-            }
-        }
-
-        if (log_fp) {
-            _fclose_(&log_fp);
-	    reset_getc2();
-	}
-
-	if (qsort_jobs) {
-	    sort_job_list(PJL);
-	}
-
-        for (list = SJL; list <= PJL; list++) {
-
-            for (jp = jDataList[list]->back;
-                 jp != jDataList[list];
-                 jp = jp->back) {
-                int svJStatus = jp->jStatus;
-                int i;
-                int num;
-
-                num = jp->shared->jobBill.maxNumProcessors;
-
-                jp->jStatus = JOB_STAT_PEND;
-
-                updQaccount(jp, num, num, 0, 0, 0, 0);
-                updUserData(jp, num, num, 0, 0, 0, 0);
-
-                jp->jStatus = svJStatus;
-                if (jp->jStatus & JOB_STAT_PEND)
-                    continue;
-
-                updCounters(jp, JOB_STAT_PEND, !LOG_IT);
-
-                if ((jp->shared->jobBill.options & SUB_EXCLUSIVE)
-                    && IS_START (jp->jStatus)) {
-                    for (i = 0; i < jp->numHostPtr; i ++)
-                        jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
-                }
-            }
-        }
-
-        if (logclass & LC_JGRP)
-            printTreeStruct(treeFile);
-
-        if (nextJobId == 1) {
-            nextJobId = nextJobId_t + SAFE_JID_GAP;
-            if (nextJobId >= maxJobId)
-                nextJobId = 1;
-        }
+    if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to fopen() %s %m", __func__, jlogFname);
     }
+
+    /* Open for reading and appending (writing at end of file).
+     * The file is  created  if it  does  not exist.  The initial
+     * file position for reading is at the beginning of the file,
+     * but output is always appended to the end of the file.
+     */
+    log_fp = fopen(elogFname, "a+");
+    if (log_fp == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: cannot fopen() the %s file; %m", __func__, elogFname);
+        mbdDie(MASTER_FATAL);
+    }
+
+    /* Loop thru the whole lsb.events replaying all EVENTs in it.
+     * First get the record, then replay it.
+     * The lsb.event file record is a static global pointer allocated
+     * inside the library.
+     * If  the lsb_geteventrec() returns an error different from
+     * EOF try the next record.
+     */
+    lsberrno = LSBE_NO_ERROR;
+    while (lsberrno != LSBE_EOF) {
+
+	/* Use single purpose reading getc2() routine.
+	 */
+	if ((logPtr = lsb_geteventrecord(log_fp, &lineNum)) == NULL) {
+
+	    if (lsberrno != LSBE_EOF) {
+		ls_syslog(LOG_ERR, "\
+%s: Reading event file <%s> at line <%d>: %s",
+			  __func__,
+			  elogFname,
+			  lineNum,
+			  lsb_sysmsg());
+		first = FALSE;
+		if (lsberrno == LSBE_NO_MEM) {
+		    mbdDie(MASTER_MEM);
+		}
+
+	    } else {
+		/* keep log_fp always open
+		 */
+		reset_getc2();
+	    }
+	    continue;
+	}
+
+	eventTime = logPtr->eventTime;
+	if (!replay_event(elogFname, lineNum) && first) {
+	    ls_syslog(LOG_ERR, "\
+%s: File %s at line %d: First replay_event() failed; line ignored",
+		      __func__,
+		      elogFname,
+		      lineNum);
+	    first = FALSE;
+	}
+
+    } /* while (lsberrno != LSBE_EOF) */
+
+    /* keep log_fp always open
+     */
+    reset_getc2();
+
+    if (qsort_jobs) {
+	sort_job_list(PJL);
+    }
+
+    for (list = SJL; list <= PJL; list++) {
+
+	for (jp = jDataList[list]->back;
+	     jp != jDataList[list];
+	     jp = jp->back) {
+	    int svJStatus = jp->jStatus;
+	    int i;
+	    int num;
+
+	    num = jp->shared->jobBill.maxNumProcessors;
+
+	    jp->jStatus = JOB_STAT_PEND;
+
+	    updQaccount(jp, num, num, 0, 0, 0, 0);
+	    updUserData(jp, num, num, 0, 0, 0, 0);
+
+	    jp->jStatus = svJStatus;
+	    if (jp->jStatus & JOB_STAT_PEND)
+		continue;
+
+	    updCounters(jp, JOB_STAT_PEND, !LOG_IT);
+
+	    if ((jp->shared->jobBill.options & SUB_EXCLUSIVE)
+		&& IS_START (jp->jStatus)) {
+		for (i = 0; i < jp->numHostPtr; i ++)
+		    jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
+	    }
+	}
+    }
+
+    if (logclass & LC_JGRP)
+	printTreeStruct(treeFile);
+
+    if (nextJobId == 1) {
+	nextJobId = nextJobId_t + SAFE_JID_GAP;
+	if (nextJobId >= maxJobId)
+	    nextJobId = 1;
+    }
+
 
     if (!first) {
 
-        if (switch_log() == -1)
-            ConfigError = -1;
+	if (switch_log() == -1)
+	    ConfigError = -1;
     }
 
-    switchELog();
+    /* Dont switch now and keep the log_fp always
+     * open
+     * switchELog();
+     */
     if (logLoadIndex)
         log_loadIndex();
 
@@ -1347,13 +1364,11 @@ log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
 int
 log_newjob(struct jData *job)
 {
-    static char             fname[] = "log_newjob";
-
-    return (log_jobdata(job, fname, EVENT_JOB_NEW));
+    return log_jobdata(job, __func__, EVENT_JOB_NEW);
 }
 
 static int
-log_jobdata(struct jData *job, char *fname1, int type)
+log_jobdata(struct jData *job, const char *fname1, int type)
 {
     static char             fname[] = "log_jobdata";
     struct submitReq       *jobBill = &(job->shared->jobBill);
@@ -2036,6 +2051,7 @@ log_loadIndex(void)
 
     for (i = 0; i < allLsInfo->numIndx; i++)
         logPtr->eventLog.loadIndexLog.name[i] = allLsInfo->resTable[i].name;
+
     if (putEventRec(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "putEventRec");
         mbdDie(MASTER_FATAL);
@@ -2110,10 +2126,14 @@ openEventFile(const char *fname)
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
-    if ((log_fp = fopen(elogFname, "a+")) == NULL) {
-        sigprocmask(SIG_SETMASK, &oldmask, NULL);
-        ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
-        return -1;
+    /* Test if the file is already open.
+     */
+    if (log_fp == NULL) {
+	if ((log_fp = fopen(elogFname, "a+")) == NULL) {
+	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
+	    ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
+	    return -1;
+	}
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 
@@ -2200,28 +2220,22 @@ putEventRecTime(const char *fname, time_t eventTime)
 static int
 putEventRec1(const char *fname)
 {
-    int  ret;
-    int  cc;
-
-    ret = 0;
-
     if (lsb_puteventrec(log_fp, logPtr) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
-        ret = -1;
+	return -1;
     }
 
     if (mbdParams->maxStreamRecords > 0)
         streamEvent(logPtr);
 
     free(logPtr);
-    cc = _fclose_(&log_fp);
-    if (cc < 0) {
-        ls_syslog(LOG_ERR, "%s: fclose() failed: %m", __func__);
-        ret = -1;
+    if (fflush(log_fp) != 0) {
+	ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
+	return -1;
     }
 
-    return ret;
+    return 0;
 }
 
 static void
@@ -2237,10 +2251,12 @@ logFinishedjob(struct jData *job)
         return;
     }
 
-    if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen",
-                  jlogFname);
-        return;
+    if (joblog_fp == NULL) {
+	if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
+	    ls_syslog(LOG_ERR, "\
+%s: failed to fopen() %s %m", __func__, jlogFname);
+	    return;
+	}
     }
     chmod(jlogFname, 0644);
 
