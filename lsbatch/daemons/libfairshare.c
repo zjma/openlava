@@ -476,8 +476,8 @@ update_borrowed_slots(struct tree_node_ *n,
     if (jPtr->qPtr->own_sched == NULL)
 	return false;
 
-    if (! numRUN > 0
-	&& ! numRUN < 0)
+    if (! (numRUN > 0)
+	&& ! (numRUN < 0))
 	return false;
 
     /* A job has finished or being requeued but it was not
