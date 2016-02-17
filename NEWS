@@ -1,5 +1,11 @@
 Release notes for OpenLava versions
 
+3.1.4
+======
+
+-- Fix the problem that if the order of events in lim.events is not correct
+   LIM may core dump.
+
 3.1.3
 ======
 -- Corrected the lsf.cluster man page describing LIM communication
