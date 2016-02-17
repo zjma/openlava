@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 David Bigagli
+ * Copyright (C) 2011 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -448,8 +448,8 @@ getLogClass_(char *lsp, char *tsp)
             class |= LC_PREEMPT;
         if (strcmp (word, "LC_ELIM") == 0)
             class |= LC_ELIM;
-        if (strcmp (word, "LC_M_LOG") == 0)
-            class |= LC_M_LOG;
+        if (strcmp (word, "LC_SWITCH") == 0)
+            class |= LC_SWITCH;
         if (strcmp (word, "LC_PERFM") == 0)
             class |= LC_PERFM;
     }

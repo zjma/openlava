@@ -349,10 +349,6 @@ badminDebug(int nargc, char *nargv[], int opCode)
                     if (strcmp(word, "LC_LOADINDX") == 0)
                         debug.logClass |= LC_LOADINDX;
 
-                    if (strcmp(word, "LC_M_LOG") == 0) {
-                        debug.logClass |= LC_M_LOG;
-                    }
-
                     if (strcmp(word, "LC_PERFM") == 0) {
                         debug.logClass |= LC_PERFM;
                     }

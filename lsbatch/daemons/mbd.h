@@ -744,6 +744,14 @@ struct resourceInstance {
     char      *value;
 };
 
+/* Information about the child switching
+ * the lsb.events
+ */
+struct switch_child {
+    pid_t  pid;
+    bool_t child_gone;
+};
+
 struct profileCounters {
     int cntVal;
     char *cntDescr;
@@ -911,7 +919,7 @@ extern float                   maxCpuFactor;
 extern int                     freedSomeReserveSlot;
 
 extern long                    schedSeqNo;
-
+extern struct switch_child     *swchild;
 
 extern void                 pollSbatchds(int);
 extern void                 hStatChange(struct hData *, int status);
@@ -1462,5 +1470,6 @@ extern void freeTimeWindow(struct timeWindow *);
 extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
 extern int postMsg2Job(char **, struct jData *);
+extern int fork_mbd(void);
 
 #endif /* _MBD_HEADER_ */

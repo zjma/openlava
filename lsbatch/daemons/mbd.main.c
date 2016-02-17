@@ -999,9 +999,11 @@ child_handler (int sig)
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
-        ;
-
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        if (pid == swchild->pid) {
+	    swchild->child_gone = true;
+	}
+    }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 }
 

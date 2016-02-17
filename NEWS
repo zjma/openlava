@@ -1,5 +1,11 @@
 Release notes for OpenLava versions
 
+3.3.pre.2
+=========
+-- Keep the lsb.events and lsb.acct files always open to improve
+   file access performance.
+-- Implement the switching of the lsb.events asynchronously in mbatchd
+   child process.
 
 3.3.pre.1
 =========
@@ -11,8 +17,6 @@ Release notes for OpenLava versions
 -- Implement floating client feature. If the user configures in lsf.conf
    LIM_ACCEPT_FLOAT_CLIENT=y any host can submit jobs and query the
    daemons without being registered in the lsf.cluster file.
--- Keep the lsb.events and lsb.acct files always open to improve
-   file access performance.
 
 3.2.0
 ======

@@ -762,7 +762,7 @@ struct hostEntryLog {
 #define LC_JARRAY   0x00800000
 #define LC_PREEMPT  0x01000000
 #define LC_ELIM     0x02000000
-#define LC_M_LOG    0x04000000
+#define LC_SWITCH   0x04000000
 #define LC_PERFM    0x08000000
 
 #define LOG_DEBUG1  LOG_DEBUG + 1

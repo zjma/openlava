@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -92,11 +92,13 @@ static int canSwitch(struct eventRec *, struct jData *);
 static char *instrJobStarter1(char *, int, char *, char *, char *);
 static int streamEvent(struct eventRec *);
 static int countStream(char *);
+static int do_switch_child_end(void);
 
 int                     nextJobId_t = 1;
 time_t                  dieTime;
 static char             elogFname[MAXFILENAMELEN];
 static char             jlogFname[MAXFILENAMELEN];
+static char             elogFname2[MAXFILENAMELEN];
 
 static struct eventRec *logPtr;
 
@@ -146,6 +148,22 @@ static int renameAcctLogFiles(int);
 static void jobMsgInit(void);
 static int checkDirAccess(const char *);
 
+/* Global data structure with information
+ * about child switching the lsb.events
+ */
+struct switch_child *swchild;
+static int do_switch(void);
+static int make_switch_pidfile(void);
+static int rm_switch_pidfile(void);
+static void wait_for_switch_child(void);
+static int merge_switch_file(void);
+
+/* Functions related to job messages
+ */
+static FILE *open_job_msg_file(const char *);
+static int put_job_msg(FILE *, const char *);
+
+
 /* init_log()
  */
 int
@@ -168,11 +186,15 @@ init_log(void)
     sprintf(jlogFname, "%s/logdir/lsb.acct",
             daemonParams[LSB_SHAREDIR].paramValue);
 
+    sprintf(elogFname2, "%s/logdir/lsb.events.parent",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
     sprintf(dirbuf, "%s/logdir", daemonParams[LSB_SHAREDIR].paramValue);
 
     if (stat(dirbuf, &sbuf) < 0) {
 
-        ls_syslog(LOG_ERR, "%s: stat() on %s failed: %m", __func__, dirbuf);
+        ls_syslog(LOG_ERR, "\
+%s: stat() on %s failed: %m", __func__, dirbuf);
         if (!lsb_CheckMode) {
             mbdDie(MASTER_FATAL);
         }
@@ -227,6 +249,8 @@ init_log(void)
         ls_syslog(LOG_ERR, "%s: mkdir() %s failed: %m", __func__, infoDir);
         mbdDie(MASTER_FATAL);
     }
+
+    wait_for_switch_child();
 
     if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
         ls_syslog(LOG_ERR, "\
@@ -345,10 +369,6 @@ init_log(void)
 	    ConfigError = -1;
     }
 
-    /* Dont switch now and keep the log_fp always
-     * open
-     * switchELog();
-     */
     if (logLoadIndex)
         log_loadIndex();
 
@@ -2122,19 +2142,33 @@ openEventFile(const char *fname)
     if (elogFname[0] == 0)
 	return -1;
 
+    /* is switch child running?
+     */
+    if (swchild->pid > 0
+	&& swchild->child_gone == false) {
+	return openEventFile2(elogFname2);
+    }
+
     sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+
+    if (swchild->pid > 0
+	&& swchild->child_gone == true) {
+	do_switch_child_end();
+    }
 
     /* Test if the file is already open.
      */
     if (log_fp == NULL) {
 	if ((log_fp = fopen(elogFname, "a+")) == NULL) {
 	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
-	    ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
+	    ls_syslog(LOG_ERR, "\
+%s: fopen() %s failed: %m", __func__, elogFname);
 	    return -1;
 	}
     }
+
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 
     fseek(log_fp, 0L, SEEK_END);
@@ -2169,10 +2203,17 @@ openEventFile2(const char *fname)
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
-    if ((log_fp = fopen(fname, "a+")) == NULL) {
-        sigprocmask(SIG_SETMASK, &oldmask, NULL);
-        ls_syslog(LOG_ERR, "%s: fopen() %s failed: %m", __func__, elogFname);
-        return -1;
+    if (log_fp == NULL) {
+	if (logclass & LC_SWITCH) {
+	    ls_syslog(LOG_INFO, "\
+%s: now opening %s as child is switching", __func__);
+	}
+	if ((log_fp = fopen(fname, "a+")) == NULL) {
+	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
+	    ls_syslog(LOG_ERR, "\
+%s: fopen() %s failed: %m", __func__, elogFname);
+	    return -1;
+	}
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 
@@ -2379,23 +2420,87 @@ logFinishedjob(struct jData *job)
         free(jobFinishLog->execHosts);
     free(logPtr);
 
-    if (_fclose_(&joblog_fp) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "fclose");
+    /* don't close the lsb.acct file.
+     */
+}
+
+/* switchELog()
+ *
+ * Fork a child to switch the lsb.events
+ */
+void
+switchELog(void)
+{
+    pid_t pid;
+    int cc;
+
+    if (numRemoveJobs < maxjobnum)
+	return;
+
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: time to switch numRemoveJobs %d maxjobnum %d", __func__,
+		  numRemoveJobs, maxjobnum);
+    }
+    /* switch child still running
+     */
+    if (swchild->pid > 0) {
+	if (logclass & LC_SWITCH) {
+	    ls_syslog(LOG_INFO, "\
+%s: swich child pid %d still running, no switch", __func__, swchild->pid);
+	}
+	return;
+    }
+    /* close the events file first, the child
+     * will open its own and mbd will open it
+     * when logging the next event
+     */
+    _fclose_(&log_fp);
+
+    numRemoveJobs = 0;
+    swchild->child_gone = false;
+    swchild->pid = pid = fork_mbd();
+    if (pid == 0) {
+	if (make_switch_pidfile() < 0) {
+	    ls_syslog(LOG_ERR, "\
+%s: failed in make_switch_pidfile() %m", __func__);
+	}
+	cc = do_switch();
+	rm_switch_pidfile();
+	if (cc < 0) {
+	    ls_syslog(LOG_ERR, "\
+%s: switching events file has failed", __func__);
+	    exit(-1);
+	}
+	exit(0);
+    }
+    if (pid < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: fork() failed switch is synchronous", __func__);
+	swchild->pid = 0;
+	swchild->child_gone = false;
+	do_switch();
+	return;
+    }
+
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: switch child started pid %d gone %d", __func__,
+		  swchild->pid, swchild->child_gone);
     }
 }
 
-void
-switchELog (void)
+/* do_switch()
+ */
+static int
+do_switch(void)
 {
-    if (numRemoveJobs >= maxjobnum) {
-        if (switch_log() == 0)
-            numRemoveJobs = 0;
-        else
-            numRemoveJobs = maxjobnum / 2;
+    if (switch_log() == 0) {
+	numRemoveJobs = 0;
+	return 0;
     }
+    numRemoveJobs = maxjobnum / 2;
+    return -1;
 }
 
 void
@@ -3913,13 +4018,15 @@ void
 log_jobmsg(struct jData *jPtr, struct lsbMsg *jmsg)
 {
     char file[PATH_MAX];
+    FILE *fp;
 
     sprintf(file, "%s/logdir/messages/%s",
             daemonParams[LSB_SHAREDIR].paramValue,
             lsb_jobid2str2(jPtr->jobId));
 
-    if (openEventFile2(file) < 0) {
-        ls_syslog(LOG_ERR, "%s: failed in openEventFile() job %s",
+    fp = open_job_msg_file(file);
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "%s: failed in openmsg_file() job %s",
                   __func__, lsb_jobid2str(jPtr->jobId));
         mbdDie(MASTER_FATAL);
     }
@@ -3929,12 +4036,13 @@ log_jobmsg(struct jData *jPtr, struct lsbMsg *jmsg)
     logPtr->eventLog.jobMsgLog.idx = LSB_ARRAY_IDX(jPtr->jobId);
     logPtr->eventLog.jobMsgLog.msg = jmsg->msg;
 
-    if (putEventRec(__func__) < 0) {
+    if (put_job_msg(fp, __func__) < 0) {
         ls_syslog(LOG_ERR, "%s: failed in putEventRec() job %s",
                   __func__, lsb_jobid2str(jPtr->jobId));
         mbdDie(MASTER_FATAL);
     }
 
+    _fclose_(&fp);
 }
 
 static int
@@ -4910,3 +5018,276 @@ countStream(char *file)
     return n;
 }
 
+/* open_msg_file()
+ */
+static FILE *
+open_job_msg_file(const char *fname)
+{
+    sigset_t newmask;
+    sigset_t oldmask;
+    FILE *fp;
+
+    sigemptyset(&newmask);
+    sigaddset(&newmask, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &newmask, &oldmask);
+
+    if ((fp = fopen(fname, "a+")) == NULL) {
+	sigprocmask(SIG_SETMASK, &oldmask, NULL);
+	ls_syslog(LOG_ERR, "\
+%s: fopen() %s failed: %m", __func__, elogFname);
+	return NULL;
+    }
+
+    sigprocmask(SIG_SETMASK, &oldmask, NULL);
+    fseek(fp, 0L, SEEK_END);
+    chmod(elogFname, 0644);
+
+    /* allocate the log record
+     */
+    logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
+
+    /* Use the same version as the main protocol.
+     */
+    sprintf(logPtr->version, "%d", OPENLAVA_XDR_VERSION);
+
+    return fp;
+}
+
+/* put_job_msg()
+ */
+static int
+put_job_msg(FILE *fp, const char *fname)
+{
+    if (lsb_puteventrec(fp, logPtr) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
+	return -1;
+    }
+
+    /* free the log record
+     */
+    free(logPtr);
+
+    if (fflush(fp) != 0) {
+	ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
+	return -1;
+    }
+
+    return 0;
+}
+
+/* do_switch_child_end()
+ *
+ * This function is invoked by the parent mbatchd after
+ * the switch child has finished. It closes the lsb.events.parent
+ * file and merges it into the newly switched lsb.events.
+ */
+static int
+do_switch_child_end(void)
+{
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: switch child pid %d gone %d", __func__,
+		  swchild->pid, swchild->child_gone);
+    }
+
+    swchild->pid = 0;
+    swchild->child_gone = false;
+
+    /* This may or may not be open, it depends
+     * if a logging event came in before or after
+     * the switch child has finished. While the
+     * switch child is running log_fp is the FILE
+     * to lsb.events.parent.
+     */
+    _fclose_(&log_fp);
+
+    merge_switch_file();
+
+    return 0;
+}
+
+/* make_switch_pidfile()
+ *
+ * This file serves its purpose should the parent
+ * mbatchd restart and come back while the child
+ * is switching. If the parent detects this file it
+ * waits until the child is done.
+ */
+static int
+make_switch_pidfile(void)
+{
+    FILE *fp;
+    char buf[MAXFILENAMELEN];
+
+    /* remove and older switch.pid if there
+     */
+    rm_switch_pidfile();
+
+    sprintf(buf, "%s/logdir/switch.pid",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    fp = fopen(buf, "w");
+    if (fp == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: fopen() %s failed %m", __func__, buf);
+	return -1;
+    }
+
+    fprintf(fp, "%d\n", (int)getpid());
+    fclose(fp);
+
+    return 0;
+}
+
+/* rm_switch_pidfile()
+ */
+static int
+rm_switch_pidfile(void)
+{
+    char buf[MAXFILENAMELEN];
+
+    sprintf(buf, "%s/logdir/switch.pid",
+            daemonParams[LSB_SHAREDIR].paramValue);
+    unlink(buf);
+
+    return 0;
+}
+
+/* wait_for_switch_child()
+ *
+ * Detect if switch child is around and wait
+ * for it if it is still running.
+ */
+static void
+wait_for_switch_child(void)
+{
+    char buf[MAXFILENAMELEN];
+    struct stat sbuf;
+    FILE *fp;
+    int pid;
+
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: checking if switch child still running", __func__);
+    }
+    /* Make the switch child
+     */
+    swchild = calloc(1, sizeof(struct switch_child));
+    swchild->child_gone = false;
+
+    sprintf(buf, "%s/logdir/switch.pid",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    /* even we have not found the switch pid
+     * still see if there is a parent event file
+     * to merge. It is quite possible the child
+     * cleaned its pid and then the parent reconfig.
+     */
+    if (stat(buf, &sbuf) < 0)
+	goto merge;
+
+    fp = fopen(buf, "r");
+    if (fp == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: fopen() %s failed but stat() ok.. %m", __func__, buf);
+	return;
+    }
+
+    fscanf(fp, "%d", &pid);
+    fclose(fp);
+
+    if (pid <= 0) {
+	ls_syslog(LOG_INFO, "\
+%s: strange switch pid %d found...", __func__, pid);
+	goto merge;
+    }
+
+    ls_syslog(LOG_INFO, "\
+%s: detected switch child at %s with pid %d", __func__, buf, pid);
+
+    while ((kill(pid, 0) == 0)) {
+	ls_syslog(LOG_INFO, "\
+%s: switch child still around pid %d", __func__, pid);
+	millisleep_(2000);
+    }
+
+    ls_syslog(LOG_INFO, "%s: switch child gone...", __func__);
+
+merge:
+    unlink(buf);
+    /* The child is gone see if we have to merge
+     * the parent events and the switched events.
+     */
+    merge_switch_file();
+}
+
+/* merge_switch_file()
+ */
+static int
+merge_switch_file(void)
+{
+    FILE *fp_child;
+    FILE *fp_parent;
+    struct stat sbuf;
+    int cc;
+    int n;
+    static char buf[32 * 1024];
+
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: check if there are parent events to merge", __func__);
+    }
+
+    /* If there is no lsb.events.parent there were
+     * no events while the child was switching, there
+     * are no files to merge.
+     */
+    if (stat(elogFname2, &sbuf) < 0) {
+	if (errno != ENOENT) {
+	    ls_syslog(LOG_ERR, "\
+%s: stat() failed on %s file %m", __func__, elogFname2);
+	}
+	return -2;
+    }
+
+    /* fopen the switched lsb.events
+     */
+    fp_child = fopen(elogFname, "a+");
+    if (fp_child == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: failed to open %s %m", __func__, elogFname);
+	return -1;
+    }
+
+    /* fopen the lsb.events.parent
+     */
+    fp_parent = fopen(elogFname2, "r");
+    if (fp_parent == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: failed to open %s %m", __func__, elogFname2);
+	_fclose_(&fp_child);
+	return -1;
+    }
+
+    /* Merge the switched file with the temporary
+     * events managed by mbatchd parent.
+     */
+    n = 0;
+    while ((cc = fread(buf, 1, sizeof(buf), fp_parent))) {
+	n = n + cc;
+	fwrite(buf, 1, sizeof(buf), fp_child);
+    }
+
+    if (logclass & LC_SWITCH) {
+	ls_syslog(LOG_INFO, "\
+%s: merged %d bytes from %s into %s", __func__, n,
+		  elogFname2, elogFname);
+    }
+
+    _fclose_(&fp_parent);
+    _fclose_(&fp_child);
+    unlink(elogFname2);
+
+    return 0;
+}

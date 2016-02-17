@@ -384,7 +384,10 @@ _fclose_(FILE **fp)
 	|| *fp == NULL)
         return EOF;
 
-    return fclose(*fp);
+    fclose(*fp);
+    *fp = NULL;
+
+    return 0;
 }
 
 #undef getopt

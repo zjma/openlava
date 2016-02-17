@@ -1505,3 +1505,28 @@ updHostLeftRusageMem(struct jData *jobP, int order)
         }
     }
 }
+
+/* fork_mbd()
+ */
+int
+fork_mbd(void)
+{
+    pid_t pid;
+    int cc;
+    int n;
+
+    pid = fork();
+    if (pid < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: ohmygosh fork() failed %m", __func__);
+	return -1;
+    }
+    if (pid > 0)
+	return pid;
+
+    n = sysconf(_SC_OPEN_MAX);
+    for (cc = 3; cc < n; cc++)
+	close(cc);
+
+    return pid;
+}
