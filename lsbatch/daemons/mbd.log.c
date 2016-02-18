@@ -2206,7 +2206,7 @@ openEventFile2(const char *fname)
     if (log_fp == NULL) {
 	if (logclass & LC_SWITCH) {
 	    ls_syslog(LOG_INFO, "\
-%s: now opening %s as child is switching", __func__);
+%s: now opening %s as child is switching", __func__, fname);
 	}
 	if ((log_fp = fopen(fname, "a+")) == NULL) {
 	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
