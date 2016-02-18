@@ -517,6 +517,8 @@ znovu:
                     ls_syslog(LOG_WARNING, "\
 %s: attempt to remove host %s which is not configured, ignoring it.",
                               __func__, hPtr->hostName);
+		    freeHostEntryLog(&hPtr);
+		    continue;
                 }
 		hPtr2 = e->hData;
                 h_rmEnt_(tab, e);
