@@ -905,7 +905,7 @@ extern struct clusterConf *ls_readcluster_ex(char *, struct lsInfo *, int);
 extern int     ls_initdebug(char *appName);
 extern void    ls_syslog(int level, const char *fmt, ...);
 extern void    ls_verrlog(FILE *fp, const char *fmt, va_list ap);
-
+extern int     ls_logchown(uid_t);
 extern int      ls_rescontrol(char *host, int opcode, int options);
 extern int      ls_stdinmode(int onoff);
 extern int      ls_stoprex(void);

@@ -463,3 +463,17 @@ ls_closelog_ext(void)
 {
     logfile[0] = '\0';
 }
+
+/* ls_logchown()
+ */
+int
+ls_logchown(uid_t uid)
+{
+    if (log_dest == LOGTO_STDERR)
+	return 0;
+
+    if (chown(logfile, uid, uid) < 0)
+	return -1;
+
+    return 0;
+}
