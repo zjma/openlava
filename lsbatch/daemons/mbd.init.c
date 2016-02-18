@@ -1787,7 +1787,7 @@ getClusterData(void)
         for(i=0; i < num; i++) {
             if (!debug &&
                 (strcmp(clusterName, clusterInfo[i].clusterName) == 0))
-                setManagers (clusterInfo[i]);
+                setManagers(clusterInfo[i]);
         }
 
         if (!nManagers && !debug) {
@@ -1859,6 +1859,13 @@ setManagers(struct clusterInfo clusterInfo)
     if (getenv("LSB_MANAGER") == NULL) {
         sprintf(managerStr, "%s", lsbManager);
         putEnv("LSB_MANAGER", managerStr);
+    }
+
+    /* This message is most likely going to syslog.
+     */
+    if (ls_logchown(managerId) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed to chown() logfile to %d %m", __func__, managerId);
     }
 
     if (setreuid(managerId, managerId) < 0) {

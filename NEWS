@@ -5,6 +5,8 @@ Release notes for OpenLava versions
 
 -- Fix the problem that if the order of events in lim.events is not correct
    LIM may core dump.
+-- Change the ownership of the mbatchd log file to avoid messages going
+   to syslog messages file.
 
 3.1.3
 ======
