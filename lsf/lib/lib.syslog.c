@@ -430,8 +430,8 @@ getLogClass_(char *lsp, char *tsp)
             class |= LC_FILE;
         if (strcmp (word, "LC_AUTH") == 0)
             class |= LC_AUTH;
-        if (strcmp (word, "LC_HANG") == 0)
-            class |= LC_HANG;
+        if (strcmp (word, "LC_DEP") == 0)
+            class |= LC_DEP;
         if (strcmp (word, "LC_SIGNAL") == 0)
             class |= LC_SIGNAL;
         if (strcmp (word, "LC_PIM") == 0)

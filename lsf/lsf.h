@@ -751,7 +751,7 @@ struct hostEntryLog {
 #define LC_FAIR     0x00000020
 #define LC_FILE     0x00000080
 #define LC_AUTH     0x00000200
-#define LC_HANG     0x00000400
+#define LC_DEP      0x00000400
 #define LC_SIGNAL   0x00001000
 #define LC_PIM      0x00004000
 #define LC_SYS      0x00008000

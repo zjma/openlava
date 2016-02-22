@@ -4879,7 +4879,7 @@ doReopen(void)
         ls_openlog("res", resParams[LSF_LOGDIR].paramValue, FALSE,
                    resParams[LSF_LOG_MASK].paramValue);
 
-    if (logclass & (LC_TRACE | LC_HANG))
+    if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "doReopen: logclass=%x",  logclass);
 
     return;

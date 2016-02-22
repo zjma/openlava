@@ -277,7 +277,7 @@ main(int argc, char **argv)
 	ls_openlog("res", resParams[LSF_LOGDIR].paramValue, FALSE,
 		   resParams[LSF_LOG_MASK].paramValue);
     }
-    if (logclass & (LC_TRACE | LC_HANG))
+    if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "%s: logclass=%x", fname, logclass);
 
     ls_syslog(LOG_DEBUG, "%s: LSF_SERVERDIR=%s", fname, resParams[LSF_SERVERDIR].paramValue);

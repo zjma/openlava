@@ -537,7 +537,7 @@ doReopen(void)
     else
         ls_openlog("lim", limParams[LSF_LOGDIR].paramValue, FALSE,
                    limParams[LSF_LOG_MASK].paramValue);
-    if (logclass & (LC_TRACE | LC_HANG))
+    if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "doReopen: logclass=%x", logclass);
 
     return;

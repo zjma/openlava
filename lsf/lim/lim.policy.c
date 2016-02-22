@@ -89,7 +89,7 @@ placeReq(XDR *xdrs,
     char *replyStruct;
     char buf[MSGSIZE];
 
-    if (logclass & (LC_TRACE | LC_HANG | LC_COMM))
+    if (logclass & (LC_TRACE | LC_COMM))
         ls_syslog(LOG_DEBUG1, "%s: Entering this routine...", __func__);
 
     initResVal (&resVal);
@@ -1103,7 +1103,7 @@ loadadjReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr, int s)
     struct hostNode *candidate;
     struct tclHostData tclHostData;
 
-    if (logclass & (LC_TRACE | LC_HANG | LC_COMM))
+    if (logclass & (LC_TRACE | LC_COMM))
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
 
     initResVal (&resVal);
@@ -1310,7 +1310,7 @@ loadReq(XDR *xdrs, struct sockaddr_in *from, struct LSFHeader *reqHdr, int s)
     char *currp;
     struct tclHostData tclHostData;
 
-    if (logclass & (LC_TRACE | LC_HANG | LC_COMM))
+    if (logclass & (LC_TRACE | LC_COMM))
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
 
     initResVal (&resVal);
