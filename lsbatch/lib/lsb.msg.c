@@ -174,3 +174,103 @@ via:
     *num = 0;
     return NULL;
 }
+
+/* lsb_jobdep()
+ *
+ * Get information about job dependencies.
+ */
+struct job_dep *
+lsb_jobdep(LS_LONG_INT jobID, int *num)
+{
+    XDR xdrs;
+    struct LSFHeader hdr;
+    char request_buf[MSGSIZE/8];
+    char *reply_buf;
+    int cc;
+    int i;
+    struct job_dep *jobdep;
+
+    initLSFHeader_(&hdr);
+    hdr.opCode = BATCH_JOBDEP_INFO;
+
+    xdrmem_create(&xdrs, request_buf, sizeof(request_buf), XDR_ENCODE);
+
+    if (! xdr_encodeMsg(&xdrs,
+                        (char *)&jobID,
+                        &hdr,
+                        xdr_jobID,
+                        0,
+                        NULL)) {
+        xdr_destroy(&xdrs);
+        lsberrno = LSBE_XDR;
+        return NULL;
+    }
+
+    cc = callmbd(NULL,
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 &reply_buf,
+		 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
+    if (cc < 0) {
+	xdr_destroy(&xdrs);
+        lsberrno = LSBE_PROTOCOL;
+	return NULL;
+    }
+    xdr_destroy(&xdrs);
+
+    if (hdr.opCode != LSBE_NO_ERROR) {
+	_free_(reply_buf);
+	lsberrno = hdr.opCode;
+	return NULL;
+    }
+
+    xdrmem_create(&xdrs, reply_buf, cc, XDR_DECODE);
+
+    if (! xdr_int(&xdrs, num)) {
+        xdr_destroy(&xdrs);
+        _free_(reply_buf);
+        lsberrno = LSBE_XDR;
+        return NULL;
+    }
+
+    if (*num == 0) {
+        lsberrno = LSBE_NO_ERROR;
+        return NULL;
+    }
+
+    jobdep = calloc(*num, sizeof(struct job_dep));
+
+    for (i = 0; i < *num; i++) {
+        if (! xdr_jobdep(&xdrs, &jobdep[i], &hdr))
+            goto via;
+    }
+
+    _free_(reply_buf);
+    xdr_destroy(&xdrs);
+
+    return jobdep;
+
+via:
+    free_jobdep(*num, jobdep);
+    lsberrno = LSBE_XDR;
+    *num = 0;
+    return NULL;
+}
+
+/* free_jobdep()
+ */
+void
+free_jobdep(int cc, struct job_dep *jobdep)
+{
+    int i;
+
+    for (i = 0; i < cc; i++) {
+	_free_(jobdep[i].dependency);
+	_free_(jobdep[i].jobid);
+    }
+
+    _free_(jobdep);
+}

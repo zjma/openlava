@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 - 2015 David Bigagli
+ * Copyright (C) 2011 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1326,19 +1326,21 @@ extern int                  stripJobStarter(char *, int *, char *);
 
 extern sbdReplyType         start_job(struct jData *, struct qData *,
                                       struct jobReply *);
-extern sbdReplyType         signal_job(struct jData *jobPtr, struct jobSig *,
-                                       struct jobReply *jobReply);
-extern sbdReplyType         switch_job(struct jData *, int options);
+extern sbdReplyType         signal_job(struct jData *, struct jobSig *,
+                                       struct jobReply *);
+extern sbdReplyType         switch_job(struct jData *, int);
 extern sbdReplyType         msg_job(struct jData *, struct Buffer *,
                                     struct jobReply *);
-extern sbdReplyType         probe_slave(struct hData *, char sendJobs);
-extern sbdReplyType         rebootSbd(char *host);
-extern sbdReplyType         shutdownSbd(char *host);
+extern sbdReplyType         probe_slave(struct hData *, char);
+extern sbdReplyType         rebootSbd(char *);
+extern sbdReplyType         shutdownSbd(char *);
 extern struct dptNode       *parseDepCond(char *, struct lsfAuth * ,
                                           int *, char **,int *, int);
-extern int                  evalDepCond (struct dptNode *, struct jData *);
-extern void                 freeDepCond (struct dptNode *);
-extern void                 resetDepCond (struct dptNode *);
+extern int                  evalDepCond(struct dptNode *,
+					struct jData *,
+					link_t *);
+extern void                 freeDepCond(struct dptNode *);
+extern void                 resetDepCond(struct dptNode *);
 extern bool_t               autoAdjustIsEnabled(void);
 extern int                  getAutoAdjustAtNumPend(void);
 extern float                  getAutoAdjustAtPercent(void);
@@ -1471,5 +1473,8 @@ extern void updateTimeWindow(struct timeWindow *);
 extern inline int numofhosts(void);
 extern int postMsg2Job(char **, struct jData *);
 extern int fork_mbd(void);
+extern int do_jobDepInfo(XDR *, int,
+			 struct sockaddr_in *,
+			 char *, struct LSFHeader *);
 
 #endif /* _MBD_HEADER_ */

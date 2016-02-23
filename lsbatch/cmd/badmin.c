@@ -328,9 +328,6 @@ badminDebug(int nargc, char *nargv[], int opCode)
                     if (strcmp(word, "LC_AUTH") == 0)
                         debug.logClass |= LC_AUTH;
 
-                    if (strcmp(word, "LC_HANG") == 0)
-                        debug.logClass |= LC_HANG;
-
                     if (strcmp(word, "LC_SIGNAL") == 0)
                         debug.logClass |= LC_SIGNAL;
 

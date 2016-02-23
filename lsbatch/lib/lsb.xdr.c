@@ -1964,3 +1964,15 @@ xdr_lsbMsg(XDR *xdrs,
 
     return true;
 }
+
+bool_t
+xdr_jobdep(XDR *xdrs, struct job_dep *jobdep, struct LSFHeader *hdr)
+{
+    if (! xdr_wrapstring(xdrs, &jobdep->dependency)
+	|| ! xdr_wrapstring(xdrs, &jobdep->jobid)
+	|| ! xdr_int(xdrs, &jobdep->jstatus)
+	|| ! xdr_int(xdrs, &jobdep->depstatus))
+	return false;
+
+    return true;
+}

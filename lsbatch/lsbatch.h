@@ -855,6 +855,15 @@ struct loadInfoEnt {
     float  *load;
 };
 
+/* Information about job dependencies
+ */
+struct job_dep {
+    char *dependency;     /* done(), exit(), ended() */
+    char *jobid;          /* 1234 */
+    int jstatus;          /* PEND RUN */
+    int depstatus;        /* dependency status */
+};
+
 #define USER_GRP          0x1
 #define HOST_GRP          0x2
 #define GRP_RECURSIVE     0x8
@@ -1548,5 +1557,7 @@ int getMinSortIntList(struct sortIntList *, int *);
 int getMaxSortIntList(struct sortIntList *, int *);
 int getTotalSortIntList(struct sortIntList *);
 int updateJobIdIndexFile (char *, char *, int);
+extern struct job_dep *lsb_jobdep(LS_LONG_INT, int *);
+extern void free_jobdep(int, struct job_dep *);
 
 #endif

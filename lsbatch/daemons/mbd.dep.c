@@ -27,20 +27,20 @@ static void            destroyjobIdxRef(struct jobIdx *);
 
 
 #define IS_QUOTE(x) ( (x) == '"' || (x) == '\'')
-#define IS_VALIDCHAR(x) (isalnum (x) || (x) == '*' || (x) == '_' || \
-	   (x) == '.' || (x) == ':' || (x) == '%' || (x) == ',' || \
-	   (x) == '@' || (x) == '/' || (x) == '[' || (x) == ']' || \
-           (x) == '-' )
+#define IS_VALIDCHAR(x) (isalnum (x) || (x) == '*' || (x) == '_' ||	\
+			 (x) == '.' || (x) == ':' || (x) == '%' || (x) == ',' || \
+			 (x) == '@' || (x) == '/' || (x) == '[' || (x) == ']' || \
+			 (x) == '-' )
 #define IS_DELIM(x)  ( (x) == ',' || (x) == ' ')
 #define MERGE_TOP  1
 #define MERGE_LEFT 2
 #define MERGE_ALL  3
 
 char preceTable[]={
-	2,
-	1,
-	3,
- };
+    2,
+    1,
+    3,
+};
 
 struct token {
     char *name;
@@ -48,33 +48,33 @@ struct token {
     dptType type;
     int   checkCha;
 } tokenTable[]={
-	{"(", 	     1, DPT_LEFT_, FALSE},
-	{")", 	     1, DPT_RIGHT_, FALSE},
-	{"&&",	     2, DPT_AND, FALSE},
-	{"||",	     2, DPT_OR, FALSE},
-	{"exit",     4, DPT_EXIT, TRUE},
-	{"started",  7, DPT_STARTED, TRUE},
-	{"ended",    5, DPT_ENDED, TRUE},
-        {"time",     4, DPT_WINDOW, TRUE},
-	{"done",     4, DPT_DONE, TRUE},
-	{"post_done",9, DPT_POST_DONE, TRUE},
-	{"post_err", 8, DPT_POST_ERR, TRUE},
-        {"numpend",  7, DPT_NUMPEND, TRUE},
-	{"numhold",  7, DPT_NUMHOLD, TRUE},
-        {"numrun",   6, DPT_NUMRUN, TRUE},
-        {"numexit",  7, DPT_NUMEXIT,TRUE},
-        {"numdone",  7, DPT_NUMDONE, TRUE},
-        {"numstart", 8, DPT_NUMSTART, TRUE},
-        {"numended", 8, DPT_NUMENDED, TRUE},
-	{",",	1, DPT_COMMA, FALSE},
-	{">=",	2, DPT_GE, FALSE},
-	{"<=",	2, DPT_LE, FALSE},
-	{"==",	2, DPT_EQ, FALSE},
-	{"!=",	2, DPT_NE, FALSE},
-	{"<",	1, DPT_LT, FALSE},
-	{">",	1, DPT_GT, FALSE},
-	{"!",	1, DPT_NOT, FALSE},
-	{NULL ,0, DPT_DONE, FALSE}};
+    {"(", 	     1, DPT_LEFT_, FALSE},
+    {")", 	     1, DPT_RIGHT_, FALSE},
+    {"&&",	     2, DPT_AND, FALSE},
+    {"||",	     2, DPT_OR, FALSE},
+    {"exit",     4, DPT_EXIT, TRUE},
+    {"started",  7, DPT_STARTED, TRUE},
+    {"ended",    5, DPT_ENDED, TRUE},
+    {"time",     4, DPT_WINDOW, TRUE},
+    {"done",     4, DPT_DONE, TRUE},
+    {"post_done",9, DPT_POST_DONE, TRUE},
+    {"post_err", 8, DPT_POST_ERR, TRUE},
+    {"numpend",  7, DPT_NUMPEND, TRUE},
+    {"numhold",  7, DPT_NUMHOLD, TRUE},
+    {"numrun",   6, DPT_NUMRUN, TRUE},
+    {"numexit",  7, DPT_NUMEXIT,TRUE},
+    {"numdone",  7, DPT_NUMDONE, TRUE},
+    {"numstart", 8, DPT_NUMSTART, TRUE},
+    {"numended", 8, DPT_NUMENDED, TRUE},
+    {",",	1, DPT_COMMA, FALSE},
+    {">=",	2, DPT_GE, FALSE},
+    {"<=",	2, DPT_LE, FALSE},
+    {"==",	2, DPT_EQ, FALSE},
+    {"!=",	2, DPT_NE, FALSE},
+    {"<",	1, DPT_LT, FALSE},
+    {">",	1, DPT_GT, FALSE},
+    {"!",	1, DPT_NOT, FALSE},
+    {NULL ,0, DPT_DONE, FALSE}};
 
 struct Stack {
     int top;
@@ -84,8 +84,8 @@ struct Stack {
 
 
 struct exceptNodeData {
-   struct jData *jobRec;
-   int  type;
+    struct jData *jobRec;
+    int  type;
 };
 
 static struct Stack *operatorStack;
@@ -104,12 +104,18 @@ static struct jData **matchJobs(char *, char *, int *, int *, struct jobIdx **, 
 static int createMoreNodes (dptType, int, struct jData **, struct jobIdx *,
                             struct dptNode **);
 static int getCounterOfDep(int, int *);
-static int evalJobDep(struct dptNode *, struct jData *, struct jData *);
+static int evalJobDep(struct dptNode *, struct jData *, struct jData *, link_t *);
 static int opExpr(int, int, int);
+static void set_job_dep(const char *, struct jData *, bool_t, link_t *);
 
 
 struct dptNode *
-parseDepCond (char *dependCond, struct lsfAuth *auth, int *replyCode, char **badName, int *jFlags, int flags)
+parseDepCond(char *dependCond,
+	     struct lsfAuth *auth,
+	     int *replyCode,
+	     char **badName,
+	     int *jFlags,
+	     int flags)
 {
     dptType tokenType, tempType;
     struct dptNode *rootNode = NULL;
@@ -126,7 +132,7 @@ parseDepCond (char *dependCond, struct lsfAuth *auth, int *replyCode, char **bad
     operandStack = initStackDep();
     operatorStack = initStackDep();
 
-#define PUSH_STACK(s, n) \
+#define PUSH_STACK(s, n)					\
     {if (pushStackDep(s, n) < 0) {free(n); goto Error;}}
 
     *replyCode = LSBE_DEPEND_SYNTAX;
@@ -140,328 +146,328 @@ parseDepCond (char *dependCond, struct lsfAuth *auth, int *replyCode, char **bad
             case DPT_OR:
             case DPT_NOT:
                 if ((node=newNode(tokenType, NULL)) == NULL)
-                   goto Error;
+		    goto Error;
                 if ((prev=popStackDep(operatorStack)) != NULL) {
-                   if (preceTable[prev->type] > preceTable[node->type]) {
+		    if (preceTable[prev->type] > preceTable[node->type]) {
 
-                      PUSH_STACK(operatorStack, prev);
-                      if (mergeNode(MERGE_TOP) < 0)
-                         goto Error;
-                      PUSH_STACK(operatorStack, node);
-                   } else {
+			PUSH_STACK(operatorStack, prev);
+			if (mergeNode(MERGE_TOP) < 0)
+			    goto Error;
+			PUSH_STACK(operatorStack, node);
+		    } else {
 
-                      PUSH_STACK(operatorStack, prev);
-                      PUSH_STACK(operatorStack, node);
-                   }
+			PUSH_STACK(operatorStack, prev);
+			PUSH_STACK(operatorStack, node);
+		    }
                 } else
-                   PUSH_STACK(operatorStack, node)
-                break;
+		    PUSH_STACK(operatorStack, node)
+			break;
             case DPT_LEFT_:
                 if ((node=newNode(tokenType, NULL)) == NULL)
-                   goto Error;
+		    goto Error;
                 PUSH_STACK(operatorStack, node)
-                break;
+		    break;
             case DPT_RIGHT_:
 
-                 if (mergeNode(MERGE_LEFT) < 0)
-                     goto Error;
-                 break;
-           case DPT_WINDOW:
-           {
-               struct timeWindow *timeW=NULL;
-               int    windowLen=0;
-               char   *tempCond;
+		if (mergeNode(MERGE_LEFT) < 0)
+		    goto Error;
+		break;
+	    case DPT_WINDOW:
+	    {
+		struct timeWindow *timeW=NULL;
+		int    windowLen=0;
+		char   *tempCond;
 
 
-               tempToken=getToken(&dependCond, &tempType);
-               if (!tempToken || tempType != DPT_LEFT_)
-                   goto Error;
+		tempToken=getToken(&dependCond, &tempType);
+		if (!tempToken || tempType != DPT_LEFT_)
+		    goto Error;
 
 
-               tempCond = dependCond;
-               tempToken=getToken(&tempCond, &tempType);
-               while (tempType != DPT_RIGHT_){
-                   if (!tempToken || tempType != DPT_NAME)
-                       goto Error;
+		tempCond = dependCond;
+		tempToken=getToken(&tempCond, &tempType);
+		while (tempType != DPT_RIGHT_){
+		    if (!tempToken || tempType != DPT_NAME)
+			goto Error;
 
-                   windowLen += strlen(tempToken) + 1;
-                   tempToken=getToken(&tempCond, &tempType);
-               }
-
-
-               if ((timeW = newTimeWindow()) == NULL)
-                   goto Error;
-               if ((timeW->windows = malloc(windowLen)) == NULL)
-                   goto Error;
-               *(timeW->windows) = '\0';
+		    windowLen += strlen(tempToken) + 1;
+		    tempToken=getToken(&tempCond, &tempType);
+		}
 
 
-               tempToken=getToken(&dependCond, &tempType);
-               while (tempType != DPT_RIGHT_){
-                   if (!tempToken || tempType != DPT_NAME) {
-                       freeTimeWindow (timeW);
-                       goto Error;
-                   }
+		if ((timeW = newTimeWindow()) == NULL)
+		    goto Error;
+		if ((timeW->windows = malloc(windowLen)) == NULL)
+		    goto Error;
+		*(timeW->windows) = '\0';
 
 
-                   if (*(timeW->windows) != '\0')
-                       strcat (timeW->windows, " ");
-                   strcat (timeW->windows, tempToken);
+		tempToken=getToken(&dependCond, &tempType);
+		while (tempType != DPT_RIGHT_){
+		    if (!tempToken || tempType != DPT_NAME) {
+			freeTimeWindow (timeW);
+			goto Error;
+		    }
 
-                   if (addWindow(tempToken, timeW->week, "WINDOW_CONF") <0) {
-                       freeTimeWindow (timeW);
-                       goto Error;
-                   }
-                   tempToken=getToken(&dependCond, &tempType);
 
-               }
-               timeW->windEdge = now;
-               updateTimeWindow(timeW);
+		    if (*(timeW->windows) != '\0')
+			strcat (timeW->windows, " ");
+		    strcat (timeW->windows, tempToken);
 
-               if ((node=newNode(tokenType, (void *)timeW)) == NULL) {
-                   freeTimeWindow (timeW);
-                   goto Error;
-               }
-               PUSH_STACK(operandStack, node);
+		    if (addWindow(tempToken, timeW->week, "WINDOW_CONF") <0) {
+			freeTimeWindow (timeW);
+			goto Error;
+		    }
+		    tempToken=getToken(&dependCond, &tempType);
 
-               break;
-           }
-           case DPT_DONE:
-           case DPT_POST_DONE:
-           case DPT_POST_ERR:
-           case DPT_EXIT:
-           case DPT_STARTED:
-           case DPT_ENDED:
+		}
+		timeW->windEdge = now;
+		updateTimeWindow(timeW);
+
+		if ((node=newNode(tokenType, (void *)timeW)) == NULL) {
+		    freeTimeWindow (timeW);
+		    goto Error;
+		}
+		PUSH_STACK(operandStack, node);
+
+		break;
+	    }
+	    case DPT_DONE:
+	    case DPT_POST_DONE:
+	    case DPT_POST_ERR:
+	    case DPT_EXIT:
+	    case DPT_STARTED:
+	    case DPT_ENDED:
 
 		if (flags & WINDOW_CONF)
 		    goto Error;
 
 
-               tempToken=getToken(&dependCond, &tempType);
-               if (!tempToken || tempType != DPT_LEFT_)
-                   goto Error;
+		tempToken=getToken(&dependCond, &tempType);
+		if (!tempToken || tempType != DPT_LEFT_)
+		    goto Error;
 
-               tempToken=getToken(&dependCond, &tempType);
-               if (!tempToken)
-                   goto Error;
+		tempToken=getToken(&dependCond, &tempType);
+		if (!tempToken)
+		    goto Error;
 
-               if ((jobRec=matchJobs(tempToken,
-				     auth->lsfUserName,
-				     &numJob,
-				     replyCode,
-				     &jobIdx,
-				     &notExistArrayJob,
-				     &opFlag)) == NULL) {
-                   if (badName && (*badName) && !notExistArrayJob) {
-		       STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
-                   } else  if (badName && (*badName) && notExistArrayJob) {
-		       char jobIdStr[MAX_CMD_DESC_LEN];
-		       sprintf(jobIdStr, "%d[%d]", LSB_ARRAY_JOBID(notExistArrayJob), LSB_ARRAY_IDX(notExistArrayJob));
-		       STRNCPY ((*badName), jobIdStr, MAX_CMD_DESC_LEN);
-		   }
-                   if (mSchedStage != M_STAGE_REPLAY)
-                       goto Error;
-               }
+		if ((jobRec=matchJobs(tempToken,
+				      auth->lsfUserName,
+				      &numJob,
+				      replyCode,
+				      &jobIdx,
+				      &notExistArrayJob,
+				      &opFlag)) == NULL) {
+		    if (badName && (*badName) && !notExistArrayJob) {
+			STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
+		    } else  if (badName && (*badName) && notExistArrayJob) {
+			char jobIdStr[MAX_CMD_DESC_LEN];
+			sprintf(jobIdStr, "%d[%d]", LSB_ARRAY_JOBID(notExistArrayJob), LSB_ARRAY_IDX(notExistArrayJob));
+			STRNCPY ((*badName), jobIdStr, MAX_CMD_DESC_LEN);
+		    }
+		    if (mSchedStage != M_STAGE_REPLAY)
+			goto Error;
+		}
 
-               if (numJob > 1) {
-                   nodeList = (struct dptNode **)
-                              my_calloc(numJob, sizeof(struct dptNode *),
-                   "parseDepCond");
-		   if (createMoreNodes (tokenType, numJob, jobRec, jobIdx,
-                                        nodeList) < 0)
-		       goto Error;
-                   node = nodeList[0];
-               } else {
-                   if (numJob > 0 && jobRec ) {
-                       if ((node=newNode(tokenType, (void *)jobRec[0])) == NULL)
-                           goto Error;
-                       node->dptJobIdx = createjobIdxRef(jobIdx);
-
-
-		       if (opFlag == ARRAY_DEP_ONE_TO_ONE) {
-			   (*node).dptUnion.job.opFlag = opFlag;
-		       }
-
-		       opFlag = 0;
-                   }
-                   else {
-                       node = newNode(tokenType, NULL);
-                       node->dptJobIdx = NULL;
-                   }
-                   PUSH_STACK(operandStack, node);
-               }
-               FREEUP (jobRec);
-
-               if ((tokenType == DPT_EXIT)) {
-                   struct dptNode *tmpNode;
-                   int i;
+		if (numJob > 1) {
+		    nodeList = (struct dptNode **)
+			my_calloc(numJob, sizeof(struct dptNode *),
+				  "parseDepCond");
+		    if (createMoreNodes (tokenType, numJob, jobRec, jobIdx,
+					 nodeList) < 0)
+			goto Error;
+		    node = nodeList[0];
+		} else {
+		    if (numJob > 0 && jobRec ) {
+			if ((node=newNode(tokenType, (void *)jobRec[0])) == NULL)
+			    goto Error;
+			node->dptJobIdx = createjobIdxRef(jobIdx);
 
 
+			if (opFlag == ARRAY_DEP_ONE_TO_ONE) {
+			    (*node).dptUnion.job.opFlag = opFlag;
+			}
 
-                   if (!(tempToken=getToken(&dependCond, &tempType)) ||
+			opFlag = 0;
+		    }
+		    else {
+			node = newNode(tokenType, NULL);
+			node->dptJobIdx = NULL;
+		    }
+		    PUSH_STACK(operandStack, node);
+		}
+		FREEUP (jobRec);
+
+		if ((tokenType == DPT_EXIT)) {
+		    struct dptNode *tmpNode;
+		    int i;
+
+
+
+		    if (!(tempToken=getToken(&dependCond, &tempType)) ||
                         (tempType != DPT_RIGHT_ && tempType != DPT_COMMA) )
-                       goto Error;
-                   if (tempType == DPT_COMMA) {
+			goto Error;
+		    if (tempType == DPT_COMMA) {
 
-                       if (!(tempToken=getToken(&dependCond, &tempType)) ||
-                           !((tempType >= DPT_GT && tempType <= DPT_NE) ||
-                             tempType == DPT_NAME))
-                           goto Error;
-                       if (tempType >= DPT_GT && tempType <= DPT_NE) {
+			if (!(tempToken=getToken(&dependCond, &tempType)) ||
+			    !((tempType >= DPT_GT && tempType <= DPT_NE) ||
+			      tempType == DPT_NAME))
+			    goto Error;
+			if (tempType >= DPT_GT && tempType <= DPT_NE) {
 
-                           node->dptUnion.job.opType = tempType;
-                           if (!(tempToken=getToken(&dependCond, &tempType)) ||
-                               tempType != DPT_NAME)
-                               goto Error;
-                       }
-                       else
-                           node->dptUnion.job.opType = DPT_EQ;
+			    node->dptUnion.job.opType = tempType;
+			    if (!(tempToken=getToken(&dependCond, &tempType)) ||
+				tempType != DPT_NAME)
+				goto Error;
+			}
+			else
+			    node->dptUnion.job.opType = DPT_EQ;
 
-                       if (isint_(tempToken))
-                           node->dptUnion.job.exitCode = atoi(tempToken);
-                       else
-                           goto Error;
+			if (isint_(tempToken))
+			    node->dptUnion.job.exitCode = atoi(tempToken);
+			else
+			    goto Error;
 
-                       tempToken=getToken(&dependCond, &tempType);
-                       if (!tempToken || tempType != DPT_RIGHT_)
-                           goto Error;
-                   }
+			tempToken=getToken(&dependCond, &tempType);
+			if (!tempToken || tempType != DPT_RIGHT_)
+			    goto Error;
+		    }
 
-                   for ( i = 1; i < numJob; i++) {
-                      tmpNode = nodeList[i];
-                      tmpNode->dptUnion.job.opType = node->dptUnion.job.opType;
-                      tmpNode->dptUnion.job.exitCode =
-                                              node->dptUnion.job.exitCode;
-                   }
-	       }
-	       else {
+		    for ( i = 1; i < numJob; i++) {
+			tmpNode = nodeList[i];
+			tmpNode->dptUnion.job.opType = node->dptUnion.job.opType;
+			tmpNode->dptUnion.job.exitCode =
+			    node->dptUnion.job.exitCode;
+		    }
+		}
+		else {
 
-                   tempToken=getToken(&dependCond, &tempType);
-                   if (!tempToken || tempType != DPT_RIGHT_)
-                       goto Error;
-               }
-               FREEUP(nodeList);
-               break;
+		    tempToken=getToken(&dependCond, &tempType);
+		    if (!tempToken || tempType != DPT_RIGHT_)
+			goto Error;
+		}
+		FREEUP(nodeList);
+		break;
 
-           case DPT_NAME:
-	       if (flags & WINDOW_CONF)
-	           goto Error;
-               if ((jobRec=matchJobs(token, auth->lsfUserName,
-				     &numJob, replyCode, &jobIdx,
-				     &notExistArrayJob, NULL)) == NULL) {
-                   if (badName && (*badName))
-                      STRNCPY ((*badName), token, MAX_CMD_DESC_LEN);
-                   if (mSchedStage != M_STAGE_REPLAY)
-                       goto Error;
-               }
-	       if (numJob > 1) {
-		   if (createMoreNodes (DPT_DONE, numJob, jobRec, jobIdx, NULL) < 0)
-		       goto Error;
-               } else {
-                   if (numJob > 0 && jobRec ) {
-                       if ((node=newNode(DPT_DONE, (void *)jobRec[0])) == NULL)
-                           goto Error;
-                       node->dptJobIdx = createjobIdxRef(jobIdx);
-                   }
-                   else {
-                       node = newNode(DPT_DONE, NULL);
-                       node->dptJobIdx = NULL;
-                   }
-                   PUSH_STACK(operandStack, node);
-               }
-	       FREEUP (jobRec);
-               break;
-           case DPT_NUMPEND:
-	   case DPT_NUMHOLD:
-           case DPT_NUMRUN:
-           case DPT_NUMEXIT:
-           case DPT_NUMDONE:
-           case DPT_NUMSTART:
-           case DPT_NUMENDED: {
+	    case DPT_NAME:
+		if (flags & WINDOW_CONF)
+		    goto Error;
+		if ((jobRec=matchJobs(token, auth->lsfUserName,
+				      &numJob, replyCode, &jobIdx,
+				      &notExistArrayJob, NULL)) == NULL) {
+		    if (badName && (*badName))
+			STRNCPY ((*badName), token, MAX_CMD_DESC_LEN);
+		    if (mSchedStage != M_STAGE_REPLAY)
+			goto Error;
+		}
+		if (numJob > 1) {
+		    if (createMoreNodes (DPT_DONE, numJob, jobRec, jobIdx, NULL) < 0)
+			goto Error;
+		} else {
+		    if (numJob > 0 && jobRec ) {
+			if ((node=newNode(DPT_DONE, (void *)jobRec[0])) == NULL)
+			    goto Error;
+			node->dptJobIdx = createjobIdxRef(jobIdx);
+		    }
+		    else {
+			node = newNode(DPT_DONE, NULL);
+			node->dptJobIdx = NULL;
+		    }
+		    PUSH_STACK(operandStack, node);
+		}
+		FREEUP (jobRec);
+		break;
+	    case DPT_NUMPEND:
+	    case DPT_NUMHOLD:
+	    case DPT_NUMRUN:
+	    case DPT_NUMEXIT:
+	    case DPT_NUMDONE:
+	    case DPT_NUMSTART:
+	    case DPT_NUMENDED: {
                 struct jData *jpbw = NULL;
 
 
-               tempToken=getToken(&dependCond, &tempType);
-               if (!tempToken || tempType != DPT_LEFT_)
-                   goto Error;
+		tempToken=getToken(&dependCond, &tempType);
+		if (!tempToken || tempType != DPT_LEFT_)
+		    goto Error;
 
-               tempToken=getToken(&dependCond, &tempType);
-               if (!tempToken)
-                   goto Error;
+		tempToken=getToken(&dependCond, &tempType);
+		if (!tempToken)
+		    goto Error;
 
-               if (!isint_(tempToken) ||
-                   (jpbw = getJobData(atoi(tempToken))) == NULL){
-                   if (badName && (*badName))
-                       STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
+		if (!isint_(tempToken) ||
+		    (jpbw = getJobData(atoi(tempToken))) == NULL){
+		    if (badName && (*badName))
+			STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
 
-                   *replyCode = LSBE_ARRAY_NULL;
+		    *replyCode = LSBE_ARRAY_NULL;
 
-                   if (mSchedStage != M_STAGE_REPLAY)
-                       goto Error;
-               }
+		    if (mSchedStage != M_STAGE_REPLAY)
+			goto Error;
+		}
 
-               if (jpbw) {
-                   if (jpbw->jgrpNode->nodeType != JGRP_NODE_ARRAY) {
-                       if (badName && (*badName))
-                           STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
-                       *replyCode = LSBE_ARRAY_NULL;
-                       if (mSchedStage != M_STAGE_REPLAY)
-                           goto Error;
-		   }
-                   node=newNode(tokenType, (void *)(ARRAY_DATA(jpbw->jgrpNode)));
-               }
-               else
-                   node = newNode(tokenType, NULL);
+		if (jpbw) {
+		    if (jpbw->jgrpNode->nodeType != JGRP_NODE_ARRAY) {
+			if (badName && (*badName))
+			    STRNCPY ((*badName), tempToken, MAX_CMD_DESC_LEN);
+			*replyCode = LSBE_ARRAY_NULL;
+			if (mSchedStage != M_STAGE_REPLAY)
+			    goto Error;
+		    }
+		    node=newNode(tokenType, (void *)(ARRAY_DATA(jpbw->jgrpNode)));
+		}
+		else
+		    node = newNode(tokenType, NULL);
 
-               if (node == NULL) {
-                   goto Error;
-               }
-               PUSH_STACK(operandStack, node);
+		if (node == NULL) {
+		    goto Error;
+		}
+		PUSH_STACK(operandStack, node);
 
-               if ((DPT_NUMPEND <= tokenType) && (tokenType <= DPT_NUMENDED)) {
+		if ((DPT_NUMPEND <= tokenType) && (tokenType <= DPT_NUMENDED)) {
 
-                   if (!(tempToken=getToken(&dependCond, &tempType)) ||
+		    if (!(tempToken=getToken(&dependCond, &tempType)) ||
                         (tempType != DPT_RIGHT_ && tempType != DPT_COMMA) )
-                       goto Error;
-                   if (tempType == DPT_COMMA) {
+			goto Error;
+		    if (tempType == DPT_COMMA) {
 
-                       if (!(tempToken=getToken(&dependCond, &tempType)) ||
-                           !((tempType >= DPT_GT && tempType <= DPT_NE) ||
-                             tempType == DPT_NAME ||
-                             strcmp(tempToken, "*") == 0))
-                           goto Error;
-                       if (tempType >= DPT_GT && tempType <= DPT_NE) {
+			if (!(tempToken=getToken(&dependCond, &tempType)) ||
+			    !((tempType >= DPT_GT && tempType <= DPT_NE) ||
+			      tempType == DPT_NAME ||
+			      strcmp(tempToken, "*") == 0))
+			    goto Error;
+			if (tempType >= DPT_GT && tempType <= DPT_NE) {
 
-                           node->dptUnion.jgrp.opType = tempType;
-                           if (!(tempToken=getToken(&dependCond, &tempType)) ||
-                               tempType != DPT_NAME)
-                               goto Error;
-                       }
-                       else
-                           node->dptUnion.jgrp.opType = DPT_EQ;
+			    node->dptUnion.jgrp.opType = tempType;
+			    if (!(tempToken=getToken(&dependCond, &tempType)) ||
+				tempType != DPT_NAME)
+				goto Error;
+			}
+			else
+			    node->dptUnion.jgrp.opType = DPT_EQ;
 
-                       if (isint_(tempToken))
-                           node->dptUnion.jgrp.num = atoi(tempToken);
-                       else if (strcmp(token, "*") == 0)
-                           node->dptUnion.jgrp.num = INFINIT_INT;
-                       else
-                           goto Error;
+			if (isint_(tempToken))
+			    node->dptUnion.jgrp.num = atoi(tempToken);
+			else if (strcmp(token, "*") == 0)
+			    node->dptUnion.jgrp.num = INFINIT_INT;
+			else
+			    goto Error;
 
-                       tempToken=getToken(&dependCond, &tempType);
-                       if (!tempToken || tempType != DPT_RIGHT_)
-                           goto Error;
-                   }
-               }
-               else {
+			tempToken=getToken(&dependCond, &tempType);
+			if (!tempToken || tempType != DPT_RIGHT_)
+			    goto Error;
+		    }
+		}
+		else {
 
-                   tempToken=getToken(&dependCond, &tempType);
-                   if (!tempToken || tempType != DPT_RIGHT_)
-                       goto Error;
-               }
-               }
-               break;
-           default:
-               goto Error;
+		    tempToken=getToken(&dependCond, &tempType);
+		    if (!tempToken || tempType != DPT_RIGHT_)
+			goto Error;
+		}
+	    }
+		break;
+	    default:
+		goto Error;
 
         }
     }
@@ -497,76 +503,88 @@ Error:
     return NULL;
 }
 
+/* evalDepCond()
+ */
 int
-evalDepCond (struct dptNode *node, struct jData *jobRec)
+evalDepCond(struct dptNode *node, struct jData *jobRec, link_t *l)
 {
     static char fname[]="evalDepCond";
     int value;
 
+    /* jobRec is the jData of the job whose dependency
+     * we are going to check.
+     */
+
     switch (node->type) {
-    case DPT_OR:
-	value = evalDepCond (node->dptLeft, jobRec);
-	if (value == DP_REJECT)
-	   return(node->value = DP_REJECT);
-	if (value == DP_TRUE) {
-	    return (node->value = DP_TRUE);
-	} else if (value == DP_FALSE) {
-	    value = evalDepCond (node->dptRight, jobRec);
+	case DPT_OR:
+	    value = evalDepCond (node->dptLeft, jobRec, l);
 	    if (value == DP_REJECT)
 		return(node->value = DP_REJECT);
-            if (value == DP_TRUE)
+	    if (value == DP_TRUE) {
 		return (node->value = DP_TRUE);
-            else
-		return (node->value = DP_FALSE);
-        } else
-            return(node->value = evalDepCond (node->dptRight, jobRec));
+	    } else if (value == DP_FALSE) {
+		value = evalDepCond (node->dptRight, jobRec, l);
+		if (value == DP_REJECT)
+		    return(node->value = DP_REJECT);
+		if (value == DP_TRUE)
+		    return (node->value = DP_TRUE);
+		else
+		    return (node->value = DP_FALSE);
+	    } else
+		return(node->value = evalDepCond (node->dptRight, jobRec, l));
 
-    case DPT_AND:
-	if((value = evalDepCond (node->dptLeft, jobRec)) == DP_INVALID ||
-	    value == DP_REJECT) {
-            return (node->value = value);
-	} else if (value == DP_FALSE) {
-	  value = evalDepCond (node->dptRight, jobRec);
-	    if (value == DP_INVALID || value == DP_REJECT)
+	case DPT_AND:
+	    if((value = evalDepCond (node->dptLeft, jobRec, l)) == DP_INVALID
+	       || value == DP_REJECT) {
 		return (node->value = value);
-            else
-		return (node->value = DP_FALSE);
-        } else
-            return(node->value = evalDepCond (node->dptRight, jobRec));
+	    } else if (value == DP_FALSE) {
+		value = evalDepCond (node->dptRight, jobRec, l);
+		if (value == DP_INVALID || value == DP_REJECT)
+		    return (node->value = value);
+		else
+		    return (node->value = DP_FALSE);
+	    } else
+		return(node->value = evalDepCond (node->dptRight, jobRec, l));
 
-    case DPT_NOT:
-        node->value = evalDepCond(node->dptLeft, jobRec);
-	if (node->value == DP_REJECT)
+	case DPT_NOT:
+	    node->value = evalDepCond(node->dptLeft, jobRec, l);
+	    if (node->value == DP_REJECT)
+		return(node->value);
+	    else if ((node->value == DP_FALSE) || (node->value == DP_INVALID))
+		node->value  = DP_TRUE;
+	    else if (node->value == DP_TRUE)
+		node->value  = DP_FALSE;
 	    return(node->value);
-        else if ((node->value == DP_FALSE) || (node->value == DP_INVALID))
-            node->value  = DP_TRUE;
-        else if (node->value == DP_TRUE)
-            node->value  = DP_FALSE;
-        return(node->value);
 
-    case DPT_DONE:
-    case DPT_POST_DONE:
-    case DPT_POST_ERR:
-    case DPT_ENDED:
-    case DPT_STARTED:
-    case DPT_EXIT: {
-        struct jData *jpbw = node->dptJobRec;
-	struct listSet *ptr = NULL;
+	case DPT_DONE:
+	case DPT_POST_DONE:
+	case DPT_POST_ERR:
+	case DPT_ENDED:
+	case DPT_STARTED:
+	case DPT_EXIT: {
+	    struct jData *jpbw = node->dptJobRec;
+	    struct listSet *ptr = NULL;
+	    char jBuf[64];
 
-        if ( jpbw == NULL) {
-            node->value = DP_INVALID;
-            return(node->value);
-        }
+	    if (jpbw == NULL) {
+		node->value = DP_INVALID;
+		return(node->value);
+	    }
 
-	if (jpbw->nodeType == JGRP_NODE_ARRAY) {
+	    strcpy(jBuf, lsb_jobid2str(jobRec->jobId));
+	    ls_syslog(LOG_INFO, "\
+%s: nodeType %d job %s depends on parent job %s", __func__,
+		      node->type, jBuf, lsb_jobid2str(jpbw->jobId));
 
-	    if (node->dptJobIdx
-		&& (ptr = node->dptJobIdx->depJobList)
-		&&  ((*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE)) {
+	    if (jpbw->nodeType == JGRP_NODE_ARRAY) {
 
-	        jpbw = (struct jData *)ptr->elem;
+		if (node->dptJobIdx
+		    && (ptr = node->dptJobIdx->depJobList)
+		    &&  ((*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE)) {
 
-	    } else if ((*node).dptUnion.job.opFlag == ARRAY_DEP_ONE_TO_ONE) {
+		    jpbw = (struct jData *)ptr->elem;
+
+		} else if ((*node).dptUnion.job.opFlag == ARRAY_DEP_ONE_TO_ONE) {
 		    LS_LONG_INT       arrayIdx;
 
 		    arrayIdx = LSB_ARRAY_IDX((*jobRec).jobId);
@@ -602,110 +620,110 @@ evalDepCond (struct dptNode *node, struct jData *jobRec)
 
 		    jpbw = jpbw->nextJob;
 		}
-        }
-
-        while (jpbw) {
-	    if (node->dptJobIdx
-		&& (!inIdxList(jpbw->jobId, node->dptJobIdx->idxList))
-		&& ((*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE)) {
-		goto Next;
 	    }
 
-	   switch(node->type) {
-	       case DPT_POST_DONE:
-	       case DPT_POST_ERR:
-		   break;
-	       case DPT_DONE:
-	       case DPT_EXIT:
-	       case DPT_ENDED:
-	       case DPT_STARTED:
-		   break;
-	       default:
-		   ls_syslog(LOG_ERR, "%s: should never be here", __func__);
-	   }
+	    while (jpbw) {
+		if (node->dptJobIdx
+		    && (!inIdxList(jpbw->jobId, node->dptJobIdx->idxList))
+		    && ((*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE)) {
+		    goto Next;
+		}
 
-           if  (evalJobDep(node, jpbw, jobRec))
-                node->value = DP_TRUE;
-           else if ((jpbw->jStatus & JOB_STAT_VOID)
-		    ||  ( IS_FINISH(jpbw->jStatus)
-                          && !(!IS_POST_FINISH(jpbw->jStatus)
-                               && (jpbw->jStatus & JOB_STAT_DONE)
-                               && ((node->type == DPT_POST_DONE)
-                                   || (node->type == DPT_POST_ERR))))){
+		switch(node->type) {
+		    case DPT_POST_DONE:
+		    case DPT_POST_ERR:
+			break;
+		    case DPT_DONE:
+		    case DPT_EXIT:
+		    case DPT_ENDED:
+		    case DPT_STARTED:
+			break;
+		    default:
+			ls_syslog(LOG_ERR, "%s: should never be here", __func__);
+		}
 
-                node->value = DP_INVALID;
+		if  (evalJobDep(node, jpbw, jobRec, l))
+		    node->value = DP_TRUE;
+		else if ((jpbw->jStatus & JOB_STAT_VOID)
+			 ||  ( IS_FINISH(jpbw->jStatus)
+			       && !(!IS_POST_FINISH(jpbw->jStatus)
+				    && (jpbw->jStatus & JOB_STAT_DONE)
+				    && ((node->type == DPT_POST_DONE)
+					|| (node->type == DPT_POST_ERR))))){
+
+		    node->value = DP_INVALID;
+		    return(node->value);
+		} else {
+
+		    node->value = DP_FALSE;
+		    return(node->value);
+		}
+	    Next:
+
+		if (node->dptJobRec->nodeType == JGRP_NODE_ARRAY
+		    && (*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE) {
+
+		    if (ptr != NULL) {
+			ptr = ptr->next;
+			if (ptr != NULL) {
+			    jpbw = (struct jData *)ptr->elem;
+			} else {
+			    jpbw = NULL;
+			}
+		    } else {
+
+			jpbw = jpbw->nextJob;
+		    }
+		} else {
+		    jpbw = NULL;
+		}
+	    }
+	}
+	    break;
+	case DPT_WINDOW:
+
+	    updateTimeWindow(node->dptWindow);
+	    if (node->dptWindow->status == WINDOW_OPEN)
+		node->value = DP_TRUE;
+	    else
+		node->value = DP_FALSE;
+	    break;
+	case DPT_NUMPEND:
+	case DPT_NUMHOLD:
+	case DPT_NUMRUN:
+	case DPT_NUMEXIT:
+	case DPT_NUMDONE:
+	case DPT_NUMSTART:
+	case DPT_NUMENDED:  {
+	    int num = 0;
+
+	    if (!node->dptJgrp) {
+		node->value = DP_INVALID;
 		return(node->value);
-           } else {
+	    }
+	    if (node->dptJgrp->status == JGRP_VOID) {
+		node->value = DP_INVALID;
+		DESTROY_REF(node->dptJgrp, destroyJgArrayBaseRef);
+		node->dptJgrp = NULL;
+		return(node->value);
+	    }
 
-                node->value = DP_FALSE;
-                return(node->value);
-           }
-Next:
-
-           if (node->dptJobRec->nodeType == JGRP_NODE_ARRAY
-	       && (*node).dptUnion.job.opFlag != ARRAY_DEP_ONE_TO_ONE) {
-
-	       if (ptr != NULL) {
-		   ptr = ptr->next;
-		   if (ptr != NULL) {
-		       jpbw = (struct jData *)ptr->elem;
-		   } else {
-		       jpbw = NULL;
-		   }
-	       } else {
-
-                   jpbw = jpbw->nextJob;
-	       }
-           } else {
-               jpbw = NULL;
-	   }
-        }
-    }
-    break;
-    case DPT_WINDOW:
-
-        updateTimeWindow(node->dptWindow);
-        if (node->dptWindow->status == WINDOW_OPEN)
-            node->value = DP_TRUE;
-        else
-            node->value = DP_FALSE;
-        break;
-    case DPT_NUMPEND:
-    case DPT_NUMHOLD:
-    case DPT_NUMRUN:
-    case DPT_NUMEXIT:
-    case DPT_NUMDONE:
-    case DPT_NUMSTART:
-    case DPT_NUMENDED:  {
-        int num = 0;
-
-        if (!node->dptJgrp) {
-            node->value = DP_INVALID;
-            return(node->value);
-        }
-        if (node->dptJgrp->status == JGRP_VOID) {
-            node->value = DP_INVALID;
-            DESTROY_REF(node->dptJgrp, destroyJgArrayBaseRef);
-            node->dptJgrp = NULL;
-            return(node->value);
-        }
-
-        if (node->dptUnion.jgrp.num == INFINIT_INT) {
-            num = node->dptJgrp->counts[JGRP_COUNT_NJOBS];
-            num = ( num <= 0 ) ? INFINIT_INT:num;
-        }
-        else
-           num = node->dptUnion.jgrp.num;
-        if (opExpr(node->dptUnion.jgrp.opType,
-                   getCounterOfDep(node->type, node->dptJgrp->counts),
-                   num))
-            node->value = DP_TRUE;
-        else
-            node->value = DP_FALSE;
-        break;
-    }
-    default:
-        break;
+	    if (node->dptUnion.jgrp.num == INFINIT_INT) {
+		num = node->dptJgrp->counts[JGRP_COUNT_NJOBS];
+		num = ( num <= 0 ) ? INFINIT_INT:num;
+	    }
+	    else
+		num = node->dptUnion.jgrp.num;
+	    if (opExpr(node->dptUnion.jgrp.opType,
+		       getCounterOfDep(node->type, node->dptJgrp->counts),
+		       num))
+		node->value = DP_TRUE;
+	    else
+		node->value = DP_FALSE;
+	    break;
+	}
+	default:
+	    break;
     }
     return(node->value);
 
@@ -781,53 +799,53 @@ resetDepCond(struct dptNode *dptNode)
 static
 char *getToken(char **sp, dptType *type)
 {
-   static char token[4*MAXLINELEN];
-   int i, j = 0;
+    static char token[4*MAXLINELEN];
+    int i, j = 0;
 
-   if (!*sp)
-      return NULL;
-   while(isspace(**sp))
-      (*sp)++;
-   if (**sp == '\0')
-      return NULL;
+    if (!*sp)
+	return NULL;
+    while(isspace(**sp))
+	(*sp)++;
+    if (**sp == '\0')
+	return NULL;
 
-   for(i=0; tokenTable[i].name; i++) {
-      if (strncmp(*sp, tokenTable[i].name, tokenTable[i].namelen) == 0) {
-          strcpy(token, tokenTable[i].name);
-          *sp += tokenTable[i].namelen;
-          if ((isalnum (**sp) || **sp == '*') &&
-			    tokenTable[i].checkCha == TRUE) {
-	      j = tokenTable[i].namelen;
-	      break;
-        }
-          *type = tokenTable[i].type;
-          return(token);
-      }
-   }
+    for(i=0; tokenTable[i].name; i++) {
+	if (strncmp(*sp, tokenTable[i].name, tokenTable[i].namelen) == 0) {
+	    strcpy(token, tokenTable[i].name);
+	    *sp += tokenTable[i].namelen;
+	    if ((isalnum (**sp) || **sp == '*') &&
+		tokenTable[i].checkCha == TRUE) {
+		j = tokenTable[i].namelen;
+		break;
+	    }
+	    *type = tokenTable[i].type;
+	    return(token);
+	}
+    }
 
 
-   if (IS_QUOTE(**sp)) {
-     char quote = **sp;
-     (*sp)++;
-     token[j++]=quote;
-     while( (j < 4*MAXLINELEN -1) && (**sp != '\0')) {
+    if (IS_QUOTE(**sp)) {
+	char quote = **sp;
+	(*sp)++;
+	token[j++]=quote;
+	while( (j < 4*MAXLINELEN -1) && (**sp != '\0')) {
             token[j++]=**sp;
             if (token[j-1] == quote) {
 		(*sp)++;
                 break;
 	    }
-         (*sp)++;
-     }
-   } else {
-      while(IS_VALIDCHAR(**sp) && !IS_DELIM(**sp) && (j < 4*MAXLINELEN -1)) {
-          token[j]=**sp;
-          (*sp)++;
-          j++;
-      }
-   }
-   *type=DPT_NAME;
-   token[j]='\0';
-   return(token);
+	    (*sp)++;
+	}
+    } else {
+	while(IS_VALIDCHAR(**sp) && !IS_DELIM(**sp) && (j < 4*MAXLINELEN -1)) {
+	    token[j]=**sp;
+	    (*sp)++;
+	    j++;
+	}
+    }
+    *type=DPT_NAME;
+    token[j]='\0';
+    return(token);
 
 }
 
@@ -843,49 +861,49 @@ newNode(dptType nodeType, void *data)
     node->type = nodeType;
     node->value = DP_FALSE;
     switch (nodeType) {
-    case DPT_OR:
-    case DPT_AND:
-    case DPT_LEFT_:
-        node->dptLeft = NULL;
-        node->dptRight = NULL;
-        break;
-    case DPT_NOT:
-        node->dptLeft = NULL;
-        break;
-    case DPT_DONE:
-    case DPT_POST_DONE:
-    case DPT_POST_ERR:
-        node->dptJobRec = createjDataRef((struct jData *)data);
-        break;
-    case DPT_EXIT:
-        node->dptJobRec = createjDataRef((struct jData *)data);
+	case DPT_OR:
+	case DPT_AND:
+	case DPT_LEFT_:
+	    node->dptLeft = NULL;
+	    node->dptRight = NULL;
+	    break;
+	case DPT_NOT:
+	    node->dptLeft = NULL;
+	    break;
+	case DPT_DONE:
+	case DPT_POST_DONE:
+	case DPT_POST_ERR:
+	    node->dptJobRec = createjDataRef((struct jData *)data);
+	    break;
+	case DPT_EXIT:
+	    node->dptJobRec = createjDataRef((struct jData *)data);
 
-        node->dptUnion.job.opType = DPT_TRUE;
-        node->dptUnion.job.exitCode = 0;
-        break;
-    case DPT_ENDED:
-        node->dptJobRec = createjDataRef((struct jData *)data);
-        break;
-    case DPT_STARTED:
-        node->dptJobRec = createjDataRef((struct jData *)data);
-        break;
-    case DPT_WINDOW:
-        node->dptWindow = (struct timeWindow *)data;
-        break;
-    case DPT_NUMPEND:
-    case DPT_NUMHOLD:
-    case DPT_NUMRUN:
-    case DPT_NUMEXIT:
-    case DPT_NUMDONE:
-    case DPT_NUMSTART:
-    case DPT_NUMENDED:
-        node->dptJgrp = createJgArrayBaseRef((struct jgArrayBase *)data);
+	    node->dptUnion.job.opType = DPT_TRUE;
+	    node->dptUnion.job.exitCode = 0;
+	    break;
+	case DPT_ENDED:
+	    node->dptJobRec = createjDataRef((struct jData *)data);
+	    break;
+	case DPT_STARTED:
+	    node->dptJobRec = createjDataRef((struct jData *)data);
+	    break;
+	case DPT_WINDOW:
+	    node->dptWindow = (struct timeWindow *)data;
+	    break;
+	case DPT_NUMPEND:
+	case DPT_NUMHOLD:
+	case DPT_NUMRUN:
+	case DPT_NUMEXIT:
+	case DPT_NUMDONE:
+	case DPT_NUMSTART:
+	case DPT_NUMENDED:
+	    node->dptJgrp = createJgArrayBaseRef((struct jgArrayBase *)data);
 
-        node->dptUnion.jgrp.opType = DPT_NE;
-        node->dptUnion.jgrp.num = 0;
-        break;
-    default:
-        break;
+	    node->dptUnion.jgrp.opType = DPT_NE;
+	    node->dptUnion.jgrp.num = 0;
+	    break;
+	default:
+	    break;
     }
     return(node);
 
@@ -894,66 +912,66 @@ newNode(dptType nodeType, void *data)
 static int
 mergeNode(int level)
 {
-   struct dptNode *op, *operand1, *operand2;
+    struct dptNode *op, *operand1, *operand2;
 
-   switch (level) {
-      case MERGE_TOP:
-         op=popStackDep(operatorStack);
-         if (!op)
-            return -1;
-         operand1=popStackDep(operandStack);
-         if (!operand1) {
-            pushStackDep(operatorStack,op);
-            return -1;
-         }
-         if ((op->type != DPT_NOT) &&
-             ((operand2=popStackDep(operandStack)) == NULL)) {
-             pushStackDep(operatorStack, op);
-             pushStackDep(operandStack,operand1);
-             return -1;
-         }
-         op->dptLeft = operand1;
-         if (op->type != DPT_NOT)
-             op->dptRight = operand2;
-         pushStackDep(operandStack, op);
-         return 0;
+    switch (level) {
+	case MERGE_TOP:
+	    op=popStackDep(operatorStack);
+	    if (!op)
+		return -1;
+	    operand1=popStackDep(operandStack);
+	    if (!operand1) {
+		pushStackDep(operatorStack,op);
+		return -1;
+	    }
+	    if ((op->type != DPT_NOT) &&
+		((operand2=popStackDep(operandStack)) == NULL)) {
+		pushStackDep(operatorStack, op);
+		pushStackDep(operandStack,operand1);
+		return -1;
+	    }
+	    op->dptLeft = operand1;
+	    if (op->type != DPT_NOT)
+		op->dptRight = operand2;
+	    pushStackDep(operandStack, op);
+	    return 0;
 
-      case MERGE_LEFT:
+	case MERGE_LEFT:
 
-         while (1) {
-             op = popStackDep(operatorStack);
-             if (!op)
-                 return -1;
-             if (op->type == DPT_LEFT_) {
-                 free(op);
-                 return 0;
-             }
-             pushStackDep(operatorStack, op);
-             if (mergeNode(MERGE_TOP) < 0)
-                return -1;
-         }
-       case MERGE_ALL:
-          while(mergeNode(MERGE_TOP) >= 0);
-          return 0;
-     default:
-        break;
-   }
+	    while (1) {
+		op = popStackDep(operatorStack);
+		if (!op)
+		    return -1;
+		if (op->type == DPT_LEFT_) {
+		    free(op);
+		    return 0;
+		}
+		pushStackDep(operatorStack, op);
+		if (mergeNode(MERGE_TOP) < 0)
+		    return -1;
+	    }
+	case MERGE_ALL:
+	    while(mergeNode(MERGE_TOP) >= 0);
+	    return 0;
+	default:
+	    break;
+    }
 
-   return -1;
+    return -1;
 
 }
 
 static struct Stack
 *initStackDep(void)
 {
-   struct Stack *stack;
+    struct Stack *stack;
 
-   stack= (struct Stack *)my_malloc(sizeof(struct Stack ), "initStackDep");
+    stack= (struct Stack *)my_malloc(sizeof(struct Stack ), "initStackDep");
 
-   stack->top=-1;
-   stack->nodes = (struct dptNode **) my_malloc(5*sizeof(struct dptNode *), "initStackDep");
-   stack->size = 5;
-   return(stack);
+    stack->top=-1;
+    stack->nodes = (struct dptNode **) my_malloc(5*sizeof(struct dptNode *), "initStackDep");
+    stack->size = 5;
+    return(stack);
 }
 
 static int
@@ -962,43 +980,43 @@ pushStackDep(struct Stack *stack, struct dptNode *node)
     static char fname[]="pushStackDep";
     char *sp;
     if (stack->size == stack->top + 1) {
-       sp = realloc(stack->nodes, stack->size*2*sizeof(struct dptNode *));
-       if (!sp) {
-           ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "realloc");
-           return -1;
-       }
-       stack->size *= 2;
-       stack->nodes = (struct dptNode **)sp;
-   }
-   stack->nodes[++stack->top] = node;
-   return 0;
+	sp = realloc(stack->nodes, stack->size*2*sizeof(struct dptNode *));
+	if (!sp) {
+	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "realloc");
+	    return -1;
+	}
+	stack->size *= 2;
+	stack->nodes = (struct dptNode **)sp;
+    }
+    stack->nodes[++stack->top] = node;
+    return 0;
 }
 
 
 static struct dptNode *
 popStackDep(struct Stack *stack)
 {
-   if (stack->top < 0)
-      return NULL;
-   return(stack->nodes[stack->top--]);
+    if (stack->top < 0)
+	return NULL;
+    return(stack->nodes[stack->top--]);
 }
 
 
 static void
 freeStackDep(struct Stack *stack, int freeNodes)
 {
-   int i;
+    int i;
 
-   if (freeNodes && stack->top >= 0)
-       for(i=0; i <= stack->top; i++)
-           freeDepCond(stack->nodes[i]);
-   free(stack->nodes);
-   free(stack);
+    if (freeNodes && stack->top >= 0)
+	for(i=0; i <= stack->top; i++)
+	    freeDepCond(stack->nodes[i]);
+    free(stack->nodes);
+    free(stack);
 }
 
 static struct jData **
 matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
-         struct jobIdx **jobIdx, LS_LONG_INT *element, int *flag)
+	  struct jobIdx **jobIdx, LS_LONG_INT *element, int *flag)
 {
     struct jData *jpbw, **foundJobRec, **tempJobRec;
     int jobId, numJob, numRec = 20;
@@ -1019,16 +1037,14 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 	}
     }
 
-
-
     idxList = parseJobArrayIndex(jobp, &error, &maxJLimit);
 
     if (error != LSBE_NO_ERROR)
-       return NULL;
+	return NULL;
 
     if (idxList) {
         (*jobIdx) = (struct jobIdx *)my_malloc(sizeof (struct jobIdx),
-                     "matchJobs");
+					       "matchJobs");
         (*jobIdx)->idxList = idxList;
 	(*jobIdx)->depJobList = NULL;
         (*jobIdx)->numRef = 0;
@@ -1039,9 +1055,8 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
     foundJobRec = (struct jData **)my_calloc (numRec,
 					      sizeof(struct jData *),
 					      "matchJobs");
-
     if ((sp = strchr(jobp, '[')))
-         sp[0] = '\0';
+	sp[0] = '\0';
 
 
     jobId=0;
@@ -1051,13 +1066,13 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 
         jobp++;
         if((sp=strchr(jobp,quote)) != NULL)
-           sp[0]='\0';
+	    sp[0]='\0';
         jobName=jobp;
     } else {
         if (isint_(jobp))
-           jobId = atoi(jobp);
+	    jobId = atoi(jobp);
         else
-           jobName=jobp;
+	    jobName=jobp;
     }
 
     if (jobName && strlen(jobName) > 0 && jobName[strlen(jobName) - 1] == '*') {
@@ -1068,7 +1083,6 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
         foundJobRec[0] = getJobData(jobId);
         if (foundJobRec[0]) {
             int notFound = FALSE;
-
 
 	    if (flag != NULL
 		&& *flag == ARRAY_DEP_ONE_TO_ONE) {
@@ -1086,8 +1100,8 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 	    if (idxList == NULL
 		&& foundJobRec[0]->nodeType == JGRP_NODE_ARRAY) {
     		idxList = parseJobArrayIndex(
-			foundJobRec[0]->shared->jobBill.jobName,
-			&error, &maxJLimit);
+		    foundJobRec[0]->shared->jobBill.jobName,
+		    &error, &maxJLimit);
 
 		if (idxList) {
     		    (*jobIdx) = (struct jobIdx *)my_malloc(
@@ -1096,53 +1110,48 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 	   	    (*jobIdx)->depJobList = NULL;
         	    (*jobIdx)->numRef = 0;
     		}
-	   }
+	    }
 
-           if (idxList == NULL) {
+	    if (idxList == NULL) {
 
                 numJob = 1;
                 goto Ret;
             }
 
-
-
             while (idxList != NULL) {
-
-
                 int i;
 
                 for (i = idxList->start; i <= idxList->end; i += idxList->step){
 		    if ((jpbw = getJobData(LSB_JOBID(jobId, i)))) {
 
 			(*jobIdx)->depJobList =
-	                       listSetInsert((long)createjDataRef(jpbw),
-	                       (*jobIdx)->depJobList);
+			    listSetInsert((long)createjDataRef(jpbw),
+					  (*jobIdx)->depJobList);
                         continue;
 	            } else {
                         notFound = TRUE;
                         *element = LSB_JOBID(jobId, i);
                	        break;
                     }
-                 }
-                 if (notFound) {
-                     break;
-                 } else {
-                     idxList = idxList->next;
-                 }
-             }
-             if (notFound)
-                 numJob = 0;
-             else
-	         numJob = 1;
+		}
+		if (notFound) {
+		    break;
+		} else {
+		    idxList = idxList->next;
+		}
+	    }
+	    if (notFound)
+		numJob = 0;
+	    else
+		numJob = 1;
 	}
 	goto Ret;
-     }
+    }
 
 
-    if (jobName!=NULL && jobName[0] != '\0') {
-
-
-	    parent = groupRoot;
+    if (jobName != NULL
+	&& jobName[0] != '\0') {
+	parent = groupRoot;
     } else {
         goto Ret;
     }
@@ -1153,44 +1162,42 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 
     uPtr = getUserData(lsfUserName);
 
-
     for (nPtr = parent->child; nPtr; nPtr = nPtr->right) {
         if (nPtr->nodeType == JGRP_NODE_ARRAY)
             jpbw = ARRAY_DATA(nPtr)->jobArray;
         else
             jpbw = JOB_DATA(nPtr);
-	    if (jpbw->uPtr == uPtr) {
+	if (jpbw->uPtr == uPtr) {
 
-                if (jobDepLastSub && !wildCardJobName) {
-                    if (submitTime < jpbw->shared->jobBill.submitTime) {
-                        submitTime = jpbw->shared->jobBill.submitTime;
-                        foundJobRec[0] =jpbw;
-                        numJob = 1;
-                    }
-                } else if (matchName(jobName, jpbw->shared->jobBill.jobName)) {
-		    /* make sure we match the job name not only
-		     * the user.
-		     */
-		    foundJobRec [numJob++] = jpbw;
+	    if (jobDepLastSub && !wildCardJobName) {
+		if (submitTime < jpbw->shared->jobBill.submitTime) {
+		    submitTime = jpbw->shared->jobBill.submitTime;
+		    foundJobRec[0] =jpbw;
+		    numJob = 1;
 		}
+	    } else if (matchName(jobName, jpbw->shared->jobBill.jobName)) {
+		/* make sure we match the job name not only
+		 * the user.
+		 */
+		foundJobRec [numJob++] = jpbw;
+	    }
 
-		if (numJob >= numRec) {
-		    tempJobRec = (struct jData **) realloc (foundJobRec,
-			       2 * numRec * sizeof (struct jData *));
-                    if (tempJobRec == NULL) {
-		        *replyCode = LSBE_NO_MEM;
-			FREEUP (foundJobRec);
-                        *numFoundJob = 0;
-			return NULL;
-                    }
-		    numRec *= 2;
-		    foundJobRec = tempJobRec;
-                }
-            }
+	    if (numJob >= numRec) {
+		tempJobRec = (struct jData **) realloc (foundJobRec,
+							2 * numRec * sizeof (struct jData *));
+		if (tempJobRec == NULL) {
+		    *replyCode = LSBE_NO_MEM;
+		    FREEUP (foundJobRec);
+		    *numFoundJob = 0;
+		    return NULL;
+		}
+		numRec *= 2;
+		foundJobRec = tempJobRec;
+	    }
+	}
     }
 
- checkIdx:
-
+checkIdx:
 
     if (flag != NULL
 	&& *flag == ARRAY_DEP_ONE_TO_ONE
@@ -1204,9 +1211,7 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 	jname = foundJobRec[0]->shared->jobBill.jobName;
 	depArrayIdx  = parseJobArrayIndex(jname, &err, &limit);
 
-
 	submitIdxList = getIdxListContext();
-
 
 	if ( (depArrayIdx == NULL
 	      || submitIdxList == NULL)
@@ -1241,7 +1246,6 @@ matchJobs(char *jobp, char *lsfUserName, int *numFoundJob, int *replyCode,
 		}
 	    }
 	}
-
 
 	freeIdxList(depArrayIdx);
     }
@@ -1284,7 +1288,7 @@ createMoreNodes (dptType tokenType, int numJob, struct jData **jobRec,
 
         PUSH_STACK(operandStack, node);
         if (nodesList)
-             nodesList[i] = node;
+	    nodesList[i] = node;
 	if (first == TRUE) {
 	    first = FALSE;
 	    continue;
@@ -1295,11 +1299,11 @@ createMoreNodes (dptType tokenType, int numJob, struct jData **jobRec,
 	if (mergeNode(MERGE_TOP) < 0)
 	    return -1;
 
-   }
-   return 0;
+    }
+    return 0;
 
 Error:
-   return -1;
+    return -1;
 }
 
 
@@ -1353,7 +1357,7 @@ getCounterOfDep(int type, int *counts)
         case DPT_NUMRUN:
             return(counts[JGRP_COUNT_NRUN]);
         case DPT_NUMHOLD:
-        	return(counts[JGRP_COUNT_NPSUSP]);
+	    return(counts[JGRP_COUNT_NPSUSP]);
         case DPT_NUMEXIT:
             return(counts[JGRP_COUNT_NEXIT]);
         case DPT_NUMDONE:
@@ -1366,9 +1370,9 @@ getCounterOfDep(int type, int *counts)
         default:
 
             ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5501,
-		"%s: dep Type <%d> out of bound"),  /* catgets 5501 */
-		fname,
-                type);
+					     "%s: dep Type <%d> out of bound"),  /* catgets 5501 */
+		      fname,
+		      type);
             return 0;
     }
 }
@@ -1393,33 +1397,38 @@ destroyjobIdxRef(struct jobIdx *jobIdx)
         jobIdx->numRef--;
         if (jobIdx->numRef <= 0) {
 
-	   for (ptr = jobIdx->depJobList; ptr; ptr = ptr->next) {
-               jp = (struct jData *)ptr->elem;
-	       if (jp) {
-                   destroyjDataRef(jp);
-               }
-           }
-           listSetFree(jobIdx->depJobList);
-           freeIdxList(jobIdx->idxList);
-           FREEUP(jobIdx);
+	    for (ptr = jobIdx->depJobList; ptr; ptr = ptr->next) {
+		jp = (struct jData *)ptr->elem;
+		if (jp) {
+		    destroyjDataRef(jp);
+		}
+	    }
+	    listSetFree(jobIdx->depJobList);
+	    freeIdxList(jobIdx->idxList);
+	    FREEUP(jobIdx);
         }
     }
     return;
 }
 
-
+/* evalJobDep()
+ *
+ * depJob is the job whose dependencies are being checked and
+ * jpbw is the parent job
+ */
 static int
-evalJobDep(struct dptNode *node, struct jData *jpbw, struct jData *depJob)
+evalJobDep(struct dptNode *node,
+	   struct jData *jpbw,
+	   struct jData *depJob,
+	   link_t *l)
 {
 
-    if (
-            ( node->type != DPT_DONE      )
-         && ( node->type != DPT_POST_DONE )
-         && ( node->type != DPT_EXIT      )
-         && ( node->type != DPT_POST_ERR )
-         && ( node->type != DPT_ENDED     )
-         && ( node->type != DPT_STARTED   )
-       )  {
+    if ((node->type != DPT_DONE)
+	&& (node->type != DPT_POST_DONE)
+	&& (node->type != DPT_EXIT)
+	&& (node->type != DPT_POST_ERR)
+	&& (node->type != DPT_ENDED)
+	&& (node->type != DPT_STARTED))  {
         return false;
     }
 
@@ -1428,62 +1437,139 @@ evalJobDep(struct dptNode *node, struct jData *jpbw, struct jData *depJob)
 
     switch (node->type) {
         case DPT_DONE:
-            if ((depJob == NULL || depJob->endTime < jpbw->endTime) &&
-                ((jpbw->jStatus & JOB_STAT_DONE) || (IS_PEND(jpbw->jStatus)
-                && jpbw->jFlags & JFLAG_LASTRUN_SUCC)))
+            if ((depJob == NULL || depJob->endTime < jpbw->endTime)
+		&& ((jpbw->jStatus & JOB_STAT_DONE)
+		 || (IS_PEND(jpbw->jStatus)
+		     && jpbw->jFlags & JFLAG_LASTRUN_SUCC))) {
+		if (l)
+		    set_job_dep("done", jpbw, true, l);
                 return true;
-             else
-                return false;
+	    }
+
+	    if (l)
+		set_job_dep("done", jpbw, false, l);
+
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: DONE job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+
+	    return false;
 
         case DPT_POST_DONE:
-            if ( (depJob == NULL) || (depJob->endTime < jpbw->endTime) ) {
-		if ( IS_POST_DONE(jpbw->jStatus)
-			   && (jpbw->jStatus & JOB_STAT_DONE) ) {
-
+            if ((depJob == NULL) || (depJob->endTime < jpbw->endTime)) {
+		if (IS_POST_DONE(jpbw->jStatus)
+		     && (jpbw->jStatus & JOB_STAT_DONE)) {
+		    if (l)
+			set_job_dep("post_done", jpbw, true, l);
 		    return true;
 		}
 	    }
+
+	    if (l)
+		set_job_dep("post_done", jpbw, false, l);
+
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: POST_DONE job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+
             return false;
 
         case DPT_POST_ERR:
-            if ( (depJob == NULL) || (depJob->endTime < jpbw->endTime) ) {
-		if ( IS_POST_ERR(jpbw->jStatus)
-			   && (jpbw->jStatus & JOB_STAT_DONE) ) {
-
+            if ((depJob == NULL) || (depJob->endTime < jpbw->endTime)) {
+		if (IS_POST_ERR(jpbw->jStatus)
+		    && (jpbw->jStatus & JOB_STAT_DONE) ) {
+		    if (l)
+			set_job_dep("post_error", jpbw, true, l);
 		    return true;
 		}
 	    }
+
+	    if (l)
+		set_job_dep("post_error", jpbw, false, l);
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: POST_ERR job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+
             return false;
 
         case DPT_EXIT: {
             int exitCode;
             exitCode = jpbw->exitStatus >> 8;
-            if ((depJob == NULL || depJob->endTime < jpbw->endTime) &&
-                opExpr(node->dptUnion.job.opType, exitCode,
-                       node->dptUnion.job.exitCode) &&
-                (IS_FINISH(jpbw->jStatus) || (IS_PEND(jpbw->jStatus)
-                && !(jpbw->jFlags & JFLAG_LASTRUN_SUCC)))
-                && !(jpbw->jStatus & JOB_STAT_DONE))
+            if ((depJob == NULL || depJob->endTime < jpbw->endTime)
+		&& opExpr(node->dptUnion.job.opType, exitCode,
+			  node->dptUnion.job.exitCode)
+		&& (IS_FINISH(jpbw->jStatus)
+		    || (IS_PEND(jpbw->jStatus)
+			&& !(jpbw->jFlags & JFLAG_LASTRUN_SUCC)))
+                && !(jpbw->jStatus & JOB_STAT_DONE)) {
+		if (l)
+		    set_job_dep("exit", jpbw, true, l);
                 return true;
-            else
-                return false;
+	    }
+
+	    if (l)
+		set_job_dep("exit", jpbw, false, l);
+
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: EXIT job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+
+	    return false;
         }
         case DPT_ENDED:
-            if ((depJob == NULL || depJob->endTime < jpbw->endTime) &&
-                ((IS_FINISH(jpbw->jStatus) || IS_PEND(jpbw->jStatus))))
+            if ((depJob == NULL || depJob->endTime < jpbw->endTime)
+		&& ((IS_FINISH(jpbw->jStatus) || IS_PEND(jpbw->jStatus)))) {
+		if (l)
+		    set_job_dep("ended", jpbw, true, l);
                 return true;
-            else
-                return false;
+	    }
+	    if (l)
+		set_job_dep("ended", jpbw, false, l);
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: ENDED job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+	    return false;
         case DPT_STARTED:
             if (jpbw->startTime
                 && (depJob == NULL || depJob->endTime < jpbw->startTime)
-                && !(jpbw->jStatus & JOB_STAT_PRE_EXEC))
+                && !(jpbw->jStatus & JOB_STAT_PRE_EXEC)) {
+		if (l)
+		    set_job_dep("started", jpbw, true, l);
                 return true;
-            else
-                return false;
+	    }
+	    if (l)
+		set_job_dep("started", jpbw, false, l);
+	    if (logclass & LC_DEP)
+		ls_syslog(LOG_INFO, "\
+%s: STARTED job %s is false", __func__, lsb_jobid2str(jpbw->jobId));
+	    return false;
         default:
-                return false;
+	    return false;
     }
 }
 
+/* set_job_dep()
+ *
+ * Make the job_dep structure and fill its members.
+ *
+ */
+static void
+set_job_dep(const char *s, struct jData *jPtr, bool_t stat, link_t *l)
+{
+    struct job_dep *jd;
 
+    if (l == NULL)
+	return;
+
+    jd = calloc(1, sizeof(struct job_dep));
+    if (jd == NULL) {
+	mbdDie(MASTER_MEM);
+    }
+
+    jd->dependency = strdup(s);
+    jd->jobid = strdup(lsb_jobid2str(jPtr->jobId));
+    jd->jstatus = jPtr->jStatus;
+    jd->depstatus = stat;
+
+    push_link(l, jd);
+}

@@ -781,6 +781,15 @@ processClient(struct clientNode *client, int *needFree)
                    do_jobMsgInfo(&xdrs, s, &from, client->fromHost, &reqHdr, &auth),
                    "do_jobMsgInfo()");
             break;
+        case BATCH_JOBDEP_INFO:
+            TIMEIT(0,
+                   do_jobDepInfo(&xdrs,
+				 s,
+				 &from,
+				 client->fromHost,
+				 &reqHdr),
+                   "do_jobMsgInfo()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)
@@ -1097,7 +1106,8 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_RESOURCE_INFO
         || req == BATCH_PARAM_INFO
         || req == BATCH_USER_INFO
-        || req == BATCH_JOB_PEEK) {
+        || req == BATCH_JOB_PEEK
+	|| req == BATCH_JOBDEP_INFO) {
         return 1;
     }
 

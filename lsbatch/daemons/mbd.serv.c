@@ -42,6 +42,7 @@ static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
 extern void closeSession(int);
 static int sendLSFHeader(int, int);
+static int get_dep_link_size(link_t *);
 
 int
 do_submitReq(XDR *xdrs,
@@ -2917,4 +2918,115 @@ sendLSFHeader(int ch, int opcode)
     chanWrite_(ch, buf, sizeof(buf));
 
     return 0;
+}
+
+/* do_jobDepInfo()
+ */
+int
+do_jobDepInfo(XDR *xdrs,
+	      int chfd,
+	      struct sockaddr_in *from,
+	      char *hostname,
+	      struct LSFHeader *hdr)
+{
+    LS_LONG_INT jobID;
+    XDR xdrs2;
+    int cc;
+    int len;
+    char *replyBuf;
+    struct LSFHeader hdr2;
+    struct jData *jPtr;
+    link_t *l;
+    struct job_dep *jdep;
+
+    if (! xdr_jobID(xdrs, &jobID, hdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_jobID() failed", __func__);
+        sendLSFHeader(chfd, LSBE_XDR);
+        return -1;
+    }
+
+    if ((jPtr = getJobData(jobID)) == NULL) {
+        sendLSFHeader(chfd, LSBE_NO_JOB);
+        return -1;
+    }
+
+    /* make the link and evaluate the dependency
+     * condition.
+     */
+    l = make_link();
+    evalDepCond(jPtr->shared->dptRoot, jPtr, l);
+    cc = get_dep_link_size(l) + sizeof(struct LSFHeader);
+    cc = cc * sizeof(int);
+
+    replyBuf = calloc(cc, sizeof(char));
+    xdrmem_create(&xdrs2, replyBuf, cc, XDR_ENCODE);
+
+    initLSFHeader_(&hdr2);
+    hdr2.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (! xdr_int(&xdrs2, &l->num)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(replyBuf);
+        return -1;
+    }
+
+    /* XDR the job dep elements
+     */
+    while ((jdep = dequeue_link(l))) {
+	if (! xdr_jobdep(&xdrs2, jdep, hdr)) {
+            sendLSFHeader(chfd, LSBE_XDR);
+            _free_(replyBuf);
+            return -1;
+	}
+	_free_(jdep->dependency);
+	_free_(jdep->jobid);
+	_free_(jdep);
+    }
+    fin_link(l);
+
+    len = XDR_GETPOS(&xdrs2);
+    hdr2.length = len - LSF_HEADER_LEN;
+    XDR_SETPOS(&xdrs2, 0);
+
+    if (!xdr_LSFHeader(&xdrs2, &hdr2)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(replyBuf);
+        return -1;
+    }
+    XDR_SETPOS(&xdrs2, len);
+
+    if (chanWrite_(chfd, replyBuf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "%s: chanWrite %dbytes failed",
+                  __func__, XDR_GETPOS(&xdrs2));
+        _free_(replyBuf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    _free_(replyBuf);
+    xdr_destroy(&xdrs2);
+
+    return 0;
+
+}
+
+/* get_dep_link_size()
+ */
+static int
+get_dep_link_size(link_t *l)
+{
+    linkiter_t iter;
+    struct job_dep *jd;
+    int bytes;
+
+    traverse_init(l, &iter);
+    bytes = 0;
+
+    while ((jd = traverse_link(&iter))) {
+	bytes = bytes + ALIGNWORD_(strlen(jd->dependency))
+	    + ALIGNWORD_(strlen(jd->jobid)) + 2 * sizeof(int);
+    }
+
+    return bytes;
 }

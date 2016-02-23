@@ -6,6 +6,8 @@ Release notes for OpenLava versions
    file access performance.
 -- Implement the switching of the lsb.events asynchronously in mbatchd
    child process.
+-- Implemented the bjdep command. bjdep jobid prints the status of
+   job dependencies for the given job.
 
 3.3.pre.1
 =========

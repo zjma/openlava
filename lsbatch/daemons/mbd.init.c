@@ -2681,7 +2681,7 @@ updCondData (struct lsConf *conf, int fileType)
         condition = (struct condData *) hashEntryPtr->hData;
         if (condition->rootNode == NULL)
             continue;
-        status = evalDepCond (condition->rootNode, NULL);
+        status = evalDepCond (condition->rootNode, NULL, NULL);
         if (status == DP_TRUE)
             status = TRUE;
         else

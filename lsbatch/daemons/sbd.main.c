@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -723,7 +723,7 @@ sinit(void)
     struct hostInfo *myinfo;
     char *myhostname;
 
-    if (logclass & (LC_TRACE | LC_HANG))
+    if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "sbatchd/%s: Entering this routine...", __func__);
 
     if (getBootTime(&bootTime) == -1) {
