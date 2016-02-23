@@ -49,6 +49,9 @@ findHost(char *hostName)
 {
     struct hostNode *hPtr;
 
+    if (hostName == NULL)
+	return NULL;
+
     hPtr = findHostbyList(myClusterPtr->hostList, hostName);
     if (hPtr)
         return hPtr;

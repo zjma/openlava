@@ -47,6 +47,7 @@ Release notes for OpenLava versions
    LIM may core dump.
 -- Change the ownership of the mbatchd log file to avoid messages going
    to syslog messages file.
+-- Prevent LIM from core dumping in findHost() if the input name is NULL.
 
 3.1.3
 ======
