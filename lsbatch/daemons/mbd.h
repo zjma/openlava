@@ -1476,5 +1476,8 @@ extern int fork_mbd(void);
 extern int do_jobDepInfo(XDR *, int,
 			 struct sockaddr_in *,
 			 char *, struct LSFHeader *);
+extern int addJgrp(struct jgrpReq *,
+		   struct jgrpReply *,
+		   struct lsfAuth *);
 
 #endif /* _MBD_HEADER_ */

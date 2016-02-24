@@ -66,11 +66,10 @@ main(int argc, char** argv)
     if (jobdep == NULL) {
 	if (lsberrno == LSBE_NO_ERROR) {
 	    fprintf(stderr, "\
-bjdep: No job dependencies for job %s\n", lsb_jobid2str(jobid));
+bjdep: No job dependencies for job %s.\n", lsb_jobid2str(jobid));
 	    return -1;
 	}
-	fprintf(stderr, "\
-bjdep: failed to get dependencies: %s\n", lsb_sysmsg());
+	fprintf(stderr, "bjdep: %s.\n", lsb_sysmsg());
 	return -1;
     }
     print_jobdep(cc, jobdep, jobid);

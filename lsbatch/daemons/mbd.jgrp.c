@@ -41,29 +41,7 @@
  * the tree and reuse all this code to add nodes, remove them, keep
  * the counters and display them.
  *
- *  EXPORTED ROUTINES:
- *  1. Tree operations
- *      treeInit -- Initialize the group tree and generate the root.
- *	treeLexNext -- giving the lexical next node.
- *	treeInsertChild -- Insert a child in the last position.
- *	treeInsertLeft -- Insert a left sibling.
- *      treeInsertRight -- Insert a right sibling.
- *	treeClip -- clip a subtree
- *	treeNewNode -- Alloc a node struct
- *      getJgrp    -- Find the root of the group via the hash searching.
- *      checkJgrpDep -- periodic checking the group/job conditions.
- *      getIndexOfJStatus -- converting a job status into a group index count
- *      updJgrpCountByJStatus -- update group counts;
- *  2. Client requests
- *      addJgrp
- *      modJgrp
- *  3. Misc.
- *      putOntoTree
- *      jgrpPermitOk
- *      addJgrps4Job
- *
- *
- ***********************************************************************/
+ */
 
 #include <stdlib.h>
 #include <math.h>
@@ -95,7 +73,8 @@ static int        printNode(struct jgTreeNode *, FILE *);
 static void       freeTreeNode(struct jgTreeNode *);
 static int        skipJgrpByReq (int, int);
 static int        storeToJgrpList(void *, struct jgrpInfo *, int);
-static int        makeTreeNodeList(struct jgTreeNode *, struct jobInfoReq *,
+static int        makeTreeNodeList(struct jgTreeNode *,
+				   struct jobInfoReq *,
                                    struct jgrpInfo *);
 static void       freeGrpNode(struct jgrpData *);
 static int isSelected ( struct jobInfoReq *,
@@ -106,16 +85,25 @@ static int makeJgrpInfo(struct jgTreeNode *,
 			char *,
 			struct jobInfoReq *,
 			struct jgrpInfo *);
+static struct jgTreeNode *getNode(const char *);
+static int compareArray(const void *, const void *);
+static int makeNodeList(struct jobInfoReq *,
+			struct jgrpInfo *);
+
 char treeFile[48];
 
 extern float version;
 
 #define DEFAULT_LISTSIZE    200
+static hTab nodeTab;
 
 void
 treeInit(void)
 {
-    int mbdPid = getpid();
+    hEnt *e;
+    int mbdPid;
+
+    mbdPid = getpid();
 
     groupRoot = treeNewNode(JGRP_NODE_GROUP);
     groupRoot->name = safeSave("/");
@@ -125,6 +113,14 @@ treeInit(void)
     JGRP_DATA(groupRoot)->changeTime = INFINIT_INT;
     JGRP_DATA(groupRoot)->numRef = 0;
     sprintf(treeFile, "/tmp/jgrpTree.%d", mbdPid);
+
+    /* Initialize the hash table of nodes and insert
+     * the root in it.
+     */
+    h_initTab_(&nodeTab, 111);
+
+    e = h_addEnt_(&nodeTab, groupRoot->name, NULL);
+    e->hData = (int *)groupRoot;
 
 }
 
@@ -277,7 +273,8 @@ treeClip(struct jgTreeNode *node)
     return node;
 }
 
-
+/* treeNewNode()
+ */
 struct jgTreeNode *
 treeNewNode(int type)
 {
@@ -298,6 +295,7 @@ treeNewNode(int type)
         node->ndInfo = my_calloc(1, sizeof(struct jarray), __func__);
         ARRAY_DATA(node)->freeJgArray = (FREE_JGARRAY_FUNC_T) freeJarray;
     }
+
     return node;
 }
 
@@ -893,7 +891,8 @@ getIndexOfJStatus(int status)
         case JOB_STAT_DONE|JOB_STAT_WAIT:
             return JGRP_COUNT_NDONE;
         default:
-            ls_syslog(LOG_ERR, "%s: job status <%d> out of bound", __func__,
+            ls_syslog(LOG_ERR, "\
+%s: job status <%d> out of bound", __func__,
                       MASK_STATUS(status));
             return 8;
     }
@@ -1072,6 +1071,8 @@ ret:
         *listSize = jgrp.numNodes;
         return LSBE_NO_ERROR;
     }
+    if (0)
+	makeNodeList(NULL, NULL);
 
     return LSBE_NO_JOB;
 }
@@ -1315,3 +1316,369 @@ fullJobName_r(struct jData *jp, char *jobName)
     return;
 }
 
+/*
+ * addJgrp()
+ *
+ * Add job groups on request
+ * If the request string is /A/B/C, the function will go and check
+ * the existence of each group, and create /A, /A/B, and /A/B/C if
+ * needed.
+ */
+int
+addJgrp(struct jgrpReq *jgrpReq,
+	struct jgrpReply *Reply,
+	struct lsfAuth *auth)
+{
+    static char mypath[MAXLINELEN];
+    static char daddy[MAXLINELEN];
+    char *me;
+    char *req;
+    struct jgTreeNode *parent;
+    struct jgTreeNode *jgrp;
+    hEnt *e;
+
+    if (!jgrpReq)
+        return LSBE_JGRP_NULL;
+
+    if (strlen(jgrpReq->groupSpec) >= MAXLINELEN ) {
+        return LSBE_JGRP_BAD;
+    }
+
+    req = jgrpReq->groupSpec;
+
+    /* first if the group exist or not
+     */
+    e = h_getEnt_(&nodeTab, req);
+    if (e) {
+        if (Reply)
+            strcpy(Reply->badJgrpName, req);
+	return LSBE_JGRP_EXIST;
+    }
+
+    sprintf(daddy, "/");
+    while ((me = getNextWordSet(&req, "/")) != NULL) {
+
+	if (strcmp(daddy, "/") == 0) {
+	    sprintf(mypath, "/%s", me);
+	} else {
+	    sprintf(mypath, "%s/%s", daddy, me);
+	}
+
+	if ((e = h_getEnt_(&nodeTab, mypath)) != NULL) {
+	    sprintf(daddy, "%s", mypath);
+	    continue;
+	}
+        /* parent can't be NULL, if that happen,
+         * something must be wrong already
+         */
+
+	parent = getNode(daddy);
+	jgrp = treeNewNode(JGRP_NODE_GROUP);
+	jgrp->name = safeSave(me);
+
+	JGRP_DATA(jgrp)->userId = auth->uid;
+	JGRP_DATA(jgrp)->userName = safeSave(auth->lsfUserName);
+	JGRP_DATA(jgrp)->fromPlatform = auth->options;
+	/* Set the path to the new group
+	 */
+	jgrp->path = safeSave(mypath);
+
+	/* Jump on the branch you belong to
+	 */
+	treeInsertChild(parent, jgrp);
+
+	/* and hop into the hash table keyed
+	 * by path.
+	 */
+	e = h_addEnt_(&nodeTab, jgrp->path, NULL);
+	e->hData = jgrp;
+
+	JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
+	JGRP_DATA(jgrp)->oldStatus = JGRP_ACTIVE;
+
+	JGRP_DATA(jgrp)->jgrpBill.groupSpec = safeSave(mypath);
+	JGRP_DATA(jgrp)->jgrpBill.destSpec = safeSave(jgrpReq->destSpec);
+	JGRP_DATA(jgrp)->jgrpBill.submitTime = jgrpReq->submitTime;
+        JGRP_DATA(jgrp)->jgrpBill.options = jgrpReq->options;
+
+	sprintf(daddy, "%s", mypath);
+
+    } /* while () */
+
+    /* Log the job group specification.
+     */
+    if (mSchedStage != M_STAGE_REPLAY) {
+        /* log_newjgrp(jgrp, jgrpReq); */
+    }
+
+    return LSBE_NO_ERROR;
+}
+
+static struct jgTreeNode *
+getNode(const char *name)
+{
+    hEnt                *e;
+    struct jgTreeNode   *j;
+
+    e = h_getEnt_(&nodeTab, name);
+    if (e) {
+	j = (struct jgTreeNode *)e->hData;
+	return(j);
+    }
+
+    return(NULL);
+
+} /* getNode() */
+
+/* Walk the tree of nodes and encode them in the stream given me
+ * by the caller.
+ *
+ * The nodes can be: job groups, projects, anything else you decide
+ * to put on the tree and has counters associated with it.
+ *
+ * Protocol format:
+ *
+ * numnodes
+ * "Path" "node name" "njobs npend npsusp nrun nssusp nususp nexit ndone"
+ *
+ */
+int
+encodeNodes(XDR *xdrs,
+	    int *n,
+	    int type,
+	    struct LSFHeader *hdr)
+{
+    static char         fname[] = "encodeNode()";
+    struct jgTreeNode   *N;
+    link_t              *stack;
+    int                 cc;
+
+    /* Sorry no groups yet...
+     */
+    *n = 0;
+    if (groupRoot->child == NULL)
+	return(0);
+
+    /* Set the first traversing path and
+     * initialize the traversal stack.
+     */
+    N = groupRoot->child;
+    stack = make_link();
+
+  again:
+    while (N) {
+	int                i;
+	struct jgrpData   *g;
+
+	/* Push the child on the stack for later
+	 * traversal. We can have job groups
+	 * under slas so as long as there is
+	 * a node with a child we have to dive...
+	 */
+	if (N->child)
+	    push_link(stack, N->child);
+
+	if (logclass & LC_JGRP) {
+	    ls_syslog(LOG_DEBUG, "\
+%s: node %s %s %d", fname, N->name, N->path, type);
+	}
+
+	/* Nah...not my type...
+	 */
+	if (N->nodeType != type)
+	    goto next;
+
+	/* Path to me...find me...
+	 */
+	cc = xdr_var_string(xdrs, &N->path);
+	if (cc != TRUE)
+	    goto ykes;
+
+	/* My name...
+	 */
+	cc = xdr_var_string(xdrs, &N->name);
+	if (cc != TRUE)
+	    goto ykes;
+
+	/* My counters which are kept in the
+	 * groups specific data structure.
+	 */
+	g = (struct jgrpData *)N->ndInfo;
+	for (i = 0; i < NUM_JGRP_COUNTERS; i++) {
+	    cc = xdr_int(xdrs, &g->counts[i]);
+	    if (cc != TRUE)
+		goto ykes;
+	}
+
+	/* Increase the number of encoded groups
+	 * for the callers convenience.
+	 */
+	++(*n);
+
+      next:
+	N = N->right;
+
+    } /* while (N) */
+
+    N = pop_link(stack);
+    if (N)
+	goto again;
+
+    fin_link(stack);
+
+    return(0);
+
+    /* ykes!!
+     */
+  ykes:
+
+    ls_syslog(LOG_ERR, "%s: cannot encode node %s %s %d",
+	      __func__, N->name, N->path, N->nodeType);
+    fin_link(stack);
+
+    return(-1);
+
+} /* encodeGroups() */
+
+/* Walk on the tree of nodes and select the job array
+ * nodes. The head of each array is added to the output
+ * list of the jgrpInfo data structure.
+ */
+static int
+makeNodeList(struct jobInfoReq *jR,
+	     struct jgrpInfo *jInfo)
+{
+    static char         fname[] = "makeNodeList()";
+    struct jgTreeNode   *N;
+    link_t              *stack;
+    int                 cc;
+
+    /* Sorry no groups, projects or arrays yet...
+     */
+    if (groupRoot->child == NULL)
+	return(0);
+
+    /* Set the first traversing path and
+     * initialize the traversal stack.
+     */
+    N = groupRoot->child;
+    stack = make_link();
+
+  again:
+    while (N) {
+	/* Push the child on the stack for later
+	 * traversal.
+	 */
+	if (N->child)
+	    push_link(stack, N->child);
+
+	/* If the node an array check if it is
+	 * the one requested by the library.
+	 */
+	if (N->nodeType == JGRP_NODE_ARRAY) {
+	    struct jData   *h;
+
+	    /* This is the array head.
+	     */
+	    h = ((struct jarray *)N->ndInfo)->jobArray;
+
+	    if (logclass & LC_JGRP) {
+		ls_syslog(LOG_DEBUG, "\
+%s: looking at the array id %s", fname, lsb_jobid2str(h->jobId));
+	    }
+
+	    cc = isSelected(jR, h, jInfo);
+	    if (cc == TRUE) {
+		/* Add the address of this jData in to
+		 * the list of jobs that will be processed
+		 * in mbd.serv.c and set to the library.
+		 * Note that jobArray is the head of the
+		 * array.
+		 */
+		cc = storeToJgrpList((void *)h,
+				     jInfo,
+				     JGRP_NODE_JOB);
+		if (cc != TRUE) {
+		    ls_syslog(LOG_ERR, I18N(6406,"\
+%s: failed to store array id %s %m"), fname, lsb_jobid2str(h->jobId)); /* catgets 6406 */
+		    goto ykes;
+		}
+
+		if (logclass & LC_JGRP) {
+		    ls_syslog(LOG_DEBUG, "\
+%s: array id %s stored", fname, lsb_jobid2str(h->jobId));
+		}
+	    }
+
+	} /* if (N->nodeType == JGRP_NODE_ARRAY) */
+
+	N = N->right;
+
+    } /* while (N) */
+
+    N = pop_link(stack);
+    if (N)
+	goto again;
+
+    fin_link(stack);
+
+    /* We traversed the tree in level-order traversal
+     * so the array heads are stored in the jgrpList
+     * without any apparent order from the jobId point
+     * of view. So here we sort them in the standard
+     * increasing order of jobids.
+     * The array jgrpList stores struct nodeList
+     * types.
+     */
+    qsort(jInfo->jgrpList,
+	  jInfo->numNodes,
+	  sizeof(struct nodeList),
+	  compareArray);
+
+    return 0;
+
+    /* ykes!!
+     */
+  ykes:
+
+    /* Free the hosed...
+     */
+    fin_link(stack);
+    FREEUP(jInfo->jgrpList);
+    memset(jInfo, 0, sizeof(struct jgrpInfo));
+
+    return -1;
+
+}
+
+/* Invoked by qsort() in the makeNodeList().
+ * This is a standard compare() function
+ * used by the libc qsort().
+ */
+static int
+compareArray(const void *n, const void *n2)
+{
+    struct nodeList   *N;
+    struct nodeList   *N2;
+    struct jData      *j;
+    struct jData      *j2;
+
+    N  = (struct nodeList *)n;
+    N2 = (struct nodeList *)n2;
+
+    j = (struct jData *)N->info;
+    j2 = (struct jData *)N2->info;
+
+    /* Note the comparison of ids is between
+     * array heads that only have the LSB_JOBID
+     * and none of the indexes.
+     */
+    if (j->jobId > j2->jobId)
+	return(1);
+
+    if (j->jobId < j2->jobId)
+	return(-1);
+
+    return(0);
+
+} /* compareArray() */

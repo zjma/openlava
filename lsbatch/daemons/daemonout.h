@@ -69,6 +69,9 @@ typedef enum {
     BATCH_JOBMSG_INFO,
     BATCH_SET_JOB_ATTR   = 90,
     BATCH_JOBDEP_INFO,
+    BATCH_JGRP_ADD,
+    BATCH_JGRP_MOD,
+    BATCH_JGRP_LIST,
     READY_FOR_OP         = 1023,
     PREPARE_FOR_OP       = 1024
 } mbdReqType;
@@ -138,6 +141,13 @@ struct submitMbdReply {
     char    *queue;
     int     badReqIndx;
     char    *badJobName;
+};
+
+struct jgrpReq{
+    char *groupSpec;
+    char *destSpec; /* used only for bgmodify */
+    time_t submitTime;
+    int  options;
 };
 
 struct modifyReq {

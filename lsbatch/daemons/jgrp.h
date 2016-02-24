@@ -68,6 +68,7 @@ struct jgrpData {
     int      fromPlatform;
     void    (*freeJgArray)(void *);
     int      counts[NUM_JGRP_COUNTERS+1];
+    struct jgrpReq jgrpBill;
 };
 
 
@@ -80,9 +81,10 @@ struct jgTreeNode {
     struct jgTreeNode *child;
     struct jgTreeNode *left;
     struct jgTreeNode *right;
-    int     nodeType;
-    char    *name;
-    void    *ndInfo;
+    int  nodeType; /* jData, jarray or jgrpData */
+    char *name;    /* job or group name */
+    char *path;    /* full path */
+    void *ndInfo;
 };
 
 

@@ -327,12 +327,12 @@
 
 #define LSB_MODE_BATCH    0x1
 
-#define    LSBE_NO_ERROR      00
-#define    LSBE_NO_JOB        01
-#define    LSBE_NOT_STARTED   02
-#define    LSBE_JOB_STARTED   03
-#define    LSBE_JOB_FINISH    04
-#define    LSBE_STOP_JOB      05
+#define    LSBE_NO_ERROR      0
+#define    LSBE_NO_JOB        1
+#define    LSBE_NOT_STARTED   2
+#define    LSBE_JOB_STARTED   3
+#define    LSBE_JOB_FINISH    4
+#define    LSBE_STOP_JOB      5
 #define    LSBE_DEPEND_SYNTAX  6
 #define    LSBE_EXCLUSIVE      7
 #define    LSBE_ROOT           8
@@ -459,7 +459,10 @@
 #define    LSBE_MOD_ERRFILE         129
 #define    LSBE_LOCKED_MASTER       130
 #define    LSBE_DEP_ARRAY_SIZE      131
-#define    LSBE_NUM_ERR             131
+#define    LSBE_JGRP_EXIST          132  /* the job group exists */
+#define    LSBE_NODEP_COND          133
+#define    LSBE_NUM_ERR             134
+
 
 #define  SUB_JOB_NAME       0x01
 #define  SUB_QUEUE          0x02
@@ -613,9 +616,13 @@ struct submig {
 #define LSB_ARRAY_JOBID(jobId)                                          \
     (((jobId) == -1) ? (-1) : (int)(jobId & LSB_MAX_ARRAY_JOBID))
 
-
+/* State of a job group
+ */
 #define JGRP_ACTIVE        1
 #define JGRP_UNDEFINED     -1
+
+/* Job group counters
+ */
 #define JGRP_COUNT_NJOBS   0
 #define JGRP_COUNT_PEND    1
 #define JGRP_COUNT_NPSUSP  2
@@ -863,6 +870,27 @@ struct job_dep {
     int jstatus;          /* PEND RUN */
     int depstatus;        /* dependency status */
 };
+
+/* structure for lsb_addjgrp() call */
+struct jgrpAdd {
+    char *groupSpec;
+    char *timeEvent;
+    char *depCond;
+};
+
+/* structure for lsb_modjgrp() call */
+struct jgrpMod {
+    char *destSpec;
+    struct jgrpAdd jgrp;
+};
+
+/* structure for lsb_addjgrp() and lsb_modjgrp() call reply */
+struct jgrpReply {
+    char *badJgrpName;
+    int num;
+    char **delJgrpList;
+};
+
 
 #define USER_GRP          0x1
 #define HOST_GRP          0x2

@@ -2950,6 +2950,12 @@ do_jobDepInfo(XDR *xdrs,
         return -1;
     }
 
+    /* Check if the job has dependencies
+     */
+    if (jPtr->shared->jobBill.dependCond[0] == 0) {
+        sendLSFHeader(chfd, LSBE_NODEP_COND);
+	return 0;
+    }
     /* make the link and evaluate the dependency
      * condition.
      */
