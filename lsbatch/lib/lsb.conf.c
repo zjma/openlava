@@ -6968,6 +6968,7 @@ host_base_name(const char *name)
 {
     char *basename;
     char *hname;
+    char *h2;
     char buf[MAXHOSTNAMELEN];
     char name2[MAXHOSTNAMELEN];
     char *p;
@@ -6978,43 +6979,50 @@ host_base_name(const char *name)
     int cc;
     link_t *l;
 
-    /* Not in the forma we want
-     */
-    if (! strchr(name, '[')
-	|| ! strchr(name, ']')
-	|| ! strchr(name, '-')) {
-	return NULL;
-    }
-
+    l = make_link();
     p0 = basename = strdup(name);
 
-    /* get the hostname
-     */
-    p = strchr(basename, '[');
-    *p = 0;
-    ++p;
-    strcpy(name2, basename);
+    while ((h2 = getNextWord_(&basename))) {
 
-    for (i = 0; p[i] != 0; i++) {
-	if (p[i] == ']'
-	    || p[i] == '-')
-	    p[i] = ' ';
-    }
+	if (! strchr(h2, '[')
+	    || ! strchr(h2, ']')
+	    || ! strchr(h2, '-')) {
 
-    cc = sscanf(p, "%d%d", &n, &N);
-    if (cc != 2) {
-	ls_syslog(LOG_ERR, "\
+	    hname = strdup(h2);
+	    enqueue_link(l, hname);
+	    continue;
+	}
+
+	/* get the hostname
+	 */
+	p = strchr(h2, '[');
+	*p = 0;
+	++p;
+	strcpy(name2, h2);
+
+	for (i = 0; p[i] != 0; i++) {
+	    if (p[i] == ']'
+		|| p[i] == '-')
+		p[i] = ' ';
+	}
+
+	/* Get the numbers...
+	 */
+	cc = sscanf(p, "%d%d", &n, &N);
+	if (cc != 2) {
+	    ls_syslog(LOG_ERR, "\
 %s: unrecognized format %s of host base name", __func__, name);
-	free(p0);
-	return NULL;
+	    free(p0);
+	    return NULL;
+	}
+
+	for (i = n; i <= N; i++) {
+	    sprintf(buf, "%s%d", name2, i);
+	    hname = strdup(buf);
+	    enqueue_link(l, hname);
+	}
     }
 
-    l = make_link();
-    for (i = n; i <= N; i++) {
-	sprintf(buf, "%s%d", name2, i);
-	hname = strdup(buf);
-	enqueue_link(l, hname);
-    }
     free(p0);
 
     return l;

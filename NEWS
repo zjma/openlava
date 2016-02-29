@@ -3,6 +3,7 @@ Release notes for OpenLava versions
 3.2.0
 ======
 -- Fix main Makefile.am to include the m4 directory.
+-- Fix the parsing algorithm for compact host name.
 
 3.2.beta1
 =========
