@@ -1976,3 +1976,12 @@ xdr_jobdep(XDR *xdrs, struct job_dep *jobdep, struct LSFHeader *hdr)
 
     return true;
 }
+
+bool_t
+xdr_jobgroup(XDR *xdrs, struct job_group *jgPtr, struct LSFHeader *hdr)
+{
+    if (! xdr_wrapstring(xdrs, &jgPtr->group_name))
+	return false;
+
+    return true;
+}

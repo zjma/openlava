@@ -58,24 +58,27 @@ struct jarray {
     int   maxJLimit;
 };
 
+/* job group data
+ */
 struct jgrpData {
-    int      numRef;
-    int      status;
-    time_t   changeTime;
-    int      oldStatus;
-    int      userId;
-    char    *userName;
-    int      fromPlatform;
-    void    (*freeJgArray)(void *);
-    int      counts[NUM_JGRP_COUNTERS+1];
-    struct jgrpReq jgrpBill;
+    int numRef;
+    int status;
+    int userId;
+    char *userName;
+    time_t submit_time;
+    void (*freeJgArray)(void *);
+    int counts[NUM_JGRP_COUNTERS + 1];
 };
 
-
+/* Helper macros
+ */
 #define JOB_DATA(node)   ((struct jData *)node->ndInfo)
-#define JGRP_DATA(node)   ((struct jgrpData *)node->ndInfo)
-#define ARRAY_DATA(node)   ((struct jarray *)node->ndInfo)
+#define JGRP_DATA(node)  ((struct jgrpData *)node->ndInfo)
+#define ARRAY_DATA(node) ((struct jarray *)node->ndInfo)
 
+/* Generic node structure, each node then has a void
+ * pointer to either a job, job array or job group.
+ */
 struct jgTreeNode {
     struct jgTreeNode *parent;
     struct jgTreeNode *child;
@@ -84,7 +87,7 @@ struct jgTreeNode {
     int  nodeType; /* jData, jarray or jgrpData */
     char *name;    /* job or group name */
     char *path;    /* full path */
-    void *ndInfo;
+    void *ndInfo;  /* node is void as it points to different objects */
 };
 
 

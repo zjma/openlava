@@ -16,9 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
+
+#include "lsbatch.h"
 #include "cmd.h"
-#include <string.h>
-#include <ctype.h>
 
 static void
 usage(void)
@@ -30,7 +30,7 @@ static void
 print_jobdep(int, struct job_dep *, LS_LONG_INT);
 
 int
-main(int argc, char** argv)
+main(int argc, char **argv)
 {
     int cc;
     LS_LONG_INT jobid;

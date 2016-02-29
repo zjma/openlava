@@ -43,6 +43,7 @@ static int xdrsize_QueueInfoReply(struct queueInfoReply * );
 extern void closeSession(int);
 static int sendLSFHeader(int, int);
 static int get_dep_link_size(link_t *);
+static int enqueueLSFHeader(int, int);
 
 int
 do_submitReq(XDR *xdrs,
@@ -2920,6 +2921,45 @@ sendLSFHeader(int ch, int opcode)
     return 0;
 }
 
+static int
+enqueueLSFHeader(int ch, int opcode)
+{
+    XDR xdrs2;
+    struct Buffer *buf;
+    struct LSFHeader replyHdr;
+
+
+    if (chanAllocBuf_(&buf, sizeof(struct LSFHeader)) < 0) {
+        ls_syslog(LOG_ERR, "%s: chanAllocBuf() failed %s", __func__);
+        return -1;
+    }
+
+    initLSFHeader_(&replyHdr);
+    replyHdr.opCode = opcode;
+    replyHdr.length = 0;
+
+    xdrmem_create (&xdrs2, buf->data, sizeof(struct LSFHeader), XDR_ENCODE);
+
+    if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed", __func__);
+        xdr_destroy(&xdrs2);
+        return -1;
+
+    }
+
+    buf->len = XDR_GETPOS(&xdrs2);
+
+    if (chanEnqueue_(ch, buf) < 0) {
+        ls_syslog(LOG_ERR, "%s: chanEnqueue_() failed", __func__);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    xdr_destroy(&xdrs2);
+
+    return 0;
+}
+
 /* do_jobDepInfo()
  */
 int
@@ -3035,4 +3075,121 @@ get_dep_link_size(link_t *l)
     }
 
     return bytes;
+}
+
+/* do_jobGroupAdd()
+ */
+int
+do_jobGroupAdd(XDR *xdrs,
+	       int chfd,
+	       struct sockaddr_in *from,
+	       char *hostname,
+	       struct LSFHeader *hdr,
+	       struct lsfAuth *auth)
+{
+    struct job_group group;
+    int cc;
+
+    group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
+
+    if (! xdr_jobgroup(xdrs, &group, hdr)) {
+	ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+	enqueueLSFHeader(chfd, LSBE_XDR);
+	return -1;
+    }
+
+    cc = add_job_group(&group, auth);
+
+    /* send back the answer to the library
+     */
+    enqueueLSFHeader(chfd, cc);
+    _free_(group.group_name);
+
+    return 0;
+}
+
+/* do_jobGroupDel()
+ */
+int
+do_jobGroupDel(XDR *xdrs,
+	       int chfd,
+	       struct sockaddr_in *from,
+	       char *hostname,
+	       struct LSFHeader *hdr,
+	       struct lsfAuth *auth)
+{
+    return 0;
+}
+
+/* do_jobGroupInfo()
+ */
+int
+do_jobGroupInfo(XDR *xdrs,
+		int chfd,
+		struct sockaddr_in *from,
+		char *hostname,
+		struct LSFHeader *hdr)
+{
+    int size;
+    XDR xdrs2;
+    char *buf;
+    int cc;
+    int n;
+    int len;
+    struct LSFHeader hdr2;
+
+    /* Get the tree size and the number of
+     * nodes on the tree itself.
+     */
+    size = tree_size(&n);
+    size = size * sizeof(int);
+
+    buf = calloc(size, sizeof(char));
+
+    xdrmem_create(&xdrs2, buf, size, XDR_ENCODE);
+
+    initLSFHeader_(&hdr2);
+    hdr2.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (! xdr_int(&xdrs2, &n)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        return -1;
+    }
+
+    cc = encode_nodes(&xdrs2, &n, JGRP_NODE_GROUP, hdr);
+    if (cc < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed encoding %d bytes", __func__, size);
+	sendLSFHeader(chfd, LSBE_XDR);
+	_free_(buf);
+	xdr_destroy(&xdrs2);
+	return -1;
+    }
+
+    len = XDR_GETPOS(&xdrs2);
+    hdr2.length = len - LSF_HEADER_LEN;
+    XDR_SETPOS(&xdrs2, 0);
+
+    if (!xdr_LSFHeader(&xdrs2, &hdr2)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        return -1;
+    }
+
+    XDR_SETPOS(&xdrs2, len);
+
+    if (chanWrite_(chfd, buf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "%s: chanWrite() %dbytes failed",
+                  __func__, XDR_GETPOS(&xdrs2));
+        _free_(buf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    _free_(buf);
+    xdr_destroy(&xdrs2);
+
+    return 0;
 }

@@ -871,26 +871,11 @@ struct job_dep {
     int depstatus;        /* dependency status */
 };
 
-/* structure for lsb_addjgrp() call */
-struct jgrpAdd {
-    char *groupSpec;
-    char *timeEvent;
-    char *depCond;
+/* structure for lsb_addjgrp() call
+ */
+struct job_group {
+    char *group_name;
 };
-
-/* structure for lsb_modjgrp() call */
-struct jgrpMod {
-    char *destSpec;
-    struct jgrpAdd jgrp;
-};
-
-/* structure for lsb_addjgrp() and lsb_modjgrp() call reply */
-struct jgrpReply {
-    char *badJgrpName;
-    int num;
-    char **delJgrpList;
-};
-
 
 #define USER_GRP          0x1
 #define HOST_GRP          0x2
@@ -1587,5 +1572,7 @@ int getTotalSortIntList(struct sortIntList *);
 int updateJobIdIndexFile (char *, char *, int);
 extern struct job_dep *lsb_jobdep(LS_LONG_INT, int *);
 extern void free_jobdep(int, struct job_dep *);
+extern int lsb_addjgrp(struct job_group *);
+extern int lsb_deljgrp(struct job_group *);
 
 #endif

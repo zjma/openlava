@@ -1476,8 +1476,18 @@ extern int fork_mbd(void);
 extern int do_jobDepInfo(XDR *, int,
 			 struct sockaddr_in *,
 			 char *, struct LSFHeader *);
-extern int addJgrp(struct jgrpReq *,
-		   struct jgrpReply *,
-		   struct lsfAuth *);
+extern int do_jobGroupAdd(XDR *, int,
+			  struct sockaddr_in *,
+			  char *, struct LSFHeader *, struct lsfAuth *);
+extern int do_jobGroupDel(XDR *, int,
+			  struct sockaddr_in *,
+			  char *, struct LSFHeader *, struct lsfAuth *);
+extern int do_jobGroupInfo(XDR *, int,
+			   struct sockaddr_in *,
+			   char *, struct LSFHeader *);
+extern int add_job_group(struct job_group *, struct lsfAuth *);
+extern int del_job_group(struct job_group *, struct lsfAuth *);
+extern int tree_size(int *);
+extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 
 #endif /* _MBD_HEADER_ */

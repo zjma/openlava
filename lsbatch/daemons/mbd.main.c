@@ -642,9 +642,14 @@ processClient(struct clientNode *client, int *needFree)
         goto endLoop;
     }
 
-    if ((cc = authRequest(&auth, &xdrs, &reqHdr, &from, &laddr,
-                          client->fromHost, chanSock_(s))) !=
-        LSBE_NO_ERROR) {
+    cc = authRequest(&auth,
+		     &xdrs,
+		     &reqHdr,
+		     &from,
+		     &laddr,
+		     client->fromHost,
+		     chanSock_(s));
+    if (cc != LSBE_NO_ERROR) {
         errorBack(s, cc, &from);
         goto endLoop;
     }
@@ -790,6 +795,32 @@ processClient(struct clientNode *client, int *needFree)
 				 &reqHdr),
                    "do_jobMsgInfo()");
             break;
+	case BATCH_JGRP_ADD:
+	    TIMEIT(0, do_jobGroupAdd(&xdrs,
+				     s,
+				     &from,
+				     client->fromHost,
+				     &reqHdr,
+				     &auth),
+		   "do_jobGroupAdd()");
+	    break;
+	case BATCH_JGRP_DEL:
+	    TIMEIT(0, do_jobGroupDel(&xdrs,
+				     s,
+				     &from,
+				     client->fromHost,
+				     &reqHdr,
+				     &auth),
+		   "do_jobGroupDel()");
+	    break;
+	case BATCH_JGRP_INFO:
+	    TIMEIT(0, do_jobGroupInfo(&xdrs,
+				      s,
+				      &from,
+				      client->fromHost,
+				      &reqHdr),
+		   "do_jobGroupInfo()");
+	    break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)
@@ -809,17 +840,18 @@ endLoop:
     client->lastTime = now;
     xdr_destroy(&xdrs);
     chanFreeBuf_(buf);
-    if ((reqHdr.opCode != PREPARE_FOR_OP &&
-         reqHdr.opCode != BATCH_STATUS_JOB &&
-         reqHdr.opCode != BATCH_RUSAGE_JOB &&
-         reqHdr.opCode != BATCH_STATUS_MSG_ACK &&
-         reqHdr.opCode != BATCH_STATUS_CHUNK) ||
-        statusReqCC < 0) {
+    if ((reqHdr.opCode != PREPARE_FOR_OP
+	 && reqHdr.opCode != BATCH_STATUS_JOB
+	 && reqHdr.opCode != BATCH_RUSAGE_JOB
+	 && reqHdr.opCode != BATCH_STATUS_MSG_ACK
+	 && reqHdr.opCode != BATCH_STATUS_CHUNK
+	 && reqHdr.opCode != BATCH_JGRP_ADD
+	 && reqHdr.opCode != BATCH_JGRP_DEL)
+	|| statusReqCC < 0) {
         shutDownClient(client);
         return -1;
     }
     return 0;
-
 }
 
 void
@@ -1043,7 +1075,9 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_JOB_FORCE
           || reqType == BATCH_SET_JOB_ATTR
           || reqType == BATCH_JOB_MSG
-          || reqType == BATCH_JOBMSG_INFO))
+          || reqType == BATCH_JOBMSG_INFO
+	  || reqType == BATCH_JGRP_ADD
+	  || reqType == BATCH_JGRP_DEL))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {

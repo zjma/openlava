@@ -1,108 +1,65 @@
-static const char *rcsId(const char *id) {return(rcsId(
-"@@(#)$Id: bgdel.c,v 2.5 1997/11/14 01:04:40 pangj Exp $"));}
-/**************************************************************************
- *
- *                   Load Sharing Facility
- *
- *  Applications: Lsbatch job group deleting routine
- *
- **************************************************************************/
-
-#include "cmd.h"
-#include <time.h>
-
-void prtDelErrMsg (struct jgrpReply *);
 /*
- *----------------------------------------------------------------------
+ * Copyright (C) 2016 David Bigagli
  *
- * Usage -- print out command usage.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
  *
- *----------------------------------------------------------------------
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ *
  */
-void
-usage (char *cmd)
+
+#include "lsbatch.h"
+
+static void
+usage(void)
 {
-    fprintf(stderr, "Usage: %s [-h] [-V] group_spec \n", cmd);
-    exit(-1);
+    fprintf(stderr, "bgdel: [ -h ] [ -V ] group_name\n");
 }
 
-/*
- *--------------------------------------------------------------------
- *
- * bgdel [-h] [-V] group_spec
- *
- *--------------------------------------------------------------------
- */
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
-    extern  int optind;
-    extern  char *optarg;
-    char    *groupSpec = NULL;
-    int     options = 0;
-    int     cc;
-
-    struct  jgrpReply *jgrpReply;
+    int cc;
+    struct job_group jg;
 
     if (lsb_init(argv[0]) < 0) {
-        lsb_perror("lsb_init");
-        exit(-1);
+	lsb_perror("lsb_init");
+	return -1;
     }
 
-    while ((cc = getopt(argc, argv, "Vh")) != EOF) {
-        switch (cc) {
-        case 'V':
-            fputs(_LS_VERSION_, stderr);
-            exit(0);
-        case 'h':
-        default:
-            usage(argv[0]);
-            exit(0);
-        }
+    while ((cc = getopt(argc, argv, "hV")) != EOF) {
+	switch (cc) {
+	    case 'V':
+		fputs(_LS_VERSION_, stderr);
+		return 0;
+	    case 'h':
+		usage();
+		exit(-1);
+	}
     }
 
-    if (optind != argc - 1) {
-      	usage(argv[0]);
-       	exit(-1);
+    if (argc <= optind) {
+	usage();
+	return -1;
     }
 
-    if ((groupSpec = argv[optind]) == NULL ||
-         strlen(groupSpec) <= 0) {
-       	usage(argv[0]);
-       	exit(-1);
+    jg.group_name = argv[argc - 1];
+
+    cc = lsb_deljgrp(&jg);
+    if (cc != LSBE_NO_ERROR) {
+	fprintf(stderr, "bgdel: %s.\n", lsb_sysmsg());
+	return -1;
     }
 
-    if (lsb_deljgrp(groupSpec, options, &jgrpReply)) {
-	prtDelErrMsg(jgrpReply);
-	return(-1);
-    }
-    else {
-	printf("Job group %s is deleted.\n",
-		groupSpec);
+    printf("Group %s removed successfully.\n", jg.group_name);
 
-    }
-
-    return(0);
-
-} /* main */
-
-/*-------------------------------------------------------------------------
- * prtDelErrMsg -- Print error messages
- *
- *------------------------------------------------------------------------
-*/
-void
-prtDelErrMsg (struct jgrpReply *reply)
-{
-
-    switch (lsberrno) {
-	case LSBE_JGRP_NULL:
-	case LSBE_JGRP_BAD:
-	case LSBE_JGRP_HASJOB:
-	    lsb_perror(reply->badJgrpName);
-	    break;
-	default:
-	    lsb_perror("bgdel failed");
-	    break;
-    }
-} /* prtErrMsg */
+    return 0;
+}

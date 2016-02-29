@@ -86,9 +86,7 @@ static int makeJgrpInfo(struct jgTreeNode *,
 			struct jobInfoReq *,
 			struct jgrpInfo *);
 static struct jgTreeNode *getNode(const char *);
-static int compareArray(const void *, const void *);
-static int makeNodeList(struct jobInfoReq *,
-			struct jgrpInfo *);
+static bool_t isSameUser(struct lsfAuth *, int, char *);
 
 char treeFile[48];
 
@@ -97,6 +95,8 @@ extern float version;
 #define DEFAULT_LISTSIZE    200
 static hTab nodeTab;
 
+/* treeInit()
+ */
 void
 treeInit(void)
 {
@@ -110,7 +110,6 @@ treeInit(void)
     JGRP_DATA(groupRoot)->userId  = managerId;
     JGRP_DATA(groupRoot)->userName = safeSave(lsbSys);
     JGRP_DATA(groupRoot)->status = JGRP_ACTIVE;
-    JGRP_DATA(groupRoot)->changeTime = INFINIT_INT;
     JGRP_DATA(groupRoot)->numRef = 0;
     sprintf(treeFile, "/tmp/jgrpTree.%d", mbdPid);
 
@@ -746,7 +745,8 @@ destroyJgArrayBaseRef(struct jgArrayBase *jgArrayBase)
 {
     if (jgArrayBase) {
         jgArrayBase->numRef--;
-        if ((jgArrayBase->status == JGRP_VOID) && (jgArrayBase->numRef <= 0)) {
+        if ((jgArrayBase->status == JGRP_VOID)
+	    && (jgArrayBase->numRef <= 0)) {
 
             (* jgArrayBase->freeJgArray)((char *)jgArrayBase);
         }
@@ -809,7 +809,9 @@ checkJgrpDep(void)
 			continue;
                     }
 
-		    depCond = evalDepCond(jpbw->shared->dptRoot, jpbw, NULL);
+		    depCond = evalDepCond(jpbw->shared->dptRoot,
+					  jpbw,
+					  NULL);
 		    if (depCond == DP_FALSE) {
 			jpbw->newReason = PEND_JOB_DEPEND;
 		    }
@@ -938,8 +940,8 @@ resetJgrpCount(void)
     }
 }
 
-bool_t
-isSameUser(struct lsfAuth *auth, int userId, char *userName, int fromPlatform)
+static bool_t
+isSameUser(struct lsfAuth *auth, int userId, char *userName)
 {
 
     return (strcmp(auth->lsfUserName, userName) == 0);
@@ -963,33 +965,28 @@ jgrpPermitOk(struct lsfAuth *auth, struct jgTreeNode *jgrp)
     for (nPtr = jgrp; nPtr; nPtr = nPtr->parent) {
         if (nPtr->nodeType == JGRP_NODE_GROUP) {
             if (isSameUser(auth, JGRP_DATA(nPtr)->userId,
-                          JGRP_DATA(nPtr)->userName,
-                          JGRP_DATA(nPtr)->fromPlatform))
+			   JGRP_DATA(nPtr)->userName))
                 return TRUE;
         }
         if (nPtr->nodeType == JGRP_NODE_ARRAY) {
             if (isSameUser(auth, ARRAY_DATA(nPtr)->userId,
-                          ARRAY_DATA(nPtr)->userName,
-                          ARRAY_DATA(nPtr)->fromPlatform))
+			   ARRAY_DATA(nPtr)->userName))
                 return TRUE;
         }
         if (nPtr->nodeType == JGRP_NODE_JOB) {
             if (JOB_DATA(nPtr)->shared->jobBill.options2
                 & SUB2_HOST_NT){
                 if (isSameUser(auth, JOB_DATA(nPtr)->userId,
-                              JOB_DATA(nPtr)->userName,
-                              AUTH_HOST_NT))
+			       JOB_DATA(nPtr)->userName))
                     return TRUE;
             } else if (JOB_DATA(nPtr)->shared->jobBill.options2
                        & SUB2_HOST_UX){
                 if (isSameUser(auth, JOB_DATA(nPtr)->userId,
-                              JOB_DATA(nPtr)->userName,
-                              AUTH_HOST_UX))
+			       JOB_DATA(nPtr)->userName))
                     return TRUE;
             } else
                 if (isSameUser(auth, JOB_DATA(nPtr)->userId,
-                              JOB_DATA(nPtr)->userName,
-                              0))
+			       JOB_DATA(nPtr)->userName))
                     return TRUE;
         }
     }
@@ -1002,11 +999,11 @@ isJobOwner(struct lsfAuth *auth, struct jData *job)
 {
 
     if (job->shared->jobBill.options2 & SUB2_HOST_UX)
-        return (isSameUser(auth, job->userId, job->userName, AUTH_HOST_UX));
+        return (isSameUser(auth, job->userId, job->userName));
     else  if(job->shared->jobBill.options2 & SUB2_HOST_NT)
-        return (isSameUser(auth, job->userId, job->userName, AUTH_HOST_NT));
+        return (isSameUser(auth, job->userId, job->userName));
     else
-        return (isSameUser(auth, job->userId, job->userName, 0));
+        return (isSameUser(auth, job->userId, job->userName));
 }
 
 
@@ -1071,8 +1068,6 @@ ret:
         *listSize = jgrp.numNodes;
         return LSBE_NO_ERROR;
     }
-    if (0)
-	makeNodeList(NULL, NULL);
 
     return LSBE_NO_JOB;
 }
@@ -1317,91 +1312,64 @@ fullJobName_r(struct jData *jp, char *jobName)
 }
 
 /*
- * addJgrp()
+ * add_job_group()
  *
- * Add job groups on request
- * If the request string is /A/B/C, the function will go and check
- * the existence of each group, and create /A, /A/B, and /A/B/C if
- * needed.
  */
 int
-addJgrp(struct jgrpReq *jgrpReq,
-	struct jgrpReply *Reply,
-	struct lsfAuth *auth)
+add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
-    static char mypath[MAXLINELEN];
-    static char daddy[MAXLINELEN];
-    char *me;
-    char *req;
-    struct jgTreeNode *parent;
+    char parent[MAXLINELEN];
+    char node[MAXLINELEN];
+    char *el;
+    char *name;
+    char *p0;
+    struct jgTreeNode *parent2;
     struct jgTreeNode *jgrp;
     hEnt *e;
 
-    if (!jgrpReq)
-        return LSBE_JGRP_NULL;
+    if (! jgPtr)
+	return LSBE_JGRP_NULL;
 
-    if (strlen(jgrpReq->groupSpec) >= MAXLINELEN ) {
-        return LSBE_JGRP_BAD;
-    }
-
-    req = jgrpReq->groupSpec;
-
-    /* first if the group exist or not
-     */
-    e = h_getEnt_(&nodeTab, req);
+    e = h_getEnt_(&nodeTab, jgPtr->group_name);
     if (e) {
-        if (Reply)
-            strcpy(Reply->badJgrpName, req);
 	return LSBE_JGRP_EXIST;
     }
 
-    sprintf(daddy, "/");
-    while ((me = getNextWordSet(&req, "/")) != NULL) {
+    p0 = name = strdup(jgPtr->group_name);
 
-	if (strcmp(daddy, "/") == 0) {
-	    sprintf(mypath, "/%s", me);
+    sprintf(parent, "/");
+    while ((el = getNextWordSet(&name, "/")) != NULL) {
+
+	if (strcmp(parent, "/") == 0) {
+	    sprintf(node, "/%s", el);
 	} else {
-	    sprintf(mypath, "%s/%s", daddy, me);
+	    sprintf(node, "%s/%s", parent, el);
 	}
 
-	if ((e = h_getEnt_(&nodeTab, mypath)) != NULL) {
-	    sprintf(daddy, "%s", mypath);
+	if ((e = h_getEnt_(&nodeTab, node)) != NULL) {
+	    sprintf(parent, "%s", node);
 	    continue;
 	}
-        /* parent can't be NULL, if that happen,
-         * something must be wrong already
-         */
 
-	parent = getNode(daddy);
+	parent2 = getNode(parent);
 	jgrp = treeNewNode(JGRP_NODE_GROUP);
-	jgrp->name = safeSave(me);
+	jgrp->name = strdup(node);
 
 	JGRP_DATA(jgrp)->userId = auth->uid;
 	JGRP_DATA(jgrp)->userName = safeSave(auth->lsfUserName);
-	JGRP_DATA(jgrp)->fromPlatform = auth->options;
-	/* Set the path to the new group
-	 */
-	jgrp->path = safeSave(mypath);
+	jgrp->path = strdup(node);
 
-	/* Jump on the branch you belong to
+	/* insert the child node under the parent.
 	 */
-	treeInsertChild(parent, jgrp);
+	treeInsertChild(parent2, jgrp);
 
-	/* and hop into the hash table keyed
-	 * by path.
-	 */
 	e = h_addEnt_(&nodeTab, jgrp->path, NULL);
 	e->hData = jgrp;
 
 	JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
-	JGRP_DATA(jgrp)->oldStatus = JGRP_ACTIVE;
+	JGRP_DATA(jgrp)->submit_time = time(NULL);
 
-	JGRP_DATA(jgrp)->jgrpBill.groupSpec = safeSave(mypath);
-	JGRP_DATA(jgrp)->jgrpBill.destSpec = safeSave(jgrpReq->destSpec);
-	JGRP_DATA(jgrp)->jgrpBill.submitTime = jgrpReq->submitTime;
-        JGRP_DATA(jgrp)->jgrpBill.options = jgrpReq->options;
-
-	sprintf(daddy, "%s", mypath);
+	sprintf(parent, "%s", node);
 
     } /* while () */
 
@@ -1410,6 +1378,7 @@ addJgrp(struct jgrpReq *jgrpReq,
     if (mSchedStage != M_STAGE_REPLAY) {
         /* log_newjgrp(jgrp, jgrpReq); */
     }
+    free(p0);
 
     return LSBE_NO_ERROR;
 }
@@ -1430,255 +1399,133 @@ getNode(const char *name)
 
 } /* getNode() */
 
-/* Walk the tree of nodes and encode them in the stream given me
- * by the caller.
- *
- * The nodes can be: job groups, projects, anything else you decide
- * to put on the tree and has counters associated with it.
- *
- * Protocol format:
- *
- * numnodes
- * "Path" "node name" "njobs npend npsusp nrun nssusp nususp nexit ndone"
- *
+/* encode_nodes()
  */
 int
-encodeNodes(XDR *xdrs,
-	    int *n,
-	    int type,
-	    struct LSFHeader *hdr)
+encode_nodes(XDR *xdrs,
+	     int *num,
+	     int type,
+	     struct LSFHeader *hdr)
 {
-    static char         fname[] = "encodeNode()";
-    struct jgTreeNode   *N;
-    link_t              *stack;
-    int                 cc;
+    struct jgTreeNode *n;
+    link_t *stack;
+    int cc;
 
-    /* Sorry no groups yet...
-     */
-    *n = 0;
+    *num = 0;
     if (groupRoot->child == NULL)
-	return(0);
+	return 0;
 
-    /* Set the first traversing path and
-     * initialize the traversal stack.
-     */
-    N = groupRoot->child;
+    n = groupRoot->child;
     stack = make_link();
 
   again:
-    while (N) {
+    while (n) {
 	int                i;
 	struct jgrpData   *g;
 
-	/* Push the child on the stack for later
-	 * traversal. We can have job groups
-	 * under slas so as long as there is
-	 * a node with a child we have to dive...
-	 */
-	if (N->child)
-	    push_link(stack, N->child);
+	if (n->child)
+	    push_link(stack, n->child);
 
 	if (logclass & LC_JGRP) {
 	    ls_syslog(LOG_DEBUG, "\
-%s: node %s %s %d", fname, N->name, N->path, type);
+%s: node %s %s %d", __func__, n->name, n->path, type);
 	}
 
-	/* Nah...not my type...
-	 */
-	if (N->nodeType != type)
+	if (n->nodeType != type)
 	    goto next;
 
-	/* Path to me...find me...
-	 */
-	cc = xdr_var_string(xdrs, &N->path);
+	cc = xdr_var_string(xdrs, &n->path);
 	if (cc != TRUE)
-	    goto ykes;
+	    goto bail;
 
-	/* My name...
-	 */
-	cc = xdr_var_string(xdrs, &N->name);
+	cc = xdr_var_string(xdrs, &n->name);
 	if (cc != TRUE)
-	    goto ykes;
+	    goto bail;
 
-	/* My counters which are kept in the
-	 * groups specific data structure.
-	 */
-	g = (struct jgrpData *)N->ndInfo;
+	g = (struct jgrpData *)n->ndInfo;
 	for (i = 0; i < NUM_JGRP_COUNTERS; i++) {
 	    cc = xdr_int(xdrs, &g->counts[i]);
 	    if (cc != TRUE)
-		goto ykes;
+		goto bail;
 	}
 
-	/* Increase the number of encoded groups
-	 * for the callers convenience.
-	 */
-	++(*n);
+	++(*num);
 
       next:
-	N = N->right;
+	n = n->right;
+    }
 
-    } /* while (N) */
-
-    N = pop_link(stack);
-    if (N)
+    n = pop_link(stack);
+    if (n)
 	goto again;
 
     fin_link(stack);
-
-    return(0);
-
-    /* ykes!!
-     */
-  ykes:
-
-    ls_syslog(LOG_ERR, "%s: cannot encode node %s %s %d",
-	      __func__, N->name, N->path, N->nodeType);
-    fin_link(stack);
-
-    return(-1);
-
-} /* encodeGroups() */
-
-/* Walk on the tree of nodes and select the job array
- * nodes. The head of each array is added to the output
- * list of the jgrpInfo data structure.
- */
-static int
-makeNodeList(struct jobInfoReq *jR,
-	     struct jgrpInfo *jInfo)
-{
-    static char         fname[] = "makeNodeList()";
-    struct jgTreeNode   *N;
-    link_t              *stack;
-    int                 cc;
-
-    /* Sorry no groups, projects or arrays yet...
-     */
-    if (groupRoot->child == NULL)
-	return(0);
-
-    /* Set the first traversing path and
-     * initialize the traversal stack.
-     */
-    N = groupRoot->child;
-    stack = make_link();
-
-  again:
-    while (N) {
-	/* Push the child on the stack for later
-	 * traversal.
-	 */
-	if (N->child)
-	    push_link(stack, N->child);
-
-	/* If the node an array check if it is
-	 * the one requested by the library.
-	 */
-	if (N->nodeType == JGRP_NODE_ARRAY) {
-	    struct jData   *h;
-
-	    /* This is the array head.
-	     */
-	    h = ((struct jarray *)N->ndInfo)->jobArray;
-
-	    if (logclass & LC_JGRP) {
-		ls_syslog(LOG_DEBUG, "\
-%s: looking at the array id %s", fname, lsb_jobid2str(h->jobId));
-	    }
-
-	    cc = isSelected(jR, h, jInfo);
-	    if (cc == TRUE) {
-		/* Add the address of this jData in to
-		 * the list of jobs that will be processed
-		 * in mbd.serv.c and set to the library.
-		 * Note that jobArray is the head of the
-		 * array.
-		 */
-		cc = storeToJgrpList((void *)h,
-				     jInfo,
-				     JGRP_NODE_JOB);
-		if (cc != TRUE) {
-		    ls_syslog(LOG_ERR, I18N(6406,"\
-%s: failed to store array id %s %m"), fname, lsb_jobid2str(h->jobId)); /* catgets 6406 */
-		    goto ykes;
-		}
-
-		if (logclass & LC_JGRP) {
-		    ls_syslog(LOG_DEBUG, "\
-%s: array id %s stored", fname, lsb_jobid2str(h->jobId));
-		}
-	    }
-
-	} /* if (N->nodeType == JGRP_NODE_ARRAY) */
-
-	N = N->right;
-
-    } /* while (N) */
-
-    N = pop_link(stack);
-    if (N)
-	goto again;
-
-    fin_link(stack);
-
-    /* We traversed the tree in level-order traversal
-     * so the array heads are stored in the jgrpList
-     * without any apparent order from the jobId point
-     * of view. So here we sort them in the standard
-     * increasing order of jobids.
-     * The array jgrpList stores struct nodeList
-     * types.
-     */
-    qsort(jInfo->jgrpList,
-	  jInfo->numNodes,
-	  sizeof(struct nodeList),
-	  compareArray);
 
     return 0;
 
-    /* ykes!!
-     */
-  ykes:
+bail:
 
-    /* Free the hosed...
-     */
+    ls_syslog(LOG_ERR, "%s: cannot encode node %s %s %d",
+	      __func__, n->name, n->path, n->nodeType);
     fin_link(stack);
-    FREEUP(jInfo->jgrpList);
-    memset(jInfo, 0, sizeof(struct jgrpInfo));
 
     return -1;
+}
+
+/* tree_size()
+ */
+int
+tree_size(int *num)
+{
+    struct jgTreeNode *n;
+    link_t *stack;
+    int cc;
+
+    if (groupRoot->child == NULL)
+	return 0;
+
+    n = groupRoot->child;
+    stack = make_link();
+    cc = 0;
+    *num = 0;
+
+  again:
+    while (n) {
+
+	if (n->child)
+	    push_link(stack, n->child);
+
+	if (logclass & LC_JGRP) {
+	    ls_syslog(LOG_DEBUG, "\
+%s: node %s %s %d", __func__, n->name, n->path, n->nodeType);
+	}
+
+	if (n->nodeType != JGRP_NODE_GROUP)
+	    goto next;
+
+	cc = cc + ALIGNWORD_(strlen(n->path))
+	    + ALIGNWORD_(strlen(n->name))
+	    + NUM_JGRP_COUNTERS * sizeof(int);
+
+	(*num)++;
+      next:
+	n = n->right;
+    }
+
+    n = pop_link(stack);
+    if (n)
+	goto again;
+
+    fin_link(stack);
+
+    return cc;
 
 }
 
-/* Invoked by qsort() in the makeNodeList().
- * This is a standard compare() function
- * used by the libc qsort().
+/* del_job_group()
  */
-static int
-compareArray(const void *n, const void *n2)
+int
+del_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
-    struct nodeList   *N;
-    struct nodeList   *N2;
-    struct jData      *j;
-    struct jData      *j2;
-
-    N  = (struct nodeList *)n;
-    N2 = (struct nodeList *)n2;
-
-    j = (struct jData *)N->info;
-    j2 = (struct jData *)N2->info;
-
-    /* Note the comparison of ids is between
-     * array heads that only have the LSB_JOBID
-     * and none of the indexes.
-     */
-    if (j->jobId > j2->jobId)
-	return(1);
-
-    if (j->jobId < j2->jobId)
-	return(-1);
-
-    return(0);
-
-} /* compareArray() */
+    return 0;
+}
