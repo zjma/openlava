@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -150,6 +150,8 @@ static struct config_param niosParams[] = {
         {"LSF_NIOS_JOBSTATUS_INTERVAL", NULL},
 #define LSB_INTERACT_MSG_EXITTIME 6
         {"LSB_INTERACT_MSG_EXITTIME", NULL},
+#define NIOS_RWAIT_SELECT 7
+	{"NIOS_RWAIT_SELECT", NULL},
         {NULL, NULL}
     };
 
@@ -1328,6 +1330,7 @@ emusig(int tid, int st)
     static char fname[] = "emusig()";
     SIGFUNCTYPE handle;
     LS_WAIT_T status = *((LS_WAIT_T *)&st);
+    struct lslibNiosHdr hdr;
 
     if (LS_WIFSTOPPED(status)) {
 
@@ -1365,9 +1368,8 @@ emusig(int tid, int st)
         return;
     } else if (LS_WIFSIGNALED(status) || LS_WIFEXITED(status)) {
 
-
-
-
+	/* Task is gone
+	 */
         if (standalone) {
             if (LS_WIFSIGNALED(status))
                 exit_sig = LS_WTERMSIG(status);
@@ -1383,15 +1385,29 @@ emusig(int tid, int st)
 
         } else {
 
-
-
             if (niosDebug) {
                 ls_syslog(LOG_DEBUG,"\
 %s: Nios signaled exit_sig=<%d> sending SIGUSR1 to oparent",
                           fname,  LS_WTERMSIG(status));
             }
 
-            kill(ppid, SIGUSR1);
+	    /* Don't send SIGUSR2 in multiple thread program,
+	     * sigsuspend() returns only when all the other threads
+	     * block the SIGUSR1. In a golang program, we cannot
+	     * configure the sigmask of management threads of golang.
+	     */
+	    if (niosParams[NIOS_RWAIT_SELECT].paramValue) {
+		hdr.opCode = LSE_NO_ERR;
+		hdr.len = 0;
+		if (b_write_fix(chfd, (char *)&hdr,
+				sizeof(struct lslibNiosHdr)) !=
+		    sizeof(struct lslibNiosHdr)) {
+		    PassSig(SIGKILL);
+		    die();
+		}
+	    } else {
+		kill(ppid, SIGUSR1);
+	    }
         }
     }
 }

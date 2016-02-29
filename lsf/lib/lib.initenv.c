@@ -41,13 +41,11 @@ struct config_param genParams_[] =
     {"LSF_AM_OPTIONS", NULL},
     {"LSF_TMPDIR", NULL},
     {"LSF_LOGDIR", NULL},
-    {"LSF_SYMBOLIC_LINK", NULL},
-    {"LSF_MASTER_LIST", NULL},
-    {"LSF_MLS_LOG", NULL},
     {"LSF_INTERACTIVE_STDERR", NULL},
     {"HOSTS_FILE", NULL},
     {"LSB_SHAREDIR", NULL},
     {"OL_CGROUP_ROOT", NULL},
+    {"NIOS_RWAIT_SELECT", NULL},
     {NULL, NULL}
 };
 

@@ -111,12 +111,11 @@ typedef enum {
     LSF_AM_OPTIONS,
     LSF_TMPDIR,
     LSF_LOGDIR,
-    LSF_SYMBOLIC_LINK,
-    LSF_MLS_LOG,
     LSF_INTERACTIVE_STDERR,
     NO_HOSTS_FILE,
     LSB_SHAREDIR,
-    OL_CGROUP_ROOT
+    OL_CGROUP_ROOT,
+    NIOS_RWAIT_SELECT
 } genparams_t;
 
 typedef struct lsRequest LS_REQUEST_T;

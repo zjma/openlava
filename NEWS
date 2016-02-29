@@ -9,6 +9,10 @@ Release notes for OpenLava versions
 -- Implemented the bjdep command. bjdep jobid prints the status of
    job dependencies for the given job.
 -- Add the bjdep man page.
+-- Implement NIOS_RWAIT_SELECT, if configure in lsf.conf then nios
+   and ls_rwait() will not use the SIGUSR1 to detect a task that
+   has finished. ls_rwait() will select() on a connection with nios
+   instead and nios will send a message when a task exits.
 
 3.3.pre.1
 =========

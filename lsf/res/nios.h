@@ -1,4 +1,5 @@
-/* $Id: nios.h 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +17,8 @@
  *
  */
 
- 
+#if !defined(_NIOS_H_)
+#define _NIOS_H_
 
 typedef enum {
     LIB_NIOS_RTASK,
@@ -31,33 +33,32 @@ typedef enum {
     LIB_NIOS_SYNC
 } libNiosRequest;
 
-typedef enum { 
-    JOB_STATUS_ERR,         
-    JOB_STATUS_UNKNOWN,   
-    JOB_STATUS_FINISH,    
-    JOB_STATUS_KNOWN      
-} JOB_STATUS; 
+typedef enum {
+    JOB_STATUS_ERR,
+    JOB_STATUS_UNKNOWN,
+    JOB_STATUS_FINISH,
+    JOB_STATUS_KNOWN
+} JOB_STATUS;
 
 #define WAIT_BLOCK(o) (!((o) & WNOHANG))
 
 
-typedef enum { 
-    CHILD_OK,             
-    NONB_RETRY,           
-    CHILD_FAIL,           
-    REM_ONOFF,            
-    STDIN_FAIL,           
-    STDIN_OK,             
-    NIOS_OK,              
-    STDOUT_FAIL,          
-    STDOUT_OK,            
-    SYNC_FAIL,            
-    SYNC_OK               
+typedef enum {
+    CHILD_OK,
+    NONB_RETRY,
+    CHILD_FAIL,
+    REM_ONOFF,
+    STDIN_FAIL,
+    STDIN_OK,
+    NIOS_OK,
+    STDOUT_FAIL,
+    STDOUT_OK,
+    SYNC_FAIL,
+    SYNC_OK
 } libNiosReply;
 
-
 struct lslibNiosHdr {
-    int opCode; 
+    int opCode;
     int len;
 };
 
@@ -104,16 +105,16 @@ struct lslibNiosStdin {
     } r;
     int *rpidlist;
 };
-    
+
 struct lslibNiosGetStdinReply {
     struct lslibNiosHdr hdr;
     int *rpidlist;
 };
 
 struct finishStatus {
-    int got_eof;      
-    int got_status;   
-    int sendSignal;   
+    int got_eof;
+    int got_status;
+    int sendSignal;
 };
 
 extern int standalone;
@@ -122,5 +123,6 @@ extern LS_LONG_INT jobId;
 extern int heartbeatInterval;
 extern int jobStatusInterval;
 extern int pendJobTimeout;
-extern int msgInterval; 
+extern int msgInterval;
 
+#endif
