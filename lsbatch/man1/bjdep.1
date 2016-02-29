@@ -1,0 +1,55 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH post 1 "OpenLava Version 3.2 - Jan 2016"
+.br
+.SH NAME
+\fBbjdep\fR - displays job dependencies
+.SH SYNOPSIS
+.BR
+.PP
+.PP
+\fBbjdep\fR \fIjob_ID\fR | \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex\fR\fB]"
+.PP
+\fBbjdep\fR\fB \fR[\fB-h\fR | \fB-V\fR]
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+Allows user to display all job dependencies. It outputs a list of other jobs 
+that a job depends on.
+.SH OPTIONS
+.BR
+.PP
+.TP
+ \fIjob_ID\fR | \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex\fR\fB]"
+\fR
+.IP
+Required. Job ID of the job or job array on which to operate.
+.IP
+For an array job, the index, the square brackets, and the quotation
+marks are required.
+.IP
+Displays all jobs that this job depends on.
+
+.SH EXAMPLE
+.BR
+.PP
+.TP
+$bjdep 135918
+.PP
+Dependencies of job 135918
+.br
+DEPENDENCY  JOBID  JOB_STATUS   DEPENDENCY_STATUS
+.br
+done        135917   PEND         false
+.br
+exit        135816   PEND         false
+.br
+done        135815   RUN          false
+
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bsub(1), bjobs(1)

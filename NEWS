@@ -8,6 +8,7 @@ Release notes for OpenLava versions
    child process.
 -- Implemented the bjdep command. bjdep jobid prints the status of
    job dependencies for the given job.
+-- Add the bjdep man page.
 
 3.3.pre.1
 =========
