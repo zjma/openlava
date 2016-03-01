@@ -461,7 +461,8 @@
 #define    LSBE_DEP_ARRAY_SIZE      131
 #define    LSBE_JGRP_EXIST          132  /* the job group exists */
 #define    LSBE_NODEP_COND          133
-#define    LSBE_NUM_ERR             134
+#define    LSBE_JGRP_NOTEMPTY       134  /* jgrp is not empty */
+#define    LSBE_NUM_ERR             135
 
 
 #define  SUB_JOB_NAME       0x01
@@ -632,6 +633,12 @@ struct submig {
 #define JGRP_COUNT_NEXIT   6
 #define JGRP_COUNT_NDONE   7
 #define NUM_JGRP_COUNTERS 8
+
+struct jobGroupInfo {
+    char *name;
+    char *path;
+    int counts[NUM_JGRP_COUNTERS + 1];
+};
 
 struct jobAttrInfoEnt {
     LS_LONG_INT jobId;
@@ -1574,5 +1581,7 @@ extern struct job_dep *lsb_jobdep(LS_LONG_INT, int *);
 extern void free_jobdep(int, struct job_dep *);
 extern int lsb_addjgrp(struct job_group *);
 extern int lsb_deljgrp(struct job_group *);
+extern struct jobGroupInfo *lsb_getjgrp(int *);
+extern void free_jobgroupinfo(int, struct jobGroupInfo *);
 
 #endif

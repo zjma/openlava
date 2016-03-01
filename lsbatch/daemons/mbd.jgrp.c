@@ -79,14 +79,16 @@ static int        makeTreeNodeList(struct jgTreeNode *,
 static void       freeGrpNode(struct jgrpData *);
 static int isSelected ( struct jobInfoReq *,
                         struct jData *,
-                        struct jgrpInfo *
-    );
+                        struct jgrpInfo *);
 static int makeJgrpInfo(struct jgTreeNode *,
 			char *,
 			struct jobInfoReq *,
 			struct jgrpInfo *);
-static struct jgTreeNode *getNode(const char *);
 static bool_t isSameUser(struct lsfAuth *, int, char *);
+static struct jgTreeNode *tree_new_node(struct jgTreeNode *,
+					const char *,
+					const char *,
+					struct lsfAuth *);
 
 char treeFile[48];
 
@@ -316,59 +318,67 @@ treeFree(struct jgTreeNode * node)
     }
 }
 
-
+/* freeTreeNode()
+ */
 static void
 freeTreeNode(struct jgTreeNode *node)
 {
     if (!node)
         return;
+
     if (node->name)
         FREEUP(node->name);
+    if (node->path)
+	_free_(node->path);
+
     if (node->nodeType == JGRP_NODE_JOB) {
         DESTROY_REF(node->ndInfo, destroyjDataRef);
-    }
-    else if (node->nodeType == JGRP_NODE_ARRAY) {
+    } else if (node->nodeType == JGRP_NODE_ARRAY) {
         freeJarray(ARRAY_DATA(node));
-    }
-    else
+    } else {
         freeGrpNode(JGRP_DATA(node));
+    }
+
     FREEUP(node);
 }
 
-
+/* freeGrpNode()
+ */
 static void
-freeGrpNode(struct jgrpData *jgrpData)
+freeGrpNode(struct jgrpData *jgrp)
 {
-    if (!jgrpData)
+    if (!jgrp)
         return;
-    if (jgrpData->userName)
-        FREEUP(jgrpData->userName);
 
-    if (jgrpData->numRef <= 0) {
-        FREEUP(jgrpData);
+    if (jgrp->userName)
+        FREEUP(jgrp->userName);
+
+    if (jgrp->numRef <= 0) {
+        FREEUP(jgrp);
+    } else {
+        jgrp->status = JGRP_VOID;
     }
-    else
-        jgrpData->status = JGRP_VOID;
 }
-
 
 void
 freeJarray(struct jarray *jarray)
 {
-
     if (!jarray)
         return;
+
     if (jarray->userName)
         FREEUP(jarray->userName);
+
     DESTROY_REF(jarray->jobArray, destroyjDataRef);
+
     jarray->jobArray = NULL;
+
     if (jarray->numRef <= 0) {
         FREEUP(jarray);
-    }
-    else
+    } else {
         jarray->status = JGRP_VOID;
+    }
 }
-
 
 int
 isAncestor(struct jgTreeNode *x, struct jgTreeNode *y)
@@ -1318,86 +1328,53 @@ fullJobName_r(struct jData *jp, char *jobName)
 int
 add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
-    char parent[MAXLINELEN];
-    char node[MAXLINELEN];
-    char *el;
+    static char path[MAXLINELEN];
+    char *node;
     char *name;
     char *p0;
-    struct jgTreeNode *parent2;
+    struct jgTreeNode *parent;
     struct jgTreeNode *jgrp;
     hEnt *e;
 
     if (! jgPtr)
 	return LSBE_JGRP_NULL;
 
-    e = h_getEnt_(&nodeTab, jgPtr->group_name);
-    if (e) {
-	return LSBE_JGRP_EXIST;
-    }
-
     p0 = name = strdup(jgPtr->group_name);
 
-    sprintf(parent, "/");
-    while ((el = getNextWordSet(&name, "/")) != NULL) {
+    /* First node
+     */
+    node = strtok(name, "/");
+    sprintf(path, "/%s", node);
+    e = h_getEnt_(&nodeTab, path);
+    if (e == NULL) {
+	jgrp = tree_new_node(groupRoot, node, path, auth);
+    } else {
+	jgrp = e->hData;
+    }
+    parent = jgrp;
 
-	if (strcmp(parent, "/") == 0) {
-	    sprintf(node, "/%s", el);
+    /* check for more nodes like mkdir -p
+     */
+    while ((node = strtok(NULL, "/"))) {
+	sprintf(path + strlen(path), "/%s", node);
+	e = h_getEnt_(&nodeTab, path);
+	if (e == NULL) {
+	    jgrp = tree_new_node(parent, node, path, auth);
 	} else {
-	    sprintf(node, "%s/%s", parent, el);
+	    jgrp = e->hData;
 	}
-
-	if ((e = h_getEnt_(&nodeTab, node)) != NULL) {
-	    sprintf(parent, "%s", node);
-	    continue;
-	}
-
-	parent2 = getNode(parent);
-	jgrp = treeNewNode(JGRP_NODE_GROUP);
-	jgrp->name = strdup(node);
-
-	JGRP_DATA(jgrp)->userId = auth->uid;
-	JGRP_DATA(jgrp)->userName = safeSave(auth->lsfUserName);
-	jgrp->path = strdup(node);
-
-	/* insert the child node under the parent.
-	 */
-	treeInsertChild(parent2, jgrp);
-
-	e = h_addEnt_(&nodeTab, jgrp->path, NULL);
-	e->hData = jgrp;
-
-	JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
-	JGRP_DATA(jgrp)->submit_time = time(NULL);
-
-	sprintf(parent, "%s", node);
-
-    } /* while () */
+	parent = jgrp;
+    }
+    free(p0);
 
     /* Log the job group specification.
      */
     if (mSchedStage != M_STAGE_REPLAY) {
-        /* log_newjgrp(jgrp, jgrpReq); */
+        /* log_newjgrp(jgrp; */
     }
-    free(p0);
 
     return LSBE_NO_ERROR;
 }
-
-static struct jgTreeNode *
-getNode(const char *name)
-{
-    hEnt                *e;
-    struct jgTreeNode   *j;
-
-    e = h_getEnt_(&nodeTab, name);
-    if (e) {
-	j = (struct jgTreeNode *)e->hData;
-	return(j);
-    }
-
-    return(NULL);
-
-} /* getNode() */
 
 /* encode_nodes()
  */
@@ -1420,8 +1397,8 @@ encode_nodes(XDR *xdrs,
 
   again:
     while (n) {
-	int                i;
-	struct jgrpData   *g;
+	int i;
+	struct jgrpData *g;
 
 	if (n->child)
 	    push_link(stack, n->child);
@@ -1434,11 +1411,11 @@ encode_nodes(XDR *xdrs,
 	if (n->nodeType != type)
 	    goto next;
 
-	cc = xdr_var_string(xdrs, &n->path);
+	cc = xdr_wrapstring(xdrs, &n->path);
 	if (cc != TRUE)
 	    goto bail;
 
-	cc = xdr_var_string(xdrs, &n->name);
+	cc = xdr_wrapstring(xdrs, &n->name);
 	if (cc != TRUE)
 	    goto bail;
 
@@ -1481,13 +1458,13 @@ tree_size(int *num)
     link_t *stack;
     int cc;
 
+    *num = 0;
     if (groupRoot->child == NULL)
-	return 0;
+	return sizeof(int);
 
     n = groupRoot->child;
     stack = make_link();
     cc = 0;
-    *num = 0;
 
   again:
     while (n) {
@@ -1527,5 +1504,55 @@ tree_size(int *num)
 int
 del_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
+    struct jgTreeNode *jgrp;
+    hEnt *e;
+
+    /* Here we expect a full path to the job to be
+     * removed. /x/y/z and then z is removed
+     */
+    e = h_getEnt_(&nodeTab, jgPtr->group_name);
+    if (e == NULL) {
+	ls_syslog(LOG_ERR, "\
+%s: requested group %s does not exist", __func__, jgPtr->group_name);
+	return LSBE_JGRP_BAD;
+    }
+
+    jgrp = e->hData;
+    if (jgrp->child)
+	return LSBE_JGRP_NOTEMPTY;
+
+    h_rmEnt_(&nodeTab, e);
+
+    /* remove from the tree
+     */
+    treeClip(jgrp);
+    freeTreeNode(jgrp);
+
     return 0;
+}
+
+/* tree_new_node()
+ */
+static struct jgTreeNode *
+tree_new_node(struct jgTreeNode *parent,
+	      const char *name,
+	      const char *path,
+	      struct lsfAuth *auth)
+{
+    struct jgTreeNode *jgrp;
+    hEnt *e;
+
+    jgrp = treeNewNode(JGRP_NODE_GROUP);
+    jgrp->name = strdup(name);
+    jgrp->path = strdup(path);
+    treeInsertChild(parent, jgrp);
+    e = h_addEnt_(&nodeTab, jgrp->path, NULL);
+    e->hData = jgrp;
+
+    JGRP_DATA(jgrp)->userId = auth->uid;
+    JGRP_DATA(jgrp)->userName = safeSave(auth->lsfUserName);
+    JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
+    JGRP_DATA(jgrp)->submit_time = time(NULL);
+
+    return jgrp;
 }

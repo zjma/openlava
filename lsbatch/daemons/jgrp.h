@@ -41,7 +41,7 @@ struct jgArrayBase {
     char    *userName;
     int      fromPlatform;
     void    (*freeJgArray)(void *);
-    int      counts[NUM_JGRP_COUNTERS+1];
+    int      counts[NUM_JGRP_COUNTERS + 1];
 };
 
 struct jarray {
@@ -53,7 +53,7 @@ struct jarray {
     char    *userName;
     int      fromPlatform;
     void    (*freeJgArray)(void *);
-    int      counts[NUM_JGRP_COUNTERS+1];
+    int      counts[NUM_JGRP_COUNTERS + 1];
     struct jData *jobArray;
     int   maxJLimit;
 };

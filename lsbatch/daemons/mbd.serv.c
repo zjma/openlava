@@ -3118,6 +3118,24 @@ do_jobGroupDel(XDR *xdrs,
 	       struct LSFHeader *hdr,
 	       struct lsfAuth *auth)
 {
+    struct job_group group;
+    int cc;
+
+    group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
+
+    if (! xdr_jobgroup(xdrs, &group, hdr)) {
+	ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+	enqueueLSFHeader(chfd, LSBE_XDR);
+	return -1;
+    }
+
+    cc = del_job_group(&group, auth);
+
+    /* send back the answer to the library
+     */
+    enqueueLSFHeader(chfd, cc);
+    _free_(group.group_name);
+
     return 0;
 }
 
@@ -3142,7 +3160,7 @@ do_jobGroupInfo(XDR *xdrs,
      * nodes on the tree itself.
      */
     size = tree_size(&n);
-    size = size * sizeof(int);
+    size = size * sizeof(int) + sizeof(struct LSFHeader);
 
     buf = calloc(size, sizeof(char));
 
