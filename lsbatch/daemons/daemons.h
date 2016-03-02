@@ -151,12 +151,13 @@
 #define LSB_SBD_FINISH_SLEEP   51
 #define LSB_VIRTUAL_SLOT       52
 #define LSB_STDOUT_DIRECT      53
-#define MBD_DONT_FORK          54
+#define MBD_DONT_FORK          54   /* for dev only */
 #define LIM_NO_MIGRANT_HOSTS   55
 #define SBD_BIND_CPU           56
 #define MBD_MAX_JOBS_SCHED     57
 #define MBD_NO_QSORT_JOBS      58
 #define LIM_ACCEPT_FLOAT_CLIENT 59
+#define MBD_SWITCH_NOFORK       60  /* for dev only */
 
 #define NOT_LOG  INFINIT_INT
 

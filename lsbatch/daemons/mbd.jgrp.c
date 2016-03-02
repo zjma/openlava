@@ -109,6 +109,7 @@ treeInit(void)
 
     groupRoot = treeNewNode(JGRP_NODE_GROUP);
     groupRoot->name = safeSave("/");
+    groupRoot->path = strdup("/");
     JGRP_DATA(groupRoot)->userId  = managerId;
     JGRP_DATA(groupRoot)->userName = safeSave(lsbSys);
     JGRP_DATA(groupRoot)->status = JGRP_ACTIVE;
@@ -1328,7 +1329,7 @@ fullJobName_r(struct jData *jp, char *jobName)
 int
 add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
-    static char path[MAXLINELEN];
+    static char path[PATH_MAX];
     char *node;
     char *name;
     char *p0;
@@ -1366,12 +1367,6 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 	parent = jgrp;
     }
     free(p0);
-
-    /* Log the job group specification.
-     */
-    if (mSchedStage != M_STAGE_REPLAY) {
-        /* log_newjgrp(jgrp; */
-    }
 
     return LSBE_NO_ERROR;
 }
@@ -1521,6 +1516,12 @@ del_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
     if (jgrp->child)
 	return LSBE_JGRP_NOTEMPTY;
 
+    /* log if not replaying
+     */
+    if (mSchedStage != M_STAGE_REPLAY) {
+	log_deljgrp(jgrp);
+    }
+
     h_rmEnt_(&nodeTab, e);
 
     /* remove from the tree
@@ -1554,5 +1555,31 @@ tree_new_node(struct jgTreeNode *parent,
     JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
     JGRP_DATA(jgrp)->submit_time = time(NULL);
 
+    /* log only if not replaying
+     */
+    if (mSchedStage != M_STAGE_REPLAY) {
+	log_newjgrp(jgrp);
+    }
+
     return jgrp;
+}
+
+/* can_switch_jgrp()
+*/
+int
+can_switch_jgrp(struct jgrpLog *jgrp)
+{
+    if (!jgrp)
+	return true;
+
+    /* If we still have the group this means
+     * we cannot switch the record out and
+     * there is no remove record for this
+     * group in the current lsb.events
+     * file either.
+     */
+    if (h_getEnt_(&nodeTab, jgrp->path))
+	return false;
+
+    return true;
 }

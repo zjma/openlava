@@ -89,6 +89,7 @@ struct config_param daemonParams[] = {
     {"MBD_MAX_JOBS_SCHED", NULL},
     {"MBD_QSORT_JOBS", NULL},
     {"LIM_ACCEPT_FLOAT_CLIENT", NULL},
+    {"MBD_SWITCH_NOFORK", NULL},
     {NULL, NULL}
 };
 

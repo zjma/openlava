@@ -66,7 +66,8 @@ static bool_t           replay_jobforce(char *, int);
 static int              replay_logSwitch(char *, int);
 static int              replay_jobattrset(char *, int );
 static int              replay_jobmsg(char *, int);
-
+static int              replay_newjgrp(char *, int);
+static int              replay_deljgrp(char *, int);
 static int replay_logSwitch(char *, int);
 extern bool_t memberOfVacateList(struct lsQueueEntry *, struct lsQueue *);
 
@@ -304,7 +305,7 @@ init_log(void)
 	}
 
 	eventTime = logPtr->eventTime;
-	if (!replay_event(elogFname, lineNum) && first) {
+	if (! replay_event(elogFname, lineNum) && first) {
 	    ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: First replay_event() failed; line ignored",
 		      __func__,
@@ -386,8 +387,6 @@ init_log(void)
 static int
 replay_event(char *filename, int lineNum)
 {
-    static char fname[] = "replay_event()";
-
     switch (logPtr->type) {
         case EVENT_JOB_NEW:
             return (replay_newjob(filename, lineNum));
@@ -441,13 +440,14 @@ replay_event(char *filename, int lineNum)
             return (replay_logSwitch(filename, lineNum));
         case EVENT_JOB_MSG:
             return replay_jobmsg(filename, lineNum);
+	case EVENT_NEW_JGRP:
+	    return replay_newjgrp(filename, lineNum);
+	case EVENT_DEL_JGRP:
+	    return replay_deljgrp(filename, lineNum);
         default:
             ls_syslog(LOG_ERR, "\
-%s: File %s at line %d: Invalid event_type <%c>",
-                      fname,
-                      filename,
-                      lineNum,
-                      logPtr->type);
+%s: File %s at line %d: Invalid event_type %c",
+                      __func__, filename, lineNum, logPtr->type);
             return FALSE;
     }
 }
@@ -1302,6 +1302,56 @@ replay_jobmsg(char *file, int num)
     return true;
 }
 
+/* replay_newjgrp()
+ */
+static int
+replay_newjgrp(char *file, int num)
+{
+    struct jgrpLog *jgrp_log;
+    struct job_group jgrp;
+    struct lsfAuth auth;
+
+    jgrp_log = &logPtr->eventLog.jgrpLog;
+
+    /* Copy the path not the name, the
+     * add_job_group() knows how to make
+     * the group right
+     */
+    jgrp.group_name = strdup(jgrp_log->path);
+    auth.uid = jgrp_log->uid;
+    strcpy(auth.lsfUserName, jgrp_log->user);
+
+    add_job_group(&jgrp, &auth);
+
+    _free_(jgrp.group_name);
+
+    return true;
+}
+
+/* replay_deljgrp()
+ */
+static int
+replay_deljgrp(char *file, int num)
+{
+    struct jgrpLog *jgrp_log;
+    struct job_group jgrp;
+    struct lsfAuth auth;
+
+    jgrp_log = &logPtr->eventLog.jgrpLog;
+
+    /* Copy the path not the name
+     */
+    jgrp.group_name = strdup(jgrp_log->path);
+    auth.uid = jgrp_log->uid;
+    strcpy(auth.lsfUserName, jgrp_log->user);
+
+    del_job_group(&jgrp, &auth);
+
+    _free_(jgrp.group_name);
+
+    return true;
+}
+
 
 int
 log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
@@ -2022,7 +2072,7 @@ log_mbdDie(int sig)
 void
 log_unfulfill(struct jData * jp)
 {
-    static char             fname[] = "log_unfulfill";
+    static char fname[] = "log_unfulfill";
 
     if (openEventFile(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -2049,19 +2099,72 @@ log_unfulfill(struct jData * jp)
                   "putEventRec");
 }
 
+/* log_newjgrp()
+ */
+void
+log_newjgrp(struct jgTreeNode *jgrp)
+{
+
+    if (openEventFile(__func__) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed in openEventFile() %m", __func__);
+	mbdDie(MASTER_FATAL);
+    }
+    logPtr->type = EVENT_NEW_JGRP;
+
+    strcpy(logPtr->eventLog.jgrpLog.name, jgrp->name);
+    strcpy(logPtr->eventLog.jgrpLog.path, jgrp->path);
+    strcpy(logPtr->eventLog.jgrpLog.user, JGRP_DATA(jgrp)->userName);
+
+    logPtr->eventLog.jgrpLog.uid = JGRP_DATA(jgrp)->userId;
+    logPtr->eventLog.jgrpLog.status = JGRP_DATA(jgrp)->status;
+    logPtr->eventLog.jgrpLog.submit_time = JGRP_DATA(jgrp)->submit_time;
+
+    if (putEventRec(__func__) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed in putEventRec() %m", __func__);
+    }
+}
+
+/* log_deljgrp()
+ */
+void
+log_deljgrp(struct jgTreeNode *jgrp)
+{
+
+    if (openEventFile(__func__) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed in openEventFile() %m", __func__);
+	mbdDie(MASTER_FATAL);
+    }
+    logPtr->type = EVENT_DEL_JGRP;
+
+    memset(&logPtr->eventLog.jgrpLog, 0, sizeof(struct jgrpLog));
+
+    /* Path is enough, if mbatchd is logging this events
+     * it means this job group can be removed.
+     */
+    strcpy(logPtr->eventLog.jgrpLog.path, jgrp->path);
+
+    if (putEventRec(__func__) < 0) {
+	ls_syslog(LOG_ERR, "\
+%s: failed in putEventRec() %m", __func__);
+    }
+}
+
 static void
 log_loadIndex(void)
 {
-    static char             fname[] = "log_loadIndex";
-    int                     i;
-    static char            **names;
+    static char fname[] = "log_loadIndex";
+    int i;
+    static char **names;
 
     if (openEventFile(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "openEventFile");
         mbdDie(MASTER_FATAL);
     }
     if (!names)
-        if (!(names = (char **)malloc(allLsInfo->numIndx*sizeof(char *)))) {
+        if (!(names = malloc(allLsInfo->numIndx*sizeof(char *)))) {
             ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "malloc");
             mbdDie(MASTER_FATAL);
         }
@@ -2070,7 +2173,8 @@ log_loadIndex(void)
     logPtr->eventLog.loadIndexLog.name = names;
 
     for (i = 0; i < allLsInfo->numIndx; i++)
-        logPtr->eventLog.loadIndexLog.name[i] = allLsInfo->resTable[i].name;
+        logPtr->eventLog.loadIndexLog.name[i]
+	    = allLsInfo->resTable[i].name;
 
     if (putEventRec(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "putEventRec");
@@ -2437,6 +2541,18 @@ switchELog(void)
     if (numRemoveJobs < maxjobnum)
 	return;
 
+    /* For development only when modify the switching
+     * algorithm
+     */
+    if (daemonParams[MBD_SWITCH_NOFORK].paramValue) {
+	/* Close the lsb.events the first OpenEventFile()
+	 * after the switch will reopen it.
+	 */
+	_fclose_(&log_fp);
+	do_switch();
+	return;
+    }
+
     if (logclass & LC_SWITCH) {
 	ls_syslog(LOG_INFO, "\
 %s: time to switch numRemoveJobs %d maxjobnum %d", __func__,
@@ -2597,24 +2713,27 @@ Acct_exiterr:
 int
 switch_log(void)
 {
-    static char fname[] = "switch_log";
     char tmpfn[MAXFILENAMELEN];
-    int i, lineNum = 0, errnoSv;
+    int i;
+    int lineNum = 0;
+    int errnoSv;
     LS_LONG_INT jobId = 0;
-    FILE *efp, *tmpfp;
-    struct jData *jp, *jarray;
+    FILE *efp;
+    FILE *tmpfp;
+    struct jData *jp;
+    struct jData *jarray;
     long pos;
-    int preserved = FALSE;
+    int preserved = false;
     int totalEventFile;
 
     sprintf(tmpfn, "%s/logdir/lsb.events",
             daemonParams[LSB_SHAREDIR].paramValue);
 
     ls_syslog(LOG_INFO, "\
-%s: switching event log file: %s", __FUNCTION__, tmpfn);
+%s: switching event log file: %s", __func__, tmpfn);
 
     if (createEvent0File() == -1) { ;
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "createEvent0File");
+        ls_syslog(LOG_ERR, "%s: failed in createEvent0File()", __func__);
         goto exiterr;
     }
 
@@ -2622,17 +2741,17 @@ switch_log(void)
             daemonParams[LSB_SHAREDIR].paramValue);
 
     if ((tmpfp = fopen(tmpfn, "w")) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", tmpfn);
+        ls_syslog(LOG_ERR, "%s: failed fopen %s: %m", __func__, tmpfn);
         goto exiterr;
     }
 
     if (fchmod(fileno(tmpfp),  0644) != 0) {
-        ls_syslog(LOG_ERR, I18N(6870,"%s: fchmod on %s failed: %m"), fname, tmpfn);/*catgets 6870 */
+	ls_syslog(LOG_ERR, "%s: fchmod on %s failed: %m", __func__, tmpfn);
     }
 
     efp = fopen(elogFname, "r");
     if (efp == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
+	ls_syslog(LOG_ERR, "%s: fopen(%s) failed: %m", __func__, elogFname);
         _fclose_(&tmpfp);
         goto exiterr;
     }
@@ -2650,7 +2769,7 @@ switch_log(void)
         if ((logPtr = lsb_geteventrec(efp, &lineNum)) == NULL) {
             if (lsberrno != LSBE_EOF) {
                 ls_syslog(LOG_ERR, "\
-%s: reading line %d in file %s: %s", fname, lineNum,
+%s: reading line %d in file %s: %s", __func__, lineNum,
                           elogFname, lsb_sysmsg());
 
                 if (lsberrno == LSBE_NO_MEM) {
@@ -2757,7 +2876,16 @@ switch_log(void)
             case EVENT_QUEUE_CTRL:
                 saveQueueCtrlEvent(&(logPtr->eventLog.queueCtrlLog),
                                    eventTime);
+	    case EVENT_NEW_JGRP:
+		/* If you can switch it don't preserve it
+		 */
+		if (can_switch_jgrp(&logPtr->eventLog.jgrpLog))
+		    preserved = false;
+		else
+		    preserved = true;
                 break;
+	    case EVENT_DEL_JGRP:
+		preserved = false;
             default:
                 break;
         }
@@ -2780,15 +2908,15 @@ switch_log(void)
                     || (logPtr->type == EVENT_JOB_CLEAN)))) {
 
             if (lsb_puteventrec(tmpfp, logPtr) == -1) {
-                ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_MM,
-                          fname, "lsb_puteventrec", tmpfn);
+	        ls_syslog(LOG_ERR, "\
+%s: lsb_puteventrec(%s) failed: %s", __func__, tmpfn, lsb_sysmsg());
                 _fclose_(&efp);
                 unlink (tmpfn);
                 goto exiterr;
             }
         }
         jobId = 0;
-        preserved = FALSE;
+        preserved = false;
     }
     _fclose_(&efp);
 
@@ -2796,7 +2924,7 @@ switch_log(void)
     rewind(tmpfp);
     fprintf(tmpfp, "#%ld", pos);
     if (_fclose_(&tmpfp)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fclose", tmpfn);
+	ls_syslog(LOG_ERR, "%s: fclose(%s) failed: %m", __func__, tmpfn);
         goto exiterr;
     }
 
@@ -2806,11 +2934,8 @@ switch_log(void)
 
     errno = errnoSv;
     if (i == -1) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M,
-                  fname,
-                  "rename",
-                  tmpfn,
-                  elogFname);
+	ls_syslog(LOG_ERR, "\
+%s: rename(%s, %s) failed: %m", __func__, tmpfn, elogFname);
         goto exiterr;
     }
 
@@ -2838,17 +2963,17 @@ switch_log(void)
                 if (lsberrno == LSBE_SYS_CALL)
                     ls_syslog(LOG_ERR, "\
 %s: updateJobIdIndexFile(%s) failed: %s %m",
-                              fname, indexFile, lsb_sysmsg());
+                              __func__, indexFile, lsb_sysmsg());
                 else
                     ls_syslog(LOG_ERR, "\
 %s: updateJobIdIndexFile(%s) failed: %s",
-                              fname, indexFile, lsb_sysmsg());
+                              __func__, indexFile, lsb_sysmsg());
             }
             exit(0);
         }
         return 0;
     } else {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "renameElogFiles");
+        ls_syslog(LOG_ERR, "%s: renameElogFiles() failed", __func__);
     }
 
 exiterr:
@@ -4278,7 +4403,11 @@ checkJobInCore(LS_LONG_INT jobId)
 }
 
 static char *
-instrJobStarter1(char *data, int  datalen, char *begin, char *end, char *jstr)
+instrJobStarter1(char *data,
+		 int  datalen,
+		 char *begin,
+		 char *end,
+		 char *jstr)
 {
     static char fname[] = "instrJobStarter1()";
     char        *jstr_header = NULL;

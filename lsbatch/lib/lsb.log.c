@@ -51,6 +51,8 @@ static int readJobSignal (char *, struct signalLog *);
 static int readJobMsg (char *, struct jobMsgLog *);
 static int readJobClean(char *, struct jobCleanLog *);
 static int readLogSwitch(char *, struct logSwitchLog *);
+static int readNewJgrp(char *, struct jgrpLog *);
+static int readDelJgrp(char *, struct jgrpLog *);
 static int writeJobNew(FILE *, struct jobNewLog *);
 static int writeJobMod(FILE *, struct jobModLog *);
 static int writeJobStart(FILE *, struct jobStartLog *);
@@ -79,6 +81,8 @@ static int writeJobForce(FILE* , struct jobForceRequestLog*);
 static int readJobForce(char *, struct jobForceRequestLog* );
 static int writeJobAttrSet(FILE* , struct jobAttrSetLog*);
 static int writeStreamEnd(FILE *, struct endStream *);
+static int writeNewJgrp(FILE *, struct jgrpLog *);
+static int writeDelJgrp(FILE *, struct jgrpLog *);
 static int readJobAttrSet(char *, struct jobAttrSetLog* );
 static void freeLogRec(struct eventRec *);
 struct eventRec * lsbGetNextJobEvent(struct eventLogHandle *,
@@ -553,6 +557,9 @@ lsb_geteventrecord(FILE *log_fp, int *LineNum)
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG2, "%s: log.type=%x", __func__, logRec->type);
 
+    /* read the record and build the logRec data
+     * structure.
+     */
     readEventRecord(line, logRec);
 
     if (lsberrno == LSBE_NO_ERROR)
@@ -1785,6 +1792,12 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
         case EVENT_STREAM_END:
             etype = "STREAM_END";
             break;
+	case EVENT_NEW_JGRP:
+	    etype = "NEW_JGRP";
+	    break;
+	case EVENT_DEL_JGRP:
+	    etype = "DEL_JGRP";
+	    break;
         default:
             lsberrno = LSBE_UNKNOWN_EVENT;
             return -1;
@@ -1811,7 +1824,7 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
             break;
         case EVENT_JOB_START_ACCEPT:
             lsberrno = writeJobStartAccept(log_fp,
-                                           &(logPtr->eventLog.jobStartAcceptLog));
+					   &(logPtr->eventLog.jobStartAcceptLog));
             break;
         case EVENT_JOB_STATUS:
             lsberrno = writeJobStatus(log_fp,
@@ -1904,6 +1917,12 @@ lsb_puteventrec(FILE *log_fp, struct eventRec *logPtr)
         case EVENT_STREAM_END:
             lsberrno = writeStreamEnd(log_fp, &(logPtr->eventLog.eos));
             break;
+	case EVENT_NEW_JGRP:
+	    lsberrno = writeNewJgrp(log_fp, &(logPtr->eventLog.jgrpLog));
+	    break;
+	case EVENT_DEL_JGRP:
+	    lsberrno = writeDelJgrp(log_fp, &(logPtr->eventLog.jgrpLog));
+	    break;
     }
 
     if (lsberrno == LSBE_NO_ERROR) {
@@ -2680,6 +2699,38 @@ readLogSwitch(char *line, struct logSwitchLog *logSwitchLog)
     return LSBE_NO_ERROR;
 }
 
+/* readNewJgrp()
+ */
+static int
+readNewJgrp(char *line, struct jgrpLog *jgrp)
+{
+    int cc;
+    int n;
+
+    copyQStr(&line, MAXLSFNAMELEN, 0, jgrp->name);
+    copyQStr(&line, PATH_MAX, 0, jgrp->path);
+    copyQStr(&line, MAXLSFNAMELEN, 0, jgrp->user);
+
+    cc = sscanf(line, "\
+%d %d %d %n", &jgrp->uid, &jgrp->status, (int *)&jgrp->submit_time, &n);
+    if (cc != 3)
+	return LSBE_EVENT_FORMAT;
+    line = line + n;
+
+    return LSBE_NO_ERROR;
+}
+
+/* readDelJgrp()
+ */
+static int
+readDelJgrp(char *line, struct jgrpLog *jgrp)
+{
+    copyQStr(&line, MAXLINELEN, 0, jgrp->path);
+
+    return LSBE_NO_ERROR;
+}
+
+
 static int
 writeJobSignal(FILE *log_fp, struct signalLog *signalLog)
 {
@@ -2730,8 +2781,43 @@ writeStreamEnd(FILE *fp, struct endStream *eos)
     return LSBE_NO_ERROR;
 }
 
+/* writeNewJgrp()
+ */
 static int
-readJobSignal (char *line, struct signalLog *signalLog)
+writeNewJgrp(FILE *fp, struct jgrpLog *jgrp)
+{
+    if (addQStr(fp, jgrp->name) < 0)
+        return LSBE_SYS_CALL;
+
+    if (addQStr(fp, jgrp->path) < 0)
+        return LSBE_SYS_CALL;
+
+    if (addQStr(fp, jgrp->user) < 0)
+        return LSBE_SYS_CALL;
+
+    if (fprintf(fp, "\
+ %d %d %d\n", jgrp->uid, jgrp->status, (int)jgrp->submit_time) < 0)
+        return LSBE_SYS_CALL;
+
+    return LSBE_NO_ERROR;
+}
+
+/* writeDelJgrp()
+ */
+static int
+writeDelJgrp(FILE *fp, struct jgrpLog *jgrp)
+{
+    if (addQStr(fp, jgrp->path) < 0)
+        return LSBE_SYS_CALL;
+
+    fprintf(fp, "\n");
+
+    return LSBE_NO_ERROR;
+}
+
+
+static int
+readJobSignal(char *line, struct signalLog *signalLog)
 {
     int cc, ccount;
     char sigSymbol[MAXLINELEN];
@@ -3244,6 +3330,10 @@ getEventTypeAndKind(char *typeStr, int *eventKind)
         eventType = EVENT_LOG_SWITCH;
     else if (strcmp(typeStr, "LOG_SWITCH") == 0)
         eventType = EVENT_LOG_SWITCH;
+    else if (strcmp(typeStr, "NEW_JGRP") == 0)
+	eventType = EVENT_NEW_JGRP;
+    else if (strcmp(typeStr, "DEL_JGRP") == 0)
+	eventType = EVENT_DEL_JGRP;
     else {
         lsberrno = LSBE_UNKNOWN_EVENT;
         *eventKind = EVENT_NON_JOB_RELATED;
@@ -3280,7 +3370,7 @@ getEventTypeAndKind(char *typeStr, int *eventKind)
             break;
     }
 
-    return(eventType);
+    return eventType;
 }
 
 
@@ -3435,6 +3525,12 @@ readEventRecord(char *line, struct eventRec *logRec)
         case EVENT_LOG_SWITCH:
             lsberrno = readLogSwitch(line, &(logRec->eventLog.logSwitchLog));
             break;
+	case EVENT_NEW_JGRP:
+	    lsberrno = readNewJgrp(line, &(logRec->eventLog.jgrpLog));
+	    break;
+	case EVENT_DEL_JGRP:
+	    lsberrno = readDelJgrp(line,&(logRec->eventLog.jgrpLog));
+	    break;
     }
 
     return;

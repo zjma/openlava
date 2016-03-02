@@ -163,8 +163,8 @@
 #define    EVENT_JOB_MODIFY2      28
 #define    EVENT_JOB_ATTR_SET     29
 #define    EVENT_STREAM_END       30
-#define    EVENT_UNUSED_31        31
-#define    EVENT_UNUSED_32        32
+#define    EVENT_NEW_JGRP         31
+#define    EVENT_DEL_JGRP         32
 
 /* Job specific reasons
  */
@@ -1308,6 +1308,17 @@ struct endStream {
     int numRecords;
 };
 
+/* job group data structure
+ */
+struct jgrpLog {
+    char name[MAXLSFNAMELEN];
+    char path[PATH_MAX];
+    int uid;
+    char user[MAXLSFNAMELEN];
+    int status;
+    time_t submit_time;
+};
+
 union  eventLog {
     struct jobNewLog jobNewLog;
     struct jobStartLog jobStartLog;
@@ -1338,6 +1349,7 @@ union  eventLog {
     struct jobModLog jobModLog;
     struct jobAttrSetLog jobAttrSetLog;
     struct endStream eos;
+    struct jgrpLog jgrpLog;
 };
 
 

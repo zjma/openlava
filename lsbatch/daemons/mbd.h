@@ -1296,6 +1296,8 @@ extern void                 log_jobforward(struct jData *);
 extern void                 log_statusack(struct jData *);
 extern void                 log_logSwitch(int);
 extern void                 log_jobmsg(struct jData *, struct lsbMsg *);
+extern void                 log_newjgrp(struct jgTreeNode *);
+extern void                 log_deljgrp(struct jgTreeNode *);
 extern void                 replay_requeuejob(struct jData *);
 extern int                  init_log(void);
 extern void                 switchELog(void);
@@ -1489,5 +1491,6 @@ extern int add_job_group(struct job_group *, struct lsfAuth *);
 extern int del_job_group(struct job_group *, struct lsfAuth *);
 extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
+extern int can_switch_jgrp(struct jgrpLog *);
 
 #endif /* _MBD_HEADER_ */
