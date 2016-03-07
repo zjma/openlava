@@ -1492,5 +1492,6 @@ extern int del_job_group(struct job_group *, struct lsfAuth *);
 extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
+extern int check_job_group(struct jData *, struct lsfAuth *);
 
 #endif /* _MBD_HEADER_ */

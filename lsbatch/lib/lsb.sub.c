@@ -127,6 +127,7 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
     subNewLine_(jobSubReq->errFile);
     subNewLine_(jobSubReq->chkpntDir);
     subNewLine_(jobSubReq->projectName);
+
     for(loop = 0; loop < jobSubReq->numAskedHosts; loop++) {
         subNewLine_(jobSubReq->askedHosts[loop]);
     }
@@ -184,7 +185,8 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
 }
 
 int
-getCommonParams(struct submit  *jobSubReq, struct submitReq *submitReq,
+getCommonParams(struct submit  *jobSubReq,
+		struct submitReq *submitReq,
                 struct submitReply *submitRep)
 {
     int i, useKb = 0;
@@ -197,7 +199,6 @@ getCommonParams(struct submit  *jobSubReq, struct submitReq *submitReq,
 
     submitReq->options = jobSubReq->options;
     submitReq->options2 = jobSubReq->options2;
-
 
     if (jobSubReq->options & SUB_DEPEND_COND) {
         if (dependCondSyntax(jobSubReq->dependCond) < 0)
@@ -362,6 +363,14 @@ getCommonParams(struct submit  *jobSubReq, struct submitReq *submitReq,
         submitReq->userPriority = jobSubReq->userPriority;
     } else {
         submitReq->userPriority = -1;
+    }
+
+    /* Process job group
+     */
+    if (jobSubReq->options2 & SUB2_JOB_GROUP) {
+	submitReq->job_group = jobSubReq->job_group;
+    } else {
+	submitReq->job_group = "";
     }
 
     if (logclass & (LC_TRACE | LC_EXEC))
@@ -598,7 +607,11 @@ send_batch (struct submitReq *submitReqPtr, struct lenData *jf,
     xdrmem_create(&xdrs, request_buf, reqBufSize, XDR_ENCODE);
     initLSFHeader_(&hdr);
     hdr.opCode = mbdReqtype;
-    if (!xdr_encodeMsg(&xdrs, (char *) submitReqPtr, &hdr, xdr_submitReq, 0,
+    if (!xdr_encodeMsg(&xdrs,
+		       (char *)submitReqPtr,
+		       &hdr,
+		       xdr_submitReq,
+		       0,
                        auth)) {
         xdr_destroy(&xdrs);
         lsberrno = LSBE_XDR;
@@ -1257,10 +1270,13 @@ getChkDir(char *givenDir, char *chkPath)
 
 }
 
-
+/* subJob()
+ */
 static LS_LONG_INT
-subJob(struct submit  *jobSubReq, struct submitReq *submitReq,
-       struct submitReply *submitRep, struct lsfAuth *auth)
+subJob(struct submit  *jobSubReq,
+       struct submitReq *submitReq,
+       struct submitReply *submitRep,
+       struct lsfAuth *auth)
 {
 
     char homeDir[MAXFILENAMELEN];
@@ -1278,8 +1294,8 @@ subJob(struct submit  *jobSubReq, struct submitReq *submitReq,
     submitReq->resReq = resReq;
     submitReq->command = cmd;
 
-    if (getOtherParams (jobSubReq, submitReq, submitRep, auth,
-                        &subSpoolFiles) < 0) {
+    if (getOtherParams(jobSubReq, submitReq, submitRep, auth,
+		       &subSpoolFiles) < 0) {
         goto cleanup;
     }
 
@@ -1303,6 +1319,8 @@ subJob(struct submit  *jobSubReq, struct submitReq *submitReq,
         }
     }
 
+    /* Encode the submission request and send to mbd
+     */
     jobId = send_batch(submitReq, &jf, submitRep, auth);
     free(jf.data);
 
@@ -1350,10 +1368,8 @@ subJob(struct submit  *jobSubReq, struct submitReq *submitReq,
 cleanup:
 
     if (jobId < 0) {
-
         const char* spoolHost;
         int err;
-
 
         if (subSpoolFiles.inFileSpool[0]) {
             spoolHost = getSpoolHostBySpoolFile(subSpoolFiles.inFileSpool);
@@ -1377,7 +1393,7 @@ cleanup:
         }
     }
 
-    return (jobId);
+    return jobId;
 }
 
 
@@ -2654,6 +2670,8 @@ bsub_usage(int options)
     exit(-1);
 }
 
+/* setOption_()
+ */
 int
 setOption_(int argc, char **argv, char *template, struct submit *req,
            int mask, int mask2, char **errMsg)
@@ -2931,6 +2949,10 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                     req->options2 |= SUB2_MODIFY_PEND_JOB;
                 }
                 break;
+
+	    case 'g':
+		req->options2 |= SUB2_JOB_GROUP;
+		req->job_group = optarg;
 
             case 'i':
 

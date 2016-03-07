@@ -692,10 +692,13 @@ putOntoTree(struct jData *jp, int jobType)
 {
     static struct jgTreeNode *newj;
     struct jgTreeNode  *parentNode;
-    struct jData    *jPtr;
+    struct jData *jPtr;
+    hEnt *e;
 
     parentNode = groupRoot;
+
     newj = treeNewNode(jp->nodeType);
+
     if (jp->shared->jobBill.options & SUB_JOB_NAME)
         newj->name = safeSave(jp->shared->jobBill.jobName);
     else
@@ -720,6 +723,13 @@ putOntoTree(struct jData *jp, int jobType)
         jPtr->jgrpNode = newj;
 
         updJgrpCountByJStatus(jPtr, JOB_STAT_NULL, jPtr->jStatus);
+    }
+
+    /* If the job specifies a group get its node
+     */
+    if (jp->shared->jobBill.options2 & SUB2_JOB_GROUP) {
+	e = h_getEnt_(&nodeTab, jp->shared->jobBill.job_group);
+	parentNode = e->hData;
     }
 
     treeInsertChild(parentNode, newj);
@@ -1224,7 +1234,7 @@ isSelected(struct jobInfoReq *jobInfoReq, struct jData *jpbw,
                           fname, lsb_jobid2str(jpbw->jobId));
             return false;
         }
-        gp = getHGrpData (jobInfoReq->host);
+        gp = getHGrpData(jobInfoReq->host);
         if (gp != NULL) {
             for (i = 0; i < jpbw->numHostPtr; i++) {
                 if (jpbw->hPtr[i] == NULL)
@@ -1582,4 +1592,27 @@ can_switch_jgrp(struct jgrpLog *jgrp)
 	return false;
 
     return true;
+}
+
+/* check_job_group()
+ *
+ * Make a new job group at job submission if does
+ * not exist already.
+ */
+int
+check_job_group(struct jData *jPtr, struct lsfAuth *auth)
+{
+    hEnt *e;
+    struct job_group jgrp;
+
+    if (! (jPtr->shared->jobBill.options2 & SUB2_JOB_GROUP))
+	return LSBE_NO_ERROR;
+
+    e = h_getEnt_(&nodeTab, jPtr->shared->jobBill.job_group);
+    if (e)
+	return LSBE_NO_ERROR;
+
+    jgrp.group_name = jPtr->shared->jobBill.job_group;
+
+    return add_job_group(&jgrp, auth);
 }

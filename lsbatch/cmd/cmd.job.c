@@ -99,13 +99,21 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
 	 if (tFormat)
              sprintf(prline, " Command(Spooled) <%s>", job->submit.command);
          else
-             sprintf(prline, " Command(Spooled) <%s>\n", job->submit.command);
+             sprintf(prline, " Command(Spooled) <%s>", job->submit.command);
     } else {
 	 if (tFormat)
              sprintf(prline, " Command <%s>", job->submit.command);
          else
-             sprintf(prline, " Command <%s>\n", job->submit.command);
+             sprintf(prline, " Command <%s>", job->submit.command);
     }
+    prtLine(prline);
+
+    if (job->submit.options2 & SUB2_JOB_GROUP) {
+	sprintf(prline, ", Job Group <%s>", job->submit.job_group);
+	prtLine(prline);
+    }
+
+    sprintf(prline, "\n");
     prtLine(prline);
 }
 
@@ -241,7 +249,6 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
 {
     char prline[MSGSIZE];
     int  k;
-
 
     /* notify user */
     if ((job->submit.options & SUB_NOTIFY_END) &&
@@ -877,8 +884,9 @@ prtJobRusage(struct jobInfoEnt *job)
 }
 
 void
-displayLong (struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
-							  float cpuFactor)
+displayLong(struct jobInfoEnt *job,
+	    struct jobInfoHead *jInfoH,
+	    float cpuFactor)
 {
     char *hostPtr, *sp;
     char hostName[MAXHOSTNAMELEN];

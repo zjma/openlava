@@ -119,6 +119,7 @@ struct submitReq {
     char    *schedHostType;
     char    *userGroup;
     int     userPriority;
+    char    *job_group;
 };
 
 #define SHELLLINE "#! /bin/sh\n\n"

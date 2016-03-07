@@ -509,6 +509,7 @@
 #define  SUB2_USE_DEF_PROCLIMIT  0x400
 #define  SUB2_MODIFY_RUN_JOB 0x800
 #define  SUB2_MODIFY_PEND_JOB 0x1000
+#define  SUB2_JOB_GROUP       0x2000
 
 #define  LOST_AND_FOUND  "lost_and_found"
 
@@ -560,6 +561,7 @@ struct submit {
     char   *loginShell;
     int    userPriority;
     char *userGroup;
+    char *job_group; /* job group the job is attached to */
 };
 
 struct submitReply {
@@ -701,6 +703,7 @@ struct jobInfoEnt {
     u_short port;
     int     jobPriority;
     char *userGroup;
+    char *job_group; /* job group the job is attached too */
 };
 
 struct userInfoEnt {
@@ -991,6 +994,7 @@ struct jobNewLog {
     int    userPriority;
     char *userGroup;
     int abs_run_limit;
+    char *job_group;
 };
 
 struct jobModLog {

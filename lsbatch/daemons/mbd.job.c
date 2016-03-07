@@ -260,6 +260,9 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     newjob->restartPid = newjob->shared->jobBill.restartPid;
     newjob->chkpntPeriod = newjob->shared->jobBill.chkpntPeriod;
 
+    if (newjob->shared->jobBill.options2 & SUB2_JOB_GROUP) {
+	check_job_group(newjob, auth);
+    }
 
     logJobInfo(subReq, newjob, &jf);
     FREEUP (jf.data);
@@ -6359,6 +6362,11 @@ copyJobBill (struct submitReq *subReq,
     } else {
         jobBill->userGroup = strdup("");
     }
+
+    if (subReq->options2 & SUB2_JOB_GROUP)
+        jobBill->job_group = strdup(subReq->job_group);
+    else
+	jobBill->job_group = strdup("");
 }
 
 void

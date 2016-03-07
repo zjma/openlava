@@ -70,17 +70,15 @@ do_sub(int argc, char **argv, int option)
 
     if (lsb_init(argv[0]) < 0) {
         sub_perror("lsb_init");
-        fprintf(stderr, ". %s.\n",
-                (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted"))); /* catgets  1551  */
+        fprintf(stderr, ". %s.\n", "Job not submitted");
         return -1;
     }
 
     if (logclass & (LC_TRACE | LC_SCHED | LC_EXEC))
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
 
-    if (fillReq(argc, argv, option, &req) < 0){
-        fprintf(stderr,  ". %s.\n",
-                (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted")));
+    if (fillReq(argc, argv, option, &req) < 0 ){
+        fprintf(stderr,  ". %s.\n", "Job not submitted");
         return -1;
     }
 
@@ -90,8 +88,7 @@ do_sub(int argc, char **argv, int option)
     TIMEIT(0, (jobId = lsb_submit(&req, &reply)), "lsb_submit");
     if (jobId < 0) {
         prtErrMsg (&req, &reply);
-        fprintf(stderr,  ". %s.\n",
-                (_i18n_msg_get(ls_catd,NL_SETN,1551, "Job not submitted")));
+        fprintf(stderr,  ". %s.\n", "Job not submitted");
         return -1;
     }
 
@@ -145,12 +142,12 @@ fillReq(int argc, char **argv, int operate, struct submit *req)
         template = "E:w:B|f|x|N|h|m:q:b:t:c:W:F:D:S:C:M:V|G:a:";
     } else if (operate == CMD_BMODIFY) {
         req->options = SUB_MODIFY;
-        template = "h|V|O|Tn|T:xn|x|rn|r|Bn|B|Nn|N|En|E:a:wn|w:fn|f:kn|k:Rn\
+        template = "g:h|V|O|Tn|T:xn|x|rn|r|Bn|B|Nn|N|En|E:a:wn|w:fn|f:kn|k:Rn\
 |R:mn|m:Jn|J:isn|is:in|i:en|e:qn|q:bn|b:tn|t:spn|sp:sn|s:cn|c:Wn|W:Fn|\
 F:Dn|D:Sn|S:Cn|C:Mn|M:on|o:nn|n:un|u:Pn|P:Ln|L:Xn|X:Zsn|Zs:Z:";
     } else if (operate == CMD_BSUB) {
         req->options = 0;
-        template = "E:T:a:w:f:k:R:m:J:L:u:is:i:o:e:Zs|n:q:b:t:sp:s:c:v:p:\
+        template ="g:E:T:a:w:f:k:R:m:J:L:u:is:i:o:e:Zs|n:q:b:t:sp:s:c:v:p:\
 W:F:D:S:C:M:O:G:P:Ip|Is|I|r|H|x|N|B|h|V|X:K|";
     }
 

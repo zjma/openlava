@@ -1440,18 +1440,15 @@ log_newjob(struct jData *job)
 static int
 log_jobdata(struct jData *job, const char *fname1, int type)
 {
-    static char             fname[] = "log_jobdata";
-    struct submitReq       *jobBill = &(job->shared->jobBill);
-    struct jobNewLog       *jobNewLog;
-    int                     j;
-    float                  *hostFactor;
+    struct submitReq *jobBill = &(job->shared->jobBill);
+    struct jobNewLog *jobNewLog;
+    int j;
+    float *hostFactor;
 
     if (openEventFile(fname1) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "openEventFile",
-                  fname1);
+        ls_syslog(LOG_ERR, "\
+%s: openEventFile() failed for job %s", __func__, lsb_jobid2str(job->jobId));
+        mbdDie(MASTER_FATAL);
         if (type == EVENT_JOB_NEW)
             rmLogJobInfo(job, FALSE);
         mbdDie(MASTER_FATAL);
@@ -1497,10 +1494,9 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     if (jobNewLog->hostSpec[0] == '\0') {
         hostFactor = getHostFactor(jobBill->fromHost);
         if (hostFactor == NULL) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S,
-                      fname,
+            ls_syslog(LOG_ERR, "\
+%s: cannot get hostFactor for job %s host %s", __func__,
                       lsb_jobid2str(job->jobId),
-                      "getHostFactor",
                       jobBill->fromHost);
             jobNewLog->hostFactor = 1.0;
         }
@@ -1509,10 +1505,9 @@ log_jobdata(struct jData *job, const char *fname1, int type)
         if (hostFactor == NULL) {
             LS_LONG_INT tmpJobId;
             tmpJobId = jobNewLog->jobId;
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S,
-                      fname,
-                      lsb_jobid2str(tmpJobId),
-                      "getHostFactor",
+            ls_syslog(LOG_ERR, "\
+%s: cannot get hostFactor for job %s host spec %s", __func__,
+                      lsb_jobid2str(job->jobId),
                       jobBill->hostSpec);
             jobNewLog->hostFactor = 1.0;
         }
@@ -1594,11 +1589,14 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     jobNewLog->userGroup = jobBill->userGroup;
     jobNewLog->abs_run_limit = job->abs_run_limit;
 
+    if (job->shared->jobBill.options2 & SUB2_JOB_GROUP)
+	jobNewLog->job_group = jobBill->job_group;
+    else
+	jobNewLog->job_group = "";
+
     if (putEventRec(fname1) < 0) {
-        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
-                  fname,
-                  lsb_jobid2str(job->jobId),
-                  "putEventRec");
+        ls_syslog(LOG_ERR, "\
+%s: putEventRec() failed for job %s", __func__, lsb_jobid2str(job->jobId));
         if (type == EVENT_JOB_NEW)
             rmLogJobInfo(job, FALSE);
         mbdDie(MASTER_FATAL);
@@ -3858,12 +3856,13 @@ replay_modifyjob2(char *filename, int lineNum)
 static struct jData    *
 replay_jobdata(char *filename, int lineNum, char *fname)
 {
-    struct jData           *job;
-    struct submitReq       *jobBill;
-    struct jobNewLog       *jobNewLog;
-    struct qData           *qp;
-    int                     i, errcode;
-    struct lsfAuth          auth;
+    struct jData *job;
+    struct submitReq *jobBill;
+    struct jobNewLog *jobNewLog;
+    struct qData *qp;
+    int i;
+    int errcode;
+    struct lsfAuth auth;
 
     memset(&auth, 0, sizeof (auth));
 
@@ -4038,6 +4037,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     jobBill->userGroup = strdup(jobNewLog->userGroup);
 
     job->abs_run_limit = jobNewLog->abs_run_limit;
+
+    jobBill->job_group = strdup(jobNewLog->job_group);
 
     return job;
 }

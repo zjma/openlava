@@ -70,6 +70,7 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
         FREEUP(submitReq->loginShell);
         FREEUP(submitReq->schedHostType);
         FREEUP(submitReq->userGroup);
+	_free_(submitReq->job_group);
 
         if (numAskedHosts > 0) {
             for (i = 0; i < numAskedHosts; i++)
@@ -210,6 +211,20 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
     if (xdrs->x_op == XDR_DECODE) {
         if (hdr->version >= 30) {
             if (!xdr_var_string(xdrs, &submitReq->userGroup))
+                goto Error1;
+        } else {
+            submitReq->userGroup = strdup("");
+        }
+    }
+
+    if (xdrs->x_op == XDR_ENCODE) {
+        if (!xdr_var_string(xdrs, &submitReq->job_group))
+            goto Error1;
+    }
+
+    if (xdrs->x_op == XDR_DECODE) {
+        if (hdr->version >= 30) {
+            if (!xdr_var_string(xdrs, &submitReq->job_group))
                 goto Error1;
         } else {
             submitReq->userGroup = strdup("");
@@ -730,7 +745,9 @@ xdr_jobInfoReply(XDR *xdrs,
         }
     }
 
-    if (!xdr_arrayElement(xdrs, (char *) (jobInfoReply->jobBill), hdr,
+    if (!xdr_arrayElement(xdrs,
+			  (char *)(jobInfoReply->jobBill),
+			  hdr,
                           xdr_submitReq)) {
         if (xdrs->x_op == XDR_DECODE) {
             for (j = 0; j < jobInfoReply->numToHosts; j++)

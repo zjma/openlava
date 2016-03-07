@@ -896,6 +896,12 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
 	jobNewLog->abs_run_limit = -1;
     }
 
+    if (version >= OPENLAVA_XDR_VERSION) {
+        saveQStr(line, jobNewLog->job_group);
+    } else {
+        jobNewLog->job_group = strdup("");
+    }
+
     return LSBE_NO_ERROR;
 }
 
@@ -1961,7 +1967,7 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
     for(i = 0; i < LSF_RLIM_NLIMITS; i++)
         if (fprintf(log_fp, " %d", jobNewLog->rLimits[i]) <0)
             return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->hostSpec) < 0)
+    if (addQStr(log_fp, jobNewLog->hostSpec) < 0)
         return LSBE_SYS_CALL;
     if (fprintf(log_fp, " %6.2f", jobNewLog->hostFactor) < 0)
         return LSBE_SYS_CALL;
@@ -1970,23 +1976,23 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
     if (addQStr(log_fp, jobNewLog->queue) < 0)
         return LSBE_SYS_CALL;
     subNewLine_(jobNewLog->resReq);
-    if (addQStr (log_fp, jobNewLog->resReq) < 0)
+    if (addQStr(log_fp, jobNewLog->resReq) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->fromHost) < 0)
+    if (addQStr(log_fp, jobNewLog->fromHost) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->cwd) < 0)
+    if (addQStr(log_fp, jobNewLog->cwd) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->chkpntDir) < 0)
+    if (addQStr(log_fp, jobNewLog->chkpntDir) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->inFile) < 0)
+    if (addQStr(log_fp, jobNewLog->inFile) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->outFile) < 0)
+    if (addQStr(log_fp, jobNewLog->outFile) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->errFile) < 0)
+    if (addQStr(log_fp, jobNewLog->errFile) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->subHomeDir) < 0)
+    if (addQStr(log_fp, jobNewLog->subHomeDir) < 0)
         return LSBE_SYS_CALL;
-    if (addQStr (log_fp, jobNewLog->jobFile) < 0)
+    if (addQStr(log_fp, jobNewLog->jobFile) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->numAskedHosts) < 0)
@@ -1998,7 +2004,7 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
         }
 
     subNewLine_(jobNewLog->dependCond);
-    if (addQStr (log_fp, jobNewLog->dependCond) < 0)
+    if (addQStr(log_fp, jobNewLog->dependCond) < 0)
         return LSBE_SYS_CALL;
     subNewLine_(jobNewLog->preExecCmd);
     if (addQStr(log_fp, jobNewLog->preExecCmd) < 0)
@@ -2018,10 +2024,10 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
             return LSBE_SYS_CALL;
     }
     subNewLine_(jobNewLog->mailUser);
-    if (addQStr (log_fp, jobNewLog->mailUser) < 0)
+    if (addQStr(log_fp, jobNewLog->mailUser) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->projectName) < 0)
+    if (addQStr(log_fp, jobNewLog->projectName) < 0)
         return LSBE_SYS_CALL;
 
     if (jobNewLog->options & SUB_INTERACTIVE) {
@@ -2031,10 +2037,10 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
     if (fprintf(log_fp, " %d", jobNewLog->maxNumProcessors) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->schedHostType) < 0)
+    if (addQStr(log_fp, jobNewLog->schedHostType) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->loginShell) < 0)
+    if (addQStr(log_fp, jobNewLog->loginShell) < 0)
         return LSBE_SYS_CALL;
 
 
@@ -2050,22 +2056,25 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
             return LSBE_SYS_CALL;
     }
 
-    if (addQStr (log_fp, jobNewLog->inFileSpool) < 0)
+    if (addQStr(log_fp, jobNewLog->inFileSpool) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->commandSpool) < 0)
+    if (addQStr(log_fp, jobNewLog->commandSpool) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->jobSpoolDir) < 0)
+    if (addQStr(log_fp, jobNewLog->jobSpoolDir) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->userPriority) < 0)
         return LSBE_SYS_CALL;
 
-    if (addQStr (log_fp, jobNewLog->userGroup) < 0)
+    if (addQStr(log_fp, jobNewLog->userGroup) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, " %d", jobNewLog->abs_run_limit) < 0)
+        return LSBE_SYS_CALL;
+
+    if (addQStr(log_fp, jobNewLog->job_group) < 0)
         return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)

@@ -77,11 +77,43 @@ print_groups(int num, struct jobGroupInfo *jgrp)
 {
     int cc;
     int i;
+    int len;
+    int maxlen;
+
+    maxlen = -1;
 
     for (cc = 0; cc < num; cc++) {
+	len = strlen(jgrp[cc].path);
+	if (len > maxlen)
+	    maxlen = len;
+    }
+
+    printf("PATH");
+
+    for (cc = 0; cc < maxlen; cc++)
+	printf(" ");
+    /* NJOBS   NPEND   NRUN   NSUSP   NEXIT   NDONE
+     */
+    printf("%-5s   %-5s   %-5s   %-5s   %-5s   %-5s\n",
+	   "NJOBS", "NPEND", "NRUN", "NSUSP", "NEXIT", "NDONE");
+
+    for (cc = 0; cc < num; cc++) {
+
+	len = maxlen - strlen(jgrp[cc].path);
 	printf("%s ", jgrp[cc].path);
-	for (i = 0; i < NUM_JGRP_COUNTERS; i++)
-	    printf("%d ", jgrp[cc].counts[i]);
+	/* print the path and strlen(PATH) which
+	 * is 4
+	 */
+	for (i = 0; i < (len + 4); i++)
+	    printf(" ");
+
+	printf("%-5d   ", jgrp[cc].counts[0]);
+	printf("%-5d   ", jgrp[cc].counts[1] + jgrp[cc].counts[2]);
+	printf("%-5d   ", jgrp[cc].counts[3]);
+	printf("%-5d   ", jgrp[cc].counts[4] + jgrp[cc].counts[5]);
+	printf("%-5d   ", jgrp[cc].counts[6]);
+	printf("%-5d   ", jgrp[cc].counts[7]);
+
 	printf("\n");
     }
 }
