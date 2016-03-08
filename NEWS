@@ -16,6 +16,7 @@ Release notes for OpenLava versions
 -- Fix RES NIOS protocol bug that prevented multiple tasks running on
    the same host from being collected using ls_rwait().
 -- Implemented job groups. New commands are bgadd, bgdel and bgroups.
+-- Implemented bjobs -UF unformatted bjobs output.
 
 3.3.pre.1
 =========
