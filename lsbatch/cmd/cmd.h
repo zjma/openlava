@@ -41,6 +41,7 @@
 
 #define LONG_FORMAT     1
 #define WIDE_FORMAT     2
+#define LSFUF_FORMAT    3
 
 #define QUEUE_HIST      1
 #define HOST_HIST       2
@@ -93,6 +94,7 @@ extern void prtErrMsg (struct submit *, struct submitReply *);
 extern void prtBTTime(struct jobInfoEnt *);
 extern void prtJobReserv(struct jobInfoEnt *);
 extern void displayLong (struct jobInfoEnt *, struct jobInfoHead *, float);
+extern void displayUF (struct jobInfoEnt *, struct jobInfoHead *, float);
 
 extern int lsbMode_;
 

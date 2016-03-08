@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2016 Teraproc Inc
  * Copyright (C) 2015 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
@@ -28,6 +29,9 @@
 
 static char *strXfOptions(int);
 void prtJobRusage(struct jobInfoEnt *);
+static int uf_format=0;
+
+#define prtLineWUF(prline) if (uf_format) printf(prline); else prtLine(prline)
 
 void
 prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
@@ -35,9 +39,9 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
     char prline[MAXLINELEN];
 
     if (!tFormat) {
-        sprintf(prline, "\nJob Id <%s>,", lsb_jobid2str(job->jobId));
+        sprintf(prline, "\nJob%s <%s>,", uf_format?"":" Id", lsb_jobid2str(job->jobId));
 
-        prtLine(prline);
+        prtLineWUF(prline);
         if (job->submit.options & SUB_JOB_NAME) {
            char *jobName, *pos;
            jobName = job->submit.jobName;
@@ -46,7 +50,7 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
                sprintf(jobName, "%s[%d]", jobName, LSB_ARRAY_IDX(job->jobId));
            }
            sprintf(prline, " Job Name <%s>,", jobName);
-           prtLine(prline);
+           prtLineWUF(prline);
         }
     }
     if (tFormat) {
@@ -54,28 +58,28 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
        prtLine(prline);
     }
     sprintf(prline, " User <%s>,", job->user);
-    prtLine(prline);
+    prtLineWUF(prline);
 
     if (lsbMode_ & LSB_MODE_BATCH) {
 	sprintf(prline, " Project <%s>,", job->submit.projectName);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     if (job->submit.userGroup && job->submit.userGroup[0] != '\0') {
 	sprintf(prline, " User Group <%s>,", job->submit.userGroup);
-	prtLine(prline);
+        prtLineWUF(prline);
     }
 
     if (job->submit.options & SUB_MAIL_USER) {
         sprintf(prline, " Mail <%s>,", job->submit.mailUser);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     if (prt_q) {
 	sprintf(prline, " Status <%s>, Queue <%s>,",
                 get_status(job),
 		job->submit.queue);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     /* Interactive job */
@@ -87,12 +91,12 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
 		strcat(prline, " shell");
 	}
 	strcat(prline, " mode,");
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     if (job->jobPriority > 0) {
 	sprintf(prline, " Job Priority <%d>,", job->jobPriority);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     if (job->submit.options2 & (SUB2_JOB_CMD_SPOOL)) {
@@ -106,15 +110,15 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
          else
              sprintf(prline, " Command <%s>", job->submit.command);
     }
-    prtLine(prline);
+    prtLineWUF(prline);
 
     if (job->submit.options2 & SUB2_JOB_GROUP) {
 	sprintf(prline, ", Job Group <%s>", job->submit.job_group);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     sprintf(prline, "\n");
-    prtLine(prline);
+    prtLineWUF(prline);
 }
 
 
@@ -132,16 +136,16 @@ prtJobSubmit(struct jobInfoEnt *job, int prt_q, int tFormat)
      sprintf(prline, "%-12.19s:%submitted from host <%s>",
              ctime(&job->submitTime), timeBuf, job->fromHost);
 
-     prtLine(prline);
+     prtLineWUF(prline);
 
      if (job->submit.options2 & SUB2_HOLD) {
          sprintf(prline, " on hold");
-         prtLine(prline);
+         prtLineWUF(prline);
      }
 
      if (prt_q) {
          sprintf(prline, " to Queue <%s>", job->submit.queue);
-         prtLine(prline);
+         prtLineWUF(prline);
      }
 
     TIMEIT(2, prtBTTime(job), "prtBTTime");
@@ -157,7 +161,7 @@ prtBTTime(struct jobInfoEnt *job)
     if (job->submit.beginTime > 0) {
         sprintf(prline, ", Specified Start Time <%-12.19s>",
                          ctime((time_t *)&(job->submit.beginTime)));
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Termination Time
@@ -165,7 +169,7 @@ prtBTTime(struct jobInfoEnt *job)
     if (job->submit.termTime > 0) {
         sprintf(prline, ", Specified Termination Time <%-12.19s>",
                          ctime((time_t *)&(job->submit.termTime)));
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 }
 
@@ -184,43 +188,43 @@ prtFileNames(struct jobInfoEnt *job, int prtCwd)
 	    sprintf(prline, ", CWD <$HOME>");
         else
 	    sprintf(prline, ", CWD <$HOME/%s>", job->cwd);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     if (job->submit.options2 & SUB2_IN_FILE_SPOOL)  {
 	sprintf(prline, ", Input File(Spooled) <%s>", job->submit.inFile);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     /* Input file */
     if (job->submit.options & SUB_IN_FILE)  {
         sprintf(prline, ", Input File <%s>", job->submit.inFile);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Output File */
     if (job->submit.options & SUB_OUT_FILE) {
         sprintf(prline, ", Output File <%s>", job->submit.outFile);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Error file */
     if (job->submit.options & SUB_ERR_FILE) {
         sprintf(prline, ", Error File <%s>", job->submit.errFile);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Other files */
     if (job->submit.nxf) {
 	sprintf(prline, ", Copy Files");
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     for (i = 0; i < job->submit.nxf; i++) {
 	sprintf(prline, " \"%s %s %s\"", job->submit.xf[i].subFn,
 		strXfOptions(job->submit.xf[i].options),
 		job->submit.xf[i].execFn);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
 }
@@ -254,28 +258,28 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
     if ((job->submit.options & SUB_NOTIFY_END) &&
        (job->submit.options & SUB_NOTIFY_BEGIN)) {
         sprintf(prline, ", Notify when job begins/ends");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
     else if (job->submit.options & SUB_NOTIFY_BEGIN) {
         sprintf(prline, ", Notify when job begins");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
     else if (job->submit.options & SUB_NOTIFY_END) {
         sprintf(prline, ", Notify when job ends");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
 
     /* Exclusive excution */
     if (job->submit.options & SUB_EXCLUSIVE) {
         sprintf(prline, ", Exclusive Execution");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Re-runnable */
     if (job->submit.options & SUB_RERUNNABLE) {
         sprintf(prline, ", Re-runnable");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Restart Job */
@@ -284,7 +288,7 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
 	    sprintf(prline, ", Restart force");
 	else
 	    sprintf(prline, ", Restart");
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Chkpnt info */
@@ -292,12 +296,12 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
 	if (job->submit.chkpntPeriod) {
 	    sprintf (prline, ", Checkpoint period %d min.",
 		     (int) job->submit.chkpntPeriod/60);
-	    prtLine (prline);
+	    prtLineWUF (prline);
 	}
 
 	sprintf (prline, ", Checkpoint directory <%s>",
 		 job->submit.chkpntDir);
-        prtLine (prline);
+        prtLineWUF (prline);
     }
 
     /* Number of required processors for parallel job */
@@ -310,13 +314,13 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
             sprintf(prline, ", %d-%d Processors Requested",
                                job->submit.numProcessors,
                                job->submit.maxNumProcessors);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* Resource Req. of Job */
     if (strlen(job->submit.resReq)) {
         sprintf(prline, ", Requested Resources <%s>", job->submit.resReq);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* depend_cond string */
@@ -324,29 +328,29 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
 	char *temp;
 	temp = malloc(strlen(job->submit.dependCond) + 48);
         sprintf(temp, ", Dependency Condition <%s>", job->submit.dependCond);
-        prtLine(temp);
+        prtLineWUF(temp);
         free (temp);
     }
 
     /* login shell */
     if (strlen(job->submit.loginShell)) {
 	sprintf(prline, ", Login Shell <%s>", job->submit.loginShell);
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 
     /* pre_exec_command string */
     if (strlen(job->submit.preExecCmd)) {
         sprintf(prline, ", Pre-execute Command <%s>", job->submit.preExecCmd);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     /* User Specified Hosts */
     if (job->submit.numAskedHosts) {
         sprintf(prline, ", Specified Hosts <%s>", job->submit.askedHosts[0]);
-        prtLine(prline);
+        prtLineWUF(prline);
         for (k = 1; k < job->submit.numAskedHosts; k++) {
 	    sprintf(prline, ", <%s>", job->submit.askedHosts[k]);
-	    prtLine(prline);
+	    prtLineWUF(prline);
         }
     }
 
@@ -354,17 +358,17 @@ prtSubDetails(struct jobInfoEnt *job, char *hostPtr, float hostFactor)
     if (job->submit.options & SUB_WINDOW_SIG) {
         sprintf(prline, ", Signal Value <%d>",
                          sig_decode(job->submit.sigValue));
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     if (job->submit.options2 & SUB2_JOB_PRIORITY
         && job->submit.userPriority > 0) {
 	sprintf(prline, ", User Priority <%d>", job->submit.userPriority);
-        prtLine(prline);
+        prtLineWUF(prline);
     }
 
     sprintf(prline, ";\n");
-    prtLine(prline);
+    prtLineWUF(prline);
 
     prtResourceLimit (job->submit.rLimits, hostPtr, hostFactor, NULL);
 }
@@ -462,12 +466,12 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 	}
 
 
-        prtLine(prline);
+        prtLineWUF(prline);
         if (job->numExHosts > 1) {
             sprintf(prline, " %d %s",
 		    job->numExHosts,
 		    I18N(612, "Hosts/Processors")); /* catgets  612  */
-            prtLine(prline);
+            prtLineWUF(prline);
         }
 
         if (lsbParams[LSB_SHORT_HOSTLIST].paramValue && job->numExHosts > 1
@@ -475,12 +479,12 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
             for (i = 0; i < hostList->listSize; i++) {
                 sprintf(prline, " <%d*%s>", hostList->counter[i],
                                             hostList->names[i]);
-                prtLine(prline);
+                prtLineWUF(prline);
             }
         } else {
             for (i = 0; i < job->numExHosts; i++) {
                 sprintf(prline, " <%s>", job->exHosts[i]);
-                prtLine(prline);
+                prtLineWUF(prline);
             }
         }
 
@@ -488,23 +492,23 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 	    sprintf(prline, ", %s <%s>",
 		    I18N(615, "Execution Home"),  /* catgets 615 */
 		    job->execHome);
-	    prtLine(prline);
+	    prtLineWUF(prline);
         }
 	if (job->execCwd && strcmp (job->execCwd, "")) {
 	    sprintf(prline, ", %s <%s>",
 		    I18N(616, "Execution CWD"), /* catgets 616 */
 		    job->execCwd);
-	    prtLine(prline);
+	    prtLineWUF(prline);
         }
 	if (job->execUsername && strcmp(job->execUsername, "") &&
 		strcmp(job->user, job->execUsername)) {
 	    sprintf(prline, ", %s <%s>",
 		    I18N(617, "Execution user name"), /* catgets 617 */
 		    job->execUsername);
-            prtLine(prline);
+            prtLineWUF(prline);
         }
 	sprintf(prline, ";\n");
-	prtLine(prline);
+	prtLineWUF(prline);
     }
 }
 
@@ -533,19 +537,19 @@ prtJobReserv(struct jobInfoEnt *job)
             sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,619, "%s: Reserved <%d> job slot on host")), /* catgets  619  */
                 _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->reserveTime),
 		job->numExHosts);
-        prtLine(prline);
+        prtLineWUF(prline);
 
         if (lsbParams[LSB_SHORT_HOSTLIST].paramValue && job->numExHosts > 1
              && strcmp(lsbParams[LSB_SHORT_HOSTLIST].paramValue, "1") == 0) {
             for (i = 0; i < hostList->listSize; i++) {
                 sprintf(prline, " <%d*%s>", hostList->counter[i],
                                             hostList->names[i]);
-                prtLine(prline);
+                prtLineWUF(prline);
             }
         } else {
             for (i = 0; i < job->numExHosts; i++) {
                 sprintf(prline, " <%s>", job->exHosts[i]);
-                prtLine(prline);
+                prtLineWUF(prline);
             }
         }
 
@@ -570,7 +574,7 @@ prtAcctFinish(struct jobInfoEnt *job)
         sprintf(prline, "%s: %s.\n",
 		_i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->endTime),
 		I18N(622, "sbatchd unavail <zombi>"));  /* catgets  622  */
-    prtLine(prline);
+    prtLineWUF(prline);
 }
 
 void
@@ -616,14 +620,14 @@ prtJobFinish(struct jobInfoEnt *job, struct jobInfoHead *jInfoH)
         if (job->reasons & EXIT_ZOMBIE) {
 	    sprintf(prline, "%s: ",
 		    _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->endTime));
-	    prtLine(prline);
+	    prtLineWUF(prline);
 	    sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,623, "Termination request issued; the job will be killed once the host is ok;"))); /* catgets  623  */
-	    prtLine(prline);
+	    prtLineWUF(prline);
 	    break;
         }
         sprintf(prline, "%s: ",
 		_i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &doneTime));
-        prtLine(prline);
+        prtLineWUF(prline);
         if (strcmp(get_status(job), "DONE") == 0)
 	{
 	    sprintf(prline, I18N(624, "Done successfully.")); /* catgets 624 */
@@ -643,7 +647,7 @@ prtJobFinish(struct jobInfoEnt *job, struct jobInfoHead *jInfoH)
 		sprintf(prline, I18N_Exited);
 	}
 
-        prtLine(prline);
+        prtLineWUF(prline);
 
 	if (job->numExHosts > 0) {
 	    if (job->cpuTime < MIN_CPU_TIME)
@@ -655,15 +659,15 @@ prtJobFinish(struct jobInfoEnt *job, struct jobInfoHead *jInfoH)
 	    sprintf(prline, "\n");
 	}
 
-	prtLine(prline);
+	prtLineWUF(prline);
         break;
     case JOB_STAT_PSUSP:
     case JOB_STAT_PEND:
         sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,631, " PENDING REASONS:\n"))); /* catgets  631  */
-        prtLine(prline);
+        prtLineWUF(prline);
 	pendReasons = lsb_pendreason(job->numReasons, job->reasonTb,
 				     jInfoH, loadIndex);
-	prtLine(pendReasons);
+	prtLineWUF(pendReasons);
         break;
     case JOB_STAT_SSUSP:
     case JOB_STAT_USUSP:
@@ -672,13 +676,13 @@ prtJobFinish(struct jobInfoEnt *job, struct jobInfoHead *jInfoH)
         TIMEIT(1, prtJobRusage(job), "prtJobRusage");
 
         sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,632, " SUSPENDING REASONS:\n"))); /* catgets  632  */
-        prtLine(prline);
+        prtLineWUF(prline);
 
         if (job->reasons) {
             sprintf(prline, "%s", lsb_suspreason(job->reasons,
 						 job->subreasons,
 						 loadIndex));
-            prtLine(prline);
+            prtLineWUF(prline);
         }
         break;
     case JOB_STAT_RUN:
@@ -786,14 +790,20 @@ prtJobRusage(struct jobInfoEnt *job)
 
     if (IS_PEND(job->status)) {
         if (job->runRusage.utime || job->runRusage.stime) {
-            sprintf(prline, "%s: %s.\n",
+	    if (uf_format)
+                printf ("%s: Resource usage collected. The CPU time used is %d seconds.",
+                    _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->jRusageUpdateTime),
+                    job->runRusage.utime + job->runRusage.stime);
+            else {
+                sprintf(prline, "%s: %s.\n",
 		    _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T,
 				&job->jRusageUpdateTime),
 	            I18N(644, "Resource usage collected")); /* catgets 644  */
-            prtLine(prline);
-            sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,645, "                     The CPU time used is %d seconds.\n")),  /* catgets  645  */
+                prtLine(prline);
+                sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,645, "                     The CPU time used is %d seconds.\n")),  /* catgets  645  */
                              job->runRusage.utime + job->runRusage.stime);
-            prtLine(prline);
+                prtLine(prline);
+            }
         }
         return;
     };
@@ -804,27 +814,45 @@ prtJobRusage(struct jobInfoEnt *job)
    if (job->runRusage.utime > 0 || job->runRusage.stime > 0
        || job->runRusage.mem > 0 || job->runRusage.swap > 0
        || job->runRusage.npgids > 0 || job->runRusage.npids > 0) {
-        sprintf(prline, "%s: %s.\n",
+        if (uf_format)
+            printf ("%s: Resource usage collected.",
+                 _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->jRusageUpdateTime));
+        else {
+            sprintf(prline, "%s: %s.\n",
 		 _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T,
 			      &job->jRusageUpdateTime),
 		 I18N(646, "Resource usage collected")); /* catgets  646  */
-        prtLine(prline);
+            prtLine(prline);
+        }
     } else
         return;
 
     if (job->runRusage.utime > 0 || job->runRusage.stime > 0) {
-        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,647, "                     The CPU time used is %d seconds.\n")), /* catgets  647  */
+	if (uf_format)
+            printf (" The CPU time used is %d seconds.",
+                job->runRusage.utime + job->runRusage.stime);
+        else {
+            sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,647, "                     The CPU time used is %d seconds.\n")), /* catgets  647  */
                              job->runRusage.utime + job->runRusage.stime);
-        prtLine(prline);
+            prtLine(prline);
+        }
     }
 
 
     if (job->runRusage.mem > 0) {
-	if (job->runRusage.mem > 1024)
-	    sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,648, "                     MEM: %d Mbytes")), job->runRusage.mem/1024); /* catgets  648  */
-	else
-	    sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,649, "                     MEM: %d Kbytes")), job->runRusage.mem); /* catgets  649  */
-	prtLine(prline);
+        if (uf_format) {
+            if (job->runRusage.mem > 1024)
+                printf(" MEM: %d Mbytes;", job->runRusage.mem/1024);
+            else
+                printf(" MEM: %d Kbytes;", job->runRusage.mem);
+        }
+        else {
+	    if (job->runRusage.mem > 1024)
+	        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,648, "                     MEM: %d Mbytes")), job->runRusage.mem/1024); /* catgets  648  */
+	    else
+	        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,649, "                     MEM: %d Kbytes")), job->runRusage.mem); /* catgets  649  */
+	    prtLine(prline);
+        }
     }
 
     if (job->runRusage.swap > 0) {
@@ -835,14 +863,22 @@ prtJobRusage(struct jobInfoEnt *job)
 	else
 	    space = "                     ";
 
-	if (job->runRusage.swap > 1024)
-	    sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,650, "%sSWAP: %d Mbytes\n")), space, /* catgets  650  */
+        if (uf_format) {
+            if (job->runRusage.swap > 1024)
+                printf(" SWAP: %d Mbytes;", job->runRusage.swap/1024);
+            else
+                printf(" SWAP: %d Kbytes;", job->runRusage.swap);
+        }
+        else {
+	    if (job->runRusage.swap > 1024)
+	        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,650, "%sSWAP: %d Mbytes\n")), space, /* catgets  650  */
 		    job->runRusage.swap/1024);
-	else
-	    sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,651, "%sSWAP: %d Kbytes\n")), space, job->runRusage.swap); /* catgets  651  */
-	prtLine(prline);
+	    else
+	        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,651, "%sSWAP: %d Kbytes\n")), space, job->runRusage.swap); /* catgets  651  */
+	    prtLine(prline);
+        }
     } else {
-	if (job->runRusage.mem > 0) {
+	if (job->runRusage.mem > 0 && !uf_format) {
 	    sprintf(prline, "\n");
 	    prtLine(prline);
 	}
@@ -853,15 +889,22 @@ prtJobRusage(struct jobInfoEnt *job)
 
 
     for (i=0; i < job->runRusage.npgids; i++) {
-        sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,652, "                     PGID: %d;  ")), job->runRusage.pgid[i]); /* catgets  652  */
-	linepos = strlen(prline);
-        prtLine(prline);
+	if (uf_format)
+            printf (" PGID: %d; ", job->runRusage.pgid[i]);
+        else {
+            sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,652, "                     PGID: %d;  ")), job->runRusage.pgid[i]); /* catgets  652  */
+	    linepos = strlen(prline);
+            prtLine(prline);
+        }
         sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,653, "PIDs: "))); /* catgets  653  */
 	linepos += 6;
-        prtLine(prline);
+        prtLineWUF(prline);
         for (j=0; j < job->runRusage.npids; j++) {
             if (job->runRusage.pgid[i] == job->runRusage.pidInfo[j].pgid) {
                 sprintf(prline, "%d ", job->runRusage.pidInfo[j].pid);
+                if (uf_format)
+                  printf ("%d%s", job->runRusage.pidInfo[j].pid, j==job->runRusage.npids-1?"":" ");
+                else {
 		  linepos += strlen(prline);
 
 		  if (linepos >= 80) {
@@ -872,15 +915,28 @@ prtJobRusage(struct jobInfoEnt *job)
 		  }
 		  else
 		      prtLine(prline);
-
+                }
             }
         }
-        sprintf(prline, "\n");
-        prtLine(prline);
+        if (uf_format)
+            printf(";");
+        else {
+            sprintf(prline, "\n");
+            prtLine(prline);
+        }
     }
     sprintf(prline, "\n");
-    prtLine(prline);
+    prtLineWUF(prline);
 
+    if (uf_format && job->runRusage.mem > 0) {
+        char memstring[100];
+        if (job->runRusage.mem > 1024)
+            sprintf (memstring, "%d MBytes", job->runRusage.mem/1024);
+        else
+            sprintf (memstring, "%d Kbytes", job->runRusage.mem);
+        printf ("\n MEMORY USAGE:\n");
+        printf (" MAX MEM: %s;  AVG MEM: %s\n", memstring, memstring);
+    }
 }
 
 void
@@ -982,5 +1038,106 @@ displayLong(struct jobInfoEnt *job,
 	    exit (-1);
     }
 
+    return;
+}
+
+void
+displayUF (struct jobInfoEnt *job, struct jobInfoHead *jInfoH, float cpuFactor)
+{
+    char *hostPtr, *sp;
+    char hostName[MAXHOSTNAMELEN];
+    float hostFactor, *getFactor;
+    static int first = TRUE;
+    static struct lsInfo *lsInfo;
+
+    if (first) {
+        first = FALSE;
+        TIMEIT(0, (lsInfo = ls_info()), "ls_info");
+        if (lsInfo == NULL) {
+            ls_perror("ls_info");
+            exit(-1);
+        }
+    }
+
+    uf_format=1;
+
+    prtHeader(job, TRUE, FALSE);
+    prtJobSubmit(job, FALSE, FALSE);
+    TIMEIT(1, prtFileNames(job, TRUE), "prtFileNames");
+    hostPtr = job->submit.hostSpec;
+    hostFactor = 1.0;
+
+    if (job->numExHosts > 0
+          && (strcmp (job->exHosts[0], LOST_AND_FOUND) != 0)
+          && !IS_PEND (job->status)) {
+        strcpy (hostName, job->exHosts[0]);
+
+        if ((sp = strstr (hostName, "@")) != NULL) {
+            *sp = '\0';
+
+            if (strcmp(hostName, hostPtr) == 0) {
+                if ((getFactor=getCpuFactor(hostName, TRUE)) == NULL) {
+                    printf("\n");
+                    fprintf(stderr,
+                        (_i18n_msg_get(ls_catd,NL_SETN,1451, "Cannot obtain execution host information: %s\n")), ls_errmsg[lserrno]);
+                    exit(-1);
+                } else {
+                    hostFactor = *getFactor;
+                    hostPtr = job->exHosts[0];
+                }
+            }
+        }
+    }
+
+    TIMEIT(1, prtSubDetails(job, hostPtr, hostFactor), "prtSubDetails");
+    if (job->numExHosts > 0 && job->reserveTime > 0) {
+       TIMEIT(1, prtJobReserv(job), "prtJobReserv");
+       printf(";\n");
+    }
+
+
+    if (job->predictedStartTime && IS_PEND(job->status)) {
+        char localTimeStr[60];
+        strcpy ( localTimeStr, _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &job->predictedStartTime));
+        printf((_i18n_msg_get(ls_catd,NL_SETN,1466, "%s: Will be started;\n")), /* catgets  1466  */
+                localTimeStr );
+    }
+
+    if (job->startTime && !IS_PEND(job->status)) {
+        TIMEIT(1, prtJobStart(job, BJOBS_PRINT, job->jobPid, FALSE), "prtJobStart");
+    }
+
+    if ((cpuFactor > 0.0) && (job->cpuTime > 0))
+        job->cpuTime = job->cpuTime * hostFactor / cpuFactor;
+
+    if (job->jType == JGRP_NODE_ARRAY) {
+
+        printf("\n %s:\n",
+            _i18n_msg_get(ls_catd,NL_SETN,1467, "COUNTERS")); /* catgets  1467  */
+        printf( (_i18n_msg_get(ls_catd,NL_SETN,1468, " NJOBS PEND DONE RUN EXIT SSUSP USUSP PSUSP\n"))); /* catgets  1468  */
+        printf(" %5d %4d %3d %4d %4d %5d %5d %5d\n",
+            job->counter[JGRP_COUNT_NJOBS],
+            job->counter[JGRP_COUNT_PEND],
+            job->counter[JGRP_COUNT_NDONE],
+            job->counter[JGRP_COUNT_NRUN],
+            job->counter[JGRP_COUNT_NEXIT],
+            job->counter[JGRP_COUNT_NSSUSP],
+            job->counter[JGRP_COUNT_NUSUSP],
+            job->counter[JGRP_COUNT_NPSUSP]);
+        return;
+    }
+    TIMEIT(1, prtJobFinish(job, jInfoH), "prtJobFinish");
+
+    if (lsbMode_ & LSB_MODE_BATCH) {
+        printf("\n %s:\n",
+            _i18n_msg_get(ls_catd,NL_SETN,1469, "SCHEDULING PARAMETERS")); /* catgets  1469  */
+        if (printThresholds (job->loadSched, job->loadStop, NULL, NULL,
+                             job->nIdx, lsInfo) < 0)
+            exit (-1);
+    }
+
+    printf ("\n RESOURCE REQUIREMENT DETAILS:\n");
+    printf (" Combined: %s\n Effective: %s\n", job->submit.resReq,
+            job->submit.resReq);
     return;
 }

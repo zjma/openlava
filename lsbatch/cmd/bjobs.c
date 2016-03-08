@@ -69,7 +69,7 @@ usage (char *cmd)
         fprintf(stderr,
                 "             [-P project_name] [-N host_spec]\n");
 
-    fprintf(stderr, "             [-J name_spec]");
+    fprintf(stderr, "             [-J name_spec] [-UF]");
 
     if (lsbMode_ & LSB_MODE_BATCH)
         fprintf(stderr, " [jobId | \"jobId[idxList]\" ...]\n");
@@ -119,7 +119,7 @@ main(int argc, char **argv)
                          &projectName),
            "do_options");
 
-    if ((format == LONG_FORMAT) && (options & PEND_JOB))
+    if ((format == LONG_FORMAT || format == LSFUF_FORMAT) && (options & PEND_JOB))
         options |= HOST_NAME;
 
     if ((options & JGRP_ARRAY_INFO) && numJids <= 0 ) {
@@ -140,7 +140,7 @@ main(int argc, char **argv)
     else
         jobId = 0;
 
-    if (format != LONG_FORMAT && !(options & (HOST_NAME | PEND_JOB)))
+    if (format != LONG_FORMAT && format != LSFUF_FORMAT && !(options & (HOST_NAME | PEND_JOB)))
         options |= NO_PEND_REASONS;
 
     TIMEIT(0, (cc = getUser(lsfUserName, MAXLINELEN)), "getUser");
@@ -191,15 +191,23 @@ main(int argc, char **argv)
             if (skip_job(job))
                 continue;
 
-        if (format ==  LONG_FORMAT) {
+        if (format ==  LONG_FORMAT || format == LSFUF_FORMAT) {
             if (i > 0) {
                 sprintf(prline, "------------------------------------------------------------------------------\n");
                 prtLine(prline);
             }
-            if (options & PEND_JOB)
-                displayLong(job, jInfoH, cpuFactor);
-            else
-                displayLong(job, NULL, cpuFactor);
+            if (options & PEND_JOB) {
+                if (format == LSFUF_FORMAT)
+                    displayUF(job, jInfoH, cpuFactor);
+                else
+                    displayLong(job, jInfoH, cpuFactor);
+            }
+            else {
+                if (format == LSFUF_FORMAT)
+                    displayUF(job, NULL, cpuFactor);
+                else
+                    displayLong(job, NULL, cpuFactor);
+            }
         }
         else
             displayJobs(job, jInfoH, options, format);
@@ -211,6 +219,9 @@ main(int argc, char **argv)
         sprintf(prline, "\n");
         prtLine(prline);
     }
+
+    if (format == LSFUF_FORMAT)
+        printf("\n");
 
     TIMEIT(0, lsb_closejobinfo(), "lsb_closejobinfo");
 
@@ -263,17 +274,18 @@ do_options(int argc,
     *jobName = NULL;
     *format = 0;
 
-    while ((cc = getopt(argc, argv, "VladpsrwWgRAhJ:q:u:m:N:P:S")) != EOF) {
+    while ((cc = getopt(argc, argv, "VladpsrwWgRAhJ:q:u:m:N:P:SU:")) != EOF) {
         switch (cc) {
             case 'w':
-                if (*format == LONG_FORMAT)
+                if (*format == LONG_FORMAT || *format == LSFUF_FORMAT)
                     usage(argv[0]);
                 *format = WIDE_FORMAT;
                 break;
             case 'l':
                 if (*format == WIDE_FORMAT)
                     usage(argv[0]);
-                *format = LONG_FORMAT;
+		if (*format != LSFUF_FORMAT)
+                    *format = LONG_FORMAT;
                 break;
             case 'a':
                 *options |= ALL_JOB;
@@ -330,6 +342,11 @@ do_options(int argc,
             case 'V':
                 fputs(_LS_VERSION_, stderr);
                 exit(0);
+            case 'U':
+                if (optarg[0]=='F') {
+                    *format = LSFUF_FORMAT;
+                    break;
+                }
             case 'h':
             default:
                 usage(argv[0]);
