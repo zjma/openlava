@@ -1719,13 +1719,12 @@ addUnixGrp (struct group *unixGrp, char *grpName,
 static void
 getClusterData(void)
 {
-    static char   fname[]="getClusterData()";
-    int           i;
-    int           num;
+    int i;
+    int num;
 
     TIMEIT(0, clusterName = ls_getclustername(), "minit_ls_getclustername");
     if (clusterName == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_getclustername");
+        ls_syslog(LOG_ERR, "%s: ls_getclustername() failed %M", __func__);
         if (! lsb_CheckMode)
             mbdDie(MASTER_RESIGN);
         else {
@@ -1733,19 +1732,22 @@ getClusterData(void)
             return ;
         }
     }
+
     if (debug) {
         FREEUP(managerIds);
         if (lsbManagers)
             FREEUP (lsbManagers[0]);
         FREEUP (lsbManagers);
         nManagers = 1;
-        lsbManagers = my_malloc(sizeof (char *), fname);
-        lsbManagers[0] = my_malloc(MAX_LSB_NAME_LEN, fname);
+        lsbManagers = my_malloc(sizeof(char *), __func__);
+        lsbManagers[0] = my_malloc(MAX_LSB_NAME_LEN, __func__);
+
         if (getUser(lsbManagers[0], MAX_LSB_NAME_LEN) == 0) {
 
-            managerIds = my_malloc (sizeof (uid_t), fname);
+            managerIds = my_malloc(sizeof (uid_t), __func__);
             if (getUid(lsbManagers[0], &managerIds[0]) != 0) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUid");
+                ls_syslog(LOG_ERR, "\
+%s: getUid() failed: %M", __func__);
                 if (! lsb_CheckMode)
                     mbdDie(MASTER_RESIGN);
                 else {
@@ -1755,19 +1757,21 @@ getClusterData(void)
                 managerIds[0] = -1;
             }
         } else {
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "getUser");
+            ls_syslog(LOG_ERR, "%s: getUser() failed %M", __func__);
             mbdDie(MASTER_RESIGN);
         }
+
         if (!lsb_CheckMode)
-            ls_syslog(LOG_NOTICE,I18N(6256,
-                                      "%s: The LSF administrator is the invoker in debug mode"),fname); /*catgets 6256 */
+            ls_syslog(LOG_NOTICE, \
+"%s: The LSF administrator is the invoker in debug mode", __func__);
         lsbManager = lsbManagers[0];
         managerId  = managerIds[0];
     }
+
     num = 0;
     clusterInfo = ls_clusterinfo(NULL, &num, NULL, 0, 0);
     if (clusterInfo == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_clusterinfo");
+        ls_syslog(LOG_ERR, "%s: ls_clusterinfo() failed %M", __func__);
         if (!lsb_CheckMode)
             mbdDie(MASTER_RESIGN);
         else {
@@ -1784,17 +1788,18 @@ getClusterData(void)
             }
         }
 
-        for(i=0; i < num; i++) {
+        for (i = 0; i < num; i++) {
             if (!debug &&
                 (strcmp(clusterName, clusterInfo[i].clusterName) == 0))
                 setManagers(clusterInfo[i]);
         }
 
         if (!nManagers && !debug) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 6182,
-                                             "%s: Local cluster %s not returned by LIM"),fname, clusterName); /* catgets 6182 */
+            ls_syslog(LOG_ERR, "\
+%s: Local cluster %s not returned by LIM", __func__, clusterName);
             mbdDie(MASTER_FATAL);
         }
+
         numofclusters = num;
     }
 }
@@ -1870,12 +1875,14 @@ setManagers(struct clusterInfo clusterInfo)
 
     if (setreuid(managerId, managerId) < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed to set managerId for mbatchd: %m", __func__);
-        mbdDie(MASTER_FATAL);
+%s: failed to set managerId for mbatchd running as uid %d: %m",
+		  __func__, getuid());
+	/* Don't die keep running as root.
+	 */
+    } else {
+	ls_syslog(LOG_INFO, "\
+%s: mbatchd running as managerId %d", __func__, managerId);
     }
-
-    ls_syslog(LOG_INFO, "%s: mbatchd running as managerId %d",
-              __func__, managerId);
 }
 
 static void
