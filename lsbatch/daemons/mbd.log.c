@@ -363,12 +363,9 @@ init_log(void)
 	    nextJobId = 1;
     }
 
-
-    if (!first) {
-
-	if (switch_log() == -1)
-	    ConfigError = -1;
-    }
+    /* Let the child mbatchd take care of
+     * the switching of lsb.events.
+     */
 
     if (logLoadIndex)
         log_loadIndex();
@@ -2236,8 +2233,8 @@ log_jobForce(struct jData* job, int uid, char *userName)
 static int
 openEventFile(const char *fname)
 {
-    long pos;
-    sigset_t newmask, oldmask;
+    sigset_t newmask;
+    sigset_t oldmask;
 
     /* init_log() has not been called yet.
      */
@@ -2261,6 +2258,11 @@ openEventFile(const char *fname)
     }
 
     /* Test if the file is already open.
+     *
+     * a+  Open  for reading and appending (writing at end of file).
+     * The file is created if it does not exist. The initial file
+     * position for reading is at the beginning of the file, but
+     * output is always appended to the end of the file.
      */
     if (log_fp == NULL) {
 	if ((log_fp = fopen(elogFname, "a+")) == NULL) {
@@ -2272,13 +2274,6 @@ openEventFile(const char *fname)
     }
 
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
-
-    fseek(log_fp, 0L, SEEK_END);
-
-    if ((pos = ftell(log_fp)) == 0) {
-        fprintf(log_fp,"#80\n");
-    }
-
     chmod(elogFname, 0644);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
@@ -2297,7 +2292,6 @@ openEventFile(const char *fname)
 static int
 openEventFile2(const char *fname)
 {
-    long pos;
     sigset_t newmask;
     sigset_t oldmask;
 
@@ -2317,15 +2311,9 @@ openEventFile2(const char *fname)
 	    return -1;
 	}
     }
+
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
-
-    fseek(log_fp, 0L, SEEK_END);
-
-    if ((pos = ftell(log_fp)) == 0) {
-        fprintf(log_fp,"#80\n");
-    }
-
-    chmod(elogFname, 0644);
+    chmod(fname, 0644);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
     /* Use the same version as the main protocol.
@@ -2609,11 +2597,34 @@ switchELog(void)
 static int
 do_switch(void)
 {
+    struct timeval before;
+    struct timeval after;
+
+    if (logclass & LC_SWITCH)
+	gettimeofday(&before, NULL);
+
+    /* Now  switch
+     */
     if (switch_log() == 0) {
+
 	numRemoveJobs = 0;
+	if (logclass & LC_SWITCH) {
+	    gettimeofday(&after, NULL);
+	    ls_syslog(LOG_INFO,"\
+%s: %d ms", __func__,  (int)((after.tv_sec - before.tv_sec) * 1000 +
+			     (after.tv_usec - before.tv_usec)/1000));
+	}
 	return 0;
     }
+
+    if (logclass & LC_SWITCH) {
+	gettimeofday(&after, NULL);
+	ls_syslog(LOG_INFO,"\
+%s: %d ms", __func__,  (int)((after.tv_sec - before.tv_sec) * 1000 +
+			     (after.tv_usec - before.tv_usec)/1000));
+    }
     numRemoveJobs = maxjobnum / 2;
+
     return -1;
 }
 
@@ -2720,7 +2731,6 @@ switch_log(void)
     FILE *tmpfp;
     struct jData *jp;
     struct jData *jarray;
-    long pos;
     int preserved = false;
     int totalEventFile;
 
@@ -2743,7 +2753,7 @@ switch_log(void)
         goto exiterr;
     }
 
-    if (fchmod(fileno(tmpfp),  0644) != 0) {
+    if (fchmod(fileno(tmpfp), 0644) != 0) {
 	ls_syslog(LOG_ERR, "%s: fchmod on %s failed: %m", __func__, tmpfn);
     }
 
@@ -2753,8 +2763,6 @@ switch_log(void)
         _fclose_(&tmpfp);
         goto exiterr;
     }
-
-    fprintf(tmpfp, "#                                     \n");
 
     initHostCtrlTable();
     initQueueCtrlTable();
@@ -2769,7 +2777,6 @@ switch_log(void)
                 ls_syslog(LOG_ERR, "\
 %s: reading line %d in file %s: %s", __func__, lineNum,
                           elogFname, lsb_sysmsg());
-
                 if (lsberrno == LSBE_NO_MEM) {
                     mbdDie(MASTER_MEM);
                 }
@@ -2918,9 +2925,6 @@ switch_log(void)
     }
     _fclose_(&efp);
 
-    pos = ftell(tmpfp);
-    rewind(tmpfp);
-    fprintf(tmpfp, "#%ld", pos);
     if (_fclose_(&tmpfp)) {
 	ls_syslog(LOG_ERR, "%s: fclose(%s) failed: %m", __func__, tmpfn);
         goto exiterr;
@@ -5221,8 +5225,24 @@ do_switch_child_end(void)
 		  swchild->pid, swchild->child_gone);
     }
 
+    /* Examine exit status of the switch child
+     */
+    if (WIFEXITED(swchild->status)) {
+	ls_syslog(LOG_INFO, "\
+%s: switch child exit with status %d", __func__,
+		  WEXITSTATUS(swchild->status));
+    }
+
+    if (WIFSIGNALED(swchild->status)) {
+	ls_syslog(LOG_INFO, "\
+%s: switch child got signal %d and core dump %s", __func__,
+		  WTERMSIG(swchild->status),
+		  WCOREDUMP(swchild->status) ? "yes" : "no");
+    }
+
     swchild->pid = 0;
     swchild->child_gone = false;
+    swchild->status = 0;
 
     /* This may or may not be open, it depends
      * if a logging event came in before or after
@@ -5362,7 +5382,7 @@ merge_switch_file(void)
     struct stat sbuf;
     int cc;
     int n;
-    static char buf[32 * 1024];
+    char buf[BUFSIZ];
 
     if (logclass & LC_SWITCH) {
 	ls_syslog(LOG_INFO, "\
@@ -5401,12 +5421,16 @@ merge_switch_file(void)
     }
 
     /* Merge the switched file with the temporary
-     * events managed by mbatchd parent.
+     * events managed by mbatchd parent. Zero out
+     * the buffer otherwise will be appending
+     * random bytes to lsb.events.
      */
     n = 0;
+    memset(buf, 0, sizeof(buf));
     while ((cc = fread(buf, 1, sizeof(buf), fp_parent))) {
 	n = n + cc;
 	fwrite(buf, 1, sizeof(buf), fp_child);
+	memset(buf, 0, sizeof(buf));
     }
 
     if (logclass & LC_SWITCH) {
