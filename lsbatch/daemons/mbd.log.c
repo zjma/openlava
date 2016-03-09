@@ -2732,7 +2732,6 @@ switch_log(void)
     struct jData *jp;
     struct jData *jarray;
     int preserved = false;
-    int totalEventFile;
 
     sprintf(tmpfn, "%s/logdir/lsb.events",
             daemonParams[LSB_SHAREDIR].paramValue);
@@ -2952,31 +2951,11 @@ switch_log(void)
     else
         log_logSwitch(nextJobId);
 
-    if ((totalEventFile = renameElogFiles()) > 0)  {
-
-        if (fork() == 0) {
-            char  indexFile[MAXFILENAMELEN];
-
-            sprintf(indexFile, "%s/logdir/%s",
-                    daemonParams[LSB_SHAREDIR].paramValue,
-                    LSF_JOBIDINDEX_FILENAME);
-
-            if (updateJobIdIndexFile(indexFile, elogFname, totalEventFile) < 0) {
-                if (lsberrno == LSBE_SYS_CALL)
-                    ls_syslog(LOG_ERR, "\
-%s: updateJobIdIndexFile(%s) failed: %s %m",
-                              __func__, indexFile, lsb_sysmsg());
-                else
-                    ls_syslog(LOG_ERR, "\
-%s: updateJobIdIndexFile(%s) failed: %s",
-                              __func__, indexFile, lsb_sysmsg());
-            }
-            exit(0);
-        }
-        return 0;
-    } else {
-        ls_syslog(LOG_ERR, "%s: renameElogFiles() failed", __func__);
+    if (renameElogFiles() < 0) {
+	ls_syslog(LOG_ERR, "%s: renameElogFiles() failed", __func__);
     }
+
+    return 0;
 
 exiterr:
     lsb_merr("\
@@ -3042,56 +3021,49 @@ createAcct0File(void)
 
 
 static int
-createEvent0File (void)
+createEvent0File(void)
 {
-    static char fname[] = "createEvent0File";
     char event0File[MAXFILENAMELEN];
     char buf[MSGSIZE];
-    char ch;
     struct stat st;
     int nread, cc, size;
-    long int pos;
     FILE *eventPtr, *event0Ptr;
 
     sprintf(event0File, "%s/logdir/lsb.events.0",
             daemonParams[LSB_SHAREDIR].paramValue);
 
+    /* Get the size of lsb.events
+     */
     stat(elogFname, &st);
     size = st.st_size;
 
     if ((eventPtr = fopen(elogFname, "r")) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
+        ls_syslog(LOG_ERR, "\
+%s: fopen(%s) failed %m", __func__, elogFname);
         _fclose_(&eventPtr);
         return -1;
     }
 
     if ((event0Ptr  = fopen(event0File, "w")) == NULL) {
-        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", event0File);
+        ls_syslog(LOG_ERR, "\
+%s: fopen(%s) failed %m", __func__, event0File);
         _fclose_(&eventPtr);
         return -1;
     }
+
     chmod(event0File, 0644);
 
-    fprintf(event0Ptr, "#%ld                       \n", time(0));
-
-    if (fscanf(eventPtr, "%c%ld ", &ch, &pos) != 2 || ch != '#') {
-        pos = 0;
-    }
-
-    if (fseek(eventPtr, pos, SEEK_SET) != 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "fseek");
-        return -1;
-    }
-
-    size -= pos;
-
+    /* Copy the lsb.events to lsb.events.0
+     */
     for (cc = 0, nread = 0; nread < size;) {
+
         if ((cc = fread(buf, 1, MSGSIZE, eventPtr)) > 0) {
             if (nread + cc > size)
                 cc = size - nread;
 
             if (fwrite(buf, 1, cc, event0Ptr) == 0) {
-                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
+                ls_syslog(LOG_ERR, "\
+%s: fwrite(%s) %d bytes failed %m", __func__, event0File, cc);
                 _fclose_(&eventPtr);
                 _fclose_(&event0Ptr);
                 return -1;
@@ -3100,7 +3072,7 @@ createEvent0File (void)
         } else if (feof(eventPtr)){
             break;
         } else {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", elogFname);
+            ls_syslog(LOG_ERR, "%s: fread(%s) failed %m", __func__, elogFname);
             _fclose_(&eventPtr);
             _fclose_(&event0Ptr);
             return -1;
@@ -5381,7 +5353,8 @@ merge_switch_file(void)
     FILE *fp_parent;
     struct stat sbuf;
     int cc;
-    int n;
+    int nread;
+    int size;
     char buf[BUFSIZ];
 
     if (logclass & LC_SWITCH) {
@@ -5400,6 +5373,9 @@ merge_switch_file(void)
 	}
 	return -2;
     }
+    /* Get the size of lsb.events.parent
+     */
+    size = sbuf.st_size;
 
     /* fopen the switched lsb.events
      */
@@ -5421,21 +5397,36 @@ merge_switch_file(void)
     }
 
     /* Merge the switched file with the temporary
-     * events managed by mbatchd parent. Zero out
-     * the buffer otherwise will be appending
-     * random bytes to lsb.events.
+     * events managed by mbatchd parent.
      */
-    n = 0;
-    memset(buf, 0, sizeof(buf));
-    while ((cc = fread(buf, 1, sizeof(buf), fp_parent))) {
-	n = n + cc;
-	fwrite(buf, 1, sizeof(buf), fp_child);
-	memset(buf, 0, sizeof(buf));
+    for (cc = 0, nread = 0; nread < size;) {
+
+        if ((cc = fread(buf, 1, BUFSIZ, fp_parent)) > 0) {
+            if (nread + cc > size)
+                cc = size - nread;
+
+            if (fwrite(buf, 1, cc, fp_child) == 0) {
+                ls_syslog(LOG_ERR, "\
+%s: fwrite(%s) %d bytes failed %m", __func__, elogFname, cc);
+
+                return -1;
+            }
+	    _fclose_(&fp_parent);
+	    _fclose_(&fp_child);
+            nread += cc;
+        } else if (feof(fp_parent)){
+            break;
+        } else {
+            ls_syslog(LOG_ERR, "%s: fread(%s) failed %m", __func__, elogFname);
+	    _fclose_(&fp_parent);
+	    _fclose_(&fp_child);
+            return -1;
+        }
     }
 
     if (logclass & LC_SWITCH) {
 	ls_syslog(LOG_INFO, "\
-%s: merged %d bytes from %s into %s", __func__, n,
+%s: merged %d bytes from %s into %s", __func__, nread,
 		  elogFname2, elogFname);
     }
 
