@@ -52,6 +52,7 @@ Release notes for OpenLava versions
 -- Change the ownership of the mbatchd log file to avoid messages going
    to syslog messages file.
 -- Prevent LIM from core dumping in findHost() if the input name is NULL.
+-- Enable the secondary admin to run 'badmin reconfig'.
 
 3.1.3
 ======
