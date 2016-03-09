@@ -10,7 +10,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([m4])
 
 AC_PREFIX_DEFAULT([/opt/openlava-3.3])
-
 AC_PREFIX_DEFAULT([/opt/openlava-3.3])
 AC_DEFINE(_OPENLAVA_PROJECT_, "OpenLava 3.3.pre1", "Set project string in binaries.")
 AC_DEFINE(OPENLAVA_VERSION, 33, "Current openlava version.")

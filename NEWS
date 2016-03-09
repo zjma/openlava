@@ -29,10 +29,13 @@ Release notes for OpenLava versions
    LIM_ACCEPT_FLOAT_CLIENT=y any host can submit jobs and query the
    daemons without being registered in the lsf.cluster file.
 
+3.2.1
+======
+-- Fix the parsing algorithm for compact host name.
+
 3.2.0
 ======
 -- Fix main Makefile.am to include the m4 directory.
--- Fix the parsing algorithm for compact host name.
 
 3.2.beta1
 =========
@@ -78,6 +81,8 @@ Release notes for OpenLava versions
 -- Change the ownership of the mbatchd log file to avoid messages going
    to syslog messages file.
 -- Prevent LIM from core dumping in findHost() if the input name is NULL.
+-- Enable the secondary admin to run 'badmin reconfig'.
+-- Fix res nios protocol to pass the correct taskid to nios.
 
 3.1.3
 ======
