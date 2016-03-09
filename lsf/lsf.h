@@ -716,10 +716,9 @@ struct hostEntryLog {
 #define TIMEIT(level,func,name)                                         \
     { if (timinglevel > level) {                                        \
             struct timeval before, after;                               \
-            struct timezone tz;                                         \
-            gettimeofday(&before, &tz);                                 \
+            gettimeofday(&before, NULL);                                 \
             func;                                                       \
-            gettimeofday(&after, &tz);                                  \
+            gettimeofday(&after, NULL);                                  \
             ls_syslog(LOG_INFO,"L%d %s %d ms",level,name,               \
                       (int)((after.tv_sec - before.tv_sec)*1000 +       \
                             (after.tv_usec-before.tv_usec)/1000));      \
@@ -731,10 +730,9 @@ struct hostEntryLog {
 #define TIMEVAL(level,func,val)                                 \
     { if (timinglevel > level) {                                \
             struct timeval before, after;                       \
-            struct timezone tz;                                 \
-            gettimeofday(&before, &tz);                         \
+            gettimeofday(&before, NULL);                         \
             func;                                               \
-            gettimeofday(&after, &tz);                          \
+            gettimeofday(&after, NULL);                          \
             val = (int)((after.tv_sec - before.tv_sec)*1000 +   \
                         (after.tv_usec-before.tv_usec)/1000);   \
         } else {                                                \
