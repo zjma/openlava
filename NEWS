@@ -53,6 +53,7 @@ Release notes for OpenLava versions
    to syslog messages file.
 -- Prevent LIM from core dumping in findHost() if the input name is NULL.
 -- Enable the secondary admin to run 'badmin reconfig'.
+-- Fix res nios protocol to pass the correct taskid to nios.
 
 3.1.3
 ======

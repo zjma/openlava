@@ -507,7 +507,7 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
                     xdr_destroy(&xdrs);
 
-                    conn[i].rtag = msgHdr.reserved0;
+                    conn[i].rtag = msgHdr.reserved;
 
                     if (nioDebug)
                         ls_syslog(LOG_DEBUG, "\
