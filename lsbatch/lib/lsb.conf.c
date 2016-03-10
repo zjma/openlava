@@ -1521,7 +1521,9 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
 	    /* Support the compact hostname notation
 	     * a[n-N]
 	     */
-	    hl = host_base_name(sp);
+            hl = NULL;
+            if (type == HOST_GRP)
+                hl = host_base_name(sp);
 	    if (hl) {
 		while ((wp = pop_link(hl))) {
 		    if (! addMember(gp,
