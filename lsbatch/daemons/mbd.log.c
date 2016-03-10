@@ -5408,7 +5408,8 @@ merge_switch_file(void)
             if (fwrite(buf, 1, cc, fp_child) == 0) {
                 ls_syslog(LOG_ERR, "\
 %s: fwrite(%s) %d bytes failed %m", __func__, elogFname, cc);
-
+                _fclose_(&fp_parent);
+                _fclose_(&fp_child);
                 return -1;
             }
             nread += cc;
