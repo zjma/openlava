@@ -146,6 +146,9 @@ static void check_same_priority_queues(void);
 static int init_preemption_scheduler(void);
 static int load_preempt_plugin(struct qData *);
 static int init_ownership_scheduler(void);
+static bool_t is_fairplugin_ok(void);
+static bool_t is_preemptplugin_ok(void);
+static bool_t is_ownplugin_ok(void);
 
 int
 minit(int mbdInitFlags)
@@ -3444,6 +3447,9 @@ init_fairshare_scheduler(void)
     struct qData *qPtr;
     int cc;
 
+    if (! is_fairplugin_ok())
+        return -1;
+
     sprintf(buf, "\
 %s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
 
@@ -3459,6 +3465,7 @@ init_fairshare_scheduler(void)
             ls_syslog(LOG_ERR, "\
 %s: failed loading fairshare plugin, fall back to fcfs", __func__);
             FREEUP(qPtr->fairshare);
+	    qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
             continue;
         }
 	/* invoke the plugin initializer
@@ -3786,6 +3793,9 @@ init_preemption_scheduler(void)
 {
     struct qData *qPtr;
 
+    if (! is_preemptplugin_ok())
+        return -1;
+
     for (qPtr = qDataList->forw;
          qPtr != qDataList;
          qPtr = qPtr->forw) {
@@ -3829,6 +3839,7 @@ load_preempt_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_init() symbol in %s: %s",
                   __func__, buf, dlerror());
         dlclose(p->handle);
+        _free_(qPtr->prmSched->name);
         free(qPtr->prmSched);
         qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
@@ -3840,6 +3851,7 @@ load_preempt_plugin(struct qData *qPtr)
 %s: ohmygosh missing fs_init() symbol in %s: %s",
                   __func__, buf, dlerror());
         dlclose(p->handle);
+        _free_(qPtr->prmSched->name);
         free(qPtr->prmSched);
         qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
         return -1;
@@ -3857,7 +3869,11 @@ init_ownership_scheduler(void)
     struct qData *qPtr;
     int cc;
 
-    sprintf(buf, "%s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
+    if (! is_ownplugin_ok())
+        return -1;
+
+    sprintf(buf, "\
+%s/libfairshare.so", daemonParams[LSF_LIBDIR].paramValue);
 
     for (qPtr = qDataList->forw;
          qPtr != (void *)qDataList;
@@ -3870,7 +3886,7 @@ init_ownership_scheduler(void)
         if (qPtr->own_sched == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed loading ownership plugin, fall back to fcfs", __func__);
-            _free_(qPtr->fairshare);
+            _free_(qPtr->ownership);
 	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
             continue;
         }
@@ -3881,6 +3897,7 @@ init_ownership_scheduler(void)
 %s: failed initializing fairshare plugin, fall back to fcfs", __func__);
 	    dlclose(qPtr->fsSched->handle);
 	    _free_(qPtr->own_sched);
+            _free_(qPtr->ownership);
 	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
 	    return -1;
 	}
@@ -3894,4 +3911,86 @@ init_ownership_scheduler(void)
     }
 
     return 0;
+}
+
+/* is_fairplugin_ok()
+ */
+static bool_t
+is_fairplugin_ok(void)
+{
+    struct qData *qPtr;
+
+    if (daemonParams[LSF_LIBDIR].paramValue)
+        return true;
+
+    ls_syslog(LOG_ERR, "\
+%s: LSF_LIBDIR not defined in lsf.conf, no fairshare possible",
+              __func__);
+
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->fairshare) {
+            _free_(qPtr->fairshare);
+            qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
+            ls_syslog(LOG_ERR, "\
+%s: queue %s fairshare disabled", __func__, qPtr->queue);
+        }
+    }
+
+    return false;
+}
+
+static bool_t
+is_preemptplugin_ok(void)
+{
+    struct qData *qPtr;
+
+    if (daemonParams[LSF_LIBDIR].paramValue)
+        return true;
+
+    ls_syslog(LOG_ERR, "\
+%s: LSF_LIBDIR not defined in lsf.conf, no preemption possible",
+              __func__);
+
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->qAttrib & Q_ATTRIB_PREEMPTIVE) {
+            qPtr->qAttrib &= ~Q_ATTRIB_PREEMPTIVE;
+            ls_syslog(LOG_ERR, "\
+%s: queue %s preemption disabled", __func__, qPtr->queue);
+        }
+    }
+
+    return false;
+}
+
+static bool_t
+is_ownplugin_ok(void)
+{
+    struct qData *qPtr;
+
+    if (daemonParams[LSF_LIBDIR].paramValue)
+        return true;
+
+    ls_syslog(LOG_ERR, "\
+%s: LSF_LIBDIR not defined in lsf.conf, no ownership possible",
+              __func__);
+
+    for (qPtr = qDataList->forw;
+         qPtr != (void *)qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->ownership) {
+            _free_(qPtr->ownership);
+            qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
+            ls_syslog(LOG_ERR, "\
+%s: queue %s ownership disabled", __func__, qPtr->queue);
+        }
+    }
+
+    return false;
 }
