@@ -750,7 +750,6 @@ struct resourceInstance {
 struct switch_child {
     pid_t  pid;
     bool_t child_gone;
-    int status;
 };
 
 struct profileCounters {
@@ -1229,7 +1228,7 @@ extern void                 createGroupSet();
 extern void                 updHostList(void);
 extern void                 uDataGroupCreate(void);
 extern int                  sizeofGroupInfoReply(struct groupInfoReply *);
-extern void                 mbd_child_handler(int);
+extern void                 child_handler(int);
 extern void                 terminate_handler(int);
 extern void                 announce_master(void);
 extern void                 shutDownClient(struct clientNode *);
