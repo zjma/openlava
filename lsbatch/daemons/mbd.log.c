@@ -364,12 +364,9 @@ init_log(void)
     }
 
 
-    if (!first) {
-
-	if (switch_log() == -1)
-	    ConfigError = -1;
-    }
-
+    /* Don't switch here, let the
+     * child mbatchd to do it when necessary.
+     */
     if (logLoadIndex)
         log_loadIndex();
 
@@ -2292,7 +2289,8 @@ openEventFile(const char *fname)
 /* openEventFile2()
  *
  * Open the event file having the
- * name specified in input
+ * name specified in input. This function
+ * is used when mbatchd child is running.
  */
 static int
 openEventFile2(const char *fname)
@@ -2319,13 +2317,7 @@ openEventFile2(const char *fname)
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 
-    fseek(log_fp, 0L, SEEK_END);
-
-    if ((pos = ftell(log_fp)) == 0) {
-        fprintf(log_fp,"#80\n");
-    }
-
-    chmod(elogFname, 0644);
+    chmod(fname, 0644);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
     /* Use the same version as the main protocol.
@@ -5400,7 +5392,9 @@ merge_switch_file(void)
     struct stat sbuf;
     int cc;
     int n;
-    static char buf[32 * 1024];
+    int nread;
+    int size;
+    char buf[BUFSIZ];
 
     if (logclass & LC_SWITCH) {
         ls_syslog(LOG_INFO, "\
@@ -5418,7 +5412,7 @@ merge_switch_file(void)
         }
         return -2;
     }
-
+    size = sbuf.st_size;
     /* fopen the switched lsb.events
      */
     fp_child = fopen(elogFname, "a+");

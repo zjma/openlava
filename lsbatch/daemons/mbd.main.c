@@ -1028,7 +1028,7 @@ terminate_handler(int sig)
 }
 
 void
-child_handler (int sig)
+mbd_child_handler (int sig)
 {
     int pid;
     LS_WAIT_T status;
@@ -1043,6 +1043,7 @@ child_handler (int sig)
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         if (pid == swchild->pid) {
 	    swchild->child_gone = true;
+            swchild->status = status;
 	}
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);

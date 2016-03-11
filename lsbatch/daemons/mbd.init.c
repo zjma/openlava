@@ -163,11 +163,10 @@ minit(int mbdInitFlags)
 
     Signal_(SIGTERM, (SIGFUNCTYPE) terminate_handler);
     Signal_(SIGINT,  (SIGFUNCTYPE) terminate_handler);
-    Signal_(SIGCHLD, (SIGFUNCTYPE) child_handler);
+    Signal_(SIGCHLD, (SIGFUNCTYPE) mbd_child_handler);
     Signal_(SIGALRM, SIG_IGN);
     Signal_(SIGHUP,  SIG_IGN);
     Signal_(SIGPIPE, SIG_IGN);
-    Signal_(SIGCHLD, (SIGFUNCTYPE) child_handler);
 
     if (!(debug || lsb_CheckMode)) {
         Signal_(SIGTTOU, SIG_IGN);
