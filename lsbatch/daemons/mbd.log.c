@@ -2295,7 +2295,6 @@ openEventFile(const char *fname)
 static int
 openEventFile2(const char *fname)
 {
-    long pos;
     sigset_t newmask;
     sigset_t oldmask;
 
@@ -5391,7 +5390,6 @@ merge_switch_file(void)
     FILE *fp_parent;
     struct stat sbuf;
     int cc;
-    int n;
     int nread;
     int size;
     char buf[BUFSIZ];
