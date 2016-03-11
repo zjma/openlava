@@ -5412,6 +5412,8 @@ merge_switch_file(void)
                 _fclose_(&fp_child);
                 return -1;
             }
+	    _fclose_(&fp_parent);
+	    _fclose_(&fp_child);
             nread += cc;
         } else if (feof(fp_parent)){
             break;

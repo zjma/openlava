@@ -47,10 +47,7 @@ AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
 # --enable-debug to turn on -Werror and enable assert()
-#OL_DEBUG
-if test "x$ac_compiler_gnu" = xyes; then
-    CFLAGS="$CFLAGS -Wall -ggdb -O0 -Wno-switch -fPIC -rdynamic"
-fi
+OL_DEBUG
 
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
  AC_MSG_ERROR([cannot build openlava without ncurses])
