@@ -265,7 +265,7 @@ init_log(void)
      */
     log_fp = fopen(elogFname, "a+");
     if (log_fp == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: cannot fopen() the %s file; %m", __func__, elogFname);
         mbdDie(MASTER_FATAL);
     }
@@ -280,39 +280,39 @@ init_log(void)
     lsberrno = LSBE_NO_ERROR;
     while (lsberrno != LSBE_EOF) {
 
-	/* Use single purpose reading getc2() routine.
-	 */
-	if ((logPtr = lsb_geteventrecord(log_fp, &lineNum)) == NULL) {
+        /* Use single purpose reading getc2() routine.
+         */
+        if ((logPtr = lsb_geteventrecord(log_fp, &lineNum)) == NULL) {
 
-	    if (lsberrno != LSBE_EOF) {
-		ls_syslog(LOG_ERR, "\
+            if (lsberrno != LSBE_EOF) {
+                ls_syslog(LOG_ERR, "\
 %s: Reading event file <%s> at line <%d>: %s",
-			  __func__,
-			  elogFname,
-			  lineNum,
-			  lsb_sysmsg());
-		first = FALSE;
-		if (lsberrno == LSBE_NO_MEM) {
-		    mbdDie(MASTER_MEM);
-		}
+                          __func__,
+                          elogFname,
+                          lineNum,
+                          lsb_sysmsg());
+                first = FALSE;
+                if (lsberrno == LSBE_NO_MEM) {
+                    mbdDie(MASTER_MEM);
+                }
 
-	    } else {
-		/* keep log_fp always open
-		 */
-		reset_getc2();
-	    }
-	    continue;
-	}
+            } else {
+                /* keep log_fp always open
+                 */
+                reset_getc2();
+            }
+            continue;
+        }
 
-	eventTime = logPtr->eventTime;
-	if (! replay_event(elogFname, lineNum) && first) {
-	    ls_syslog(LOG_ERR, "\
+        eventTime = logPtr->eventTime;
+        if (! replay_event(elogFname, lineNum) && first) {
+            ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: First replay_event() failed; line ignored",
-		      __func__,
-		      elogFname,
-		      lineNum);
-	    first = FALSE;
-	}
+                      __func__,
+                      elogFname,
+                      lineNum);
+            first = FALSE;
+        }
 
     } /* while (lsberrno != LSBE_EOF) */
 
@@ -321,52 +321,52 @@ init_log(void)
     reset_getc2();
 
     if (qsort_jobs) {
-	sort_job_list(PJL);
+        sort_job_list(PJL);
     }
 
     for (list = SJL; list <= PJL; list++) {
 
-	for (jp = jDataList[list]->back;
-	     jp != jDataList[list];
-	     jp = jp->back) {
-	    int svJStatus = jp->jStatus;
-	    int i;
-	    int num;
+        for (jp = jDataList[list]->back;
+             jp != jDataList[list];
+             jp = jp->back) {
+            int svJStatus = jp->jStatus;
+            int i;
+            int num;
 
-	    num = jp->shared->jobBill.maxNumProcessors;
+            num = jp->shared->jobBill.maxNumProcessors;
 
-	    jp->jStatus = JOB_STAT_PEND;
+            jp->jStatus = JOB_STAT_PEND;
 
-	    updQaccount(jp, num, num, 0, 0, 0, 0);
-	    updUserData(jp, num, num, 0, 0, 0, 0);
+            updQaccount(jp, num, num, 0, 0, 0, 0);
+            updUserData(jp, num, num, 0, 0, 0, 0);
 
-	    jp->jStatus = svJStatus;
-	    if (jp->jStatus & JOB_STAT_PEND)
-		continue;
+            jp->jStatus = svJStatus;
+            if (jp->jStatus & JOB_STAT_PEND)
+                continue;
 
-	    updCounters(jp, JOB_STAT_PEND, !LOG_IT);
+            updCounters(jp, JOB_STAT_PEND, !LOG_IT);
 
-	    if ((jp->shared->jobBill.options & SUB_EXCLUSIVE)
-		&& IS_START (jp->jStatus)) {
-		for (i = 0; i < jp->numHostPtr; i ++)
-		    jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
-	    }
-	}
+            if ((jp->shared->jobBill.options & SUB_EXCLUSIVE)
+                && IS_START (jp->jStatus)) {
+                for (i = 0; i < jp->numHostPtr; i ++)
+                    jp->hPtr[i]->hStatus |= HOST_STAT_EXCLUSIVE;
+            }
+        }
     }
 
     if (logclass & LC_JGRP)
-	printTreeStruct(treeFile);
+        printTreeStruct(treeFile);
 
     if (nextJobId == 1) {
-	nextJobId = nextJobId_t + SAFE_JID_GAP;
-	if (nextJobId >= maxJobId)
-	    nextJobId = 1;
+        nextJobId = nextJobId_t + SAFE_JID_GAP;
+        if (nextJobId >= maxJobId)
+            nextJobId = 1;
     }
 
-    /* Let the child mbatchd take care of
-     * the switching of lsb.events.
-     */
 
+    /* Don't switch here, let the
+     * child mbatchd to do it when necessary.
+     */
     if (logLoadIndex)
         log_loadIndex();
 
@@ -437,10 +437,10 @@ replay_event(char *filename, int lineNum)
             return (replay_logSwitch(filename, lineNum));
         case EVENT_JOB_MSG:
             return replay_jobmsg(filename, lineNum);
-	case EVENT_NEW_JGRP:
-	    return replay_newjgrp(filename, lineNum);
-	case EVENT_DEL_JGRP:
-	    return replay_deljgrp(filename, lineNum);
+        case EVENT_NEW_JGRP:
+            return replay_newjgrp(filename, lineNum);
+        case EVENT_DEL_JGRP:
+            return replay_deljgrp(filename, lineNum);
         default:
             ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Invalid event_type %c",
@@ -1587,9 +1587,9 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     jobNewLog->abs_run_limit = job->abs_run_limit;
 
     if (job->shared->jobBill.options2 & SUB2_JOB_GROUP)
-	jobNewLog->job_group = jobBill->job_group;
+        jobNewLog->job_group = jobBill->job_group;
     else
-	jobNewLog->job_group = "";
+        jobNewLog->job_group = "";
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, "\
@@ -2101,9 +2101,9 @@ log_newjgrp(struct jgTreeNode *jgrp)
 {
 
     if (openEventFile(__func__) < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed in openEventFile() %m", __func__);
-	mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_NEW_JGRP;
 
@@ -2116,7 +2116,7 @@ log_newjgrp(struct jgTreeNode *jgrp)
     logPtr->eventLog.jgrpLog.submit_time = JGRP_DATA(jgrp)->submit_time;
 
     if (putEventRec(__func__) < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed in putEventRec() %m", __func__);
     }
 }
@@ -2128,9 +2128,9 @@ log_deljgrp(struct jgTreeNode *jgrp)
 {
 
     if (openEventFile(__func__) < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed in openEventFile() %m", __func__);
-	mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_DEL_JGRP;
 
@@ -2142,7 +2142,7 @@ log_deljgrp(struct jgTreeNode *jgrp)
     strcpy(logPtr->eventLog.jgrpLog.path, jgrp->path);
 
     if (putEventRec(__func__) < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed in putEventRec() %m", __func__);
     }
 }
@@ -2169,7 +2169,7 @@ log_loadIndex(void)
 
     for (i = 0; i < allLsInfo->numIndx; i++)
         logPtr->eventLog.loadIndexLog.name[i]
-	    = allLsInfo->resTable[i].name;
+            = allLsInfo->resTable[i].name;
 
     if (putEventRec(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "putEventRec");
@@ -2233,19 +2233,19 @@ log_jobForce(struct jData* job, int uid, char *userName)
 static int
 openEventFile(const char *fname)
 {
-    sigset_t newmask;
-    sigset_t oldmask;
+    long pos;
+    sigset_t newmask, oldmask;
 
     /* init_log() has not been called yet.
      */
     if (elogFname[0] == 0)
-	return -1;
+        return -1;
 
     /* is switch child running?
      */
     if (swchild->pid > 0
-	&& swchild->child_gone == false) {
-	return openEventFile2(elogFname2);
+        && swchild->child_gone == false) {
+        return openEventFile2(elogFname2);
     }
 
     sigemptyset(&newmask);
@@ -2253,27 +2253,29 @@ openEventFile(const char *fname)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if (swchild->pid > 0
-	&& swchild->child_gone == true) {
-	do_switch_child_end();
+        && swchild->child_gone == true) {
+        do_switch_child_end();
     }
 
     /* Test if the file is already open.
-     *
-     * a+  Open  for reading and appending (writing at end of file).
-     * The file is created if it does not exist. The initial file
-     * position for reading is at the beginning of the file, but
-     * output is always appended to the end of the file.
      */
     if (log_fp == NULL) {
-	if ((log_fp = fopen(elogFname, "a+")) == NULL) {
-	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
-	    ls_syslog(LOG_ERR, "\
+        if ((log_fp = fopen(elogFname, "a+")) == NULL) {
+            sigprocmask(SIG_SETMASK, &oldmask, NULL);
+            ls_syslog(LOG_ERR, "\
 %s: fopen() %s failed: %m", __func__, elogFname);
-	    return -1;
-	}
+            return -1;
+        }
     }
 
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
+
+    fseek(log_fp, 0L, SEEK_END);
+
+    if ((pos = ftell(log_fp)) == 0) {
+        fprintf(log_fp,"#80\n");
+    }
+
     chmod(elogFname, 0644);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
@@ -2287,7 +2289,8 @@ openEventFile(const char *fname)
 /* openEventFile2()
  *
  * Open the event file having the
- * name specified in input
+ * name specified in input. This function
+ * is used when mbatchd child is running.
  */
 static int
 openEventFile2(const char *fname)
@@ -2300,19 +2303,19 @@ openEventFile2(const char *fname)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if (log_fp == NULL) {
-	if (logclass & LC_SWITCH) {
-	    ls_syslog(LOG_INFO, "\
+        if (logclass & LC_SWITCH) {
+            ls_syslog(LOG_INFO, "\
 %s: now opening %s as child is switching", __func__, fname);
-	}
-	if ((log_fp = fopen(fname, "a+")) == NULL) {
-	    sigprocmask(SIG_SETMASK, &oldmask, NULL);
-	    ls_syslog(LOG_ERR, "\
+        }
+        if ((log_fp = fopen(fname, "a+")) == NULL) {
+            sigprocmask(SIG_SETMASK, &oldmask, NULL);
+            ls_syslog(LOG_ERR, "\
 %s: fopen() %s failed: %m", __func__, elogFname);
-	    return -1;
-	}
+            return -1;
+        }
     }
-
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
+
     chmod(fname, 0644);
     logPtr = my_calloc(1, sizeof(struct eventRec), __func__);
 
@@ -2354,7 +2357,7 @@ putEventRec1(const char *fname)
     if (lsb_puteventrec(log_fp, logPtr) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
-	return -1;
+        return -1;
     }
 
     if (mbdParams->maxStreamRecords > 0)
@@ -2362,8 +2365,8 @@ putEventRec1(const char *fname)
 
     free(logPtr);
     if (fflush(log_fp) != 0) {
-	ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
-	return -1;
+        ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
+        return -1;
     }
 
     return 0;
@@ -2383,11 +2386,11 @@ logFinishedjob(struct jData *job)
     }
 
     if (joblog_fp == NULL) {
-	if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
-	    ls_syslog(LOG_ERR, "\
+        if ((joblog_fp = fopen(jlogFname, "a")) == NULL) {
+            ls_syslog(LOG_ERR, "\
 %s: failed to fopen() %s %m", __func__, jlogFname);
-	    return;
-	}
+            return;
+        }
     }
     chmod(jlogFname, 0644);
 
@@ -2525,33 +2528,33 @@ switchELog(void)
     int cc;
 
     if (numRemoveJobs < maxjobnum)
-	return;
+        return;
 
     /* For development only when modify the switching
      * algorithm
      */
     if (daemonParams[MBD_SWITCH_NOFORK].paramValue) {
-	/* Close the lsb.events the first OpenEventFile()
-	 * after the switch will reopen it.
-	 */
-	_fclose_(&log_fp);
-	do_switch();
-	return;
+        /* Close the lsb.events the first OpenEventFile()
+         * after the switch will reopen it.
+         */
+        _fclose_(&log_fp);
+        do_switch();
+        return;
     }
 
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: time to switch numRemoveJobs %d maxjobnum %d", __func__,
-		  numRemoveJobs, maxjobnum);
+                  numRemoveJobs, maxjobnum);
     }
     /* switch child still running
      */
     if (swchild->pid > 0) {
-	if (logclass & LC_SWITCH) {
-	    ls_syslog(LOG_INFO, "\
+        if (logclass & LC_SWITCH) {
+            ls_syslog(LOG_INFO, "\
 %s: swich child pid %d still running, no switch", __func__, swchild->pid);
-	}
-	return;
+        }
+        return;
     }
     /* close the events file first, the child
      * will open its own and mbd will open it
@@ -2563,32 +2566,32 @@ switchELog(void)
     swchild->child_gone = false;
     swchild->pid = pid = fork_mbd();
     if (pid == 0) {
-	if (make_switch_pidfile() < 0) {
-	    ls_syslog(LOG_ERR, "\
+        if (make_switch_pidfile() < 0) {
+            ls_syslog(LOG_ERR, "\
 %s: failed in make_switch_pidfile() %m", __func__);
-	}
-	cc = do_switch();
-	rm_switch_pidfile();
-	if (cc < 0) {
-	    ls_syslog(LOG_ERR, "\
+        }
+        cc = do_switch();
+        rm_switch_pidfile();
+        if (cc < 0) {
+            ls_syslog(LOG_ERR, "\
 %s: switching events file has failed", __func__);
-	    exit(-1);
-	}
-	exit(0);
+            exit(-1);
+        }
+        exit(0);
     }
     if (pid < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: fork() failed switch is synchronous", __func__);
-	swchild->pid = 0;
-	swchild->child_gone = false;
-	do_switch();
-	return;
+        swchild->pid = 0;
+        swchild->child_gone = false;
+        do_switch();
+        return;
     }
 
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: switch child started pid %d gone %d", __func__,
-		  swchild->pid, swchild->child_gone);
+                  swchild->pid, swchild->child_gone);
     }
 }
 
@@ -2601,30 +2604,29 @@ do_switch(void)
     struct timeval after;
 
     if (logclass & LC_SWITCH)
-	gettimeofday(&before, NULL);
+        gettimeofday(&before, NULL);
 
     /* Now  switch
      */
     if (switch_log() == 0) {
 
-	numRemoveJobs = 0;
-	if (logclass & LC_SWITCH) {
-	    gettimeofday(&after, NULL);
-	    ls_syslog(LOG_INFO,"\
+        numRemoveJobs = 0;
+        if (logclass & LC_SWITCH) {
+            gettimeofday(&after, NULL);
+            ls_syslog(LOG_INFO,"\
 %s: %d ms", __func__,  (int)((after.tv_sec - before.tv_sec) * 1000 +
-			     (after.tv_usec - before.tv_usec)/1000));
-	}
-	return 0;
+                             (after.tv_usec - before.tv_usec)/1000));
+        }
+        return 0;
     }
 
     if (logclass & LC_SWITCH) {
-	gettimeofday(&after, NULL);
-	ls_syslog(LOG_INFO,"\
+        gettimeofday(&after, NULL);
+        ls_syslog(LOG_INFO,"\
 %s: %d ms", __func__,  (int)((after.tv_sec - before.tv_sec) * 1000 +
-			     (after.tv_usec - before.tv_usec)/1000));
+                             (after.tv_usec - before.tv_usec)/1000));
     }
     numRemoveJobs = maxjobnum / 2;
-
     return -1;
 }
 
@@ -2654,7 +2656,7 @@ checkAcctLog(void)
 
             if ((lastAcctCreationTime > 0)
                 && ((now - lastAcctCreationTime)
-		    > (acctArchiveInDays*DAYSECONDS))) {
+                    > (acctArchiveInDays*DAYSECONDS))) {
                 needArchive = 1;
             }
         }
@@ -2681,7 +2683,7 @@ switchAcctLog(void)
     int totalAcctFile;
 
     if (joblog_fp)
-	_fclose_(&joblog_fp);
+        _fclose_(&joblog_fp);
 
     if (createAcct0File() == -1) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "createAcct0File");
@@ -2731,7 +2733,9 @@ switch_log(void)
     FILE *tmpfp;
     struct jData *jp;
     struct jData *jarray;
+    long pos;
     int preserved = false;
+    int totalEventFile;
 
     sprintf(tmpfn, "%s/logdir/lsb.events",
             daemonParams[LSB_SHAREDIR].paramValue);
@@ -2753,15 +2757,17 @@ switch_log(void)
     }
 
     if (fchmod(fileno(tmpfp), 0644) != 0) {
-	ls_syslog(LOG_ERR, "%s: fchmod on %s failed: %m", __func__, tmpfn);
+        ls_syslog(LOG_ERR, "%s: fchmod on %s failed: %m", __func__, tmpfn);
     }
 
     efp = fopen(elogFname, "r");
     if (efp == NULL) {
-	ls_syslog(LOG_ERR, "%s: fopen(%s) failed: %m", __func__, elogFname);
+        ls_syslog(LOG_ERR, "%s: fopen(%s) failed: %m", __func__, elogFname);
         _fclose_(&tmpfp);
         goto exiterr;
     }
+
+    fprintf(tmpfp, "#                                     \n");
 
     initHostCtrlTable();
     initQueueCtrlTable();
@@ -2776,6 +2782,7 @@ switch_log(void)
                 ls_syslog(LOG_ERR, "\
 %s: reading line %d in file %s: %s", __func__, lineNum,
                           elogFname, lsb_sysmsg());
+
                 if (lsberrno == LSBE_NO_MEM) {
                     mbdDie(MASTER_MEM);
                 }
@@ -2880,16 +2887,16 @@ switch_log(void)
             case EVENT_QUEUE_CTRL:
                 saveQueueCtrlEvent(&(logPtr->eventLog.queueCtrlLog),
                                    eventTime);
-	    case EVENT_NEW_JGRP:
-		/* If you can switch it don't preserve it
-		 */
-		if (can_switch_jgrp(&logPtr->eventLog.jgrpLog))
-		    preserved = false;
-		else
-		    preserved = true;
+            case EVENT_NEW_JGRP:
+                /* If you can switch it don't preserve it
+                 */
+                if (can_switch_jgrp(&logPtr->eventLog.jgrpLog))
+                    preserved = false;
+                else
+                    preserved = true;
                 break;
-	    case EVENT_DEL_JGRP:
-		preserved = false;
+            case EVENT_DEL_JGRP:
+                preserved = false;
             default:
                 break;
         }
@@ -2912,7 +2919,7 @@ switch_log(void)
                     || (logPtr->type == EVENT_JOB_CLEAN)))) {
 
             if (lsb_puteventrec(tmpfp, logPtr) == -1) {
-	        ls_syslog(LOG_ERR, "\
+                ls_syslog(LOG_ERR, "\
 %s: lsb_puteventrec(%s) failed: %s", __func__, tmpfn, lsb_sysmsg());
                 _fclose_(&efp);
                 unlink (tmpfn);
@@ -2924,8 +2931,11 @@ switch_log(void)
     }
     _fclose_(&efp);
 
+    pos = ftell(tmpfp);
+    rewind(tmpfp);
+    fprintf(tmpfp, "#%ld", pos);
     if (_fclose_(&tmpfp)) {
-	ls_syslog(LOG_ERR, "%s: fclose(%s) failed: %m", __func__, tmpfn);
+        ls_syslog(LOG_ERR, "%s: fclose(%s) failed: %m", __func__, tmpfn);
         goto exiterr;
     }
 
@@ -2935,7 +2945,7 @@ switch_log(void)
 
     errno = errnoSv;
     if (i == -1) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: rename(%s, %s) failed: %m", __func__, tmpfn, elogFname);
         goto exiterr;
     }
@@ -2951,11 +2961,31 @@ switch_log(void)
     else
         log_logSwitch(nextJobId);
 
-    if (renameElogFiles() < 0) {
-	ls_syslog(LOG_ERR, "%s: renameElogFiles() failed", __func__);
-    }
+    if ((totalEventFile = renameElogFiles()) > 0)  {
 
-    return 0;
+        if (fork() == 0) {
+            char  indexFile[MAXFILENAMELEN];
+
+            sprintf(indexFile, "%s/logdir/%s",
+                    daemonParams[LSB_SHAREDIR].paramValue,
+                    LSF_JOBIDINDEX_FILENAME);
+
+            if (updateJobIdIndexFile(indexFile, elogFname, totalEventFile) < 0) {
+                if (lsberrno == LSBE_SYS_CALL)
+                    ls_syslog(LOG_ERR, "\
+%s: updateJobIdIndexFile(%s) failed: %s %m",
+                              __func__, indexFile, lsb_sysmsg());
+                else
+                    ls_syslog(LOG_ERR, "\
+%s: updateJobIdIndexFile(%s) failed: %s",
+                              __func__, indexFile, lsb_sysmsg());
+            }
+            exit(0);
+        }
+        return 0;
+    } else {
+        ls_syslog(LOG_ERR, "%s: renameElogFiles() failed", __func__);
+    }
 
 exiterr:
     lsb_merr("\
@@ -3021,49 +3051,56 @@ createAcct0File(void)
 
 
 static int
-createEvent0File(void)
+createEvent0File (void)
 {
+    static char fname[] = "createEvent0File";
     char event0File[MAXFILENAMELEN];
     char buf[MSGSIZE];
+    char ch;
     struct stat st;
     int nread, cc, size;
+    long int pos;
     FILE *eventPtr, *event0Ptr;
 
     sprintf(event0File, "%s/logdir/lsb.events.0",
             daemonParams[LSB_SHAREDIR].paramValue);
 
-    /* Get the size of lsb.events
-     */
     stat(elogFname, &st);
     size = st.st_size;
 
     if ((eventPtr = fopen(elogFname, "r")) == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: fopen(%s) failed %m", __func__, elogFname);
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", elogFname);
         _fclose_(&eventPtr);
         return -1;
     }
 
     if ((event0Ptr  = fopen(event0File, "w")) == NULL) {
-        ls_syslog(LOG_ERR, "\
-%s: fopen(%s) failed %m", __func__, event0File);
+        ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fopen", event0File);
         _fclose_(&eventPtr);
         return -1;
     }
-
     chmod(event0File, 0644);
 
-    /* Copy the lsb.events to lsb.events.0
-     */
-    for (cc = 0, nread = 0; nread < size;) {
+    fprintf(event0Ptr, "#%ld                       \n", time(0));
 
+    if (fscanf(eventPtr, "%c%ld ", &ch, &pos) != 2 || ch != '#') {
+        pos = 0;
+    }
+
+    if (fseek(eventPtr, pos, SEEK_SET) != 0) {
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "fseek");
+        return -1;
+    }
+
+    size -= pos;
+
+    for (cc = 0, nread = 0; nread < size;) {
         if ((cc = fread(buf, 1, MSGSIZE, eventPtr)) > 0) {
             if (nread + cc > size)
                 cc = size - nread;
 
             if (fwrite(buf, 1, cc, event0Ptr) == 0) {
-                ls_syslog(LOG_ERR, "\
-%s: fwrite(%s) %d bytes failed %m", __func__, event0File, cc);
+                ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "fwrite");
                 _fclose_(&eventPtr);
                 _fclose_(&event0Ptr);
                 return -1;
@@ -3072,7 +3109,7 @@ createEvent0File(void)
         } else if (feof(eventPtr)){
             break;
         } else {
-            ls_syslog(LOG_ERR, "%s: fread(%s) failed %m", __func__, elogFname);
+            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "fread", elogFname);
             _fclose_(&eventPtr);
             _fclose_(&event0Ptr);
             return -1;
@@ -4381,10 +4418,10 @@ checkJobInCore(LS_LONG_INT jobId)
 
 static char *
 instrJobStarter1(char *data,
-		 int  datalen,
-		 char *begin,
-		 char *end,
-		 char *jstr)
+                 int  datalen,
+                 char *begin,
+                 char *end,
+                 char *jstr)
 {
     static char fname[] = "instrJobStarter1()";
     char        *jstr_header = NULL;
@@ -5138,10 +5175,10 @@ open_job_msg_file(const char *fname)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     if ((fp = fopen(fname, "a+")) == NULL) {
-	sigprocmask(SIG_SETMASK, &oldmask, NULL);
-	ls_syslog(LOG_ERR, "\
+        sigprocmask(SIG_SETMASK, &oldmask, NULL);
+        ls_syslog(LOG_ERR, "\
 %s: fopen() %s failed: %m", __func__, elogFname);
-	return NULL;
+        return NULL;
     }
 
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
@@ -5167,7 +5204,7 @@ put_job_msg(FILE *fp, const char *fname)
     if (lsb_puteventrec(fp, logPtr) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: lsb_puteventrec() failed %s", __func__, lsb_sysmsg());
-	return -1;
+        return -1;
     }
 
     /* free the log record
@@ -5175,8 +5212,8 @@ put_job_msg(FILE *fp, const char *fname)
     free(logPtr);
 
     if (fflush(fp) != 0) {
-	ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
-	return -1;
+        ls_syslog(LOG_ERR, "%s: fflush() failed %m", __func__);
+        return -1;
     }
 
     return 0;
@@ -5192,24 +5229,24 @@ static int
 do_switch_child_end(void)
 {
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: switch child pid %d gone %d", __func__,
-		  swchild->pid, swchild->child_gone);
+                  swchild->pid, swchild->child_gone);
     }
 
     /* Examine exit status of the switch child
      */
     if (WIFEXITED(swchild->status)) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: switch child exit with status %d", __func__,
-		  WEXITSTATUS(swchild->status));
+                  WEXITSTATUS(swchild->status));
     }
 
     if (WIFSIGNALED(swchild->status)) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: switch child got signal %d and core dump %s", __func__,
-		  WTERMSIG(swchild->status),
-		  WCOREDUMP(swchild->status) ? "yes" : "no");
+                  WTERMSIG(swchild->status),
+                  WCOREDUMP(swchild->status) ? "yes" : "no");
     }
 
     swchild->pid = 0;
@@ -5251,9 +5288,9 @@ make_switch_pidfile(void)
 
     fp = fopen(buf, "w");
     if (fp == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: fopen() %s failed %m", __func__, buf);
-	return -1;
+        return -1;
     }
 
     fprintf(fp, "%d\n", (int)getpid());
@@ -5290,7 +5327,7 @@ wait_for_switch_child(void)
     int pid;
 
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: checking if switch child still running", __func__);
     }
     /* Make the switch child
@@ -5307,31 +5344,31 @@ wait_for_switch_child(void)
      * cleaned its pid and then the parent reconfig.
      */
     if (stat(buf, &sbuf) < 0)
-	goto merge;
+        goto merge;
 
     fp = fopen(buf, "r");
     if (fp == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: fopen() %s failed but stat() ok.. %m", __func__, buf);
-	return;
+        return;
     }
 
     fscanf(fp, "%d", &pid);
     fclose(fp);
 
     if (pid <= 0) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: strange switch pid %d found...", __func__, pid);
-	goto merge;
+        goto merge;
     }
 
     ls_syslog(LOG_INFO, "\
 %s: detected switch child at %s with pid %d", __func__, buf, pid);
 
     while ((kill(pid, 0) == 0)) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: switch child still around pid %d", __func__, pid);
-	millisleep_(2000);
+        millisleep_(2000);
     }
 
     ls_syslog(LOG_INFO, "%s: switch child gone...", __func__);
@@ -5358,7 +5395,7 @@ merge_switch_file(void)
     char buf[BUFSIZ];
 
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: check if there are parent events to merge", __func__);
     }
 
@@ -5367,33 +5404,30 @@ merge_switch_file(void)
      * are no files to merge.
      */
     if (stat(elogFname2, &sbuf) < 0) {
-	if (errno != ENOENT) {
-	    ls_syslog(LOG_ERR, "\
+        if (errno != ENOENT) {
+            ls_syslog(LOG_ERR, "\
 %s: stat() failed on %s file %m", __func__, elogFname2);
-	}
-	return -2;
+        }
+        return -2;
     }
-    /* Get the size of lsb.events.parent
-     */
     size = sbuf.st_size;
-
     /* fopen the switched lsb.events
      */
     fp_child = fopen(elogFname, "a+");
     if (fp_child == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed to open %s %m", __func__, elogFname);
-	return -1;
+        return -1;
     }
 
     /* fopen the lsb.events.parent
      */
     fp_parent = fopen(elogFname2, "r");
     if (fp_parent == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed to open %s %m", __func__, elogFname2);
-	_fclose_(&fp_child);
-	return -1;
+        _fclose_(&fp_child);
+        return -1;
     }
 
     /* Merge the switched file with the temporary
@@ -5408,26 +5442,25 @@ merge_switch_file(void)
             if (fwrite(buf, 1, cc, fp_child) == 0) {
                 ls_syslog(LOG_ERR, "\
 %s: fwrite(%s) %d bytes failed %m", __func__, elogFname, cc);
-
+                _fclose_(&fp_parent);
+                _fclose_(&fp_child);
                 return -1;
             }
-	    _fclose_(&fp_parent);
-	    _fclose_(&fp_child);
             nread += cc;
         } else if (feof(fp_parent)){
             break;
         } else {
             ls_syslog(LOG_ERR, "%s: fread(%s) failed %m", __func__, elogFname);
-	    _fclose_(&fp_parent);
-	    _fclose_(&fp_child);
+            _fclose_(&fp_parent);
+            _fclose_(&fp_child);
             return -1;
         }
     }
 
     if (logclass & LC_SWITCH) {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: merged %d bytes from %s into %s", __func__, nread,
-		  elogFname2, elogFname);
+                  elogFname2, elogFname);
     }
 
     _fclose_(&fp_parent);
