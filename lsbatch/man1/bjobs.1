@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH bjobs 1 "OpenLava Version 3.2 - Jan 2016"
+.TH bjobs 1 "OpenLava Version 3.3 - Mar 2016"
 .br
 .SH NAME
 \fBbjobs\fR - displays information about openlava jobs
@@ -9,12 +9,12 @@
 .BR
 .PP
 .PP
-\fBbjobs\fR [\fB-a\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR] [\fB-J\fR \fIjob_name\fR] 
+\fBbjobs\fR [\fB-a\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-J\fR \fIjob_name\fR] 
 [\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR] 
 [\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR] 
 [\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
 .PP
-\fBbjobs\fR [\fB-d\fR] [\fB-p\fR] [\fB-r\fR] [\fB-s\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR] [\fB-J\fR \fIjob_name\fR] 
+\fBbjobs\fR [\fB-d\fR] [\fB-p\fR] [\fB-r\fR] [\fB-s\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-J\fR \fIjob_name\fR] 
 [\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR] 
 [\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR] 
 [\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
@@ -138,6 +138,23 @@ resource limits information.
 Use bjobs -A -l to display detailed information for job arrays 
 including job array job limit (%\fIjob_limit\fR) if set.
 
+.TP
+\fB-UF
+\fR
+.IP
+Unformatted. Displays unformatted job detail information. This makes it
+easy to write scripts for parsing keywords on bjobs. The results of this
+option have no wide control for the output. Each line starts from the 
+beginning of the line. Information for \fBSCHEDULING PARAMETERS\fR and 
+\fBPENDING REASONS\fR remain formatted. The usage message lines ending without
+any separator have a semicolon added to seprate their different parts. The
+fist line and all lines starting with the time stamp are displayed unformatted
+in a single line. There is no line length and format control.
+
+.IP
+The sections of \fBMEMORY USAGE\fR and \fBRESOURCE REQUIREMENT DETAILS\fR 
+are for compatible with LSF bjobs -UF output format. The values in these sections 
+are inaccurate.
 
 .TP 
 \fIjob_ID
