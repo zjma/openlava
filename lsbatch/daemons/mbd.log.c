@@ -2516,7 +2516,7 @@ logFinishedjob(struct jData *job)
     /* don't close the lsb.acct file.
      * but flush it.
      */
-    fflush(joblof_fp);
+    fflush(joblog_fp);
 }
 
 /* switchELog()
