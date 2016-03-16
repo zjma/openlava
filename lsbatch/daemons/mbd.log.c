@@ -2514,7 +2514,9 @@ logFinishedjob(struct jData *job)
     free(logPtr);
 
     /* don't close the lsb.acct file.
+     * but flush it.
      */
+    fflush(joblof_fp);
 }
 
 /* switchELog()
@@ -3051,7 +3053,7 @@ createAcct0File(void)
 
 
 static int
-createEvent0File (void)
+createEvent0File(void)
 {
     static char fname[] = "createEvent0File";
     char event0File[MAXFILENAMELEN];
