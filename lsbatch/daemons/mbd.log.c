@@ -3089,7 +3089,10 @@ createEvent0File(void)
         pos = 0;
     }
 
-    if (pos==80) pos=4;             // For the first switch
+    /* For the first switch skip the #80 string
+     */
+    if (pos == 80)
+        pos = 4;
 
     if (fseek(eventPtr, pos, SEEK_SET) != 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "fseek");
