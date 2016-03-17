@@ -3089,6 +3089,8 @@ createEvent0File(void)
         pos = 0;
     }
 
+    if (pos==80) pos=4;             // For the first switch
+
     if (fseek(eventPtr, pos, SEEK_SET) != 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "fseek");
         return -1;
