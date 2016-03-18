@@ -929,13 +929,8 @@ prtJobRusage(struct jobInfoEnt *job)
     prtLineWUF(prline);
 
     if (uf_format && job->runRusage.mem > 0) {
-        char memstring[100];
-        if (job->runRusage.mem > 1024)
-            sprintf (memstring, "%d MBytes", job->runRusage.mem/1024);
-        else
-            sprintf (memstring, "%d Kbytes", job->runRusage.mem);
         printf ("\n MEMORY USAGE:\n");
-        printf (" MAX MEM: %s;  AVG MEM: %s\n", memstring, memstring);
+        printf (" MAX MEM: N/A MBytes;  AVG MEM: N/A MBytes\n");
     }
 }
 
@@ -1137,7 +1132,6 @@ displayUF (struct jobInfoEnt *job, struct jobInfoHead *jInfoH, float cpuFactor)
     }
 
     printf ("\n RESOURCE REQUIREMENT DETAILS:\n");
-    printf (" Combined: %s\n Effective: %s\n", job->submit.resReq,
-            job->submit.resReq);
+    printf (" Combined: N/A\n Effective: N/A\n");
     return;
 }
