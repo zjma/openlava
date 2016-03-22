@@ -24,7 +24,7 @@ int
 main(int argc, char **argv)
 {
     if (bsignal(argc, argv) == 0) {
-	exit(-1);
+        exit(-1);
     }
 
     exit(0);
