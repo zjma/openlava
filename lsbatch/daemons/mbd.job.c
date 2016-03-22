@@ -161,8 +161,8 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
 
     hData = getHostData(subReq->fromHost);
     if (hData == NULL
-	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue) {
-	hData = handle_float_client(subReq);
+        && daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue) {
+        hData = handle_float_client(subReq);
     }
     if (hData == NULL) {
 
@@ -199,8 +199,8 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         subReq->options2 |= SUB2_HOST_UX;
 
     newjob = initJData((struct jShared *)my_calloc(1,
-						   sizeof(struct jShared),
-						   "newJob"));
+                                                   sizeof(struct jShared),
+                                                   "newJob"));
     newjob->jobId = nextId;
     returnErr = checkJobParams(newjob, subReq, Reply, auth);
 
@@ -261,7 +261,7 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     newjob->chkpntPeriod = newjob->shared->jobBill.chkpntPeriod;
 
     if (newjob->shared->jobBill.options2 & SUB2_JOB_GROUP) {
-	check_job_group(newjob, auth);
+        check_job_group(newjob, auth);
     }
 
     logJobInfo(subReq, newjob, &jf);
@@ -294,7 +294,7 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         ls_syslog(LOG_DEBUG1, "\
 %s: New job <%s> submitted to queue <%s>",
                   __func__, lsb_jobid2str(newjob->jobId),
-		  newjob->qPtr->queue);
+                  newjob->qPtr->queue);
 
     return LSBE_NO_ERROR;
 }
@@ -857,9 +857,9 @@ getCpuLimit (struct jData *job, struct submitReq *subReq)
             return (LSBE_BAD_LIMIT);
         }
 
-	/* Save the absolute, unscaled run limit
-	 */
-	job->abs_run_limit = job->shared->jobBill.rLimits[LSF_RLIMIT_RUN];
+        /* Save the absolute, unscaled run limit
+         */
+        job->abs_run_limit = job->shared->jobBill.rLimits[LSF_RLIMIT_RUN];
 
         if (runLimit > (INFINIT_INT /(*cpuFactor))) {
             return (LSBE_BAD_LIMIT);
@@ -4456,9 +4456,9 @@ inPendJobList(struct jData *job, int listno, time_t requeueTime)
     struct jData *lastJob;
 
     if (qsort_jobs) {
-	_inPendJobList_(job, listno, requeueTime);
+        _inPendJobList_(job, listno, requeueTime);
     } else {
-	inPendJobList2(job, listno, NULL, &lastJob);
+        inPendJobList2(job, listno, NULL, &lastJob);
     }
 
     job->qPtr->lastJob = NULL;
@@ -4534,7 +4534,7 @@ inPendJobList2(struct jData *job,
     * it has be put before it AB. Logically the head is B.
     */
    listInsertEntryBefore((LIST_T *)jDataList[listno],
-			 (LIST_ENTRY_T *)jp,
+                         (LIST_ENTRY_T *)jp,
                          (LIST_ENTRY_T *)job);
 }
 
@@ -6366,7 +6366,7 @@ copyJobBill (struct submitReq *subReq,
     if (subReq->options2 & SUB2_JOB_GROUP)
         jobBill->job_group = strdup(subReq->job_group);
     else
-	jobBill->job_group = strdup("");
+        jobBill->job_group = strdup("");
 }
 
 void
@@ -8571,8 +8571,8 @@ static int checkSubHost(struct jData *job)
 
     submitHost = getLsfHostData(job->shared->jobBill.fromHost);
     if (submitHost == NULL
-	&& daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
-	return LSBE_NO_ERROR;
+        && daemonParams[LIM_ACCEPT_FLOAT_CLIENT].paramValue)
+        return LSBE_NO_ERROR;
 
     if (submitHost == NULL) {
         return LSBE_BAD_SUBMISSION_HOST;
@@ -8784,7 +8784,7 @@ _inPendJobList_(struct jData *job, int listno, time_t requeueTime)
     if (mSchedStage == M_STAGE_REPLAY)
         return;
     if (0)
-	sort_job_list(listno);
+        sort_job_list(listno);
 }
 
 void
@@ -8802,21 +8802,21 @@ sort_job_list(int listno)
      */
     cc = 0;
     for (jPtr = (struct jData *)jDataList[listno]->back;
-	 jPtr != (void *)jDataList[listno];
-	 jPtr = jPtr->back)
-	++cc;
+         jPtr != (void *)jDataList[listno];
+         jPtr = jPtr->back)
+        ++cc;
 
     if (cc == 0
-	|| cc == 1)
-	return;
+        || cc == 1)
+        return;
 
     jArray = calloc(cc, sizeof(struct jData *));
     l = (LIST_T *)jDataList[listno];
 
     cc = 0;
     while ((jPtr = (struct jData *)listPop(l))) {
-	jArray[cc] = jPtr;
-	++cc;
+        jArray[cc] = jPtr;
+        ++cc;
     }
 
     qsort(jArray, cc, sizeof(struct jData *), jcompare);
@@ -8824,12 +8824,12 @@ sort_job_list(int listno)
 
     for (cc = 0; cc < num; cc++) {
         jPtr = jArray[cc];
-	/* jobs are sorted in increasing order by queue
-	 * priority and jobids switched so the latest job
-	 * in the array jArray[num - 1] is the one with
-	 * the highest priority so it should be pointed
-	 * by the list->back pointer.
-	 */
+        /* jobs are sorted in increasing order by queue
+         * priority and jobids switched so the latest job
+         * in the array jArray[num - 1] is the one with
+         * the highest priority so it should be pointed
+         * by the list->back pointer.
+         */
         listInsertEntryAtBack(l, (LIST_ENTRY_T *)jPtr);
     }
 
@@ -8864,14 +8864,14 @@ jcompare(const void *j1, const void *j2)
      * after.
      */
     if (LSB_ARRAY_JOBID(jPtr1->jobId) > LSB_ARRAY_JOBID(jPtr2->jobId))
-	return -1;
+        return -1;
     if (LSB_ARRAY_JOBID(jPtr1->jobId) < LSB_ARRAY_JOBID(jPtr2->jobId))
-	return 1;
+        return 1;
 
     if (LSB_ARRAY_IDX(jPtr1->jobId) > LSB_ARRAY_IDX(jPtr2->jobId))
-	return -1;
+        return -1;
     if (LSB_ARRAY_IDX(jPtr1->jobId) < LSB_ARRAY_IDX(jPtr2->jobId))
-	return 1;
+        return 1;
 
     abort();
 
@@ -8892,13 +8892,13 @@ handle_float_client(struct submitReq *req)
 
     hPtr = getHostData(masterHost);
     if (hPtr == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: masterHosts %s host data not found?", __func__);
-	return NULL;
+        return NULL;
     }
 
     if (req->resReq == 0) {
-	req->resReq = strdup("type == any");
+        req->resReq = strdup("type == any");
     }
 
     return hPtr;
