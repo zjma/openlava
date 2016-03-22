@@ -170,8 +170,8 @@ do_jobInfoReq(XDR *xdrs,
 %s: Entering this routine...; channel=%d", __func__,chfd);
 
     if (qsort_jobs) {
-	sort_job_list(MJL);
-	sort_job_list(PJL);
+        sort_job_list(MJL);
+        sort_job_list(PJL);
     }
 
     jobInfoHead.hostNames = NULL;
@@ -1611,8 +1611,8 @@ do_groupInfoReq(XDR *xdrs,
         } else {
 
             groupInfoReply.groups = my_calloc(numofhgroups,
-					      sizeof(struct groupInfoEnt),
-					      "do_groupInfoReq");
+                                              sizeof(struct groupInfoEnt),
+                                              "do_groupInfoReq");
 
             reply = checkGroups(&groupInfoReq, &groupInfoReply);
 
@@ -2080,7 +2080,7 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             ls_syslog(LOG_ERR, "\
 %s: Exception bit of <%d> is set for job <%s>",
                       __func__, sbdPtr->chanfd,
-		      lsb_jobid2str(jData->jobId));
+                      lsb_jobid2str(jData->jobId));
         else
             ls_syslog(LOG_ERR, "\
 %s: chanRecv_() failed for job %s", __func__, lsb_jobid2str(jData->jobId));
@@ -2108,7 +2108,7 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
         if (IS_START(jData->jStatus)) {
 
             replayReason = jobStartError(jData,
-					 (sbdReplyType)replyHdr.opCode);
+                                         (sbdReplyType)replyHdr.opCode);
             svReason = jData->newReason;
             jData->newReason = replayReason;
             jStatusChange(jData, JOB_STAT_PEND, LOG_IT, __func__);
@@ -2138,9 +2138,9 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             struct Buffer *replyBuf;
 
             if (chanAllocBuf_(&replyBuf, sizeof(struct LSFHeader)) < 0) {
-		ls_syslog(LOG_ERR, "\
+                ls_syslog(LOG_ERR, "\
 %s: chanAllocBuf_() for job %s", __func__,
-			  lsb_jobid2str(jData->jobId));
+                          lsb_jobid2str(jData->jobId));
                 goto Leave;
             }
 
@@ -2149,9 +2149,9 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             replyBuf->len = LSF_HEADER_LEN;
 
             if (chanEnqueue_(sbdPtr->chanfd, replyBuf) < 0) {
-		ls_syslog(LOG_ERR, "\
+                ls_syslog(LOG_ERR, "\
 %s: chanEnqueue_() for job %s", __func__,
-			  lsb_jobid2str(jData->jobId));
+                          lsb_jobid2str(jData->jobId));
                 chanFreeBuf_(replyBuf);
             } else {
                 sbdPtr->reqCode = MBD_NEW_JOB_KEEP_CHAN;
@@ -2164,9 +2164,9 @@ doNewJobReply(struct sbdNode *sbdPtr, int exception)
             io_block_(s);
 
             if ((cc = writeEncodeHdr_(sbdPtr->chanfd, &hdr, chanWrite_)) < 0) {
-		ls_syslog(LOG_ERR, "\
+                ls_syslog(LOG_ERR, "\
 %s: writeEncodeHEader_() for job %s", __func__,
-			  lsb_jobid2str(jData->jobId));
+                          lsb_jobid2str(jData->jobId));
             }
         }
     }
@@ -2964,10 +2964,10 @@ enqueueLSFHeader(int ch, int opcode)
  */
 int
 do_jobDepInfo(XDR *xdrs,
-	      int chfd,
-	      struct sockaddr_in *from,
-	      char *hostname,
-	      struct LSFHeader *hdr)
+              int chfd,
+              struct sockaddr_in *from,
+              char *hostname,
+              struct LSFHeader *hdr)
 {
     LS_LONG_INT jobID;
     XDR xdrs2;
@@ -2994,7 +2994,7 @@ do_jobDepInfo(XDR *xdrs,
      */
     if (jPtr->shared->jobBill.dependCond[0] == 0) {
         sendLSFHeader(chfd, LSBE_NODEP_COND);
-	return 0;
+        return 0;
     }
     /* make the link and evaluate the dependency
      * condition.
@@ -3020,14 +3020,14 @@ do_jobDepInfo(XDR *xdrs,
     /* XDR the job dep elements
      */
     while ((jdep = dequeue_link(l))) {
-	if (! xdr_jobdep(&xdrs2, jdep, hdr)) {
+        if (! xdr_jobdep(&xdrs2, jdep, hdr)) {
             sendLSFHeader(chfd, LSBE_XDR);
             _free_(replyBuf);
             return -1;
-	}
-	_free_(jdep->dependency);
-	_free_(jdep->jobid);
-	_free_(jdep);
+        }
+        _free_(jdep->dependency);
+        _free_(jdep->jobid);
+        _free_(jdep);
     }
     fin_link(l);
 
@@ -3070,8 +3070,8 @@ get_dep_link_size(link_t *l)
     bytes = 0;
 
     while ((jd = traverse_link(&iter))) {
-	bytes = bytes + ALIGNWORD_(strlen(jd->dependency))
-	    + ALIGNWORD_(strlen(jd->jobid)) + 2 * sizeof(int);
+        bytes = bytes + ALIGNWORD_(strlen(jd->dependency))
+            + ALIGNWORD_(strlen(jd->jobid)) + 2 * sizeof(int);
     }
 
     return bytes;
@@ -3081,11 +3081,11 @@ get_dep_link_size(link_t *l)
  */
 int
 do_jobGroupAdd(XDR *xdrs,
-	       int chfd,
-	       struct sockaddr_in *from,
-	       char *hostname,
-	       struct LSFHeader *hdr,
-	       struct lsfAuth *auth)
+               int chfd,
+               struct sockaddr_in *from,
+               char *hostname,
+               struct LSFHeader *hdr,
+               struct lsfAuth *auth)
 {
     struct job_group group;
     int cc;
@@ -3093,9 +3093,9 @@ do_jobGroupAdd(XDR *xdrs,
     group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
 
     if (! xdr_jobgroup(xdrs, &group, hdr)) {
-	ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
-	enqueueLSFHeader(chfd, LSBE_XDR);
-	return -1;
+        ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+        enqueueLSFHeader(chfd, LSBE_XDR);
+        return -1;
     }
 
     cc = add_job_group(&group, auth);
@@ -3112,11 +3112,11 @@ do_jobGroupAdd(XDR *xdrs,
  */
 int
 do_jobGroupDel(XDR *xdrs,
-	       int chfd,
-	       struct sockaddr_in *from,
-	       char *hostname,
-	       struct LSFHeader *hdr,
-	       struct lsfAuth *auth)
+               int chfd,
+               struct sockaddr_in *from,
+               char *hostname,
+               struct LSFHeader *hdr,
+               struct lsfAuth *auth)
 {
     struct job_group group;
     int cc;
@@ -3124,9 +3124,9 @@ do_jobGroupDel(XDR *xdrs,
     group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
 
     if (! xdr_jobgroup(xdrs, &group, hdr)) {
-	ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
-	enqueueLSFHeader(chfd, LSBE_XDR);
-	return -1;
+        ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+        enqueueLSFHeader(chfd, LSBE_XDR);
+        return -1;
     }
 
     cc = del_job_group(&group, auth);
@@ -3143,10 +3143,10 @@ do_jobGroupDel(XDR *xdrs,
  */
 int
 do_jobGroupInfo(XDR *xdrs,
-		int chfd,
-		struct sockaddr_in *from,
-		char *hostname,
-		struct LSFHeader *hdr)
+                int chfd,
+                struct sockaddr_in *from,
+                char *hostname,
+                struct LSFHeader *hdr)
 {
     int size;
     XDR xdrs2;
@@ -3178,12 +3178,12 @@ do_jobGroupInfo(XDR *xdrs,
 
     cc = encode_nodes(&xdrs2, &n, JGRP_NODE_GROUP, hdr);
     if (cc < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed encoding %d bytes", __func__, size);
-	sendLSFHeader(chfd, LSBE_XDR);
-	_free_(buf);
-	xdr_destroy(&xdrs2);
-	return -1;
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        xdr_destroy(&xdrs2);
+        return -1;
     }
 
     len = XDR_GETPOS(&xdrs2);
