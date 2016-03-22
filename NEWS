@@ -18,6 +18,7 @@ Release notes for OpenLava versions
 -- Implemented job groups. New commands are bgadd, bgdel and bgroups.
 -- Implemented bjobs -UF unformatted bjobs output.
 -- Add LSF_BINDIR in openlava startup scripts.
+-- Implement bjobs -g to display only selected job groups.
 
 3.3.pre.1
 =========

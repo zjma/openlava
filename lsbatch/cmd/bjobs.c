@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2015 David Bigagli
+ * Copyright (C) 2011-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@ extern int sig_decode(int);
 extern char *get_status(struct jobInfoEnt *job);
 
 static void do_options(int, char **, int *, char **, char **,
-                       char **, char **, float *, int *, char **);
+                       char **, char **, float *, int *, char **, char **);
 static int  skip_job(struct jobInfoEnt *);
 static void displayJobs(struct jobInfoEnt *, struct jobInfoHead *,
                         int, int);
@@ -54,27 +54,15 @@ static char *Time2String(int timer);
 void
 usage (char *cmd)
 {
-    fprintf(stderr, I18N_Usage);
 
-    fprintf(stderr, \
-            ": %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r]", cmd);
-
-    if (lsbMode_ == LSB_MODE_BATCH)
-        fprintf(stderr, " [-A]\n");
-
-    fprintf(stderr, "%s\n",
-            "             [-m host_name] [-q queue_name] [-u user_name | -u all]");
-
-    if (lsbMode_ & LSB_MODE_BATCH)
-        fprintf(stderr,
-                "             [-P project_name] [-N host_spec]\n");
-
-    fprintf(stderr, "             [-J name_spec] [-UF]");
-
-    if (lsbMode_ & LSB_MODE_BATCH)
-        fprintf(stderr, " [jobId | \"jobId[idxList]\" ...]\n");
-    else
-        fprintf(stderr, " [jobId ...]\n");
+    fprintf(stderr, "\
+Usage: %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r] [-g jobgroup_name]\n", cmd);
+    fprintf(stderr, "\
+             [-A] [-m host_name] [-q queue_name] [-u user_name | -u all]");
+    fprintf(stderr,"\
+                     [-P project_name] [-N host_spec] [-J name_spec] [-UF]\n");
+    fprintf(stderr, "\
+             [jobId | \"jobId[idxList]\" ...]\n");
 
     exit(-1);
 }
@@ -88,6 +76,7 @@ main(int argc, char **argv)
     char *queue;
     char *host;
     char *projectName;
+    char *job_group;
     int  format = 0;
     struct jobInfoHead *jInfoH;
     struct jobInfoEnt *job;
@@ -101,23 +90,24 @@ main(int argc, char **argv)
     int cc;
 
     projectName = NULL;
+    job_group = NULL;
     options = 0;
     if (lsb_init(argv[0]) < 0) {
         lsb_perror("lsb_init");
         exit(-1);
     }
 
-    TIMEIT(0, do_options(argc,
-                         argv,
-                         &options,
-                         &user,
-                         &queue,
-                         &host,
-                         &jobName,
-                         &cpuFactor,
-                         &format,
-                         &projectName),
-           "do_options");
+    do_options(argc,
+               argv,
+               &options,
+               &user,
+               &queue,
+               &host,
+               &jobName,
+               &cpuFactor,
+               &format,
+               &projectName,
+               &job_group);
 
     if ((format == LONG_FORMAT || format == LSFUF_FORMAT) && (options & PEND_JOB))
         options |= HOST_NAME;
@@ -184,6 +174,11 @@ main(int argc, char **argv)
 
         if (numJids == 0 && projectName) {
             if (strcmp(job->submit.projectName, projectName) != 0)
+                continue;
+        }
+
+        if (numJids == 0 && job_group) {
+            if (strcmp(job->submit.job_group, job_group) != 0)
                 continue;
         }
 
@@ -262,7 +257,8 @@ do_options(int argc,
            char **jobName,
            float *cpuFactor,
            int *format,
-           char **projectName)
+           char **projectName,
+           char **job_group)
 {
     int cc, Nflag = 0;
     char *norOp = NULL;
@@ -274,7 +270,7 @@ do_options(int argc,
     *jobName = NULL;
     *format = 0;
 
-    while ((cc = getopt(argc, argv, "VladpsrwWgRAhJ:q:u:m:N:P:SU:")) != EOF) {
+    while ((cc = getopt(argc, argv, "VladpsrwWRAhJ:q:u:m:N:P:SU:g:")) != EOF) {
         switch (cc) {
             case 'w':
                 if (*format == LONG_FORMAT || *format == LSFUF_FORMAT)
@@ -347,6 +343,11 @@ do_options(int argc,
                     *format = LSFUF_FORMAT;
                     break;
                 }
+            case 'g':
+                if (*job_group)
+                    usage(argv[0]);
+                *job_group = optarg;
+                break;
             case 'h':
             default:
                 usage(argv[0]);

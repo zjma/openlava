@@ -103,7 +103,7 @@ getSpecJobIds (int argc, char **argv, LS_LONG_INT **jobIds0, int *options)
     if (jobIds)
         free (jobIds);
 
-    if ( argc < optind + 1 ) {
+    if (argc < optind + 1) {
         *jobIds0 = NULL;
         return 0;
     }
