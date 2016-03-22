@@ -1510,7 +1510,9 @@ int
 del_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
 {
     struct jgTreeNode *jgrp;
+    struct jgrpData *jSpec;
     hEnt *e;
+    int i;
 
     /* Here we expect a full path to the job to be
      * removed. /x/y/z and then z is removed
@@ -1526,6 +1528,23 @@ del_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
     if (jgrp->child)
         return LSBE_JGRP_NOTEMPTY;
 
+    /* Check the authentication, manager can zap
+     * any jobgroup.
+     */
+    for (i = 0; i < nManagers; i++) {
+        if (managerIds[i] == auth->uid)
+            goto zapit;
+    }
+
+    jSpec = (struct jgrpData *)jgrp->ndInfo;
+    if (auth->uid != jSpec->userId) {
+        ls_syslog(LOG_ERR, "\
+%s: user %s cannot delete group %s of user %s", __func__, auth->lsfUserName,
+                  jgPtr->group_name, jSpec->userName);
+        return LSBE_PERMISSION;
+    }
+
+zapit:
     /* log if not replaying
      */
     if (mSchedStage != M_STAGE_REPLAY) {
