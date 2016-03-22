@@ -145,8 +145,8 @@ main (int argc, char **argv)
                         queue,
                         host,
                         &jobIds,
-                        options);
-
+                        options,
+                        NULL);
     cc = 0;
     for (i = 0; i < numJobs; i++) {
 

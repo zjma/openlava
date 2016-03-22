@@ -19,6 +19,7 @@ Release notes for OpenLava versions
 -- Implemented bjobs -UF unformatted bjobs output.
 -- Add LSF_BINDIR in openlava startup scripts.
 -- Implement bjobs -g to display only selected job groups.
+-- Implement bkill -g to kill only jobs in a specific job group.
 
 3.3.pre.1
 =========

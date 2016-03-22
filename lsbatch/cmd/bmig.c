@@ -95,7 +95,7 @@ main(int argc, char **argv)
         }
     }
 
-    numJobs = getJobIds (argc, argv, jobName, user, NULL, NULL, &jobIds, 0);
+    numJobs = getJobIds (argc, argv, jobName, user, NULL, NULL, &jobIds, 0, NULL);
 
 
     for (i = 0; i < numJobs; i++) {

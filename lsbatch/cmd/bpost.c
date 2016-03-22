@@ -67,7 +67,8 @@ main(int argc, char **argv)
               NULL,
               NULL,
               &jobIDs,
-              0);
+              0,
+              NULL);
 
     cc = lsb_postjobmsg(jobIDs[0], msg);
     if (cc < 0) {

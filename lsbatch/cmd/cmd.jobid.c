@@ -1,4 +1,5 @@
-/* $Id: cmd.jobid.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,26 +29,34 @@
 
 extern char *yybuff;
 static void freeIdxList(struct idxList *);
-static struct idxList * parseJobArrayIndex(char *);
-static int getJobIdIndexList (char *, int *, struct idxList **, int);
+static struct idxList *parseJobArrayIndex(char *);
+static int getJobIdIndexList(char *, int *, struct idxList **, int);
+static LS_LONG_INT *get_jgrp_jobs(struct jobInfoHead *, int *, char *);
 
 int
-getJobIds (int argc, char **argv, char *jobName, char *user, char *queue,
-           char *host, LS_LONG_INT **jobIds0, int extOption)
+getJobIds(int argc,
+          char **argv,
+          char *jobName,
+          char *user,
+          char *queue,
+          char *host,
+          LS_LONG_INT **jobIds0,
+          int extOption,
+          char *jgrp)
 {
     int numJobIds = 0;
     int options = LAST_JOB;
     struct jobInfoHead *jobInfoHead;
+    int num_jobs;
 
     if (extOption) {
         options = extOption;
     }
 
-    numJobIds = getSpecJobIds (argc, argv, jobIds0, &options);
-
+    numJobIds = getSpecJobIds(argc, argv, jobIds0, &options);
 
     if (extOption & ZOMBIE_JOB) {
-	options |= ZOMBIE_JOB;
+        options |= ZOMBIE_JOB;
     }
 
     if (numJobIds != 0)
@@ -55,8 +64,8 @@ getJobIds (int argc, char **argv, char *jobName, char *user, char *queue,
 
     if (strstr(argv[0], "bmig")) {
 
-	options &= ~CUR_JOB;
-	options |= (RUN_JOB | SUSP_JOB);
+        options &= ~CUR_JOB;
+        options |= (RUN_JOB | SUSP_JOB);
     }
 
     if (strstr(argv[0], "brequeue")){
@@ -66,24 +75,33 @@ getJobIds (int argc, char **argv, char *jobName, char *user, char *queue,
 
     options |= JOBID_ONLY;
 
-
-    if (options & DONE_JOB)
-    {
-            options &= ~JOBID_ONLY;
+    if (options & DONE_JOB) {
+        options &= ~JOBID_ONLY;
     }
 
-    TIMEIT(0, (jobInfoHead = lsb_openjobinfo_a ((LS_LONG_INT)0, jobName, user, queue,
-                                        host, options)), "lsb_openjobinfo");
+    if (jgrp) {
+        options = ALL_JOB;
+    }
+
+    jobInfoHead = lsb_openjobinfo_a((LS_LONG_INT)0,
+                                    jobName,
+                                    user,
+                                    queue,
+                                    host,
+                                    options);
     if (jobInfoHead == NULL) {
-	jobInfoErr (0, jobName, user, queue, host, options);
-	exit(-1);
+        jobInfoErr(0, jobName, user, queue, host, options);
+        exit(-1);
     }
 
-    TIMEIT(0, lsb_closejobinfo(), "lsb_closejobinfo");
-
-    *jobIds0 = jobInfoHead->jobIds;
-    return (jobInfoHead->numJobs);
-
+    if (jgrp) {
+        *jobIds0 = get_jgrp_jobs(jobInfoHead, &num_jobs, jgrp);
+    } else {
+        *jobIds0 = jobInfoHead->jobIds;
+        num_jobs = jobInfoHead->numJobs;
+    }
+    lsb_closejobinfo();
+    return num_jobs;
 }
 
 int
@@ -118,23 +136,23 @@ getSpecJobIds (int argc, char **argv, LS_LONG_INT **jobIds0, int *options)
 
         if (getJobIdIndexList (argv[optind], &jobId, &idxListP,0)) {
             exit(-1);
-	}
+        }
 
 
-	if (idxListP == NULL) {
+        if (idxListP == NULL) {
 
             if (numJobIds >= sizeOfJobIdArray) {
-	        sizeOfJobIdArray += MAX_JOB_IDS;
-	        if ((jobIds = realloc(jobIds, sizeOfJobIdArray*sizeof(LS_LONG_INT))) == NULL) {
-               	    fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
-               	    exit(-1);
-	        }
+                sizeOfJobIdArray += MAX_JOB_IDS;
+                if ((jobIds = realloc(jobIds, sizeOfJobIdArray*sizeof(LS_LONG_INT))) == NULL) {
+                    fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
+                    exit(-1);
+                }
             }
 
 
             if (jobId == 0 ) {
                 if (options)
-		    *options = CUR_JOB;
+                    *options = CUR_JOB;
                 numJobIds = 0;
                 break;
             }
@@ -143,33 +161,33 @@ getSpecJobIds (int argc, char **argv, LS_LONG_INT **jobIds0, int *options)
                     break;
             if (i == numJobIds) {
                 jobIds[numJobIds] = jobId;
-	        numJobIds++;
-	    }
-	    continue;
-	}
+                numJobIds++;
+            }
+            continue;
+        }
 
 
-	for (idx = idxListP; idx; idx = idx->next) {
-	    for(j = idx->start; j <= idx->end; j+= idx->step) {
-    		lsbJobId = LSB_JOBID(jobId, j);
+        for (idx = idxListP; idx; idx = idx->next) {
+            for(j = idx->start; j <= idx->end; j+= idx->step) {
+                lsbJobId = LSB_JOBID(jobId, j);
                 if (numJobIds >= sizeOfJobIdArray) {
-	            sizeOfJobIdArray += MAX_JOB_IDS;
-	            if ((temp = (LS_LONG_INT *) realloc(jobIds,
-			sizeOfJobIdArray * sizeof(LS_LONG_INT))) == NULL) {
-               	        fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
-               	        exit(-1);
-	            }
-		    jobIds = temp;
+                    sizeOfJobIdArray += MAX_JOB_IDS;
+                    if ((temp = (LS_LONG_INT *) realloc(jobIds,
+                        sizeOfJobIdArray * sizeof(LS_LONG_INT))) == NULL) {
+                        fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
+                        exit(-1);
+                    }
+                    jobIds = temp;
                 }
                 for (i = 0; i < numJobIds; i++)
                     if (lsbJobId == jobIds[i])
                         break;
                 if (i == numJobIds) {
                     jobIds[numJobIds] = lsbJobId;
-	            numJobIds++;
-	        }
-	    }
-	}
+                    numJobIds++;
+                }
+            }
+        }
         freeIdxList(idxListP);
     }
     *jobIds0 = jobIds;
@@ -234,26 +252,26 @@ getOneJobId (char *string, LS_LONG_INT *outJobId, int options)
     }
 
     if (jobId == 0) {
-	fprintf(stderr, "%s.\n",
-		(_i18n_msg_get(ls_catd,NL_SETN,1006, "Job Id = 0 is out of valid range"))); /* catgets  1006  */
-	freeIdxList(idxListP);
+        fprintf(stderr, "%s.\n",
+                (_i18n_msg_get(ls_catd,NL_SETN,1006, "Job Id = 0 is out of valid range"))); /* catgets  1006  */
+        freeIdxList(idxListP);
         return -1;
     }
 
 
     if (idxListP == NULL) {
-	*outJobId = jobId;
-	return 0;
+        *outJobId = jobId;
+        return 0;
     }
 
 
     if ((idxListP->next != NULL) |
-	(idxListP->start != idxListP->end) |
-	(idxListP->step != 1)) {
-	fprintf(stderr, "%s: %s.\n", string,
-		(_i18n_msg_get(ls_catd,NL_SETN,1007, "Illegal job array index. One element only"))); /* catgets  1007  */
-	freeIdxList(idxListP);
-	return -1;
+        (idxListP->start != idxListP->end) |
+        (idxListP->step != 1)) {
+        fprintf(stderr, "%s: %s.\n", string,
+                (_i18n_msg_get(ls_catd,NL_SETN,1007, "Illegal job array index. One element only"))); /* catgets  1007  */
+        freeIdxList(idxListP);
+        return -1;
     }
 
 
@@ -280,13 +298,13 @@ int options)
     strcpy (inJobIdStr, string);
     if ((startP = strchr(string, '[')) == NULL) {
         if (!isint_(string)) {
-	    if ( isdigitstr_(string) && islongint_(string) ) {
-		LS_LONG_INT interJobId = 0;
-		if ((interJobId = atoi64_(string)) > 0) {
-		    strcpy(inJobIdStr, lsb_jobid2str(interJobId));
-		}
-	    }
-	}
+            if ( isdigitstr_(string) && islongint_(string) ) {
+                LS_LONG_INT interJobId = 0;
+                if ((interJobId = atoi64_(string)) > 0) {
+                    strcpy(inJobIdStr, lsb_jobid2str(interJobId));
+                }
+            }
+        }
     }
 
 
@@ -294,34 +312,34 @@ int options)
 
 
         if (!isint_(inJobIdStr)) {
-	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string); /* catgets  1008  */
-	    return -1;
-	}
+            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string); /* catgets  1008  */
+            return -1;
+        }
 
 
-	if ((jobId = atoi(inJobIdStr)) < 0) {
-	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
-	    return -1;
-	}
-	*outJobId = jobId;
-	return 0;
+        if ((jobId = atoi(inJobIdStr)) < 0) {
+            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
+            return -1;
+        }
+        *outJobId = jobId;
+        return 0;
     }
 
 
     if ((jobIdLen = (int) (startP - inJobIdStr)) >= 16) {
-	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1010, "Job Id (%s) is too long.\n")), string); /* catgets  1010  */
+        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1010, "Job Id (%s) is too long.\n")), string); /* catgets  1010  */
         return -1;
     }
     STRNCPY(jobIdStr, inJobIdStr, jobIdLen+1);
 
 
     if (!isint_(jobIdStr)) {
-	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
+        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1008, "%s: Illegal job ID.\n")), string);
         return -1;
     }
     jobId = atoi(jobIdStr);
     if ((jobId <= 0) || (jobId > LSB_MAX_ARRAY_JOBID))  {
-	fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1012, "%s: Job ID out of valid range.\n")), string); /* catgets  1012  */
+        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1012, "%s: Job ID out of valid range.\n")), string); /* catgets  1012  */
         return -1;
     }
     *outJobId = jobId;
@@ -363,42 +381,42 @@ parseJobArrayIndex(char *jobName)
     if (idxparse(&idxList, &maxJLimit)) {
         freeIdxList(idxList);
         if (idxerrno == IDX_MEM)
-	    fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
+            fprintf(stderr, I18N_FUNC_FAIL, fName, "malloc");
         else
-	    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1014, "%s: Bad job array index list.\n")), jobName); /* catgets  1014  */
+            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,1014, "%s: Bad job array index list.\n")), jobName); /* catgets  1014  */
         return NULL;
     }
 
 
     for (idx = idxList; idx; idx = idx->next) {
-	if (idx->end == INFINIT_INT)
-	    idx->end = LSB_MAX_ARRAY_IDX;
+        if (idx->end == INFINIT_INT)
+            idx->end = LSB_MAX_ARRAY_IDX;
 
         if (idx->start > idx->end)  {
-	    fprintf(stderr, "%d-%d: %s.\n",
-		    idx->start, idx->end,
-		    I18N(1015, "Job Array index invalid range"));/* catgets 1015 */
+            fprintf(stderr, "%d-%d: %s.\n",
+                    idx->start, idx->end,
+                    I18N(1015, "Job Array index invalid range"));/* catgets 1015 */
             freeIdxList(idxList);
             return NULL;
         }
         if ((idx->start <= 0) || (idx->start > LSB_MAX_ARRAY_IDX))  {
-	    fprintf(stderr, "%d: %s.\n",
-		   idx->start,
-		   I18N(1016, "Job Array index out of valid range")); /* catgets  1016  */
+            fprintf(stderr, "%d: %s.\n",
+                   idx->start,
+                   I18N(1016, "Job Array index out of valid range")); /* catgets  1016  */
             freeIdxList(idxList);
             return NULL;
         }
         if ((idx->end <= 0) || (idx->end > LSB_MAX_ARRAY_IDX))  {
-	    fprintf(stderr, "%d: %s.\n",
-		    idx->end,
-		    I18N(1016, "Job Array index out of valid range"));
+            fprintf(stderr, "%d: %s.\n",
+                    idx->end,
+                    I18N(1016, "Job Array index out of valid range"));
             freeIdxList(idxList);
             return NULL;
         }
         if ((idx->step <= 0) || (idx->step > LSB_MAX_ARRAY_IDX))  {
-	    fprintf(stderr, "%d: %s.\n",
-		    idx->step,
-		    I18N(1018, "Job Array index step out of valid range"));  /* catgets  1018  */
+            fprintf(stderr, "%d: %s.\n",
+                    idx->step,
+                    I18N(1018, "Job Array index step out of valid range"));  /* catgets  1018  */
             freeIdxList(idxList);
             return NULL;
         }
@@ -463,3 +481,31 @@ getJobIdList (char *jobIdStr, LS_LONG_INT **jobIdList)
 
 }
 
+static LS_LONG_INT *
+get_jgrp_jobs(struct jobInfoHead *jh, int *num_jobs, char *jgrp)
+{
+    struct jobInfoEnt *j;
+    int i;
+    LS_LONG_INT *jobs;
+
+    *num_jobs = 0;
+    jobs = calloc(jh->numJobs, sizeof(LS_LONG_INT));
+
+    for (i = 0; i < jh->numJobs; i++) {
+
+        j = lsb_readjobinfo(NULL);
+        if (j == NULL) {
+            lsb_perror("lsb_readjobinfo()");
+            exit(-1);
+        }
+        if (strcmp(j->submit.job_group, jgrp) != 0)
+            continue;
+        jobs[*num_jobs] = j->jobId;
+        (*num_jobs)++;
+    }
+
+    if (*num_jobs == 0)
+        printf("Found no jobs for group %s.\n", jgrp);
+
+    return jobs;
+}

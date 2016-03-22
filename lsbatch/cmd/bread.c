@@ -60,7 +60,8 @@ main(int argc, char **argv)
                     NULL,
                     NULL,
                     &jobIDs,
-                    0);
+                    0,
+                    NULL);
 
     msg = lsb_readjobmsg(jobIDs[0], &num);
     if (msg == NULL) {

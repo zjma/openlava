@@ -1,4 +1,5 @@
-/* $Id: cmd.sig.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -33,15 +34,16 @@ static void prtSignaled (int, LS_LONG_INT);
 static int  sigValue;
 static LS_LONG_INT sigJobId;
 static char   *sigUser, *sigQueue, *sigHost, *sigJobName;
+static char *sig_jgrp;
 static time_t chkPeriod = LSB_CHKPERIOD_NOCHNG;
 static int chkOptions;
 static int runCount = 0;
 
-static int do_options (int argc, char **argv, LS_LONG_INT **jobIds, int signalValue);
-void usage (char *cmd, int sig);
+static int do_options(int, char **, LS_LONG_INT **, int);
+static void usage (char *, int);
 
-void
-usage (char *cmd, int sig)
+static void
+usage(char *cmd, int sig)
 {
     fprintf(stderr, I18N_Usage);
     fprintf(stderr, ": %s [-h] [-V] ", cmd);
@@ -53,7 +55,7 @@ usage (char *cmd, int sig)
     else if (sig == SIGDEL)
         fprintf(stderr, " [-m host_name] [-q queue_name] [-u user_name | -u all]\n            [-n running_times] [-d] [-a] [-J job_name] ");
     else if (sig == SIGSTOP)
-         fprintf(stderr, " [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-d] [-a] [-J job_name] ");
+        fprintf(stderr, " [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-d] [-a] [-J job_name] ");
     else
         fprintf(stderr, " [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-J job_name] ");
 
@@ -83,181 +85,190 @@ do_options (int argc, char **argv, LS_LONG_INT **jobIds, int signalValue)
     sigHost    = NULL;
     sigJobName = NULL;
     chkOptions = 0;
+    sig_jgrp = NULL;
 
     sigValue = signalValue;
 
-    while ((cc = getopt(argc, argv, "VhkSlq:u:m:p:rfs:J:n:ad")) != EOF) {
+    while ((cc = getopt(argc, argv, "VhkSlq:u:m:p:rfs:J:n:adg:")) != EOF) {
         switch (cc) {
-        case 'u':
-            if (sigUser)
-                usage(argv[0], signalValue);
-            if (strcmp(optarg, "all") == 0)
-                sigUser = ALL_USERS;
-            else
-                sigUser = optarg;
-            break;
-        case 'q':
-            sigQueue = optarg;
-            break;
-        case 'm':
-            sigHost = optarg;
-            break;
-        case 'l':
+            case 'u':
+                if (sigUser)
+                    usage(argv[0], signalValue);
+                if (strcmp(optarg, "all") == 0)
+                    sigUser = ALL_USERS;
+                else
+                    sigUser = optarg;
+                break;
+            case 'q':
+                sigQueue = optarg;
+                break;
+            case 'm':
+                sigHost = optarg;
+                break;
+            case 'l':
 
-            if (signalValue != SIGKILL) {
-                fprintf (stderr, "%s: %s %s\n",
-                    argv[0],
-                    _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"), /* catgets  459  */
-                    "l");
-                usage (argv[0], signalValue);
-            }
-            puts (getSigSymbolList());
-            exit (-1);
-        case 's':
-            if (signalValue != SIGKILL) {
-                fprintf (stderr, "%s: %s %s\n",
-                    argv[0],
-                    _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
-                    "s");
-                usage (argv[0], signalValue);
-            }
-            if (forceflg) {
-                usage (argv[0], signalValue);
+                if (signalValue != SIGKILL) {
+                    fprintf (stderr, "%s: %s %s\n",
+                             argv[0],
+                             _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"), /* catgets  459  */
+                             "l");
+                    usage (argv[0], signalValue);
+                }
+                puts (getSigSymbolList());
+                exit (-1);
+            case 's':
+                if (signalValue != SIGKILL) {
+                    fprintf (stderr, "%s: %s %s\n",
+                             argv[0],
+                             _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
+                             "s");
+                    usage (argv[0], signalValue);
+                }
+                if (forceflg) {
+                    usage (argv[0], signalValue);
+                    exit(-1);
+                } else {
+                    if ((sigValue = getSigVal(optarg)) < 0) {
+                        fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,461,
+                                                       "%s: Illegal signal value\n")), optarg); /* catgets  461  */
+                        exit (-1);
+                    }
+                    sigflg = TRUE;
+                }
+                break;
+            case 'a':
+                if (signalValue != SIGDEL && signalValue != SIGSTOP) {
+                    fprintf (stderr, "%s: %s %s\n",
+                             argv[0],
+                             _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
+                             "a");
+                    usage (argv[0], signalValue);
+                }
+                newOptions |= ALL_JOB;
+                break;
+            case 'd':
+                if (signalValue != SIGDEL && signalValue != SIGSTOP) {
+                    fprintf (stderr, "%s: %s %s\n",
+                             argv[0],
+                             _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
+                             "d");
+                    usage (argv[0], signalValue);
+                }
+                newOptions |= DONE_JOB;
+                break;
+            case 'n':
+                if (signalValue != SIGDEL) {
+                    fprintf (stderr, "%s: %s %s\n",
+                             argv[0],
+                             _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
+                             "n");
+                    usage (argv[0], signalValue);
+                }
+                if (isint_(optarg) && ((runCount = atoi(optarg)) >= 0))
+                    break;
+                fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,465, "%s: Illegal times value\n")), optarg); /* catgets  465  */
                 exit(-1);
-            } else {
-                if ((sigValue = getSigVal(optarg)) < 0) {
-                    fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,461,
-                            "%s: Illegal signal value\n")), optarg); /* catgets  461  */
+
+            case 'J':
+                if ( supportJobNamePattern(optarg) != 0) {
+                    fprintf(stderr, (_i18n_msg_get(ls_catd, NL_SETN, 491, "%s: Job or Job Group name is not valid.\n")), optarg); /* catgets 491*/
                     exit (-1);
                 }
-                sigflg = TRUE;
-            }
-            break;
-        case 'a':
-            if (signalValue != SIGDEL && signalValue != SIGSTOP) {
-                fprintf (stderr, "%s: %s %s\n",
-                    argv[0],
-                    _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
-                    "a");
-                usage (argv[0], signalValue);
-            }
-            newOptions |= ALL_JOB;
-            break;
-        case 'd':
-            if (signalValue != SIGDEL && signalValue != SIGSTOP) {
-                fprintf (stderr, "%s: %s %s\n",
-                    argv[0],
-                    _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
-                    "d");
-                usage (argv[0], signalValue);
-            }
-            newOptions |= DONE_JOB;
-            break;
-        case 'n':
-            if (signalValue != SIGDEL) {
-                fprintf (stderr, "%s: %s %s\n",
-                    argv[0],
-                    _i18n_msg_get(ls_catd,NL_SETN,459, "Illegal option --"),
-                    "n");
-                usage (argv[0], signalValue);
-            }
-            if (isint_(optarg) && ((runCount = atoi(optarg)) >= 0))
-                break;
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,465, "%s: Illegal times value\n")), optarg); /* catgets  465  */
-            exit(-1);
 
-        case 'J':
-            if ( supportJobNamePattern(optarg) != 0) {
-               fprintf(stderr, (_i18n_msg_get(ls_catd, NL_SETN, 491, "%s: Job or Job Group name is not valid.\n")), optarg); /* catgets 491*/
-               exit (-1);
-            }
-
-            sigJobName = optarg;
-            break;
-
-        case 'f':
-            if (signalValue == SIGCHK) {
-                chkOptions |= LSB_CHKPNT_FORCE;
-            } else {
-                usage(argv[0], signalValue);
-                exit(-1);
-            }
-            break;
-
-        case 'r':
-            if ( (signalValue == SIGKILL) && (!sigflg) ) {
-                sigValue = SIGFORCE;
-                newOptions |= ZOMBIE_JOB;
-                forceflg=TRUE;
-            } else {
-                usage(argv[0], signalValue);
-                exit(-1);
-            }
-            break;
-
-        case 'p':
-            if (signalValue != SIGCHK) {
-                usage(argv[0], signalValue);
-                exit(-1);
-            }
-
-            if (isint_(optarg) && ((chkPeriod = atoi(optarg) * 60) >= 0))
+                sigJobName = optarg;
                 break;
 
-            fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,466, "%s: Illegal checkpoint period value\n")), optarg); /* catgets  466  */
-            exit(-1);
+            case 'f':
+                if (signalValue == SIGCHK) {
+                    chkOptions |= LSB_CHKPNT_FORCE;
+                } else {
+                    usage(argv[0], signalValue);
+                    exit(-1);
+                }
+                break;
 
-        case 'k':
-            if (sflg) {
-                usage(argv[0], signalValue);
-                exit(-1);
-            } else {
-                kflg++;
+            case 'r':
+                if ( (signalValue == SIGKILL) && (!sigflg) ) {
+                    sigValue = SIGFORCE;
+                    newOptions |= ZOMBIE_JOB;
+                    forceflg=TRUE;
+                } else {
+                    usage(argv[0], signalValue);
+                    exit(-1);
+                }
+                break;
+
+            case 'p':
                 if (signalValue != SIGCHK) {
                     usage(argv[0], signalValue);
                     exit(-1);
                 }
-                chkOptions |= LSB_CHKPNT_KILL;
-            }
-            break;
-        case 'S':
-            if (kflg) {
-                usage(argv[0], signalValue);
+
+                if (isint_(optarg) && ((chkPeriod = atoi(optarg) * 60) >= 0))
+                    break;
+
+                fprintf(stderr, (_i18n_msg_get(ls_catd,NL_SETN,466, "%s: Illegal checkpoint period value\n")), optarg); /* catgets  466  */
                 exit(-1);
-            } else {
-                sflg++;
-                if (signalValue != SIGCHK) {
+
+            case 'k':
+                if (sflg) {
                     usage(argv[0], signalValue);
                     exit(-1);
+                } else {
+                    kflg++;
+                    if (signalValue != SIGCHK) {
+                        usage(argv[0], signalValue);
+                        exit(-1);
+                    }
+                    chkOptions |= LSB_CHKPNT_KILL;
                 }
-                chkOptions |= LSB_CHKPNT_STOP;
-            }
-            break;
-
-        case 'V':
-            fputs(_LS_VERSION_, stderr);
+                break;
+            case 'S':
+                if (kflg) {
+                    usage(argv[0], signalValue);
+                    exit(-1);
+                } else {
+                    sflg++;
+                    if (signalValue != SIGCHK) {
+                        usage(argv[0], signalValue);
+                        exit(-1);
+                    }
+                    chkOptions |= LSB_CHKPNT_STOP;
+                }
+                break;
+            case 'g':
+                sig_jgrp = optarg;
+                break;
+            case 'V':
+                fputs(_LS_VERSION_, stderr);
             exit(0);
-        case 'h':
-        default:
-            usage(argv[0], signalValue);
+            case 'h':
+            default:
+                usage(argv[0], signalValue);
         }
     }
 
 
-    if ((argc == optind) &&
-            (sigUser == NULL) &&
-            (sigQueue == NULL) &&
-            (sigHost == NULL) &&
-            (sigJobName == NULL) ) {
-        fprintf(stderr, "%s.\n",
-            (_i18n_msg_get(ls_catd,NL_SETN,467, "Job ID or one of '-m', '-u' '-q' and '-J' must be specified"))); /* catgets  467  */
+    if (argc == optind
+        && sigUser == NULL
+        && sigQueue == NULL
+        && sigHost == NULL
+        && sigJobName == NULL
+        && sig_jgrp == NULL) {
+        fprintf(stderr, "\
+Job ID or one of '-m', '-u' '-q' -'g' and '-J' must be specified");
         usage(argv[0], signalValue);
     }
 
-
-    return (getJobIds (argc, argv, sigJobName, sigUser, sigQueue, sigHost,
-                       jobIds, newOptions));
-
+    return getJobIds(argc,
+                     argv,
+                     sigJobName,
+                     sigUser,
+                     sigQueue,
+                     sigHost,
+                     jobIds,
+                     newOptions,
+                     sig_jgrp);
 }
 
 int
@@ -350,25 +361,25 @@ void prtSignaled (int signalValue, LS_LONG_INT jobId)
     char *op;
 
     switch (signalValue) {
-      case SIGCHK:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,473, "checkpointed")); /* catgets  473  */
-        break;
-      case SIGSTOP:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,474, "stopped")); /* catgets  474  */
-        break;
-      case SIGCONT:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,475, "resumed")); /* catgets  475  */
-        break;
-      case SIGKILL:
-      case SIGFORCE:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,476, "terminated")); /* catgets  476  */
-        break;
-      case SIGDEL:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,477, "deleted")); /* catgets  477  */
-        break;
-      default:
-        op = (_i18n_msg_get(ls_catd,NL_SETN,478, "signaled")); /* catgets  478  */
-        break;
+        case SIGCHK:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,473, "checkpointed")); /* catgets  473  */
+            break;
+        case SIGSTOP:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,474, "stopped")); /* catgets  474  */
+            break;
+        case SIGCONT:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,475, "resumed")); /* catgets  475  */
+            break;
+        case SIGKILL:
+        case SIGFORCE:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,476, "terminated")); /* catgets  476  */
+            break;
+        case SIGDEL:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,477, "deleted")); /* catgets  477  */
+            break;
+        default:
+            op = (_i18n_msg_get(ls_catd,NL_SETN,478, "signaled")); /* catgets  478  */
+            break;
     }
 
     if (signalValue == SIGDEL && runCount != 0)
