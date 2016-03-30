@@ -10,7 +10,7 @@
 .PP
 .PP
 \fBbkill\fR\fB \fR[\fB-l\fR] [\fB-R\fR] [\fB-J\fR\fB \fR\fIjob_name\fR] [\fB-m\fR\fB \fR\fIhost_name | \fR\fB-m\fR\fI host_group\fR] 
-[\fB-q\fR\fB \fR\fIqueue_name\fR] [\fB-r\fR | \fB-s (\fR\fIsignal_value\fR\fI | \fR\fIsignal_name\fR\fB)\fR] 
+[\fB-q\fR\fB \fR\fIqueue_name\fR] [\fB-g\fR \fIjob_group_name\fR] [\fB-r\fR | \fB-s (\fR\fIsignal_value\fR\fI | \fR\fIsignal_name\fR\fB)\fR]
 [\fB-u\fR\fB \fR\fIuser_name | \fR\fB-u\fR\fI user_group\fR\fB | \fR\fB-u all\fR] 
 [\fIjob_ID \fR... | \fB0\fR | \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex\fR\fB]"\fR ...]
 .PP
@@ -64,7 +64,7 @@ If the job cannot be killed, use bkill -r to remove the job from the
 openlava system without waiting for the job to terminate, and free the 
 resources of the job. 
 .PP
-A job ID or -m, -u, -q, or -J must be specified with bkill.
+A job ID or -m, -u, -q, -g, or -J must be specified with bkill.
 .SH OPTIONS
 .BR
 .PP
@@ -75,6 +75,32 @@ A job ID or -m, -u, -q, or -J must be specified with bkill.
 Displays the signal names supported by bkill. This is a subset of 
 signals supported by /bin/kill and is platform-dependent.
 
+.TP
+\fB-g\fR \fIjob_group_name\fR
+.IP
+Operates only on jobs in the job group specified by \fIjob_group_name\fR.
+.IP
+bkill does not kill jobs in lower level job groups in the path. For example,
+jobs are attached to job groups /mygroup and /mygroup/subgroup:
+.IP
+bsub -g /mygroup myjob
+.br
+Job <1021> is submitted to default queue <normal>.
+.IP
+bsub -g /mygroup/subgroup myjob2
+.br
+Job <1022> is submitted to default queue <normal>.
+.IP
+The following bkill command only kills jobs in /mygroup, not the subgroup
+/mygroup/subgroup:
+.IP
+bkill -g /mygroup 0
+.br
+Job <1021> is being terminated
+.IP
+bkill -g /mygroup/subgroup 0
+.br
+Job <1022> is being terminated
 
 .TP 
 \fB-J\fR \fIjob_name

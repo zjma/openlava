@@ -11,12 +11,14 @@
 .PP
 \fBbjobs\fR [\fB-a\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-J\fR \fIjob_name\fR] 
 [\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR] 
-[\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR] 
+[\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR]
+[\fB-g\fR \fIjob_group_name\fR]
 [\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
 .PP
 \fBbjobs\fR [\fB-d\fR] [\fB-p\fR] [\fB-r\fR] [\fB-s\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-J\fR \fIjob_name\fR] 
 [\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR] 
-[\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR] 
+[\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR]
+[\fB-g\fR \fIjob_group_name\fR]
 [\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
 .PP
 \fBbjobs \fR[\fB-h\fR | \fB-V\fR]
@@ -159,6 +161,13 @@ Displays information about the specified jobs or job arrays.
 
 .IP
 If you use -A, specify job array IDs without the index list.
+
+
+.TP
+\fB-g\fR \fIjob_group_name\fR
+.IP
+Displays information about jobs attached to the job group specified
+by \fIjob_group_name\fR.
 
 
 .TP 

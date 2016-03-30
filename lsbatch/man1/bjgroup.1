@@ -1,0 +1,90 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH bjgroup 1 "OpenLava Version 3.3 - Mar 2016"
+.br
+.SH NAME
+\fBbjgroup\fR - displays information about job groups 
+.SH SYNOPSIS
+.BR
+.PP
+.PP
+\fBbjgroup\fR [\fB-h\fR | \fB-V\fR] 
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+Displays job group information.
+.PP
+.SH OPTIONS
+.BR
+.PP
+.TP
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exits. 
+
+
+.TP
+\fB-V
+\fR
+.IP
+Prints OpenLava release version to stderr and exits. 
+.PP
+.SH DEFAULT OUTPUT
+.BR
+.PP
+A list of job groups is displayed with the following fields:
+.PP
+\fBGROUP_NAME\fR
+.IP
+The name of the job group.
+.PP
+\fBNJOBS\fR
+.IP
+The current number of job slots in the job group.
+.PP
+\fBPEND\fR
+.IP
+The number of job slots for pending jobs in the job group.
+.PP
+\fBRUN\fR
+.IP
+The number of job slots for running jobs in the job group.
+.PP
+\fBSUSP\fR
+.IP
+The number of job slots for suspended jobs in the job group.
+.PP
+\fBEXITED\fR
+.IP
+The number of job slots for exited jobs in the job group.
+.PP
+\fBDONE\fR
+.IP
+The number of job slots for done jobs in the job group.
+.PP
+.SH EXAMPLE
+.PP
+bjgroup
+.PP
+GROUP      NJOBS   PEND    RUN     SUSP    EXITED  DONE
+.br
+/u0        1       0       1       0       0       0
+.br
+/ol        1       0       1       0       0       0
+.br
+/bbb       1       0       0       0       1       0
+.br
+/aaa       1       0       0       0       1       0
+.br
+/ol/ol     1       0       1       0       0       0
+.br
+/u0/u0     1       0       1       0       0       0
+.PP
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bgadd(1), bgdel(1)

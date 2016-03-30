@@ -9,7 +9,7 @@
 .BR
 .PP
 .PP
-\fBbresume\fR\fB \fR [\fB-J\fR\fB \fR\fIjob_name\fR] [\fB-m\fR\fB \fR\fIhost_name \fR]\fB \fR[\fB-q\fR\fB \fR\fIqueue_name\fR] 
+\fBbresume\fR\fB \fR [\fB-g\fR \fIjob_group_name\fR] [\fB-J\fR\fB \fR\fIjob_name\fR] [\fB-m\fR\fB \fR\fIhost_name \fR]\fB \fR[\fB-q\fR\fB \fR\fIqueue_name\fR]
 [\fB-u\fR\fB \fR\fIuser_name\fR | \fB-u\fR\fB \fR\fIuser_group\fR | \fB-u all\fR\fB \fR] [\fB0\fR]
 .PP
 \fBbresume\fR\fB \fR [\fIjob_ID\fR | \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex_list\fR\fB]"\fR] ...
@@ -38,8 +38,14 @@ You cannot resume a job that is not suspended.
 \fB0
 \fR
 .IP
-Resumes all the jobs that satisfy other options (-m, -q, -u and -J).
+Resumes all the jobs that satisfy other options (-m, -g, -q, -u and -J).
 
+
+.TP
+\fB-g\fR \fIjob_group_name\fR
+
+.IP
+Resumes only jobs in the specified job group.
 
 .TP 
 \fB-J\fR \fIjob_name\fR 

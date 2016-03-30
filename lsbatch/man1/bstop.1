@@ -9,7 +9,8 @@
 .BR
 .PP
 .PP
-\fBbstop\fR [\fB-a\fR] [\fB-d\fR] [\fB-R\fR] [\fB0\fR] [\fB-J\fR \fIjob_name\fR] [\fB-m\fR \fIhost_name\fR \fI|\fR \fB-m\fR\fI host_group\fR] 
+\fBbstop\fR [\fB-a\fR] [\fB-d\fR] [\fB-R\fR] [\fB0\fR] [\fB-g\fR \fIjob_group_name\fR]
+[\fB-J\fR \fIjob_name\fR] [\fB-m\fR \fIhost_name\fR \fI|\fR \fB-m\fR\fI host_group\fR]
 [\fB-q\fR \fIqueue_name\fR] [\fB-u\fR \fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR] 
 [\fIjob_ID \fR| \fB"\fR\fIjob_ID\fR\fB[\fR\fIindex\fR\fB]"\fR] \fI...\fR
 .PP
@@ -58,10 +59,16 @@ Suspends only finished jobs (with a DONE or EXIT status).
 \fB0
 \fR
 .IP
-Suspends all the jobs that satisfy other options (-m, -q, -u and -J).
+Suspends all the jobs that satisfy other options (-m, -g, -q, -u and -J).
 
 
-.TP 
+.TP
+\fB-g\fR \fIjob_group_name\fR
+
+.IP
+Suspends only jobs in the specified job group.
+
+.TP
 \fB-J\fR \fIjob_name\fR 
 
 .IP

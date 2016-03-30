@@ -22,7 +22,7 @@
 static void
 usage(void)
 {
-    fprintf(stderr, "bgroups: [ -h ] [ -V ]\n");
+    fprintf(stderr, "bjgroup: [ -h ] [ -V ]\n");
 }
 
 static void
@@ -88,14 +88,14 @@ print_groups(int num, struct jobGroupInfo *jgrp)
 	    maxlen = len;
     }
 
-    printf("PATH");
+    printf("GROUP");
 
     for (cc = 0; cc < maxlen; cc++)
 	printf(" ");
-    /* NJOBS   NPEND   NRUN   NSUSP   NEXIT   NDONE
+    /* NJOBS   PEND   RUN   SUSP   EXITED   DONE
      */
-    printf("%-5s   %-5s   %-5s   %-5s   %-5s   %-5s\n",
-	   "NJOBS", "NPEND", "NRUN", "NSUSP", "NEXIT", "NDONE");
+    printf("%-5s   %-5s   %-5s   %-5s   %-5s  %-5s\n",
+	   "NJOBS", "PEND", "RUN", "SUSP", "EXITED", "DONE");
 
     for (cc = 0; cc < num; cc++) {
 
@@ -117,6 +117,3 @@ print_groups(int num, struct jobGroupInfo *jgrp)
 	printf("\n");
     }
 }
-
-
-

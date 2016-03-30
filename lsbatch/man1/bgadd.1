@@ -1,0 +1,60 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH bgadd 1 "OpenLava Version 3.3 - Mar 2016"
+.br
+.SH NAME
+\fBbgadd\fR - creates job groups 
+.SH SYNOPSIS
+.BR
+.PP
+\fBbgadd\fR \fIjob_group_name\fR
+.PP
+\fBbgadd\fR [\fB-h\fR | \fB-V\fR] 
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+Creates a job group with the job group name specified by \fIjob_group_name\fR.
+.PP
+You must provide full group path name for the new job group. The
+last component of the path is the name of the new group to be
+created.
+.PP
+You do not need to create the parent job group before you create
+a sub-group under it. If no groups in the job group hierarchy
+exist, all groups are created with the specified hierarchy.
+.PP
+.SH OPTIONS
+.BR
+.PP
+.TP 
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exits. 
+
+
+.TP 
+\fB-V
+\fR
+.IP
+Prints OpenLava release version to stderr and exits. 
+
+.PP
+.SH EXAMPLES
+.BR
+.PP
+Create a job group name mygroup under the root group /:
+.PP
+bgadd /mygroup
+.PP
+Create a job group named subgroup1 under job group /mygroup:
+.PP
+bgadd /mygroup/subgroup1
+.PP
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bgdel(1), bjgroup(1)

@@ -56,11 +56,11 @@ usage (char *cmd)
 {
 
     fprintf(stderr, "\
-Usage: %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r] [-g jobgroup_name]\n", cmd);
+Usage: %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r] [-g job_group]\n", cmd);
     fprintf(stderr, "\
-             [-A] [-m host_name] [-q queue_name] [-u user_name | -u all]");
+             [-A] [-m host_name] [-q queue_name] [-u user_name | -u all]\n");
     fprintf(stderr,"\
-                     [-P project_name] [-N host_spec] [-J name_spec] [-UF]\n");
+             [-P project_name] [-N host_spec] [-J name_spec] [-UF]\n");
     fprintf(stderr, "\
              [jobId | \"jobId[idxList]\" ...]\n");
 
@@ -236,6 +236,9 @@ main(int argc, char **argv)
         if (jobDisplayed == 0) {
             if (projectName) {
                 fprintf (stderr, "No job found in project %s\n", projectName);
+            }
+            if (job_group) {
+                fprintf (stderr, "No job found in job group %s\n", job_group);
             }
         }
     }

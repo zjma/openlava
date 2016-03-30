@@ -49,15 +49,15 @@ usage(char *cmd, int sig)
     fprintf(stderr, ": %s [-h] [-V] ", cmd);
 
     if (sig == SIGKILL)
-        fprintf(stderr, "[-l] [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-r | -s sigval] [-J job_name] ");
+        fprintf(stderr, "[-l] [-m host_name] [-q queue_name] [-g job_group]\n               [-u user_name | -u all] [0] [-r | -s sigval] [-J job_name] ");
     else if (sig == SIGCHK)
         fprintf(stderr,  "[-m host_name] [-q queue_name] [-u user_name |-u all]\n               [-p period] [-f] [-k] [-J job_name]\n               ");
     else if (sig == SIGDEL)
-        fprintf(stderr, " [-m host_name] [-q queue_name] [-u user_name | -u all]\n            [-n running_times] [-d] [-a] [-J job_name] ");
+        fprintf(stderr, " [-m host_name] [-q queue_name] [-u user_name | -u all]\n            [-g job_group] [-n running_times] [-d] [-a] [-J job_name] ");
     else if (sig == SIGSTOP)
-        fprintf(stderr, " [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-d] [-a] [-J job_name] ");
+        fprintf(stderr, " [-m host_name] [-q queue_name] [-g job_group]\n               [-u user_name | -u all] [0] [-d] [-a] [-J job_name] ");
     else
-        fprintf(stderr, " [-m host_name] [-q queue_name]\n               [-u user_name | -u all] [0] [-J job_name] ");
+        fprintf(stderr, " [-m host_name] [-q queue_name] [-g job_group]\n               [-u user_name | -u all] [0] [-J job_name] ");
 
 
     if (lsbMode_ & LSB_MODE_BATCH)

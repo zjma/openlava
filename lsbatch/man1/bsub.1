@@ -42,7 +42,9 @@
 .br
 \fB-G \fRuser_group
 .br
-[\fB-i \fRi\fInput_file\fR | \fB-is\fR \fIinput_file\fR]
+\fB-i \fR\fIinput_file\fR | \fB-is\fR \fIinput_file\fR
+.br
+\fB-g \fR\fIjob_group_name\fR
 .br
 \fB-J\fR \fIjob_name | \fR\fB-J\fR  \fB"\fRjob_name\fB[\fRindex_list\fB]%\fRjob_limit\fB"\fR
 .br
@@ -585,6 +587,23 @@ the name of the input file. %J is replaced by the job ID. %I is replaced
 by the index of the job in the array, if the job is a member of an array,
 otherwise by 0 (zero). The special characters %J and %I are not valid
 with the \fB-is\fR option.
+
+
+.TP
+\fB-g\fR job_group_name
+.IP
+Submits jobs in the job group specified by \fIjob_group_name\fR. The job
+group does not have to exist before submitting the job. For example:
+.IP
+bsub -g /reg/hug/myg1 job
+.br
+Job <101> is submitted to default queue.
+.IP
+Submits job to the job group /reg/hug/myg1.
+.IP
+If group /reg/hug/myg1 exists, job 101 is attached to the job group.
+.IP
+Job group names can be up to 512 characters long.
 
 
 .TP

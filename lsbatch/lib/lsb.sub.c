@@ -2645,12 +2645,12 @@ bsub_usage(int options)
 	    break;
 	default:
 	    fprintf(stderr, ": bsub [-h] [-V] [-B] [-H] [-I | -Ip | -Is | -K] [-N] [-r] [-x]\n");
-	    fprintf(stderr, "\t    [a esub_parameters] [-b [[month:]day:]hour:minute] [-C core_limit]\n");
+	    fprintf(stderr, "\t    [-a esub_parameters] [-b [[month:]day:]hour:minute] [-C core_limit]\n");
 	    fprintf(stderr, "\t    [-c [hour:]minute[/host_name | /host_model] | -cn]\n");
 	    fprintf(stderr, "\t    [-D data_limit] [-e err_file]\n");
 	    fprintf(stderr, "\t    [-E \"pre_exec_command [argument ...]\"]\n");
 	    fprintf(stderr, "\t    [-f \"local_file op [remote_file]\" ...]\n");
-	    fprintf(stderr, "\t    [-F file_limit] [-G user_group]\n");
+	    fprintf(stderr, "\t    [-F file_limit] [-G user_group] [-g job_group]\n");
 	    fprintf(stderr, "\t    [-i input_file | -is input_file]\n");
 	    fprintf(stderr, "\t    [-J job_name | -J \"job_name[index_list]%%job_limit\"\n");
 	    fprintf(stderr, "\t    [-k \"checkpoint_dir [checkpoint_period] [method=method_name]\"\n");

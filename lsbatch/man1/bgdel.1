@@ -1,0 +1,54 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH bgdel 1 "OpenLava Version 3.3 - Mar 2016"
+.br
+.SH NAME
+\fBbgdel\fR - deletes job groups 
+.SH SYNOPSIS
+.BR
+.PP
+.PP
+\fBbgdel\fR \fIjob_group_name\fR 
+.PP
+\fBbbot\fR [\fB-h\fR | \fB-V\fR] 
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+Deletes a job group with the job group name specified by
+\fIjob_group_name\R and all its subgroups.
+.PP
+You must provide full group path name for the job group to be
+deleted. Deletion only takes effect after all jobs belonging to
+the group are cleaned out of mbatchd memory after the clean
+period.
+.PP
+Job groups can be created explicitly or implicitly:
+.PP
+(1) A job group is created explicitly with the bgadd command.
+.PP
+(2) A job group is created by the bsub -g or bmod -g command
+when the specified group does not exist.
+.SH OPTIONS
+.BR
+.PP
+.TP
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exits. 
+
+
+.TP
+\fB-V
+\fR
+.IP
+Prints OpenLava release version to stderr and exits. 
+
+
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bgadd(1), bjgroup(1)
