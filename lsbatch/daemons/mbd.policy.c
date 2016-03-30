@@ -3243,8 +3243,6 @@ disp_clean_job(struct jData *jpbw)
     jpbw->numAvailSlots = 0;
     jpbw->numEligProc = 0;
     jpbw->numAvailEligProc = 0;
-    if (jpbw->newReason == 0)
-        jpbw->newReason = PEND_SYS_UNABLE;
     jpbw->oldReason = jpbw->newReason;
 
     if (jpbw->numCandPtr == 0 && jpbw->groupCands == NULL)
