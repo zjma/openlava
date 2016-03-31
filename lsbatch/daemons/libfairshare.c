@@ -22,10 +22,10 @@ static struct tree_node_ *get_user_node(struct hash_tab *,
                                         struct jData *);
 static int
 update_borrowed_slots(struct tree_node_ *,
-		      struct jData *,
-		      int,
-		      int,
-		      int);
+                      struct jData *,
+                      int,
+                      int,
+                      int);
 
 /* fs_init()
  */
@@ -55,8 +55,8 @@ fs_update_sacct(struct qData *qPtr,
                 int numJobs,
                 int numPEND,
                 int numRUN,
-		int numUSUSP,
-		int numSSUSP)
+                int numUSUSP,
+                int numSSUSP)
 {
     struct tree_ *t;
     struct tree_node_ *n;
@@ -67,17 +67,17 @@ fs_update_sacct(struct qData *qPtr,
      * ignore their state transition.
      */
     if (numUSUSP != 0
-	|| numSSUSP != 0)
-	return 0;
+        || numSSUSP != 0)
+        return 0;
 
     t = NULL;
     if (qPtr->fsSched)
-	t = qPtr->fsSched->tree;
+        t = qPtr->fsSched->tree;
     else if (qPtr->own_sched)
-	t = qPtr->own_sched->tree;
+        t = qPtr->own_sched->tree;
 
     if (t == NULL)
-	return -1;
+        return -1;
 
     n = get_user_node(t->node_tab, jPtr);
     if (n == NULL)
@@ -90,12 +90,12 @@ fs_update_sacct(struct qData *qPtr,
      * counter of slots this can use.
      */
     if (numPEND < 0
-	&& numRUN  > 0) {
-	sacct->sent--;
+        && numRUN  > 0) {
+        sacct->sent--;
     }
 
     if (update_borrowed_slots(n, jPtr, numJobs, numPEND, numRUN))
-	return 0;
+        return 0;
 
     /* Hoard the running jobs initialize numRAN
      * in case of negative numRUN
@@ -124,12 +124,12 @@ fs_init_sched_session(struct qData *qPtr)
 
     t = NULL;
     if (qPtr->fsSched)
-	t = qPtr->fsSched->tree;
+        t = qPtr->fsSched->tree;
     else if (qPtr->own_sched)
-	t = qPtr->own_sched->tree;
+        t = qPtr->own_sched->tree;
 
     if (t == NULL)
-	return -1;
+        return -1;
 
     /* Distribute the tokens all the way
      * down the leafs
@@ -161,12 +161,12 @@ fs_elect_job(struct qData *qPtr,
 
     t = NULL;
     if (qPtr->fsSched)
-	t = qPtr->fsSched->tree;
+        t = qPtr->fsSched->tree;
     else if (qPtr->own_sched)
-	t = qPtr->own_sched->tree;
+        t = qPtr->own_sched->tree;
 
     if (t == NULL)
-	return -1;
+        return -1;
 
     l = t->leafs;
     if (LINK_NUM_ENTRIES(l) == 0) {
@@ -196,15 +196,15 @@ dalsi:
     }
 
     if (logclass & LC_FAIR)
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: account %s num slots %d queue %s", __func__, s->name,
-		  s->sent + 1, qPtr->queue);
+                  s->sent + 1, qPtr->queue);
 
     ent = h_getEnt_(&uDataList, s->name);
     if (ent == NULL) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: user %s is elected but has not uData?", __func__, s->name);
-	goto dalsi;
+        goto dalsi;
     }
     uPtr = ent->hData;
 
@@ -213,50 +213,50 @@ dalsi:
     jref = NULL;
     jPtr = NULL;
     for (dl = uPtr->jobs->back;
-	 dl != uPtr->jobs;
-	 dl = dl->back) {
-	++count;
+         dl != uPtr->jobs;
+         dl = dl->back) {
+        ++count;
 
-	jref = dl->e;
-	jPtr = jref->job;
+        jref = dl->e;
+        jPtr = jref->job;
 
-	assert(jPtr->userId == s->uid);
+        assert(jPtr->userId == s->uid);
         if (jPtr->qPtr == qPtr) {
-	    if (logclass & LC_FAIR) {
-		ls_syslog(LOG_INFO, "\
+            if (logclass & LC_FAIR) {
+                ls_syslog(LOG_INFO, "\
 %s: jqueue %s %p queue %s %p job %p ref %p %d", __func__,
-			  jPtr->qPtr->queue, jPtr->qPtr,
-			  qPtr->queue, qPtr,
-			  jPtr, jref, count);
-	    }
-	    dlink_rm_ent(uPtr->jobs, dl);
-	    found = true;
-	    break;
-	}
+                          jPtr->qPtr->queue, jPtr->qPtr,
+                          qPtr->queue, qPtr,
+                          jPtr, jref, count);
+            }
+            dlink_rm_ent(uPtr->jobs, dl);
+            found = true;
+            break;
+        }
     }
 
     if (jPtr == NULL
-	|| found == false) {
-	/* This happens if MBD_MAX_JOBS_SCHED
-	 * is configured or if the user has no
-	 * jobs in the current queue.
-	 */
-	if (logclass & LC_FAIR) {
-	    ls_syslog(LOG_INFO, "\
+        || found == false) {
+        /* This happens if MBD_MAX_JOBS_SCHED
+         * is configured or if the user has no
+         * jobs in the current queue.
+         */
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
 %s: user %s is chosen %d in queue %s but has no jobs count %d numpend %d numj %d",
-		      __func__, s->name,
-		      s->sent + 1, qPtr->queue,
-		      count, uPtr->numPEND, dl->num);
-	}
-	goto dalsi;
+                      __func__, s->name,
+                      s->sent + 1, qPtr->queue,
+                      count, uPtr->numPEND, dl->num);
+        }
+        goto dalsi;
     }
 
     if (jPtr) {
-	if (logclass & LC_FAIR) {
-	    ls_syslog(LOG_INFO, "\
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
 %s: user %s job %s queue %s found in %d iterations", __func__, s->name,
-		      lsb_jobid2str(jPtr->jobId), qPtr->queue, count);
-	}
+                      lsb_jobid2str(jPtr->jobId), qPtr->queue, count);
+        }
     }
     /* More to dispatch from this node
      * so back to the leaf link
@@ -292,12 +292,12 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
 
     t = NULL;
     if (qPtr->fsSched)
-	t = qPtr->fsSched->tree;
+        t = qPtr->fsSched->tree;
     else if (qPtr->own_sched)
-	t = qPtr->own_sched->tree;
+        t = qPtr->own_sched->tree;
 
     if (t == NULL)
-	return -1;
+        return -1;
 
     /* First let's count the number of nodes
      */
@@ -362,8 +362,8 @@ get_user_node(struct hash_tab *node_tab,
          * so lookup all in any group
          */
         n = hash_lookup(node_tab, "all");
-	if (n == NULL)
-	    n = hash_lookup(node_tab, "default");
+        if (n == NULL)
+            n = hash_lookup(node_tab, "default");
     }
 
     /* No user, no all, no hope...
@@ -430,7 +430,7 @@ fs_own_init(struct qData *qPtr, struct userConf *uConf)
 %s: queues %s failed to ownership configuration, ownership disabled",
                   __func__, qPtr->queue);
         _free_(qPtr->ownership);
-	qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
+        qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
         return -1;
     }
 
@@ -445,7 +445,7 @@ fs_init_own_sched_session(struct qData *qPtr)
     struct tree_ *t;
 
     if (qPtr->num_owned_slots == 0)
-	return 0;
+        return 0;
 
     t = qPtr->own_sched->tree;
 
@@ -461,10 +461,10 @@ fs_init_own_sched_session(struct qData *qPtr)
  */
 static int
 update_borrowed_slots(struct tree_node_ *n,
-		      struct jData *jPtr,
-		      int numJobs,
-		      int numPEND,
-		      int numRUN)
+                      struct jData *jPtr,
+                      int numJobs,
+                      int numPEND,
+                      int numRUN)
 {
     struct tree_node_ *n2;
     struct share_acct *s;
@@ -474,28 +474,28 @@ update_borrowed_slots(struct tree_node_ *n,
     /* No ownership policy
      */
     if (jPtr->qPtr->own_sched == NULL)
-	return false;
+        return false;
 
     if (! (numRUN > 0)
-	&& ! (numRUN < 0))
-	return false;
+        && ! (numRUN < 0))
+        return false;
 
     /* A job has finished or being requeued but it was not
      * marked as borrower
      */
     if (numRUN < 0
-	&& !(jPtr->jFlags & JFLAG_BORROWED_SLOTS)) {
-	return false;
+        && !(jPtr->jFlags & JFLAG_BORROWED_SLOTS)) {
+        return false;
     }
 
     if (numRUN > 0) {
-	n2 = n;
-	while (n2->parent->parent)
-	    n2 = n2->parent;
+        n2 = n;
+        while (n2->parent->parent)
+            n2 = n2->parent;
 
-	s = n2->data;
-	if (s->numRUN < s->shares)
-	    return false;
+        s = n2->data;
+        if (s->numRUN < s->shares)
+            return false;
     }
 
     /* initialize numRAN in case of negative numRUN
@@ -516,13 +516,13 @@ update_borrowed_slots(struct tree_node_ *n,
     /* Mark this job as slot borrower
      */
     if (numRUN > 0)
-	jPtr->jFlags |= JFLAG_BORROWED_SLOTS;
+        jPtr->jFlags |= JFLAG_BORROWED_SLOTS;
 
     /* Unmark the job
      */
     if (numRUN < 0
-	&& (jPtr->jFlags & JFLAG_BORROWED_SLOTS))
-	jPtr->jFlags &= ~JFLAG_BORROWED_SLOTS;
+        && (jPtr->jFlags & JFLAG_BORROWED_SLOTS))
+        jPtr->jFlags &= ~JFLAG_BORROWED_SLOTS;
 
     return true;
 }

@@ -1,5 +1,10 @@
 Release notes for OpenLava versions
 
+3.3.0
+======
+
+3.3 official release
+
 3.3.pre.2
 =========
 -- Keep the lsb.events and lsb.acct files always open to improve
@@ -15,7 +20,7 @@ Release notes for OpenLava versions
    instead and nios will send a message when a task exits.
 -- Fix RES NIOS protocol bug that prevented multiple tasks running on
    the same host from being collected using ls_rwait().
--- Implemented job groups. New commands are bgadd, bgdel and bgroups.
+-- Implemented job groups. New commands are bgadd, bgdel and bjgroups.
 -- Implemented bjobs -UF unformatted bjobs output.
 -- Add LSF_BINDIR in openlava startup scripts.
 -- Implement bjobs -g to display only selected job groups.

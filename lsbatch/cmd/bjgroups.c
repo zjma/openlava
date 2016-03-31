@@ -22,7 +22,7 @@
 static void
 usage(void)
 {
-    fprintf(stderr, "bjgroup: [ -h ] [ -V ]\n");
+    fprintf(stderr, "bjgroups: [ -h ] [ -V ]\n");
 }
 
 static void
@@ -36,31 +36,31 @@ main(int argc, char **argv)
     struct jobGroupInfo *jgrp;
 
     if (lsb_init(argv[0]) < 0) {
-	lsb_perror("lsb_init");
-	return -1;
+        lsb_perror("lsb_init");
+        return -1;
     }
 
     while ((cc = getopt(argc, argv, "hV")) != EOF) {
-	switch (cc) {
-	    case 'V':
-		fputs(_LS_VERSION_, stderr);
-		return 0;
-	    case 'h':
-		usage();
-		exit(-1);
-	}
+        switch (cc) {
+            case 'V':
+                fputs(_LS_VERSION_, stderr);
+                return 0;
+            case 'h':
+                usage();
+                exit(-1);
+        }
     }
 
 
     jgrp = lsb_getjgrp(&num);
     if (jgrp == NULL) {
-	if (lsberrno == LSBE_NO_ERROR) {
-	    fprintf(stderr, "\
-bgroups: No job groups yet in the system.\n");
-	    return -1;
-	}
-	fprintf(stderr, "bgroups: %s.\n", lsb_sysmsg());
-	return -1;
+        if (lsberrno == LSBE_NO_ERROR) {
+            fprintf(stderr, "\
+bjgroups: No job groups yet in the system.\n");
+            return -1;
+        }
+        fprintf(stderr, "bjgroups: %s.\n", lsb_sysmsg());
+        return -1;
     }
 
     print_groups(num, jgrp);
@@ -83,37 +83,37 @@ print_groups(int num, struct jobGroupInfo *jgrp)
     maxlen = -1;
 
     for (cc = 0; cc < num; cc++) {
-	len = strlen(jgrp[cc].path);
-	if (len > maxlen)
-	    maxlen = len;
+        len = strlen(jgrp[cc].path);
+        if (len > maxlen)
+            maxlen = len;
     }
 
     printf("GROUP");
 
     for (cc = 0; cc < maxlen; cc++)
-	printf(" ");
+        printf(" ");
     /* NJOBS   PEND   RUN   SUSP   EXITED   DONE
      */
     printf("%-5s   %-5s   %-5s   %-5s   %-5s  %-5s\n",
-	   "NJOBS", "PEND", "RUN", "SUSP", "EXITED", "DONE");
+           "NJOBS", "PEND", "RUN", "SUSP", "EXITED", "DONE");
 
     for (cc = 0; cc < num; cc++) {
 
-	len = maxlen - strlen(jgrp[cc].path);
-	printf("%s ", jgrp[cc].path);
-	/* print the path and strlen(PATH) which
-	 * is 4
-	 */
-	for (i = 0; i < (len + 4); i++)
-	    printf(" ");
+        len = maxlen - strlen(jgrp[cc].path);
+        printf("%s ", jgrp[cc].path);
+        /* print the path and strlen(PATH) which
+         * is 4
+         */
+        for (i = 0; i < (len + 4); i++)
+            printf(" ");
 
-	printf("%-5d   ", jgrp[cc].counts[0]);
-	printf("%-5d   ", jgrp[cc].counts[1] + jgrp[cc].counts[2]);
-	printf("%-5d   ", jgrp[cc].counts[3]);
-	printf("%-5d   ", jgrp[cc].counts[4] + jgrp[cc].counts[5]);
-	printf("%-5d   ", jgrp[cc].counts[6]);
-	printf("%-5d   ", jgrp[cc].counts[7]);
+        printf("%-5d   ", jgrp[cc].counts[0]);
+        printf("%-5d   ", jgrp[cc].counts[1] + jgrp[cc].counts[2]);
+        printf("%-5d   ", jgrp[cc].counts[3]);
+        printf("%-5d   ", jgrp[cc].counts[4] + jgrp[cc].counts[5]);
+        printf("%-5d   ", jgrp[cc].counts[6]);
+        printf("%-5d   ", jgrp[cc].counts[7]);
 
-	printf("\n");
+        printf("\n");
     }
 }
