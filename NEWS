@@ -4,6 +4,7 @@ Release notes for OpenLava versions
 ======
 
 3.3 official release
+-- Update the lsb.queues man page describing the OWNERSHIP policy.
 
 3.3.pre.2
 =========
