@@ -279,8 +279,48 @@ users in group_b will have 1/8th of queue slots, and users in group_c will
 have the remaining half of the queue slots. Groups associated with the
 sharing policy \fBmust\fR be defined in lsb.users otherwise the fairshare policy
 for the queue is disabled.
+.SH OWNERSHIP
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBOWNERSHIP = USERS\fR\fI[[group,slot] ... ]\fR \fBLOAN_DURATION\fR\fI[integer]\fR
+.BR
+.PP
+OWNERSHIP specifies that the slot ownership policy is to be used when
+allocating resources to jobs dispatched from a particular queue.
+A ownership policy definition can be associated with a queue definition
+included in lsb.queues.
+.PP
+The ownership scheduling policy assigns job slot ownerships to user groups.
+User groups in OpenLava are similar to UNIX groups in that a user group
+can have one or more users assigned to it. User groups are configured in
+the file lsb.users. The keyword, USERS is used to specify how many slots
+are assigned to each user group.
+.PP
+The USERS expression consists of one or more [group, slot] pairs. For example:
 .P
-\fBPlease make sure defining user group in lsb.users before defining fairshare policy in lsb.queues.\fR
+OWNERSHIP=USERS[[group_a, 10] [group_b 20] [group_c 25]]
+.P
+Job slots owned by a user group can be loaned to users from other groups
+if the expression LOAN_DURATION[n] is specified after the USERS expression,
+where n specifies the loan duration in minutes. For example:
+.P
+OWNERSHIP=USERS[[group_a, 10] [group_b 20] [group_c 25]] LOAN_DURATION[10]
+.P
+If a group does not use all its owned job slots, its free slots can be
+used by users from other groups as long as jobs from other user groups
+do not run longer than the loan duration. For users in other groups to
+use the loaned slots, their jobs must be submitted by specifying a run
+limit (-W runlimit) that is not longer than the loan duration. This
+ensures the loaned slots are returned back to the slot owner within
+the loan duration.
+.P
+The ownership policy cannot be specified together with the fairshare
+policy in the same queue. The fairshare specified in lsb.users is applied
+within each user group when the ownership scheduling policy is enabled.
 .SH FILELIMIT
 .BR
 .PP
