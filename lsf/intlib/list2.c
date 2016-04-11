@@ -25,7 +25,7 @@
 #include "list2.h"
 
 struct list_ *
-listmake(const char *name)
+list_make(const char *name)
 {
     struct list_ *L;
 
@@ -38,9 +38,9 @@ listmake(const char *name)
 
     return L;
 
-} /* listmake() */
+}
 
-/* listinisert()
+/* list_inisert()
  *
  * Using cartesian coordinates the head h is at
  * zero and elemets are pushed along x axes.
@@ -56,7 +56,7 @@ listmake(const char *name)
  *
  */
 int
-listinsert(struct list_ *h,
+list_insert(struct list_ *h,
            struct list_ *e,
            struct list_ *e2)
 {
@@ -77,10 +77,10 @@ listinsert(struct list_ *h,
 
     return h->num;
 
-} /* listinsert() */
+}
 
 /*
- * listenqueue()
+ * list_enqueue()
  *
  * Enqueue a new element at the end
  * of the list.
@@ -90,23 +90,23 @@ listinsert(struct list_ *h,
  *
  */
 int
-listenque(struct list_ *h,
+list_enque(struct list_ *h,
           struct list_ *e2)
 {
     assert(h && e2);
 
     /* before: h->e
      */
-    listinsert(h, h, e2);
+    list_insert(h, h, e2);
     /* after: h->e->e2
      */
     return 0;
 }
 
-/* listdeque()
+/* list_deque()
  */
 struct list_ *
-listdeque(struct list_ *h)
+list_deque(struct list_ *h)
 {
     struct list_ *e;
 
@@ -118,7 +118,7 @@ listdeque(struct list_ *h)
     /* before: h->e->e2
      */
 
-    e = listrm(h, h->forw);
+    e = list_rm(h, h->forw);
 
     /* after: h->e2
      */
@@ -127,7 +127,7 @@ listdeque(struct list_ *h)
 }
 
 /*
- * listpush()
+ * list_push()
  *
  * Push e at the front of the list
  *
@@ -140,7 +140,7 @@ listpush(struct list_ *h,
 {
     /* before: h->e
      */
-    listinsert(h, h->forw, e2);
+    list_insert(h, h->forw, e2);
 
     /* after: h->e2->e
      */
@@ -148,20 +148,20 @@ listpush(struct list_ *h,
     return 0;
 }
 
-/* listpop()
+/* list_pop()
  */
 struct list_ *
-listpop(struct list_ *h)
+list_pop(struct list_ *h)
 {
     struct list_ *e;
 
-    e = listdeque(h);
+    e = list_deque(h);
 
     return e;
 }
 
 struct list_ *
-listrm(struct list_ *h,
+list_rm(struct list_ *h,
        struct list_ *e)
 {
     if (h->num == 0)
@@ -173,18 +173,18 @@ listrm(struct list_ *h,
 
     return e;
 
-} /* listrm() */
+}
 
 
-/* listfree()
+/* list_free()
  */
 void
-listfree(struct list_ *L,
+list_free(struct list_ *L,
          void (*f)(void *))
 {
     struct list_ *l;
 
-    while ((l = listpop(L))) {
+    while ((l = list_pop(L))) {
         if (f == NULL)
             free(l);
         else

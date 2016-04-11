@@ -17,18 +17,18 @@ typedef struct list_ list_t;
 
 #define LIST_NUM_ENTS(L) ((L)->num)
 
-extern struct list_ *listmake(const char *);
-extern int  listinsert(struct list_ *,
+extern struct list_ *list_make(const char *);
+extern int  list_insert(struct list_ *,
                        struct list_ *,
                        struct list_ *);
-extern int listpush(struct list_ *,
+extern int list_push(struct list_ *,
                     struct list_ *);
-extern int listenque(struct list_ *,
+extern int list_enque(struct list_ *,
                      struct list_ *);
-extern struct list_ * listrm(struct list_ *,
+extern struct list_ * list_rm(struct list_ *,
                              struct list_ *);
-extern struct list_ *listpop(struct list_ *);
-extern struct list_ *listdeque(struct list_ *);
-extern void listfree(struct list_ *, void (*f)(void *));
+extern struct list_ *list_pop(struct list_ *);
+extern struct list_ *list_deque(struct list_ *);
+extern void list_free(struct list_ *, void (*f)(void *));
 
 #endif /* TOOLS_LIST_ */
