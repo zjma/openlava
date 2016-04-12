@@ -7,6 +7,8 @@ Release notes for OpenLava versions
 -- Update the lsb.queues man page describing the OWNERSHIP policy.
 -- Improve error message should sbatchd failed to get go ahead
    from mbatchd,
+-- Fix a bug in LIM name resolution should the caller be using
+   127.0.0.1
 
 3.3.pre.2
 =========

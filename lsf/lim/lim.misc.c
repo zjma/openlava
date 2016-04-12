@@ -102,7 +102,7 @@ findHostbyAddr(struct sockaddr_in *from,
     struct hostent *hp;
     in_addr_t *tPtr;
 
-    if (0 && from->sin_addr.s_addr == ntohl(LOOP_ADDR))
+    if (from->sin_addr.s_addr == ntohl(LOOP_ADDR))
         return myHostPtr;
 
     hPtr = findHNbyAddr(from->sin_addr.s_addr);
