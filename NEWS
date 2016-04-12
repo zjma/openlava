@@ -5,6 +5,8 @@ Release notes for OpenLava versions
 
 3.3 official release
 -- Update the lsb.queues man page describing the OWNERSHIP policy.
+-- Improve error message should sbatchd failed to get go ahead
+   from mbatchd,
 
 3.3.pre.2
 =========

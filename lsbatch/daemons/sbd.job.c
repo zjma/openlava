@@ -305,11 +305,13 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     if (daemonParams[LSB_BSUBI_OLD].paramValue
         || !PURE_INTERACTIVE(jobSpecsPtr)) {
+        int cc;
 
         xdrmem_create(&xdrs, buf, MSGSIZE, XDR_DECODE);
-        if (readDecodeHdr_(chfd, buf, chanRead_, &xdrs, &replyHdr) < 0) {
-            ls_syslog(LOG_WARNING, "\
-%s: Fail to get go-ahead from mbatchd; abort job %s",
+        cc = readDecodeHdr_(chfd, buf, chanRead_, &xdrs, &replyHdr);
+        if (cc < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: Fail to get go-ahead cc %d from mbatchd; abort job %s %m",
                       fname, lsb_jobid2str(jobSpecsPtr->jobId));
 
             jobSetupStatus(JOB_STAT_PEND, PEND_JOB_START_FAIL, jobCardPtr);
