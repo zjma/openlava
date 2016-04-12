@@ -1,11 +1,12 @@
 #
-# Copyright (C) 2011-2015 David Bigagli
+# Copyright (C) 2011-2016 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I$(top_srcdir)/lsf  -I$(top_srcdir)/lsf/lib \
-           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./
+           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./ \
+	   -I/usr/local/glb-0.1/include
 
 sbin_PROGRAMS = mbatchd sbatchd
 mbatchd_SOURCES  = \
@@ -15,7 +16,8 @@ mbd.policy.c mbd.grp.c mbd.jarray.c mbd.log.c mbd.requeue.c mbd.window.c \
 elock.c misc.c mail.c daemons.c daemons.xdr.c \
 mbd.h daemonout.h daemons.h jgrp.h proxy.h mbd.profcnt.def 
 
-mbatchd_LDADD = ../lib/.libs/liblsbatch.a \
+mbatchd_LDADD = /usr/local/glb-0.1/lib/libglb.a \
+                ../lib/.libs/liblsbatch.a \
                 ../../lsf/lib/.libs/liblsf.a \
                 ../../lsf/intlib/.libs/liblsfint.a \
 		../../lsf/intlib/.libs/libtools.a -lm -lnsl

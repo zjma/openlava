@@ -28,6 +28,7 @@
 #include "../../lsf/intlib/dlink.h"
 #include "jgrp.h"
 #include "../lib/lsb.sig.h"
+#include <glb.h>
 
 #define  DEF_CLEAN_PERIOD     3600
 #define  DEF_MAX_RETRY        5

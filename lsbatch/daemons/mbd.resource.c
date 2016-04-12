@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -50,12 +50,21 @@ checkOrTakeAvailableByPreemptPRHQValue(int index,
                                        int update);
 static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
+static struct glb_token *get_glb_tokens(int *);
+static struct glb_token *tokens;
+static int merge_tokens(struct lsSharedResourceInfo *,
+                        int,
+                        struct glb_token *,
+                        int);
+static char **make_host_array(void);
+static char **make_array_by_tab(void);
 
 void
 getLsbResourceInfo(void)
 {
     int i;
     int numRes;
+    int num_tokens;
     struct lsSharedResourceInfo *resourceInfo;
 
     if (logclass & LC_TRACE)
@@ -67,8 +76,12 @@ getLsbResourceInfo(void)
         return;
     }
 
+    tokens = get_glb_tokens(&num_tokens);
+
     if (numResources > 0)
         freeSharedResource();
+
+    merge_tokens(resourceInfo, numRes, tokens, num_tokens);
 
     compute_group_slots(numRes, resourceInfo);
 
@@ -88,7 +101,7 @@ addSharedResource(struct lsSharedResourceInfo *lsResourceInfo)
     if (lsResourceInfo == NULL)
         return;
 
-    if (getResource (lsResourceInfo->resourceName) != NULL) {
+    if (getResource(lsResourceInfo->resourceName) != NULL) {
         if (logclass & LC_TRACE)
             ls_syslog (LOG_DEBUG3, "\
 %s: More than one resource %s found in lsResourceInfo from lim; ignoring later",
@@ -116,7 +129,6 @@ addSharedResource(struct lsSharedResourceInfo *lsResourceInfo)
     sharedResources = temp;
     sharedResources[numResources] = resource;
     numResources++;
-
 }
 
 static void
@@ -263,12 +275,13 @@ struct sharedResource *
 getResource(char *resourceName)
 {
     int i;
+
     if (resourceName == NULL || numResources <= 0)
         return NULL;
 
     for (i = 0; i < numResources; i++) {
         if (!strcmp (sharedResources[i]->resourceName, resourceName))
-            return (sharedResources[i]);
+            return sharedResources[i];
     }
     return NULL;
 
@@ -699,16 +712,16 @@ get_group_slots(struct gData *gPtr)
                           hPtr->hStatus);
                 continue;
             }
-	    if (slots + hPtr->maxJobs >= gPtr->max_slots) {
-		slots = gPtr->max_slots;
-		goto via;
-	    }
+            if (slots + hPtr->maxJobs >= gPtr->max_slots) {
+                slots = gPtr->max_slots;
+                goto via;
+            }
             slots = slots + hPtr->maxJobs;
         }
     via:
-	ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_DEBUG, "\
 %s: group %s resource %s slots %d", __func__, gPtr->group,
-		  gPtr->group_slots, slots);
+                  gPtr->group_slots, slots);
         return slots;
     }
 
@@ -726,10 +739,10 @@ get_group_slots(struct gData *gPtr)
             ent = h_nextEnt_(&stab);
             continue;
         }
-	if (slots + hPtr->maxJobs >= gPtr->max_slots) {
-	    slots = gPtr->max_slots;
-	    goto pryc;
-	}
+        if (slots + hPtr->maxJobs >= gPtr->max_slots) {
+            slots = gPtr->max_slots;
+            goto pryc;
+        }
         slots = slots + hPtr->maxJobs;
         ent = h_nextEnt_(&stab);
     }
@@ -739,6 +752,90 @@ pryc:
               gPtr->group_slots, slots);
 
     return slots;
+}
+
+/* get_glb_tokens()
+ */
+static struct glb_token *
+get_glb_tokens(int *num)
+{
+    struct glb_token *t;
+    int first = 1;
+
+    *num = 0;
+    if (first) {
+        char *p;
+
+        p = getenv("LSF_ENVDIR");
+        setenv("GLB_ENVDIR", p, 0);
+
+        if (glb_init() < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: gudness glb_init() failed cannot get even hold of GLB %d",
+                      __func__, glberrno);
+            return NULL;
+        }
+        first = 0;
+    }
+
+    t = glb_gettokens(clusterName, num);
+    if (t == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: Ohmygosh cannot get tokens from GLB %d", __func__, glberrno);
+        return NULL;
+    }
+
+    return t;
+}
+
+static int
+merge_tokens(struct lsSharedResourceInfo *res,
+             int num_res,
+             struct glb_token *t,
+             int num_tokens)
+{
+    char **hosts;
+
+    hosts = make_host_array();
+    /* Turn the tokens into the lsSharedResourceInfo
+     */
+
+    return 0;
+}
+
+static char **
+make_host_array(void)
+{
+    static int first = 1;
+    static int save_num_hosts;
+    static char **h;
+
+    if (first) {
+        /* dont forget we have migrant hosts...
+         */
+        save_num_hosts = numofhosts();
+        h = make_array_by_tab();
+        first = 0;
+        return h;
+    }
+
+    if (save_num_hosts == numofhosts())
+        return h;
+
+    /* aime...
+     */
+    save_num_hosts = numofhosts();
+    h = make_array_by_tab();
+
+    return h;
+}
+
+static char **
+make_array_by_tab(void)
+{
+    char **h = NULL;
+
+    return h;
 }
 
 static void
