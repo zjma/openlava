@@ -10,6 +10,7 @@ Release notes for OpenLava versions
 -- Fix a bug in LIM name resolution should the caller be using
    127.0.0.1
 -- Add * pattern in job name.
+-- Fix bug in parsing all hosts in the lsb.hosts groups.
 
 3.3.pre.2
 =========

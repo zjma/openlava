@@ -1174,6 +1174,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
     static struct hData **jUnusable;
     static int *jReasonTb;
     static int nhosts;
+    static bool_t sorted = false;
     int numHosts;
     int numSlots;
     int numAvailSlots;
@@ -1232,347 +1233,366 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
     numHosts = 0;
     numReasons = 0;
 
-    for (hPtr = (struct hData *)hostList->back;
-         hPtr != (void *)hostList;
-         hPtr = hPtr->back) {
+    if (sorted == false) {
 
-        i = hPtr->hostId;
-        INC_CNT(PROF_CNT_firstLoopgetJUsable);
+        for (hPtr = (struct hData *)hostList->back;
+             hPtr != (void *)hostList;
+             hPtr = hPtr->back) {
 
-        if (HOST_UNUSABLE_TO_JOB_DUE_TO_H_REASON(hReasonTb[1][i], jp))
-            continue;
+            i = hPtr->hostId;
+            INC_CNT(PROF_CNT_firstLoopgetJUsable);
 
-        if (HOST_UNUSABLE_TO_JOB_DUE_TO_Q_H_REASON(jp->qPtr->reasonTb[1][i], jp))
-            continue;
+            if (HOST_UNUSABLE_TO_JOB_DUE_TO_H_REASON(hReasonTb[1][i], jp))
+                continue;
 
-        if (OUT_SCHED_RS(jp->uPtr->reasonTb[1][i])
+            if (HOST_UNUSABLE_TO_JOB_DUE_TO_Q_H_REASON(jp->qPtr->reasonTb[1][i], jp))
+                continue;
+
+            if (OUT_SCHED_RS(jp->uPtr->reasonTb[1][i])
             && HOST_UNUSABLE_TO_JOB_DUE_TO_U_H_REASON(jp->uPtr->reasonTb[1][i], jp))
-            continue;
+                continue;
 
-        if (hPtr->hStatus & HOST_STAT_REMOTE)
-            continue;
+            if (hPtr->hStatus & HOST_STAT_REMOTE)
+                continue;
 
-        if (jp->numAskedPtr == 0 || jp->askedOthPrio >= 0) {
+            if (jp->numAskedPtr == 0 || jp->askedOthPrio >= 0) {
+                jUsable[numHosts++] = hPtr;
+                continue;
+            }
+
+            if (! isAskedHost (hPtr, jp))
+                continue;
+
             jUsable[numHosts++] = hPtr;
-            continue;
-        }
+            if (numHosts == jp->numAskedPtr)
+                break;
 
-        if (! isAskedHost (hPtr, jp))
-            continue;
+        } /* for (hPtr = hostList->back; ...; ...) */
+    }
 
-        jUsable[numHosts++] = hPtr;
-        if (numHosts == jp->numAskedPtr)
-            break;
+    /* Sort jUsable() based on order
+     */
+#if 0
+    if (sorted == false)
+        qsort(jUsable, numHosts, sizeof(struct hData), host_compare);
+#endif
 
-    } /* for (hPtr = hostList->back; ...; ...) */
 
-    if (imposeDCSOnJob(jp, &deadline, &isWinDeadline, &runLimit)) {
-        num = numHosts;
-        numHosts = 0;
 
-        for (i = 0; i < num; i++) {
+        if (imposeDCSOnJob(jp, &deadline, &isWinDeadline, &runLimit)) {
+            num = numHosts;
+            numHosts = 0;
 
-            if (CANT_FINISH_BEFORE_DEADLINE(runLimit, deadline,
-                                            jUsable[i]->cpuFactor)) {
-                jUnusable[numReasons] = jUsable[i];
-                if (isWinDeadline) {
-                    jReasonTb[numReasons++] = PEND_HOST_WIN_WILL_CLOSE;
+            for (i = 0; i < num; i++) {
+
+                if (CANT_FINISH_BEFORE_DEADLINE(runLimit, deadline,
+                                                jUsable[i]->cpuFactor)) {
+                    jUnusable[numReasons] = jUsable[i];
+                    if (isWinDeadline) {
+                        jReasonTb[numReasons++] = PEND_HOST_WIN_WILL_CLOSE;
+                    } else {
+                        jReasonTb[numReasons++] = PEND_HOST_MISS_DEADLINE;
+                    }
+                    if (logclass & (LC_SCHED | LC_PEND)) {
+                        char *timebuf;
+                        timebuf = ctime(&deadline);
+                        timebuf[strlen(timebuf)-1] = '\0';
+                        ls_syslog(LOG_DEBUG2, "%s: job <%s> can't finish before deadline <%s> on host %s", fname, lsb_jobid2str(jp->jobId), timebuf, jUsable[i]->host);
+                    }
                 } else {
-                    jReasonTb[numReasons++] = PEND_HOST_MISS_DEADLINE;
+                    if (numHosts != i) {
+                        jUsable[numHosts] = jUsable[i];
+                    }
+                    numHosts++;
                 }
-                if (logclass & (LC_SCHED | LC_PEND)) {
-                    char *timebuf;
-                    timebuf = ctime(&deadline);
-                    timebuf[strlen(timebuf)-1] = '\0';
-                    ls_syslog(LOG_DEBUG2, "%s: job <%s> can't finish before deadline <%s> on host %s", fname, lsb_jobid2str(jp->jobId), timebuf, jUsable[i]->host);
+            }
+
+
+        num = numHosts;
+        if ((!jp->qPtr->resValPtr
+             || !(jp->qPtr->qAttrib & Q_ATTRIB_NO_HOST_TYPE))
+            && !jp->shared->resValPtr
+            &&  jp->numAskedPtr == 0) {
+
+            numHosts = 0;
+            for (i = 0; i < num; i++) {
+                INC_CNT(PROF_CNT_secondLoopGetJUsable) ;
+                if (strcmp(jp->schedHost, jUsable[i]->hostType) == 0) {
+                    if (numHosts != i) {
+                        jUsable[numHosts] = jUsable[i];
+                    }
+                    numHosts++;
+                } else {
+                    jUnusable[numReasons] = jUsable[i];
+                    jReasonTb[numReasons++] = PEND_HOST_SCHED_TYPE;
+                    if (logclass & (LC_SCHED | LC_PEND))
+                        ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d schedHost=%s hostType=%s", fname, jUsable[i]->host, jReasonTb[numReasons-1], jp->schedHost, jUsable[i]->hostType);
                 }
-            } else {
-                if (numHosts != i) {
-                    jUsable[numHosts] = jUsable[i];
-                }
-                numHosts++;
             }
         }
-    }
 
-    num = numHosts;
-    if ((!jp->qPtr->resValPtr
-         || !(jp->qPtr->qAttrib & Q_ATTRIB_NO_HOST_TYPE))
-        && !jp->shared->resValPtr
-        &&  jp->numAskedPtr == 0) {
+        num = numHosts;
+        if (jp->shared->resValPtr || jp->qPtr->resValPtr) {
+            int noUse;
+            struct hData *hData;
 
-        numHosts = 0;
-        for (i = 0; i < num; i++) {
-            INC_CNT(PROF_CNT_secondLoopGetJUsable) ;
-            if (strcmp(jp->schedHost, jUsable[i]->hostType) == 0) {
-                if (numHosts != i) {
-                    jUsable[numHosts] = jUsable[i];
-                }
-                numHosts++;
-            } else {
-                jUnusable[numReasons] = jUsable[i];
-                jReasonTb[numReasons++] = PEND_HOST_SCHED_TYPE;
-                if (logclass & (LC_SCHED | LC_PEND))
-                    ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d schedHost=%s hostType=%s", fname, jUsable[i]->host, jReasonTb[numReasons-1], jp->schedHost, jUsable[i]->hostType);
-            }
-        }
-    }
+            if ((hData = getHostData(jp->shared->jobBill.fromHost)) == NULL
+                || (hData->hStatus & HOST_STAT_REMOTE)) {
 
-    num = numHosts;
-    if (jp->shared->resValPtr || jp->qPtr->resValPtr) {
-        int noUse;
-        struct hData *hData;
-
-        if ((hData = getHostData(jp->shared->jobBill.fromHost)) == NULL
-            || (hData->hStatus & HOST_STAT_REMOTE)) {
-
-            if (hData == NULL)
-                ls_syslog (LOG_DEBUG, "\
+                if (hData == NULL)
+                    ls_syslog (LOG_DEBUG, "\
 %s: Job <%s> submission host <%s> is not used by the batch system (a client host ?), use same type instead", __func__,
-                           lsb_jobid2str(jp->jobId),
-                           jp->shared->jobBill.fromHost);
+                               lsb_jobid2str(jp->jobId),
+                               jp->shared->jobBill.fromHost);
 
-            if ((hData = getHostByType(jp->schedHost)) == NULL) {
-                ls_syslog (LOG_INFO, "\
+                if ((hData = getHostByType(jp->schedHost)) == NULL) {
+                    ls_syslog (LOG_INFO, "\
 %s: Not the same type %s host as job %s submission host",
-                           __func__,
-                           jp->schedHost, lsb_jobid2str(jp->jobId));
-            }
-        }
-
-        if (jp->shared->resValPtr) {
-
-            if (!(jp->shared->resValPtr->options & PR_SELECT)
-                && (jp->qPtr->resValPtr
-                    && (jp->qPtr->resValPtr->options & PR_SELECT))) {
-
-                if (jp->shared->resValPtr->selectStr) {
-                    FREEUP(jp->shared->resValPtr->selectStr);
-                    jp->shared->resValPtr->selectStrSize = 0;
-                }
-                jp->shared->resValPtr->selectStr =
-                    safeSave(jp->qPtr->resValPtr->selectStr);
-                jp->shared->resValPtr->selectStrSize =
-                    strlen(jp->qPtr->resValPtr->selectStr);
-
-                jp->shared->resValPtr->options |= PR_SELECT;
-            }
-
-            numHosts = getHostsByResReq(jp->shared->resValPtr,
-                                        &numHosts,
-                                        jUsable,
-                                        &thrown,
-                                        hData,
-                                        &noUse);
-        } else {
-
-            numHosts = getHostsByResReq(jp->qPtr->resValPtr,
-                                        &numHosts,
-                                        jUsable,
-                                        &thrown,
-                                        hData,
-                                        &noUse);
-        }
-    }
-
-    if (numHosts < num) {
-        j = num - numHosts;
-        for (i = 0; i < j; i++) {
-            INC_CNT(PROF_CNT_thirdLoopgetJUsable);
-            jUnusable[numReasons] = thrown[i];
-            jReasonTb[numReasons++] = PEND_HOST_RES_REQ;
-            if (logclass & (LC_SCHED | LC_PEND))
-                ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d", fname, thrown[i]->host, jReasonTb[numReasons-1]);
-        }
-    }
-
-
-    FREEUP(thrown);
-
-    if (logclass & (LC_SCHED)) {
-        ls_syslog(LOG_DEBUG3, "%s: Got %d hosts", fname, numHosts);
-        for (i = 0; i < numHosts; i++)
-            ls_syslog(LOG_DEBUG3, "%s: jUsable[%d]->host = %s", fname, i,
-                      jUsable[i]->host);
-    }
-
-    *numJUsable = 0;
-    *nProc = 0;
-    for (i = 0; i < numHosts; i++) {
-
-        INC_CNT(PROF_CNT_innerLoopgetJUsable);
-        hReason = 0;
-        numSlots = 0;
-
-        if (!hReason && (jp->shared->jobBill.options & SUB_EXCLUSIVE)
-            && jUsable[i]->numJobs >= 1) {
-            hReason = PEND_HOST_NONEXCLUSIVE;
-        }
-
-        if (!hReason) {
-            int svReason = jp->newReason;
-
-            numSlots = getHostJobSlots(jp,
-                                       jUsable[i],
-                                       &numAvailSlots,
-                                       FALSE,
-                                       &backfilleeList);
-            numBackfillSlots = totalBackfillSlots(backfilleeList);
-            numNonBackfillSlots = numSlots - numBackfillSlots;
-            numAvailNonBackfillSlots = numAvailSlots - numBackfillSlots;
-
-            if (numAvailSlots == 0 && backfilleeList != NULL) {
-                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7204,
-                                                 "%s: job <%s> host <%s> numAvailSlots is 0 and backfilleeList is not NULL!"), fname, lsb_jobid2str(jp->jobId), jUsable[i]->host); /* catgets 7204 */
-            }
-
-            numSlots = MIN (numSlots, jp->numSlots);
-            if ((numSlots == 0)
-                && ( (!JOB_CAN_BACKFILL(jp))
-                     || (needHandleFirstHost(jp) == jUsable[i]->hostId)  ) ) {
-
-                hReason = jp->newReason;
-            }
-            jp->newReason = svReason;
-        }
-
-        if (!hReason && jp->shared->resValPtr) {
-            int resource;
-            int num = ckResReserve(jUsable[i],
-                                   jp->shared->resValPtr,
-                                   &resource,
-                                   jp);
-            if (num < 1) {
-                hReason = resource + PEND_HOST_JOB_RUSAGE;
-            }
-            numSlots = MIN (numSlots, num);
-        }
-        if (!hReason && jp->qPtr->resValPtr) {
-            int resource;
-            int num = ckResReserve(jUsable[i],
-                                   jp->qPtr->resValPtr,
-                                   &resource,
-                                   jp);
-            if (num < 1) {
-                hReason = resource + PEND_HOST_QUE_RUSAGE;
-            }
-            numSlots = MIN (numSlots, num);
-        }
-
-        if (!hReason && HAS_JOB_LEVEL_SPAN(jp)) {
-            checkHostUsableToSpan(jp, jUsable[i], TRUE, &numSlots, &hReason);
-            if (hReason) {
-                if (logclass & (LC_SCHED | LC_PEND)) {
-                    ls_syslog(LOG_DEBUG2, "%s: host: <%s> is not usable to job <%s> because it doesn't satisfy job's job level span requirement", fname, jUsable[i]->host, lsb_jobid2str(jp->jobId));
+                               __func__,
+                               jp->schedHost, lsb_jobid2str(jp->jobId));
                 }
             }
+
+            if (jp->shared->resValPtr) {
+
+                if (!(jp->shared->resValPtr->options & PR_SELECT)
+                    && (jp->qPtr->resValPtr
+                        && (jp->qPtr->resValPtr->options & PR_SELECT))) {
+
+                    if (jp->shared->resValPtr->selectStr) {
+                        FREEUP(jp->shared->resValPtr->selectStr);
+                        jp->shared->resValPtr->selectStrSize = 0;
+                    }
+                    jp->shared->resValPtr->selectStr =
+                        safeSave(jp->qPtr->resValPtr->selectStr);
+                    jp->shared->resValPtr->selectStrSize =
+                        strlen(jp->qPtr->resValPtr->selectStr);
+
+                    jp->shared->resValPtr->options |= PR_SELECT;
+                }
+
+                numHosts = getHostsByResReq(jp->shared->resValPtr,
+                                            &numHosts,
+                                            jUsable,
+                                            &thrown,
+                                            hData,
+                                            &noUse);
+            } else {
+
+                numHosts = getHostsByResReq(jp->qPtr->resValPtr,
+                                            &numHosts,
+                                            jUsable,
+                                            &thrown,
+                                            hData,
+                                            &noUse);
+            }
         }
 
-        if (!hReason && !HAS_JOB_LEVEL_SPAN(jp) && HAS_QUEUE_LEVEL_SPAN(jp)) {
-            checkHostUsableToSpan(jp, jUsable[i], FALSE, &numSlots, &hReason);
-            if (hReason) {
-                if (logclass & (LC_SCHED | LC_PEND)) {
-                    ls_syslog(LOG_DEBUG2, "%s: host: <%s> is not usable to job <%s> because it doesn't satisfy job's queue level span requirement", fname, jUsable[i]->host, lsb_jobid2str(jp->jobId));
-                }
+        if (numHosts < num) {
+            j = num - numHosts;
+            for (i = 0; i < j; i++) {
+                INC_CNT(PROF_CNT_thirdLoopgetJUsable);
+                jUnusable[numReasons] = thrown[i];
+                jReasonTb[numReasons++] = PEND_HOST_RES_REQ;
+                if (logclass & (LC_SCHED | LC_PEND))
+                    ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d", fname, thrown[i]->host, jReasonTb[numReasons-1]);
             }
         }
 
 
+        FREEUP(thrown);
 
-        if (!hReason && jp->requeMode == RQE_EXCLUDE) {
-            for (j = 0; jp->reqHistory[j].host != NULL; j++)
-                if (jUsable[i] == jp->reqHistory[j].host) {
-                    hReason = PEND_SBD_JOB_REQUEUE;
-                    break;
+        if (logclass & (LC_SCHED)) {
+            ls_syslog(LOG_DEBUG3, "%s: Got %d hosts", fname, numHosts);
+            for (i = 0; i < numHosts; i++)
+                ls_syslog(LOG_DEBUG3, "%s: jUsable[%d]->host = %s", fname, i,
+                          jUsable[i]->host);
+        }
+
+        *numJUsable = 0;
+        *nProc = 0;
+        for (i = 0; i < numHosts; i++) {
+
+            INC_CNT(PROF_CNT_innerLoopgetJUsable);
+            hReason = 0;
+            numSlots = 0;
+
+            if (!hReason && (jp->shared->jobBill.options & SUB_EXCLUSIVE)
+                && jUsable[i]->numJobs >= 1) {
+                hReason = PEND_HOST_NONEXCLUSIVE;
+            }
+
+            if (!hReason) {
+                int svReason = jp->newReason;
+
+                numSlots = getHostJobSlots(jp,
+                                           jUsable[i],
+                                           &numAvailSlots,
+                                           FALSE,
+                                           &backfilleeList);
+                numBackfillSlots = totalBackfillSlots(backfilleeList);
+                numNonBackfillSlots = numSlots - numBackfillSlots;
+                numAvailNonBackfillSlots = numAvailSlots - numBackfillSlots;
+
+                if (numAvailSlots == 0 && backfilleeList != NULL) {
+                    ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 7204,
+                                                     "%s: job <%s> host <%s> numAvailSlots is 0 and backfilleeList is not NULL!"), fname, lsb_jobid2str(jp->jobId), jUsable[i]->host); /* catgets 7204 */
                 }
-        }
 
-        if (!hReason && !isHostQMember(jUsable[i], jp->qPtr)) {
-            hReason = PEND_HOST_QUE_MEMB;
-        }
+                numSlots = MIN (numSlots, jp->numSlots);
+                if ((numSlots == 0)
+                    && ( (!JOB_CAN_BACKFILL(jp))
+                         || (needHandleFirstHost(jp) == jUsable[i]->hostId)  ) ) {
+
+                    hReason = jp->newReason;
+                }
+                jp->newReason = svReason;
+            }
+
+            if (!hReason && jp->shared->resValPtr) {
+                int resource;
+                int num = ckResReserve(jUsable[i],
+                                       jp->shared->resValPtr,
+                                       &resource,
+                                       jp);
+                if (num < 1) {
+                    hReason = resource + PEND_HOST_JOB_RUSAGE;
+                }
+                numSlots = MIN (numSlots, num);
+            }
+            if (!hReason && jp->qPtr->resValPtr) {
+                int resource;
+                int num = ckResReserve(jUsable[i],
+                                       jp->qPtr->resValPtr,
+                                       &resource,
+                                       jp);
+                if (num < 1) {
+                    hReason = resource + PEND_HOST_QUE_RUSAGE;
+                }
+                numSlots = MIN (numSlots, num);
+            }
+
+            if (!hReason && HAS_JOB_LEVEL_SPAN(jp)) {
+                checkHostUsableToSpan(jp, jUsable[i], TRUE, &numSlots, &hReason);
+                if (hReason) {
+                    if (logclass & (LC_SCHED | LC_PEND)) {
+                        ls_syslog(LOG_DEBUG2, "%s: host: <%s> is not usable to job <%s> because it doesn't satisfy job's job level span requirement", fname, jUsable[i]->host, lsb_jobid2str(jp->jobId));
+                    }
+                }
+            }
+
+            if (!hReason && !HAS_JOB_LEVEL_SPAN(jp) && HAS_QUEUE_LEVEL_SPAN(jp)) {
+                checkHostUsableToSpan(jp, jUsable[i], FALSE, &numSlots, &hReason);
+                if (hReason) {
+                    if (logclass & (LC_SCHED | LC_PEND)) {
+                        ls_syslog(LOG_DEBUG2, "%s: host: <%s> is not usable to job <%s> because it doesn't satisfy job's queue level span requirement", fname, jUsable[i]->host, lsb_jobid2str(jp->jobId));
+                    }
+                }
+            }
+
+            if (!hReason && jp->requeMode == RQE_EXCLUDE) {
+                for (j = 0; jp->reqHistory[j].host != NULL; j++)
+                    if (jUsable[i] == jp->reqHistory[j].host) {
+                        hReason = PEND_SBD_JOB_REQUEUE;
+                        break;
+                    }
+            }
+
+            if (!hReason && !isHostQMember(jUsable[i], jp->qPtr)) {
+                hReason = PEND_HOST_QUE_MEMB;
+            }
 
 
-        if (!hReason && overThreshold (jUsable[i]->lsbLoad,
-                                       jp->qPtr->loadSched, &hReason)) {
+            if (!hReason && overThreshold (jUsable[i]->lsbLoad,
+                                           jp->qPtr->loadSched, &hReason)) {
 
 
-            if (logclass & LC_SCHED)
-                ls_syslog(LOG_DEBUG,"\
+                if (logclass & LC_SCHED)
+                    ls_syslog(LOG_DEBUG,"\
 %s: job=%s; The host=%s belonging to the queue=%s is over threshold",
-                          fname, lsb_jobid2str(jp->jobId),
-                          jUsable[i]->host, jp->qPtr->queue);
-        }
+                              fname, lsb_jobid2str(jp->jobId),
+                              jUsable[i]->host, jp->qPtr->queue);
+            }
 
-        if (!hReason && overThreshold (jUsable[i]->lsbLoad,
-                                       jUsable[i]->loadSched, &hReason)) {
+            if (!hReason && overThreshold (jUsable[i]->lsbLoad,
+                                           jUsable[i]->loadSched, &hReason)) {
 
 
-            if (logclass & LC_SCHED)
-                ls_syslog(LOG_DEBUG,"\
+                if (logclass & LC_SCHED)
+                    ls_syslog(LOG_DEBUG,"\
 %s: job=%s the host=%s is over threshold",
-                          fname, lsb_jobid2str(jp->jobId), jUsable[i]->host);
+                              fname, lsb_jobid2str(jp->jobId), jUsable[i]->host);
 
+            }
+
+            if (hReason) {
+                jUnusable[numReasons] = jUsable[i];
+                jReasonTb[numReasons++] = hReason;
+
+                if (logclass & (LC_SCHED | LC_PEND))
+                    ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason = %d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
+                continue;
+            }
+
+            if (logclass & (LC_SCHED))
+                ls_syslog(LOG_DEBUG3, "%s: Got one eligible host %s; numSlots=%d numAvailSlots=%d", fname, jUsable[i]->host, numSlots, numAvailSlots);
+
+
+            numAvailSlots = MIN(numAvailSlots, numSlots);
+            candHosts[*numJUsable].hData = jUsable[i];
+            candHosts[*numJUsable].numSlots = MIN(numSlots, jUsable[i]->numCPUs);
+            candHosts[*numJUsable].numAvailSlots
+                = MIN(numAvailSlots, jUsable[i]->numCPUs);
+            candHosts[*numJUsable].numNonBackfillSlots = MIN(numNonBackfillSlots,
+                                                             jUsable[i]->numCPUs);
+            candHosts[*numJUsable].numAvailNonBackfillSlots =
+                MIN(numAvailNonBackfillSlots, jUsable[i]->numCPUs);
+            candHosts[*numJUsable].backfilleeList = backfilleeList;
+
+            (*numJUsable)++;
+            if (numSlots != INFINIT_INT)
+                *nProc += numSlots;
+            else
+                *nProc = jUsable[i]->numCPUs;
         }
 
-        if (hReason) {
-            jUnusable[numReasons] = jUsable[i];
-            jReasonTb[numReasons++] = hReason;
 
+        if (numReasons) {
+            int *reasonTb = my_calloc(numReasons + jp->numReasons,
+                                      sizeof(int), fname);
+            jp->newReason = 0;
+
+            for (i = 0; i < numReasons; i++) {
+                reasonTb[i] = jReasonTb[i];
+                PUT_HIGH(reasonTb[i], jUnusable[i]->hostId);
+            }
+
+            for (i = 0; i < jp->numReasons; i++) {
+                reasonTb[i + numReasons] = jp->reasonTb[i];
+            }
+            jp->numReasons += numReasons;
+            FREEUP(jp->reasonTb);
+            jp->reasonTb = reasonTb;
+        }
+
+        if (*numJUsable == 0) {
             if (logclass & (LC_SCHED | LC_PEND))
-                ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason = %d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
-            continue;
+                ls_syslog(LOG_DEBUG1, "%s: Got no eligible host for job %s; numReasons=%d", fname, lsb_jobid2str(jp->jobId), jp->numReasons);
+            return NULL;
         }
 
-        if (logclass & (LC_SCHED))
-            ls_syslog(LOG_DEBUG3, "%s: Got one eligible host %s; numSlots=%d numAvailSlots=%d", fname, jUsable[i]->host, numSlots, numAvailSlots);
-
-
-        numAvailSlots = MIN(numAvailSlots, numSlots);
-        candHosts[*numJUsable].hData = jUsable[i];
-        candHosts[*numJUsable].numSlots = MIN(numSlots, jUsable[i]->numCPUs);
-        candHosts[*numJUsable].numAvailSlots
-            = MIN(numAvailSlots, jUsable[i]->numCPUs);
-        candHosts[*numJUsable].numNonBackfillSlots = MIN(numNonBackfillSlots,
-                                                         jUsable[i]->numCPUs);
-        candHosts[*numJUsable].numAvailNonBackfillSlots =
-            MIN(numAvailNonBackfillSlots, jUsable[i]->numCPUs);
-        candHosts[*numJUsable].backfilleeList = backfilleeList;
-
-        (*numJUsable)++;
-        if (numSlots != INFINIT_INT)
-            *nProc += numSlots;
-        else
-            *nProc = jUsable[i]->numCPUs;
-    }
-
-
-    if (numReasons) {
-        int *reasonTb = my_calloc(numReasons + jp->numReasons,
-                                  sizeof(int), fname);
-        jp->newReason = 0;
-
-        for (i = 0; i < numReasons; i++) {
-            reasonTb[i] = jReasonTb[i];
-            PUT_HIGH(reasonTb[i], jUnusable[i]->hostId);
+        if (logclass & LC_SCHED) {
+            ls_syslog(LOG_DEBUG2, "%s: Got %d eligible hosts for job %s; numReasons=%d", fname, *numJUsable, lsb_jobid2str(jp->jobId), jp->numReasons);
         }
 
-        for (i = 0; i < jp->numReasons; i++) {
-            reasonTb[i + numReasons] = jp->reasonTb[i];
-        }
-        jp->numReasons += numReasons;
-        FREEUP(jp->reasonTb);
-        jp->reasonTb = reasonTb;
+        /* Candidate host found
+         */
+        break;
     }
 
-    if (*numJUsable == 0) {
-        if (logclass & (LC_SCHED | LC_PEND))
-            ls_syslog(LOG_DEBUG1, "%s: Got no eligible host for job %s; numReasons=%d", fname, lsb_jobid2str(jp->jobId), jp->numReasons);
-        return NULL;
-    }
-
-    if (logclass & LC_SCHED) {
-        ls_syslog(LOG_DEBUG2, "%s: Got %d eligible hosts for job %s; numReasons=%d", fname, *numJUsable, lsb_jobid2str(jp->jobId), jp->numReasons);
-    }
+    sorted = true;
+    if (cc == numHosts)
+        sorted = false;
 
     return candHosts;
 }
