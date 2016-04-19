@@ -1522,7 +1522,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
 	     * a[n-N]
 	     */
             hl = NULL;
-            if (type == HOST_GRP)
+            if (!allFlag && type == HOST_GRP)
                 hl = host_base_name(sp);
 	    if (hl) {
 		while ((wp = pop_link(hl))) {
