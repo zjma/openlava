@@ -9,7 +9,7 @@
 .BR
 .PP
 .PP
-\fBbugroup\fR\fB [\fIuser_group\fR ...]
+\fBbugroup\fR [\fB-r\fR] [\fIuser_group\fR ...]
 .PP
 \fBbugroup\fR\fB \fR[\fB-h\fR | \fB-V\fR]
 .SH DESCRIPTION
@@ -22,6 +22,13 @@ The default is to display information about all user groups.
 .SH OPTIONS
 .BR
 .PP
+.TP
+\fR-r\fR
+.IP
+Expands the user groups recursively. The expanded list contains
+only user names. It does not contain the names of subgroups.
+Duplicate user names are listed only once.
+.IP
 .TP 
 \fIuser_group \fR...
 

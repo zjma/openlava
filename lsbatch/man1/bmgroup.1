@@ -9,7 +9,7 @@
 .BR
 .PP
 .PP
-\fBbmgroup\fR\fB \fR [\fB-s\fR] [\fIhost_group \fR...]
+\fBbmgroup\fR [\fB-r\fR] [\fB-s\fR] [\fIhost_group \fR...]
 .PP
 \fBbmgroup \fR[\fB-h\fR | \fB-V\fR] 
 .SH DESCRIPTION
@@ -29,8 +29,12 @@ By default, displays information about all host groups.
 Displays GROUP_SLOT and MAX_SLOTS in addition to the host group names and group members.
 Refer to lsb.hosts(5) for more information about GROUP_SLOT and MAX_SLOTS.
 .IP
-
-
+.TP
+\fB-r\fR
+.IP
+Expands host groups recursively. The expanded list contains only host names.
+It does not contain the names of subgroups. Duplicate names are listed only once.
+.IP
 
 .TP 
 \fIhost_group \fR...
