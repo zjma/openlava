@@ -104,22 +104,22 @@ static struct userInfoEnt *getUserData(char *);
 static struct hostInfoEnt *getHostData(char *);
 static struct queueInfoEnt *getQueueData(char *);
 
-static void initParameterInfo ( struct parameterInfo *);
-static void freeParameterInfo ( struct parameterInfo *);
-static void initUserInfo ( struct userInfoEnt *);
-static void freeUserInfo ( struct userInfoEnt *);
-static void initGroupInfo ( struct groupInfoEnt *);
-static void freeGroupInfo ( struct groupInfoEnt *);
-static void initHostInfo ( struct hostInfoEnt *);
-static void freeHostInfo ( struct hostInfoEnt *);
-static void initQueueInfo ( struct queueInfoEnt *);
-static void freeQueueInfo ( struct queueInfoEnt *);
+static void initParameterInfo(struct parameterInfo *);
+static void freeParameterInfo(struct parameterInfo *);
+static void initUserInfo(struct userInfoEnt *);
+static void freeUserInfo(struct userInfoEnt *);
+static void initGroupInfo(struct groupInfoEnt *);
+static void freeGroupInfo(struct groupInfoEnt *);
+static void initHostInfo(struct hostInfoEnt *);
+static void freeHostInfo(struct hostInfoEnt *);
+static void initQueueInfo(struct queueInfoEnt *);
+static void freeQueueInfo(struct queueInfoEnt *);
 
-int checkSpoolDir ( char *spoolDir );
-int checkJobAttaDir ( char * );
-void freeWorkUser (int);
-void freeWorkHost (int);
-void freeWorkQueue (int);
+int checkSpoolDir(char *spoolDir);
+int checkJobAttaDir(char *);
+void freeWorkUser(int);
+void freeWorkHost(int);
+void freeWorkQueue(int);
 
 static void initThresholds(struct lsInfo *, float *, float *);
 static void getThresh(struct lsInfo *, struct keymap *, float *, float *,
@@ -312,7 +312,8 @@ lsb_readparam(struct lsConf *conf)
         pConf->param = NULL;
     }
     fname = conf->confhandle->fname;
-    if ((pConf->param = malloc(sizeof(struct parameterInfo))) == NULL) {
+
+    if ((pConf->param = calloc(1, sizeof(struct parameterInfo))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                   sizeof(struct parameterInfo));
         lsberrno = LSBE_CONF_FATAL;
@@ -369,46 +370,46 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
     int i, value;
 
     struct keymap keylist[] = {
-        {"LSB_MANAGER", NULL, 0},
-        {"DEFAULT_QUEUE", NULL, 0},
-        {"DEFAULT_HOST_SPEC", 0},
-        {"DEFAULT_PROJECT", NULL, 0},
-        {"JOB_ACCEPT_INTERVAL", NULL, 0},
-        {"PG_SUSP_IT", NULL, 0},
-        {"MBD_SLEEP_TIME", NULL, 0},
-        {"CLEAN_PERIOD", NULL, 0},
-        {"MAX_RETRY", NULL, 0},
-        {"SBD_SLEEP_TIME", NULL, 0},
-        {"MAX_JOB_NUM", NULL, 0},
-        {"RETRY_INTERVAL", NULL, 0},
-        {"MAX_SBD_FAIL", NULL, 0},
-        {"RUSAGE_UPDATE_RATE", NULL, 0},    /* control how often sbatchd */
-        {"RUSAGE_UPDATE_PERCENT", NULL, 0}, /* report job rusage to mbd */
-        {"COND_CHECK_TIME", NULL, 0},       /* time to check conditions  */
-        {"MAX_SBD_CONNS", NULL, 0},       /* Undocumented parameter for
-                                           * specifying how many sbd
-                                           * connections to keep around
-                                           */
-        {"MAX_SCHED_STAY", NULL, 0},
-        {"LOAD_UPDATE_INTVL", NULL, 0}, /* 18 mbd to call lim for resources */
-        {"MAX_JOB_ARRAY_SIZE", NULL, 0},
-        {"DISABLE_UACCT_MAP", NULL, 0},
-        {"JOB_TERMINATE_INTERVAL", NULL, 0},
-        {"JOB_RUN_TIMES", NULL, 0},
-        {"JOB_DEP_LAST_SUB", NULL, 0},
-        {"JOB_SPOOL_DIR", NULL,0},
-        {"MAX_USER_PRIORITY", NULL, 0},
-        {"JOB_PRIORITY_OVER_TIME", NULL, 0},
-        {"SHARED_RESOURCE_UPDATE_FACTOR", NULL, 0},
-        {"SCHE_RAW_LOAD", NULL, 0},
-        {"PRE_EXEC_DELAY", NULL, 0},
-        {"SLOT_RESOURCE_RESERVE", NULL, 0},
-        {"MAX_JOBID", NULL, 0},
-        {"MAX_ACCT_ARCHIVE_FILE", NULL, 0},
-        {"ACCT_ARCHIVE_SIZE", NULL, 0},
-        {"ACCT_ARCHIVE_AGE", NULL, 0},
-        {"MAX_PREEMPT_JOBS", NULL, 0},
-        {"MAX_STREAM_RECORDS", NULL, 0},
+        {"LSB_MANAGER", NULL, 0},         /* 0 */
+        {"DEFAULT_QUEUE", NULL, 0},       /* 1 */
+        {"DEFAULT_HOST_SPEC", 0},         /* 2 */
+        {"DEFAULT_PROJECT", NULL, 0},     /* 3 */
+        {"JOB_ACCEPT_INTERVAL", NULL, 0}, /* 4 */
+        {"PG_SUSP_IT", NULL, 0},          /* 5 */
+        {"MBD_SLEEP_TIME", NULL, 0},      /* 6 */
+        {"CLEAN_PERIOD", NULL, 0},        /* 7 */
+        {"MAX_RETRY", NULL, 0},           /* 8 */
+        {"SBD_SLEEP_TIME", NULL, 0},      /* 9 */
+        {"MAX_JOB_NUM", NULL, 0},         /* 10 */
+        {"RETRY_INTERVAL", NULL, 0},      /* 11 */
+        {"MAX_SBD_FAIL", NULL, 0},        /* 12 */
+        {"RUSAGE_UPDATE_RATE", NULL, 0},  /* 13 */
+        {"RUSAGE_UPDATE_PERCENT", NULL, 0}, /* 14 */
+        {"COND_CHECK_TIME", NULL, 0},      /* 15 */
+        {"MAX_SBD_CONNS", NULL, 0},        /* 16 */
+        {"MAX_SCHED_STAY", NULL, 0},       /* 17 */
+        {"LOAD_UPDATE_INTVL", NULL, 0},  /* 18 mbd to call lim for resources */
+        {"MAX_JOB_ARRAY_SIZE", NULL, 0},  /* 19 */
+        {"DISABLE_UACCT_MAP", NULL, 0},   /* 20 */
+        {"JOB_TERMINATE_INTERVAL", NULL, 0}, /* 21 */
+        {"JOB_RUN_TIMES", NULL, 0},          /* 22 */
+        {"JOB_DEP_LAST_SUB", NULL, 0},       /* 23 */
+        {"JOB_SPOOL_DIR", NULL,0},           /* 24 */
+        {"MAX_USER_PRIORITY", NULL, 0},      /* 25 */
+        {"JOB_PRIORITY_OVER_TIME", NULL, 0},  /* 26 */
+        {"SHARED_RESOURCE_UPDATE_FACTOR", NULL, 0}, /* 27 */
+        {"SCHE_RAW_LOAD", NULL, 0},         /* 28 */
+        {"PRE_EXEC_DELAY", NULL, 0},        /* 29 */
+        {"SLOT_RESOURCE_RESERVE", NULL, 0}, /* 30 */
+        {"MAX_JOBID", NULL, 0},             /* 31 */
+        {"MAX_ACCT_ARCHIVE_FILE", NULL, 0}, /* 32 */
+        {"ACCT_ARCHIVE_SIZE", NULL, 0},     /* 33 */
+        {"ACCT_ARCHIVE_AGE", NULL, 0},      /* 34 */
+        {"MAX_PREEMPT_JOBS", NULL, 0},      /* 35 */
+        {"MAX_STREAM_RECORDS", NULL, 0},    /* 36 */
+        {"MAX_NUM_CANDIDATES", NULL, 0},    /* 37 */
+        {"ENABLE_PROXY_HOSTS", NULL, 0},           /* 38 */
+        {"DISABLE_PEER_JOBS", NULL, 0},          /* 39 */
         {NULL, NULL, 0}
     };
 
@@ -458,13 +459,12 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
     for (i = 0; keylist[i].key != NULL; i++) {
 
         if (keylist[i].val != NULL && strcmp (keylist[i].val, "")) {
+
             if (i == 0) {
                 ls_syslog(LOG_WARNING, "\
 %s: Ignore LSB_MANAGER value <%s>; use MANAGERS  defined in cluster file instead");
                 lsberrno = LSBE_CONF_WARNING;
-            }
-
-            else if (i == 1) {
+            } else if (i == 1) {
                 pConf->param->defaultQueues = putstr_ (keylist[i].val);
                 if (pConf->param->defaultQueues == NULL) {
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
@@ -473,9 +473,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     freekeyval (keylist);
                     return FALSE;
                 }
-            }
-
-            else if (i == 2) {
+            } else if (i == 2) {
                 pConf->param->defaultHostSpec = putstr_ (keylist[i].val);
                 if (pConf->param->defaultHostSpec == NULL) {
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
@@ -484,8 +482,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     freekeyval (keylist);
                     return FALSE;
                 }
-            }
-            else if (i == 24) {
+            } else if (i == 24) {
 
                 if (checkSpoolDir(keylist[i].val) == 0) {
                     pConf->param->pjobSpoolDir = putstr_ (keylist[i].val);
@@ -502,8 +499,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                                                      "%s: Invalid JOB_SPOOL_DIR!"), __func__); /* catgets 5095 */
                     lsberrno = LSBE_CONF_WARNING;
                 }
-            }
-            else if (i == 32) {
+            } else if (i == 32) {
 
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if (value == INFINIT_INT){
@@ -515,8 +511,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 else{
                     pConf->param->maxAcctArchiveNum = value;
                 }
-            }
-            else if (i == 33) {
+            } else if (i == 33) {
 
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if (value == INFINIT_INT){
@@ -609,10 +604,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 } else {
                     pConf->param->sharedResourceUpdFactor = value;
                 }
-            }
-
-            else if (i == 31)
-            {
+            } else if (i == 31) {
                 int value = 0;
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if ( (value < MAX_JOBID_LOW)
@@ -636,13 +628,6 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 {
                     pConf->param->maxJobId = value;
                 }
-            }
-
-            else if (i == 28) {
-                if (strcasecmp(keylist[i].val, "Y") == 0)
-                    pConf->param->scheRawLoad = TRUE;
-                else
-                    pConf->param->scheRawLoad = FALSE;
             } else if (i == 30) {
                 if (strcasecmp(keylist[i].val, "Y") == 0) {
                     pConf->param->slotResourceReserve  = TRUE;
@@ -650,7 +635,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     pConf->param->slotResourceReserve = FALSE;
                 }
             } else if (i > 5) {
-                if ( i < 23)
+                if (i < 23)
                     value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 else
                     value = atoi(keylist[i].val);
@@ -721,15 +706,16 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 25:
                             value = my_atoi(keylist[i].val, INFINIT_INT, -1);
-                            if ( value != INFINIT_INT) {
-
-                                if ( value > 0) {
+                            if (value != INFINIT_INT) {
+                                if (value > 0) {
                                     pConf->param->maxUserPriority = value;
                                 }
                             }
                             else {
-                                ls_syslog(LOG_ERR, I18N(5452,"%s: File%s in section Parameters ending at line %d: invalid value <%s> of <%s> : ignored;"), /* catgets 5452 */
-                                          __func__, fname, *lineNum, keylist[i].val,
+                                ls_syslog(LOG_ERR, "\
+%s: File %s section Parameters line %d: invalid value <%s> of <%s> : ignored",
+                                          __func__, fname, *lineNum,
+                                          keylist[i].val,
                                           keylist[i].key);
                             }
                             break;
@@ -741,6 +727,15 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 36:
                             pConf->param->maxStreamRecords = value;
+                            break;
+                        case 37:
+                            pConf->param->max_num_candidates = value;
+                            break;
+                        case 38 :
+                            pConf->param->enable_proxy_hosts = value;
+                            break;
+                        case 39:
+                            pConf->param->disable_peer_jobs = value;
                             break;
                         default:
                             ls_syslog(LOG_ERR, "\
@@ -829,7 +824,6 @@ initParameterInfo(struct parameterInfo *param)
     param->jobPriorityValue=-1;
     param->jobPriorityTime=-1;
     param->sharedResourceUpdFactor = INFINIT_INT;
-    param->scheRawLoad = 0;
     param->preExecDelay = INFINIT_INT;
     param->slotResourceReserve = FALSE;
     param->maxJobId = INFINIT_INT;
@@ -838,6 +832,9 @@ initParameterInfo(struct parameterInfo *param)
     param->acctArchiveInSize = -1;
     param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
     param->maxStreamRecords = 0;
+    param->max_num_candidates = 0;
+    param->enable_proxy_hosts = 0;
+    param->disable_peer_jobs = 0;
 }
 
 static void

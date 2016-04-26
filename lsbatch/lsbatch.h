@@ -825,6 +825,8 @@ struct hostInfoEnt {
 #define MAX_JOBID_HIGH 9999999
 #define DEF_MAX_PREEMPT_JOBS 12
 
+/* mbd control parameter
+ */
 struct parameterInfo {
     char *defaultQueues;
     char *defaultHostSpec;
@@ -854,7 +856,6 @@ struct parameterInfo {
     int jobPriorityValue;
     int jobPriorityTime;
     int sharedResourceUpdFactor;
-    int scheRawLoad;
     int preExecDelay;
     int slotResourceReserve;
     int maxJobId;
@@ -863,6 +864,9 @@ struct parameterInfo {
     int acctArchiveInSize;
     int maxPreemptJobs;
     int maxStreamRecords;
+    int max_num_candidates;
+    int enable_proxy_hosts;
+    int disable_peer_jobs;
 };
 
 

@@ -3215,6 +3215,11 @@ jStatusChange(struct jData *jData,
 
     } else if (IS_FINISH (newStatus)) {
         int i;
+        /* Count the finished job between scheduling sessions
+         */
+        if (num_finish > INFINIT_INT - 1)
+            num_finish = 0;
+        ++num_finish;
 
         if (!(jData->jStatus & JOB_STAT_ZOMBIE)) {
             if (jData->newReason != EXIT_INIT_ENVIRON &&
@@ -4399,7 +4404,7 @@ insertAndShift (struct jData *froJob, struct jData *toJob,
 void
 initJobIdHT(void)
 {
-    h_initTab_ (&jobIdHT, 50);
+    h_initTab_ (&jobIdHT, 2000003);
 }
 
 void

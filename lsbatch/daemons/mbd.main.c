@@ -91,6 +91,12 @@ time_t now;
 long   schedSeqNo = 0;
 struct hTab uDataList;
 
+/* Link to usable proxy hosts and counter of
+ * finished jobs.
+ */
+link_t *hosts_link = NULL;
+int num_finish = 0;
+
 /* Host data main global data structures.
  */
 struct hTab hostTab;
@@ -139,7 +145,6 @@ struct sharedResource **sharedResources = NULL;
 int sharedResourceUpdFactor = INFINIT_INT;
 long   schedSeqNo;
 int    schedule;
-int    scheRawLoad;
 int lsbModifyAllJobs = FALSE;
 int max_job_sched = INT32_MAX;
 int qsort_jobs = 0;
@@ -304,15 +309,15 @@ main(int argc, char **argv)
     }
 
     if (daemonParams[MBD_MAX_JOBS_SCHED].paramValue) {
-	max_job_sched = atoi(daemonParams[MBD_MAX_JOBS_SCHED].paramValue);
-	ls_syslog(LOG_INFO, "\
+        max_job_sched = atoi(daemonParams[MBD_MAX_JOBS_SCHED].paramValue);
+        ls_syslog(LOG_INFO, "\
 mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
     }
 
     qsort_jobs = 1;
     if (daemonParams[MBD_NO_QSORT_JOBS].paramValue) {
-	qsort_jobs = 0;
-	ls_syslog(LOG_INFO, "\
+        qsort_jobs = 0;
+        ls_syslog(LOG_INFO, "\
 mbd:%s qsort() of jobs is disabled", __func__);
     }
 
@@ -643,12 +648,12 @@ processClient(struct clientNode *client, int *needFree)
     }
 
     cc = authRequest(&auth,
-		     &xdrs,
-		     &reqHdr,
-		     &from,
-		     &laddr,
-		     client->fromHost,
-		     chanSock_(s));
+                     &xdrs,
+                     &reqHdr,
+                     &from,
+                     &laddr,
+                     client->fromHost,
+                     chanSock_(s));
     if (cc != LSBE_NO_ERROR) {
         errorBack(s, cc, &from);
         goto endLoop;
@@ -711,6 +716,10 @@ processClient(struct clientNode *client, int *needFree)
         case BATCH_STATUS_MSG_ACK:
         case BATCH_STATUS_JOB:
         case BATCH_RUSAGE_JOB:
+            if (logclass & LC_SCHED)
+            ls_syslog(LOG_INFO, "\
+%s: mSchedStage is now 0x%x", __func__, mSchedStage);
+
             TIMEIT(0, (statusReqCC = do_statusReq(&xdrs, s, &from,
                                                   &schedule1, &reqHdr)),
                    "do_statusReq()");
@@ -720,6 +729,7 @@ processClient(struct clientNode *client, int *needFree)
             }
             if (client->lastTime == 0)
                 nSbdConnections++;
+
             break;
         case BATCH_STATUS_CHUNK:
             TIMEIT(0, (statusReqCC = do_chunkStatusReq(&xdrs, s, &from,
@@ -789,38 +799,38 @@ processClient(struct clientNode *client, int *needFree)
         case BATCH_JOBDEP_INFO:
             TIMEIT(0,
                    do_jobDepInfo(&xdrs,
-				 s,
-				 &from,
-				 client->fromHost,
-				 &reqHdr),
+                                 s,
+                                 &from,
+                                 client->fromHost,
+                                 &reqHdr),
                    "do_jobMsgInfo()");
             break;
-	case BATCH_JGRP_ADD:
-	    TIMEIT(0, do_jobGroupAdd(&xdrs,
-				     s,
-				     &from,
-				     client->fromHost,
-				     &reqHdr,
-				     &auth),
-		   "do_jobGroupAdd()");
-	    break;
-	case BATCH_JGRP_DEL:
-	    TIMEIT(0, do_jobGroupDel(&xdrs,
-				     s,
-				     &from,
-				     client->fromHost,
-				     &reqHdr,
-				     &auth),
-		   "do_jobGroupDel()");
-	    break;
-	case BATCH_JGRP_INFO:
-	    TIMEIT(0, do_jobGroupInfo(&xdrs,
-				      s,
-				      &from,
-				      client->fromHost,
-				      &reqHdr),
-		   "do_jobGroupInfo()");
-	    break;
+        case BATCH_JGRP_ADD:
+            TIMEIT(0, do_jobGroupAdd(&xdrs,
+                                     s,
+                                     &from,
+                                     client->fromHost,
+                                     &reqHdr,
+                                     &auth),
+                   "do_jobGroupAdd()");
+            break;
+        case BATCH_JGRP_DEL:
+            TIMEIT(0, do_jobGroupDel(&xdrs,
+                                     s,
+                                     &from,
+                                     client->fromHost,
+                                     &reqHdr,
+                                     &auth),
+                   "do_jobGroupDel()");
+            break;
+        case BATCH_JGRP_INFO:
+            TIMEIT(0, do_jobGroupInfo(&xdrs,
+                                      s,
+                                      &from,
+                                      client->fromHost,
+                                      &reqHdr),
+                   "do_jobGroupInfo()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)
@@ -841,13 +851,13 @@ endLoop:
     xdr_destroy(&xdrs);
     chanFreeBuf_(buf);
     if ((reqHdr.opCode != PREPARE_FOR_OP
-	 && reqHdr.opCode != BATCH_STATUS_JOB
-	 && reqHdr.opCode != BATCH_RUSAGE_JOB
-	 && reqHdr.opCode != BATCH_STATUS_MSG_ACK
-	 && reqHdr.opCode != BATCH_STATUS_CHUNK
-	 && reqHdr.opCode != BATCH_JGRP_ADD
-	 && reqHdr.opCode != BATCH_JGRP_DEL)
-	|| statusReqCC < 0) {
+         && reqHdr.opCode != BATCH_STATUS_JOB
+         && reqHdr.opCode != BATCH_RUSAGE_JOB
+         && reqHdr.opCode != BATCH_STATUS_MSG_ACK
+         && reqHdr.opCode != BATCH_STATUS_CHUNK
+         && reqHdr.opCode != BATCH_JGRP_ADD
+         && reqHdr.opCode != BATCH_JGRP_DEL)
+        || statusReqCC < 0) {
         shutDownClient(client);
         return -1;
     }
@@ -1042,9 +1052,9 @@ mbd_child_handler (int sig)
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
         if (pid == swchild->pid) {
-	    swchild->child_gone = true;
+            swchild->child_gone = true;
             swchild->status = status;
-	}
+        }
     }
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 }
@@ -1077,8 +1087,8 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_SET_JOB_ATTR
           || reqType == BATCH_JOB_MSG
           || reqType == BATCH_JOBMSG_INFO
-	  || reqType == BATCH_JGRP_ADD
-	  || reqType == BATCH_JGRP_DEL))
+          || reqType == BATCH_JGRP_ADD
+          || reqType == BATCH_JGRP_DEL))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {
@@ -1142,7 +1152,7 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_PARAM_INFO
         || req == BATCH_USER_INFO
         || req == BATCH_JOB_PEEK
-	|| req == BATCH_JOBDEP_INFO) {
+        || req == BATCH_JOBDEP_INFO) {
         return 1;
     }
 

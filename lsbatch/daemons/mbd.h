@@ -828,6 +828,10 @@ typedef enum profCounterType {
 
 
 extern LIST_T *hostList;
+/* Build in getLsbUsable() as proxy link of usable hosts.
+ */
+extern link_t *hosts_link;
+extern int num_finish;
 extern struct hTab            hostTab;
 extern struct jData           *jDataList[];
 extern struct migJob          *migJobList;

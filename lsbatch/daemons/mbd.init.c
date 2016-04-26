@@ -1925,8 +1925,6 @@ setParams(struct paramConf *paramConf)
 
     setValue(sharedResourceUpdFactor, params->sharedResourceUpdFactor);
 
-    setValue(scheRawLoad, params->scheRawLoad);
-
     setValue(preExecDelay, params->preExecDelay);
     setValue(slotResourceReserve, params->slotResourceReserve);
 
@@ -1936,7 +1934,10 @@ setParams(struct paramConf *paramConf)
     setValue(acctArchiveInDays, params->acctArchiveInDays);
     setValue(acctArchiveInSize, params->acctArchiveInSize);
 
+    /* Set all the globals in one data strcuture.
+     */
     mbdParams = calloc(1, sizeof(struct parameterInfo));
+
     memcpy(mbdParams, params, sizeof(struct parameterInfo));
     if (params->defaultQueues)
         mbdParams->defaultQueues = strdup(params->defaultQueues);
@@ -2173,7 +2174,6 @@ setDefaultParams(void)
     jobTerminateInterval = DEF_JTERMINATE_INTERVAL;
     jobRunTimes = INFINIT_INT;
     jobDepLastSub = 0;
-    scheRawLoad = 0;
     maxUserPriority = -1;
     jobPriorityValue = -1;
     jobPriorityTime = -1;

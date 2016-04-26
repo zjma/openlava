@@ -280,8 +280,8 @@ createJobTmpDir(struct jobCard *jobCardPtr)
 static void
 execJob(struct jobCard *jobCardPtr, int chfd)
 {
-    static char fname[] = "execJob";
     int i;
+    int cc;
     struct jobSpecs *jobSpecsPtr;
     struct hostent *fromHp;
     struct lenData jf;
@@ -305,14 +305,13 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     if (daemonParams[LSB_BSUBI_OLD].paramValue
         || !PURE_INTERACTIVE(jobSpecsPtr)) {
-        int cc;
 
         xdrmem_create(&xdrs, buf, MSGSIZE, XDR_DECODE);
         cc = readDecodeHdr_(chfd, buf, chanRead_, &xdrs, &replyHdr);
         if (cc < 0) {
-            ls_syslog(LOG_ERR, "\
-%s: Fail to get go-ahead cc %d from mbatchd; abort job %s %m",
-                      fname, lsb_jobid2str(jobSpecsPtr->jobId));
+            ls_syslog(LOG_WARNING, "\
+%s: Fail to get go-ahead from mbatchd; abort job %s cc %d %m",
+                      __func__, lsb_jobid2str(jobSpecsPtr->jobId), cc);
 
             jobSetupStatus(JOB_STAT_PEND, PEND_JOB_START_FAIL, jobCardPtr);
         }
@@ -323,7 +322,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     ls_syslog(LOG_DEBUG, "\
 %s: Got job start ok from mbatchd for job <%s>",
-              fname, lsb_jobid2str(jobSpecsPtr->jobId));
+              __func__, lsb_jobid2str(jobSpecsPtr->jobId));
 
     if (acctMapTo(jobCardPtr) < 0)  {
         jobSetupStatus(JOB_STAT_PEND, PEND_NO_MAPPING, jobCardPtr);
@@ -336,7 +335,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     if (setJobEnv(jobCardPtr) < 0) {
         ls_syslog(LOG_DEBUG, "\
-%s: setJobEnv() failed for job <%s>", fname,
+%s: setJobEnv() failed for job <%s>", __func__,
                   lsb_jobid2str(jobSpecsPtr->jobId));
         jobSetupStatus(JOB_STAT_PEND, PEND_JOB_ENV, jobCardPtr);
     }
@@ -437,7 +436,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
             ls_syslog(LOG_DEBUG, "\
 %s: job %s execArgv[0] is %s, execArg[1] is %s",
-                      fname,
+                      __func__,
                       lsb_jobid2str(jobSpecsPtr->jobId),
                       execArgv[0],
                       execArgv[1]);
@@ -479,7 +478,7 @@ LSF: Unable to execute jobfile %s job %s: %s\n",
             if (logclass & LC_EXEC)
                 ls_syslog(LOG_DEBUG2, "\
 %s: options=%x sock=%d shellPath=%s",
-                          fname, jobSpecsPtr->options,
+                          __func__, jobSpecsPtr->options,
                           chanSock_(chfd), shellPath);
 
             putenv("PATH=/bin:/usr/bin:/local/bin:/usr/local/bin");
