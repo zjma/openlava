@@ -52,12 +52,8 @@ static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
 static struct glb_token *get_glb_tokens(int *);
 static struct glb_token *tokens;
-static int merge_tokens(struct lsSharedResourceInfo *,
-                        int,
-                        struct glb_token *,
-                        int);
-static char **make_host_array(void);
-static char **make_array_by_tab(void);
+static void add_tokens(struct glb_token *, int,
+                       struct lsSharedResourceInfo *, int);
 
 void
 getLsbResourceInfo(void)
@@ -81,11 +77,11 @@ getLsbResourceInfo(void)
     if (numResources > 0)
         freeSharedResource();
 
-    merge_tokens(resourceInfo, numRes, tokens, num_tokens);
+    initHostInstances(numRes);
+
+    add_tokens(tokens, num_tokens, resourceInfo, numRes);
 
     compute_group_slots(numRes, resourceInfo);
-
-    initHostInstances(numRes);
 
     for (i = 0; i < numRes; i++)
         addSharedResource(&resourceInfo[i]);
@@ -788,54 +784,33 @@ get_glb_tokens(int *num)
     return t;
 }
 
-static int
-merge_tokens(struct lsSharedResourceInfo *res,
-             int num_res,
-             struct glb_token *t,
-             int num_tokens)
+static void
+add_tokens(struct glb_token *t, int num_tokens,
+           struct lsSharedResourceInfo *res, int num_res)
 {
-    char **hosts;
+    int cc;
+    int i;
+    int n;
+    char buf[64];
 
-    hosts = make_host_array();
-    /* Turn the tokens into the lsSharedResourceInfo
-     */
+    if (num_tokens == 0)
+        return;
 
-    return 0;
-}
+    for (i = 0; i < num_tokens; i++) {
 
-static char **
-make_host_array(void)
-{
-    static int first = 1;
-    static int save_num_hosts;
-    static char **h;
+        for (cc = 0; cc < num_res; cc++) {
 
-    if (first) {
-        /* dont forget we have migrant hosts...
-         */
-        save_num_hosts = numofhosts();
-        h = make_array_by_tab();
-        first = 0;
-        return h;
+            if (strcmp(t[i].name, res[cc].resourceName) != 0)
+                continue;
+
+            for (n = 0; n < res[cc].nInstances; n++) {
+                _free_(res[cc].instances[n].value);
+                sprintf(buf, "%d", t[i].allocated);
+                res[cc].instances[n].value = strdup(buf);
+            }
+            break;
+        }
     }
-
-    if (save_num_hosts == numofhosts())
-        return h;
-
-    /* aime...
-     */
-    save_num_hosts = numofhosts();
-    h = make_array_by_tab();
-
-    return h;
-}
-
-static char **
-make_array_by_tab(void)
-{
-    char **h = NULL;
-
-    return h;
 }
 
 static void
