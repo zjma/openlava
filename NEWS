@@ -5,6 +5,9 @@ Release notes for OpenLava versions
 
 3.3 official release
 
+-- Implemented get_glb_tokens() to get tokens from the Global License Broker
+   and populate the host and display it with bhosts -s.
+
 3.3.pre.2
 =========
 -- Keep the lsb.events and lsb.acct files always open to improve
