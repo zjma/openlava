@@ -354,7 +354,7 @@ struct jData {
     int numMsg;
     struct lsbMsg **msgs;
     char *run_rusage;   /* "rusage[x=1:y=2||z=3:w=4]" */
-    int abs_run_limit; /* absolute run limit in seconds */
+    int abs_run_limit;  /* absolute run limit in seconds */
 };
 
 
@@ -1495,5 +1495,6 @@ extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
 extern int check_job_group(struct jData *, struct lsfAuth *);
+extern void check_token_status(void);
 
 #endif /* _MBD_HEADER_ */

@@ -1009,6 +1009,8 @@ periodicCheck(void)
         getLsbHostInfo();
         last_hostInfoRefreshTime = now;
     }
+
+    check_token_status();
 }
 
 

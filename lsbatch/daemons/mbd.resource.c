@@ -50,17 +50,21 @@ checkOrTakeAvailableByPreemptPRHQValue(int index,
                                        int update);
 static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
+static int num_tokens;
 static struct glb_token *get_glb_tokens(int *);
 static struct glb_token *tokens;
 static void add_tokens(struct glb_token *, int,
                        struct lsSharedResourceInfo *, int);
+static float get_job_tokens(struct jData *, struct glb_token *);
+static int compute_used_tokens(struct glb_token *);
+static int glb_get_more_tokens(const char *);
+static int glb_release_tokens(struct glb_token *, int);
 
 void
 getLsbResourceInfo(void)
 {
     int i;
     int numRes;
-    int num_tokens;
     struct lsSharedResourceInfo *resourceInfo;
 
     if (logclass & LC_TRACE)
@@ -811,6 +815,183 @@ add_tokens(struct glb_token *t, int num_tokens,
             break;
         }
     }
+}
+
+void
+check_token_status(void)
+{
+    int cc;
+    int used;
+    int avail;
+
+    ls_syslog(LOG_INFO, "%s: Entering...", __func__);
+
+    for (cc = 0; cc < num_tokens; cc++) {
+
+
+
+        used = compute_used_tokens(&tokens[cc]);
+        avail = tokens[cc].allocated - used;
+
+        ls_syslog(LOG_INFO, "\
+%s: token %s used %d avail %d alloc %d ideal %d recalled %d", __func__,
+                  tokens[cc].name, used, avail,
+                  tokens[cc].allocated, tokens[cc].ideal,
+                  tokens[cc].recalled);
+
+        if (used == 0) {
+            /* Tell glb to eventually release the NEED_MORE
+             * flag as we don't need more tokens.
+             */
+            glb_release_tokens(&tokens[cc], 0);
+            continue;
+        }
+
+
+        /* Full use and not recalled ask for more tokens
+         */
+       if (tokens[cc].recalled <= 0
+           && avail == 0) {
+           if (glb_get_more_tokens(tokens[cc].name) < 0) {
+               ls_syslog(LOG_ERR, "\
+%s: failed to get_more_tokens() glb down?", __func__);
+               return;
+           }
+       }
+    }
+}
+
+static int
+compute_used_tokens(struct glb_token *t)
+{
+    struct jData *jPtr;
+    float on_host;
+    float used;
+    struct hData *exec_host;
+
+    used = 0.0;
+    exec_host = NULL;
+    for (jPtr = jDataList[SJL]->back;
+         jPtr != jDataList[SJL];
+         jPtr = jPtr->back) {
+
+        if (jPtr->shared->resValPtr == NULL)
+            continue;
+
+        /* If 2 or more jobs run on the same host
+         * we will double count the availability
+         * of tokens on the host.
+         */
+        if (exec_host == NULL)
+            exec_host = jPtr->hPtr[0];
+        else if (exec_host == jPtr->hPtr[0])
+            continue;
+        else
+            assert(exec_host != jPtr->hPtr[0]);
+
+        on_host = get_job_tokens(jPtr, t);
+        /* Decrease the allocated based on what is
+         * left on the host.
+         */
+        used = (float)t->allocated - on_host;
+    }
+
+    return (int)used;
+}
+
+static float
+get_job_tokens(struct jData *jPtr, struct glb_token *t)
+{
+    int cc;
+    int rusage;
+    int is_set;
+    linkiter_t iter;
+    struct _rusage_ *r;
+    struct resVal r2;
+    float on_host;
+    struct resourceInstance *instance;
+
+    on_host = 0.0;
+    rusage = 0;
+    for (cc = 0; cc < GET_INTNUM (allLsInfo->nRes); cc++)
+        rusage += jPtr->shared->resValPtr->rusage_bit_map[cc];
+
+    if (rusage == 0)
+        return 0.0;
+
+    traverse_init(jPtr->shared->resValPtr->rl, &iter);
+    while ((r = traverse_link(&iter))) {
+
+        r2.rusage_bit_map = r->bitmap;
+        r2.val = r->val;
+
+        for (cc = 0; cc < allLsInfo->nRes; cc++) {
+
+            if (NOT_NUMERIC(allLsInfo->resTable[cc]))
+                continue;
+
+            TEST_BIT(cc, r2.rusage_bit_map, is_set);
+            if (is_set == 0)
+                continue;
+
+            if (r2.val[cc] >= INFINIT_LOAD
+                || r2.val[cc] < 0.01)
+                continue;
+
+            if (cc < allLsInfo->numIndx)
+                continue;
+
+            if (strcmp(allLsInfo->resTable[cc].name, t->name) != 0)
+                continue;
+            /* This calls return you how many tokens are left on
+             * the host.
+             */
+            on_host = getHRValue(t->name, jPtr->hPtr[0], &instance);
+            if (on_host == -INFINIT_LOAD)
+                on_host = 0.0;
+            goto pryc;
+        }
+    }
+pryc:
+    return on_host;
+}
+
+static int
+glb_get_more_tokens(const char *name)
+{
+    int cc;
+
+    ls_syslog(LOG_INFO, "\
+%s calling GLB to get more %s tokens", __func__, name);
+
+    /* glb_init() called in get_glb_tokens()
+     */
+    cc = glb_moretokens(clusterName, name);
+    if (cc != GLBE_NOERR) {
+        ls_syslog(LOG_ERR, "\
+%s: failed in glb_moretokens() %d", __func__, glberrno);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+glb_release_tokens(struct glb_token *t, int how_many)
+{
+    ls_syslog(LOG_INFO, "\
+%s: token %s releasing %d of %d tokens to GLB", __func__,
+              t->name, num_tokens, t->name);
+
+    cc = glb_releasetokens(cluster, t->name, how_many);
+    if (cc != GLBE_NOERR) {
+        ls_syslog(LOG_ERR, "\
+%s: failed talking to GLB to release token %s number %d",
+                  __func__, t->name, how_many);
+        return -1;
+    }
+
+    return 0;
 }
 
 static void
