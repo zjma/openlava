@@ -515,8 +515,8 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 
                     xdr_destroy(&xdrs);
 
-		    /* The header carry the task id.
-		     */
+                    /* The header carry the task id.
+                     */
                     conn[i].rtag = msgHdr.reserved;
 
                     if (nioDebug)

@@ -22,9 +22,9 @@
 #include "lib.h"
 #include "lproto.h"
 
-#define IO_TIMEOUT	2000
+#define IO_TIMEOUT      2000
 
-#define US_DIFF(t1, t2)	(((t1).tv_sec - (t2).tv_sec) * 1000000 + (t1).tv_usec - (t2).tv_usec)
+#define US_DIFF(t1, t2) (((t1).tv_sec - (t2).tv_sec) * 1000000 + (t1).tv_usec - (t2).tv_usec)
 
 static void alarmer_(void);
 
@@ -44,20 +44,20 @@ nb_write_fix(int s, char *buf, int len)
             len -= cc;
             buf += cc;
         } else if (cc < 0 && BAD_IO_ERR(errno)) {
-	    if (errno == EPIPE)
-	        lserrno = LSE_LOSTCON;
+            if (errno == EPIPE)
+                lserrno = LSE_LOSTCON;
 
             return -1;
         }
-	if (len > 0)
-	{
+        if (len > 0)
+        {
             gettimeofday(&now, &junk);
-	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
-		errno = ETIMEDOUT;
-		return -1;
-	    }
-	    millisleep_(IO_TIMEOUT / 20);
-	}
+            if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
+                errno = ETIMEDOUT;
+                return -1;
+            }
+            millisleep_(IO_TIMEOUT / 20);
+        }
     }
     return (length);
 }
@@ -71,7 +71,7 @@ nb_read_fix(int s, char *buf, int len)
     struct timezone junk;
 
     if (logclass & LC_TRACE)
-	ls_syslog(LOG_DEBUG, "nb_read_fix: Entering this routine...");
+        ls_syslog(LOG_DEBUG, "nb_read_fix: Entering this routine...");
 
     gettimeofday(&start, &junk);
 
@@ -80,31 +80,31 @@ nb_read_fix(int s, char *buf, int len)
             len -= cc;
             buf += cc;
         } else if (cc == 0 || BAD_IO_ERR(errno)) {
-	    if (cc == 0)
-		errno = ECONNRESET;
+            if (cc == 0)
+                errno = ECONNRESET;
             return -1;
         }
 
-	if (len > 0)
-	{
+        if (len > 0)
+        {
             gettimeofday(&now, &junk);
-	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
+            if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
                 /* channel is valid, give a chance to select again */
                 if (len == length) {
                     errno = EAGAIN;
                 } else {
                     errno = ETIMEDOUT;
                 }
-		return -1;
-	    }
-	    millisleep_(IO_TIMEOUT / 20);
-	}
+                return -1;
+            }
+            millisleep_(IO_TIMEOUT / 20);
+        }
     }
 
     return length;
 }
 
-#define MAXLOOP	3000
+#define MAXLOOP 3000
 
 int
 b_read_fix(int s, char *buf, int len)
@@ -126,8 +126,8 @@ b_read_fix(int s, char *buf, int len)
             len -= cc;
             buf += cc;
         } else if (cc == 0 || errno != EINTR) {
-	    if (cc == 0)
-		errno = ECONNRESET;
+            if (cc == 0)
+                errno = ECONNRESET;
             return -1;
         }
     }
@@ -151,13 +151,13 @@ b_write_fix(int s, char *buf, int len)
             len -= cc;
             buf += cc;
         } else if (cc < 0 && errno != EINTR) {
-	    lserrno = LSE_SOCK_SYS;
+            lserrno = LSE_SOCK_SYS;
             return -1;
         }
     }
 
     if (len > 0) {
-	lserrno = LSE_SOCK_SYS;
+        lserrno = LSE_SOCK_SYS;
         return -1;
     }
 
@@ -182,7 +182,7 @@ b_connect_(int s, struct sockaddr *name, int namelen, int timeout)
 
 
     if (getitimer(ITIMER_REAL, &old_itimer) <0)
-	return -1;
+        return -1;
 
 
     action.sa_flags = 0;
@@ -200,14 +200,14 @@ b_connect_(int s, struct sockaddr *name, int namelen, int timeout)
 
     if (connect(s, name, namelen) < 0) {
         if (errno == EINTR)
-	    errno = ETIMEDOUT;
+            errno = ETIMEDOUT;
 
-	alarm(oldTimer);
+        alarm(oldTimer);
         setitimer(ITIMER_REAL, &old_itimer, NULL);
 
-	sigaction(SIGALRM, &old_action, NULL);
+        sigaction(SIGALRM, &old_action, NULL);
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
-	return -1;
+        return -1;
     }
 
     alarm(oldTimer);
@@ -237,21 +237,21 @@ rd_select_(int rd, struct timeval *timeout)
 
     for (;;) {
 
-	pfd.fd = rd;
-	pfd.events = POLLIN;
-	pfd.revents = 0;
+        pfd.fd = rd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
 
-	t = -1;
-	if (timeout)
-	    t = timeout->tv_sec * 1000 + timeout->tv_usec/1000;
+        t = -1;
+        if (timeout)
+            t = timeout->tv_sec * 1000 + timeout->tv_usec/1000;
 
-	cc = poll(&pfd, 1, t);
-	if (cc >= 0)
-	    return cc;
+        cc = poll(&pfd, 1, t);
+        if (cc >= 0)
+            return cc;
 
-	if (errno == EINTR)
-	    continue;
-	return -1;
+        if (errno == EINTR)
+            continue;
+        return -1;
     }
 
 }
@@ -309,7 +309,7 @@ blockSigs_(int sig, sigset_t *blockMask, sigset_t *oldMask)
     sigfillset(blockMask);
 
     if (sig)
-	sigdelset(blockMask, sig);
+        sigdelset(blockMask, sig);
 
     sigdelset(blockMask, SIGHUP);
     sigdelset(blockMask, SIGINT);
@@ -355,9 +355,9 @@ nb_read_timeout(int s, char *buf, int len, int timeout)
                     errno = ECONNRESET;
                 return -1;
             }
-	    if (len == 0 )
-		break;
-	}
+            if (len == 0 )
+                break;
+        }
     }
 
     return length;

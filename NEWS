@@ -3,6 +3,8 @@ Release notes for OpenLava versions
 3.4.pre0
 ========
 
+Fix res/nios hang blocking ol make.
+
 3.3.1
 ======
 
