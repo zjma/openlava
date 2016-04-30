@@ -478,9 +478,12 @@ ls_nioselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
                     xdrmem_create(&xdrs, (char *) &bufHdr,
                                   sizeof(struct LSFHeader), XDR_DECODE);
 
-                    if ((retVal = readDecodeHdr_(conn[i].sock.fd, (char *) &bufHdr,
-                                       NB_SOCK_READ_FIX, &xdrs, &msgHdr)) < 0) {
-                        //skip: select again
+                    if ((retVal = readDecodeHdr_(conn[i].sock.fd,
+                                                 (char *) &bufHdr,
+                                                 NB_SOCK_READ_FIX,
+                                                 &xdrs,
+                                                 &msgHdr)) < 0) {
+                        /* skip: select again */
                         if (retVal == -3) {
                             xdr_destroy(&xdrs);
                             continue;

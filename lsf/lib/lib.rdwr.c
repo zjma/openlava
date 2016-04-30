@@ -89,7 +89,7 @@ nb_read_fix(int s, char *buf, int len)
 	{
             gettimeofday(&now, &junk);
 	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
-                // channle is valid, give a chance to select again
+                /* channel is valid, give a chance to select again */
                 if (len == length) {
                     errno = EAGAIN;
                 } else {
