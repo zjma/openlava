@@ -555,6 +555,8 @@ struct qData {
     struct fair_sched *own_sched; /* ownership scheduler interface */
     uint32_t loan_duration;       /* resource loan max duration */
 };
+extern struct qData **preempt_queues;
+extern int num_preempt_queues;
 
 #define HOST_STAT_REMOTE       0x80000000
 
@@ -1496,5 +1498,8 @@ extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
 extern int check_job_group(struct jData *, struct lsfAuth *);
 extern void check_token_status(void);
+extern bool_t is_token_under_recall(const char *);
+extern void need_tokens(const char *);
+extern int preempt_job(struct jData *);
 
 #endif /* _MBD_HEADER_ */

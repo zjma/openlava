@@ -149,6 +149,8 @@ static int init_ownership_scheduler(void);
 static bool_t is_fairplugin_ok(void);
 static bool_t is_preemptplugin_ok(void);
 static bool_t is_ownplugin_ok(void);
+static void make_preemption_queues(const char *, link_t *);
+static void sort_preemption_queues(link_t *);
 
 int
 minit(int mbdInitFlags)
@@ -3792,10 +3794,12 @@ static int
 init_preemption_scheduler(void)
 {
     struct qData *qPtr;
+    link_t *l;
 
     if (! is_preemptplugin_ok())
         return -1;
 
+    l = make_link();
     for (qPtr = qDataList->forw;
          qPtr != qDataList;
          qPtr = qPtr->forw) {
@@ -3804,7 +3808,12 @@ init_preemption_scheduler(void)
             continue;
 
         load_preempt_plugin(qPtr);
+
+        make_preemption_queues(qPtr->preemption, l);
     }
+
+    sort_preemption_queues(l);
+    fin_link(l);
 
     return 0;
 }
@@ -3858,6 +3867,97 @@ load_preempt_plugin(struct qData *qPtr)
     }
 
     return 0;
+}
+
+static void
+make_preemption_queues(const char *preempt, link_t *l)
+{
+    char *p;
+    char *p0;
+    char *lb;
+    char *rb;
+    char name[MAXLSFNAMELEN];
+    struct qData *qPtr;
+    int n;
+
+    p0 = p = strdup(preempt);
+
+    lb = strchr(p, '[');
+    *lb = 0;
+    lb++;
+    p = lb;
+    rb = strchr(p, ']');
+    *rb = 0;
+
+    while ((sscanf(p, "%s%n", name, &n) != EOF)) {
+        p = p + n;
+        qPtr = getQueueData(name);
+        if (qPtr == NULL) {
+            ls_syslog(LOG_ERR, "\
+%s: how strange queue %s does not exist", __func__, name);
+            continue;
+        }
+        push_link(l, qPtr);
+    }
+
+    _free_(p0);
+}
+
+static void
+sort_preemption_queues(link_t *l)
+{
+    int n;
+    int i;
+    struct qData *qPtr;
+    hTab  tab;
+    int  new;
+    link_t *l2;
+
+    n = LINK_NUM_ENTRIES(l);
+    if (n == 0)
+        return;
+
+    l2 = make_link();
+    h_initTab_(&tab, 50);
+
+    /* Get rid of duplicate names
+     */
+    while ((qPtr = pop_link(l))) {
+        h_addEnt_(&tab, qPtr->queue, &new);
+        if (!new)
+            continue;
+        push_link(l2, qPtr);
+    }
+
+    while ((qPtr = pop_link(l2))) {
+        push_link(l, qPtr);
+    }
+
+    fin_link(l2);
+    h_freeRefTab_(&tab);
+
+    n = LINK_NUM_ENTRIES(l);
+    if (n == 0)
+        return;
+
+    preempt_queues = calloc(n, sizeof(struct qData *));
+
+    i = 0;
+    while ((qPtr = pop_link(l))) {
+        preempt_queues[i] = qPtr;
+        ++i;
+    }
+
+    /* The array of preemptable queues and its size
+     * are global.
+     */
+    qsort(preempt_queues, n, sizeof(struct qData *), queue_cmp);
+    num_preempt_queues = n;
+
+    for (i = 0; i < n; i++)
+        ls_syslog(LOG_INFO, "\
+%s: queue %s priority %d", __func__, preempt_queues[i]->queue,
+                  preempt_queues[i]->priority);
 }
 
 /* init_ownersip_scheduler()
@@ -3994,3 +4094,4 @@ is_ownplugin_ok(void)
 
     return false;
 }
+

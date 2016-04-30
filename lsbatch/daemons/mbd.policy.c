@@ -1705,6 +1705,11 @@ ckResReserve(struct hData *hPtr,
                 float value;
                 struct resourceInstance *instance;
 
+                if (is_token_under_recall(allLsInfo->resTable[cc].name)) {
+                    state = 0;
+                    break;
+                }
+
                 value = getHRValue(allLsInfo->resTable[cc].name,
                                    hPtr,
                                    &instance);
@@ -1715,6 +1720,7 @@ ckResReserve(struct hData *hPtr,
 
                 if (value < r2.val[cc]
                     && allLsInfo->resTable[cc].orderType != INCR) {
+                    need_tokens(allLsInfo->resTable[cc].name);
                     state = 0;
                     break;
                 }

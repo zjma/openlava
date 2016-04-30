@@ -149,6 +149,9 @@ static struct jData *jobData = NULL;
 static time_t lastSchedTime = 0;
 static time_t nextSchedTime = 0;
 
+struct qData **preempt_queues;
+int num_preempt_queues = 0;
+
 void setJobPriUpdIntvl(void);
 static void updateJobPriorityInPJL(void);
 static void houseKeeping(int *);
@@ -1366,41 +1369,50 @@ preempt(void)
         }
 
         while ((jPtr = pop_link(rl))) {
-            struct signalReq s;
-            struct lsfAuth auth;
-            int cc;
-
-            jPtr->shared->jobBill.beginTime = time(NULL) + 120;
-            jPtr->newReason = PEND_JOB_PREEMPTED;
-            jPtr->jFlags |= JFLAG_JOB_PREEMPTED;
-
-            if (logclass & LC_PREEMPT)
-                ls_syslog(LOG_DEBUG, "\
-%s: requeueing job %s will try to restart later", __func__,
-                          lsb_jobid2str(jPtr->jobId),
-                          jPtr->qPtr->queue);
-
-            /* requeue me darling
-             */
-            s.sigValue = SIG_ARRAY_REQUEUE;
-            s.jobId = jPtr->jobId;
-            s.actFlags = REQUEUE_RUN;
-            s.chkPeriod = JOB_STAT_PEND;
-
-            memset(&auth, 0, sizeof(struct lsfAuth));
-            strcpy(auth.lsfUserName, lsbManager);
-            auth.gid = auth.uid = managerId;
-
-            cc = signalJob(&s, &auth);
-            if (cc != LSBE_NO_ERROR) {
-                ls_syslog(LOG_ERR, "\
-%s: error while requeue job %s state %d", __func__,
-                          lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
-            }
+            preempt_job(jPtr);
         }
         fin_link(rl);
     }
 
     if (logclass & LC_PREEMPT)
         ls_syslog(LOG_INFO, "%s: leaving ...", __func__);
+}
+
+int
+preempt_job(struct jData *jPtr)
+{
+    struct signalReq s;
+    struct lsfAuth auth;
+    int cc;
+
+    jPtr->shared->jobBill.beginTime = time(NULL) + 120;
+    jPtr->newReason = PEND_JOB_PREEMPTED;
+    jPtr->jFlags |= JFLAG_JOB_PREEMPTED;
+
+    if (logclass & LC_PREEMPT)
+        ls_syslog(LOG_DEBUG, "\
+%s: requeueing job %s will try to restart later", __func__,
+                  lsb_jobid2str(jPtr->jobId),
+                  jPtr->qPtr->queue);
+
+    /* requeue me darling
+     */
+    s.sigValue = SIG_ARRAY_REQUEUE;
+    s.jobId = jPtr->jobId;
+    s.actFlags = REQUEUE_RUN;
+    s.chkPeriod = JOB_STAT_PEND;
+
+    memset(&auth, 0, sizeof(struct lsfAuth));
+    strcpy(auth.lsfUserName, lsbManager);
+    auth.gid = auth.uid = managerId;
+
+    cc = signalJob(&s, &auth);
+    if (cc != LSBE_NO_ERROR) {
+        ls_syslog(LOG_ERR, "\
+%s: error while requeue job %s state %d", __func__,
+                  lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+        return -1;
+    }
+
+    return 0;
 }
