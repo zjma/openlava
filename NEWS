@@ -7,6 +7,9 @@ Release notes for OpenLava versions
 
 -- Implemented get_glb_tokens() to get tokens from the Global License Broker
    and populate the host and display it with bhosts -s.
+-- Implement intercluster GLB preemption and scheduler logic not to
+   schedule if under recall or ask for more tokens if there are
+   still pending jobs that need tokens.
 
 3.3.pre.2
 =========
