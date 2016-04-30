@@ -11,6 +11,8 @@ Release notes for OpenLava versions
 -- Add * pattern in job name.
 -- Fix bug in parsing all hosts in groups in lsb.hosts.
 -- Introduced new performance enhancement parameters in lsb.params.
+-- Fix res/nios blocking problems preventing olmake to run
+   properly.
 
 3.3.0 official release
 =======
