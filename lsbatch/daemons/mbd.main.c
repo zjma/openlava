@@ -911,6 +911,7 @@ houseKeeping(int *hsKeeping)
             nextSchedTime = now + msleeptime;
             TIMEIT(0, schedule = scheduleAndDispatchJobs(),
                    "scheduleAndDispatchJobs");
+            check_token_status();
             if (schedule == 0) {
                 schedule = FALSE;
             } else {
@@ -1012,8 +1013,6 @@ periodicCheck(void)
         getLsbHostInfo();
         last_hostInfoRefreshTime = now;
     }
-
-    check_token_status();
 }
 
 

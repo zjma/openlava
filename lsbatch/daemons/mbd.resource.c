@@ -874,10 +874,30 @@ check_token_status(void)
             continue;
         }
 
-        if (0 && used == 0) {
+        /* All jobs finished but we still have larger
+         * allocation then out share.
+         */
+        if (used == 0
+            && tokens[cc].allocated > tokens[cc].ideal) {
             /* Tell glb to eventually release the NEED_MORE
              * flag as we don't need more tokens.
              */
+            glb_release_tokens(&tokens[cc],
+                               tokens[cc].allocated - tokens[cc].ideal);
+            continue;
+        }
+
+        if (used < tokens[cc].allocated) {
+            glb_release_tokens(&tokens[cc], tokens[cc].allocated - used);
+            continue;
+        }
+
+        /* The previous scheduling cycle has determined we
+         * don't need more slots clear NEED_MORE flag,
+         * for example some jobs that caused it to be on
+         * were bkill.
+         */
+        if (need_more_tokens == 0) {
             glb_release_tokens(&tokens[cc], 0);
             continue;
         }
@@ -965,6 +985,8 @@ compute_used_tokens(struct glb_token *t)
         if (r == NULL)
             continue;
 
+        push_link(l, jPtr);
+
         /* If 2 or more jobs run on the same host
          * we will double count the availability
          * of tokens on the host.
@@ -977,12 +999,7 @@ compute_used_tokens(struct glb_token *t)
             assert(exec_host != jPtr->hPtr[0]);
 
         on_host = get_job_tokens(r, t, jPtr);
-        if (on_host != 0.0) {
-            /* We assume one job one license
-             * for now
-             */
-            push_link(l, jPtr);
-        }
+
         /* Decrease the allocated based on what is
          * left on the host.
          */
@@ -1172,7 +1189,7 @@ preempt_jobs_for_tokens(int wanted)
                 break;
 
             ls_syslog(LOG_INFO, "\
-%s: job %s is beeing preempted in queue %s to a token back", __func__,
+%s: job %s is beeing preempted in queue %s to get token back", __func__,
                       lsb_jobid2str(sjl[n]->jobId), preempt_queues[cc]->queue);
 
             if (preempt_job(sjl[n]) < 0) {
