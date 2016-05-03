@@ -225,7 +225,7 @@ readDecodeHdr_(int s,
         }
         lserrno = LSE_MSG_SYS;
         return -2;
-    } 
+    }
 
     if (!xdr_LSFHeader(xdrs, hdr)) {
         lserrno = LSE_BAD_XDR;
