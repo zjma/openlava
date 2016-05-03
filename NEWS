@@ -13,6 +13,7 @@ Release notes for OpenLava versions
 -- Introduced new performance enhancement parameters in lsb.params.
 -- Fix res/nios blocking problems preventing olmake to run
    properly.
+-- Fix nios when NIOS_RWAIT_SELECT is set in lsf.conf.
 
 3.3.0 official release
 =======
