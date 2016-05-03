@@ -55,7 +55,7 @@ static struct glb_token *get_glb_tokens(int *);
 static struct glb_token *tokens;
 static void add_tokens(struct glb_token *, int,
                        struct lsSharedResourceInfo *, int);
-static float get_job_tokens(struct resVal *, struct glb_token *, struct jData *);
+static float get_job_tokens(struct resVal *, struct glb_token *);
 static int compute_used_tokens(struct glb_token *);
 static int glb_get_more_tokens(const char *);
 static int glb_release_tokens(struct glb_token *, int);
@@ -65,7 +65,6 @@ static int num_sjl_jobs;
 static int need_more_tokens;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
-static bool_t is_job_in_preempt_queue(struct jData *);
 static struct glb_token *is_a_token(const char *);
 
 void
@@ -832,12 +831,24 @@ check_token_status(void)
     int cc;
     int used;
     int avail;
+    int preempt_avail;
+    int release_time = 120;
+    static time_t last;
 
     ls_syslog(LOG_INFO, "%s: Entering...", __func__);
 
     for (cc = 0; cc < num_tokens; cc++) {
 
         used = compute_used_tokens(&tokens[cc]);
+
+        if (used > 0 && tokens[cc].allocated <= 0) {
+            ls_syslog(LOG_INFO, "\
+%s: tokens %s has %d allocated tokens but %d used GLB and MBD out of sync?",
+                      __func__, tokens[cc].name,
+                      tokens[cc].allocated, used);
+            continue;
+        }
+
         avail = tokens[cc].allocated - used;
 
         ls_syslog(LOG_INFO, "\
@@ -849,24 +860,47 @@ check_token_status(void)
         if (tokens[cc].recalled > 0) {
 
             if (avail >= tokens[cc].recalled) {
+                ls_syslog(LOG_INFO, "\
+%s: 1 releasing recalled %d avail %d to GLB", __func__, tokens[cc].recalled, avail);
+
                 glb_release_tokens(&tokens[cc], tokens[cc].recalled);
                 tokens[cc].recalled = 0;
+
             } else if (avail > 0
                        && avail < tokens[cc].recalled) {
-                glb_release_tokens(&tokens[cc], avail);
+
+                ls_syslog(LOG_INFO, "\
+%s: 2 releasing recalled %d avail %d to GLB", __func__, tokens[cc].recalled, avail);
+
+                glb_release_tokens(&tokens[cc], tokens[cc].recalled - avail);
+
                 tokens[cc].recalled = tokens[cc].recalled - avail;
                 assert(tokens[cc].recalled > 0);
+
             } else {
-                assert(avail == 0);
-                avail = preempt_jobs_for_tokens(tokens[cc].recalled);
-                if (avail >= tokens[cc].recalled) {
+
+                preempt_avail = preempt_jobs_for_tokens(tokens[cc].recalled);
+
+                if (preempt_avail >= tokens[cc].recalled) {
+
+                    ls_syslog(LOG_INFO, "\
+%s: 3 releasing recalled %d preempt_avail %d to GLB", __func__,
+                              tokens[cc].recalled, preempt_avail);
+
                     glb_release_tokens(&tokens[cc], tokens[cc].recalled);
+
                     /* for the scheduler */
                     tokens[cc].recalled = 0;
                 } else {
+
+                    ls_syslog(LOG_INFO, "\
+%s: 4 releasing recalled %d preempt_avail %d to GLB", __func__,
+                              tokens[cc].recalled, preempt_avail);
+
                     glb_release_tokens(&tokens[cc], avail);
                     tokens[cc].recalled = tokens[cc].recalled - avail;
                     assert(tokens[cc].recalled > 0);
+
                 }
             }
             /* Don't do anything else under recall
@@ -879,6 +913,12 @@ check_token_status(void)
          */
         if (used == 0
             && tokens[cc].allocated > tokens[cc].ideal) {
+
+            ls_syslog(LOG_INFO, "\
+%s: used %d alloc %d > %d ideal releasing %d tokend to GLB", __func__,
+                      tokens[cc].allocated, tokens[cc].ideal,
+                      tokens[cc].allocated - tokens[cc].ideal);
+
             /* Tell glb to eventually release the NEED_MORE
              * flag as we don't need more tokens.
              */
@@ -888,7 +928,28 @@ check_token_status(void)
         }
 
         if (used < tokens[cc].allocated) {
+            time_t t;
+
+            if (last == 0) {
+                last = time(NULL);
+                continue;
+            }
+
+            t = time(NULL) - last;
+            if (t < release_time) {
+                ls_syslog(LOG_INFO, "\
+%s: used %d < %d allocated but last release time %d < %dsec", __func__,
+                          used, tokens[cc].allocated, t, release_time);
+                continue;
+            }
+
+            ls_syslog(LOG_INFO, "\
+%s: used %d allocated %d releasing %d to GLB", __func__,
+                      tokens[cc].allocated, tokens[cc].allocated - used);
+
             glb_release_tokens(&tokens[cc], tokens[cc].allocated - used);
+            last = time(NULL);
+
             continue;
         }
 
@@ -960,22 +1021,16 @@ static int
 compute_used_tokens(struct glb_token *t)
 {
     struct jData *jPtr;
-    float on_host;
     float used;
-    struct hData *exec_host;
     struct resVal *r;
     link_t *l;
 
     l = make_link();
     used = 0.0;
-    exec_host = NULL;
 
     for (jPtr = jDataList[SJL]->back;
          jPtr != jDataList[SJL];
          jPtr = jPtr->back) {
-
-        if (!is_job_in_preempt_queue(jPtr))
-            continue;
 
         /* Try the host and then the queue
          */
@@ -987,24 +1042,12 @@ compute_used_tokens(struct glb_token *t)
 
         push_link(l, jPtr);
 
-        /* If 2 or more jobs run on the same host
-         * we will double count the availability
-         * of tokens on the host.
-         */
-        if (exec_host == NULL)
-            exec_host = jPtr->hPtr[0];
-        else if (exec_host == jPtr->hPtr[0])
-            continue;
-        else
-            assert(exec_host != jPtr->hPtr[0]);
-
-        on_host = get_job_tokens(r, t, jPtr);
-
-        /* Decrease the allocated based on what is
-         * left on the host.
-         */
-        used = (float)t->allocated - on_host;
+        used = used + get_job_tokens(r, t);
     }
+
+    ls_syslog(LOG_INFO, "\
+%s: there are %d jobs on SJL using token %s", __func__,
+              LINK_NUM_ENTRIES(l), t->name);
 
     /* sort the jobs on the link which should be
      * a subset of SJL
@@ -1015,21 +1058,8 @@ compute_used_tokens(struct glb_token *t)
     return (int)used;
 }
 
-static bool_t
-is_job_in_preempt_queue(struct jData *jPtr)
-{
-    int cc;
-
-    for (cc = 0; cc < num_preempt_queues; cc++) {
-        if (jPtr->qPtr->priority == preempt_queues[cc]->priority)
-            return true;
-    }
-
-    return false;
-}
-
 static float
-get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
+get_job_tokens(struct resVal *resPtr, struct glb_token *t)
 {
     int cc;
     int rusage;
@@ -1037,10 +1067,7 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
     linkiter_t iter;
     struct _rusage_ *r;
     struct resVal r2;
-    float on_host;
-    struct resourceInstance *instance;
 
-    on_host = 0.0;
     rusage = 0;
     for (cc = 0; cc < GET_INTNUM(allLsInfo->nRes); cc++)
         rusage += resPtr->rusage_bit_map[cc];
@@ -1072,17 +1099,12 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
 
             if (strcmp(allLsInfo->resTable[cc].name, t->name) != 0)
                 continue;
-            /* This calls return you how many tokens are left on
-             * the host. We always assume one job one license for now.
-             */
-            on_host = getHRValue(t->name, jPtr->hPtr[0], &instance);
-            if (on_host == -INFINIT_LOAD)
-                on_host = 0.0;
-            goto pryc;
+
+            return r2.val[cc];
         }
     }
-pryc:
-    return on_host;
+
+    return 0;
 }
 
 static int
@@ -1143,7 +1165,8 @@ sort_sjl_by_queue_priority(link_t *l)
         ++n;
     }
 
-    qsort(sjl, n, sizeof(struct jData *), jcompare_by_queue);
+    if (n > 1)
+        qsort(sjl, n, sizeof(struct jData *), jcompare_by_queue);
     /* num_sjl_jobs is global
      */
     num_sjl_jobs = n;
