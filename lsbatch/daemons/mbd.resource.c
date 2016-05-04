@@ -63,6 +63,7 @@ static struct jData **sort_sjl_by_queue_priority(link_t *);
 static struct jData **sjl;
 static int num_sjl_jobs;
 static int need_more_tokens;
+static int status_released;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
 static struct glb_token *is_a_token(const char *);
@@ -852,10 +853,10 @@ check_token_status(void)
         avail = tokens[cc].allocated - used;
 
         ls_syslog(LOG_INFO, "\
-%s: token %s used %d avail %d alloc %d ideal %d recalled %d", __func__,
-                  tokens[cc].name, used, avail,
+%s: token %s used %d avail %d alloc %d ideal %d recalled %d status_released %d",
+                  __func__, tokens[cc].name, used, avail,
                   tokens[cc].allocated, tokens[cc].ideal,
-                  tokens[cc].recalled);
+                  tokens[cc].recalled, status_released);
 
         if (tokens[cc].recalled > 0) {
 
@@ -958,8 +959,10 @@ check_token_status(void)
          * for example some jobs that caused it to be on
          * were bkill.
          */
-        if (need_more_tokens == 0) {
+        if (need_more_tokens == 0
+            && status_released == 0) {
             glb_release_tokens(&tokens[cc], 0);
+            status_released = 1;
             continue;
         }
 
@@ -968,6 +971,7 @@ check_token_status(void)
        if (tokens[cc].recalled <= 0
            && avail == 0
            && need_more_tokens > 0) {
+           status_released = 0;
            if (glb_get_more_tokens(tokens[cc].name) < 0) {
                ls_syslog(LOG_ERR, "\
 %s: failed to get_more_tokens() glb down?", __func__);
