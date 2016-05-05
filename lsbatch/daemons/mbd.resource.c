@@ -55,7 +55,7 @@ static struct glb_token *get_glb_tokens(int *);
 static struct glb_token *tokens;
 static void add_tokens(struct glb_token *, int,
                        struct lsSharedResourceInfo *, int);
-static float get_job_tokens(struct resVal *, struct glb_token *);
+static float get_job_tokens(struct resVal *, struct glb_token *, struct jData *);
 static int compute_used_tokens(struct glb_token *);
 static int glb_get_more_tokens(const char *);
 static int glb_release_tokens(struct glb_token *, int);
@@ -63,10 +63,13 @@ static struct jData **sort_sjl_by_queue_priority(link_t *);
 static struct jData **sjl;
 static int num_sjl_jobs;
 static int need_more_tokens;
-static int status_released;
+static int resumed_job;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
 static struct glb_token *is_a_token(const char *);
+static int stop_job(struct jData *);
+static int try_resume_by_time(void);
+static int resume_job(struct jData *);
 
 void
 getLsbResourceInfo(void)
@@ -84,6 +87,11 @@ getLsbResourceInfo(void)
         return;
     }
 
+    /* this is very important variable, the scheduler
+     * uses it to signal there is a need for tokens,
+     * so that after the scheduling in check_token_status()
+     * we can take the appropriate acctions.
+     */
     need_more_tokens = 0;
     tokens = get_glb_tokens(&num_tokens);
 
@@ -831,15 +839,14 @@ check_token_status(void)
 {
     int cc;
     int used;
-    int avail;
-    int preempt_avail;
-    int release_time = 120;
+    int release_time = 60;
     static time_t last;
 
     ls_syslog(LOG_INFO, "%s: Entering...", __func__);
 
     for (cc = 0; cc < num_tokens; cc++) {
 
+        resumed_job = 0;
         used = compute_used_tokens(&tokens[cc]);
 
         if (used > 0 && tokens[cc].allocated <= 0) {
@@ -850,98 +857,53 @@ check_token_status(void)
             continue;
         }
 
-        avail = tokens[cc].allocated - used;
-
         ls_syslog(LOG_INFO, "\
-%s: token %s used %d avail %d alloc %d ideal %d recalled %d status_released %d",
-                  __func__, tokens[cc].name, used, avail,
+%s: token %s used %d alloc %d ideal %d recalled %d need_more_tokens %d",
+                  __func__, tokens[cc].name, used,
                   tokens[cc].allocated, tokens[cc].ideal,
-                  tokens[cc].recalled, status_released);
+                  tokens[cc].recalled, need_more_tokens);
 
         if (tokens[cc].recalled > 0) {
 
-            if (avail >= tokens[cc].recalled) {
+            ls_syslog(LOG_INFO, "\
+%s: releasing recalled %d tokens GLB", __func__, tokens[cc].recalled);
+
+            glb_release_tokens(&tokens[cc], tokens[cc].recalled);
+            tokens[cc].recalled = 0;
+
+            if (used > tokens[cc].ideal) {
+                /* We may need to preempt to release some
+                 * of the requested tokens.
+                 */
                 ls_syslog(LOG_INFO, "\
-%s: 1 releasing recalled %d avail %d to GLB", __func__, tokens[cc].recalled, avail);
+%s: used %d > %d ideal we have to preempt %d tokens", __func__, used,
+                          tokens[cc].ideal, used - tokens[cc].ideal);
 
-                glb_release_tokens(&tokens[cc], tokens[cc].recalled);
-                tokens[cc].recalled = 0;
-
-            } else if (avail > 0
-                       && avail < tokens[cc].recalled) {
-
-                ls_syslog(LOG_INFO, "\
-%s: 2 releasing recalled %d avail %d to GLB", __func__, tokens[cc].recalled, avail);
-
-                glb_release_tokens(&tokens[cc], tokens[cc].recalled - avail);
-
-                tokens[cc].recalled = tokens[cc].recalled - avail;
-                assert(tokens[cc].recalled > 0);
-
-            } else {
-
-                preempt_avail = preempt_jobs_for_tokens(tokens[cc].recalled);
-
-                if (preempt_avail >= tokens[cc].recalled) {
-
-                    ls_syslog(LOG_INFO, "\
-%s: 3 releasing recalled %d preempt_avail %d to GLB", __func__,
-                              tokens[cc].recalled, preempt_avail);
-
-                    glb_release_tokens(&tokens[cc], tokens[cc].recalled);
-
-                    /* for the scheduler */
-                    tokens[cc].recalled = 0;
-                } else {
-
-                    ls_syslog(LOG_INFO, "\
-%s: 4 releasing recalled %d preempt_avail %d to GLB", __func__,
-                              tokens[cc].recalled, preempt_avail);
-
-                    glb_release_tokens(&tokens[cc], avail);
-                    tokens[cc].recalled = tokens[cc].recalled - avail;
-                    assert(tokens[cc].recalled > 0);
-
-                }
+                preempt_jobs_for_tokens(used - tokens[cc].ideal);
             }
+
             /* Don't do anything else under recall
              */
             continue;
         }
 
-        /* All jobs finished but we still have larger
-         * allocation then out share.
-         */
-        if (used == 0
-            && tokens[cc].allocated > tokens[cc].ideal) {
-
-            ls_syslog(LOG_INFO, "\
-%s: used %d alloc %d > %d ideal releasing %d tokend to GLB", __func__,
-                      tokens[cc].allocated, tokens[cc].ideal,
-                      tokens[cc].allocated - tokens[cc].ideal);
-
-            /* Tell glb to eventually release the NEED_MORE
-             * flag as we don't need more tokens.
-             */
-            glb_release_tokens(&tokens[cc],
-                               tokens[cc].allocated - tokens[cc].ideal);
-            continue;
-        }
-
-        if (used < tokens[cc].allocated) {
+        if (used < tokens[cc].allocated
+            && need_more_tokens == 0) {
             time_t t;
 
-            if (last == 0) {
-                last = time(NULL);
-                continue;
-            }
+            if (0) {
+                if (last == 0) {
+                    last = time(NULL);
+                    continue;
+                }
 
-            t = time(NULL) - last;
-            if (t < release_time) {
-                ls_syslog(LOG_INFO, "\
+                t = time(NULL) - last;
+                if (t < release_time) {
+                    ls_syslog(LOG_INFO, "\
 %s: used %d < %d allocated but last release time %d < %dsec", __func__,
-                          used, tokens[cc].allocated, t, release_time);
-                continue;
+                              used, tokens[cc].allocated, t, release_time);
+                    continue;
+                }
             }
 
             ls_syslog(LOG_INFO, "\
@@ -949,36 +911,39 @@ check_token_status(void)
                       tokens[cc].allocated, tokens[cc].allocated - used);
 
             glb_release_tokens(&tokens[cc], tokens[cc].allocated - used);
-            last = time(NULL);
-
-            continue;
-        }
-
-        /* The previous scheduling cycle has determined we
-         * don't need more slots clear NEED_MORE flag,
-         * for example some jobs that caused it to be on
-         * were bkill.
-         */
-        if (need_more_tokens == 0
-            && status_released == 0) {
-            glb_release_tokens(&tokens[cc], 0);
-            status_released = 1;
+            /* reset last time
+             */
+            last = 0;
             continue;
         }
 
         /* Full use and not recalled ask for more tokens
          */
-       if (tokens[cc].recalled <= 0
-           && avail == 0
-           && need_more_tokens > 0) {
-           status_released = 0;
+       if (need_more_tokens > 0) {
            if (glb_get_more_tokens(tokens[cc].name) < 0) {
                ls_syslog(LOG_ERR, "\
 %s: failed to get_more_tokens() glb down?", __func__);
                return;
            }
        }
+
     } /* for (cc = 0; cc < num_tokens; cc++) */
+
+    /* Test if we can resume somebody
+     */
+    for (cc = 0; cc < num_tokens; cc++) {
+
+        try_resume_by_time();
+
+        /* A resumed job needs more tokens.
+         */
+        if (resumed_job) {
+            if (glb_get_more_tokens(tokens[cc].name) < 0) {
+                ls_syslog(LOG_ERR, "\
+%s: failed to get_more_tokens() glb down?", __func__);
+            }
+        }
+    }
 }
 
 static struct glb_token *
@@ -1026,11 +991,13 @@ compute_used_tokens(struct glb_token *t)
 {
     struct jData *jPtr;
     float used;
+    float x;
     struct resVal *r;
     link_t *l;
 
     l = make_link();
     used = 0.0;
+    x = 0.0;
 
     for (jPtr = jDataList[SJL]->back;
          jPtr != jDataList[SJL];
@@ -1044,9 +1011,15 @@ compute_used_tokens(struct glb_token *t)
         if (r == NULL)
             continue;
 
-        push_link(l, jPtr);
-
-        used = used + get_job_tokens(r, t);
+        /* Check if this running jobs is using
+         * the token t and also if has not
+         * been preempted because of GLB recall.
+         */
+        x = get_job_tokens(r, t, jPtr);
+        if (x > 0) {
+            push_link(l, jPtr);
+            used = used + x;
+        }
     }
 
     ls_syslog(LOG_INFO, "\
@@ -1063,7 +1036,7 @@ compute_used_tokens(struct glb_token *t)
 }
 
 static float
-get_job_tokens(struct resVal *resPtr, struct glb_token *t)
+get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
 {
     int cc;
     int rusage;
@@ -1104,9 +1077,87 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t)
             if (strcmp(allLsInfo->resTable[cc].name, t->name) != 0)
                 continue;
 
+            /* Ok the job was started on a GLB token but it
+             * has been suspended by MBD because of token recall
+             */
+            if (jPtr->jStatus & JOB_STAT_USUSP
+                && jPtr->jFlags & JFLAG_PREEMPT_GLB)
+                return 0.0;
+
+            if (jPtr->jStatus & JOB_STAT_SSUSP
+                && jPtr->jFlags & JFLAG_PREEMPT_GLB) {
+                ++resumed_job;
+                return 0;
+            }
+
+            /* no harm to this bit operation
+             */
+            jPtr->jFlags &= ~JFLAG_PREEMPT_GLB;
+
             return r2.val[cc];
         }
     }
+
+    return 0.0;
+}
+
+static int
+try_resume_by_time(void)
+{
+    struct jData *jPtr;
+    time_t t;
+
+    t = time(NULL);
+
+    for (jPtr = jDataList[SJL]->forw;
+         jPtr != jDataList[SJL];
+         jPtr = jPtr->forw) {
+
+        if ((jPtr->jStatus & JOB_STAT_USUSP)
+            && (jPtr->jFlags & JFLAG_PREEMPT_GLB)
+            && jPtr->shared->jobBill.beginTime > 0
+            && (t - jPtr->shared->jobBill.beginTime >= 10)) {
+
+            if (resume_job(jPtr) < 0) {
+                ls_syslog(LOG_INFO, "\
+%s: failed in resuming job %s", __func__, lsb_jobid2str(jPtr->jobId));
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int
+resume_job(struct jData *jPtr)
+{
+    struct signalReq s;
+    struct lsfAuth auth;
+    int cc;
+
+    s.sigValue = SIGCONT;
+    s.jobId = jPtr->jobId;
+    s.chkPeriod = 0;
+    s.actFlags = 0;
+
+    memset(&auth, 0, sizeof(struct lsfAuth));
+    strcpy(auth.lsfUserName, lsbManager);
+    auth.gid = auth.uid = managerId;
+
+    cc = signalJob(&s, &auth);
+    if (cc != LSBE_NO_ERROR) {
+        ls_syslog(LOG_ERR, "\
+%s: error while resuming job %s state %d", __func__,
+                  lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+        return -1;
+    }
+
+    ls_syslog(LOG_INFO, "\
+%s: jobid %s resumed after being suspend by GLB request",
+              __func__, lsb_jobid2str(jPtr->jobId));
+
+    jPtr->shared->jobBill.beginTime = 0;
+    ++resumed_job;
 
     return 0;
 }
@@ -1219,9 +1270,10 @@ preempt_jobs_for_tokens(int wanted)
 %s: job %s is beeing preempted in queue %s to get token back", __func__,
                       lsb_jobid2str(sjl[n]->jobId), preempt_queues[cc]->queue);
 
-            if (preempt_job(sjl[n]) < 0) {
+            if (stop_job(sjl[n]) < 0) {
                 ls_syslog(LOG_ERR, "\
 %s: failed to signal job %s", __func__, lsb_jobid2str(sjl[n]->jobId));
+                continue;
             }
             ++preempted;
             if (preempted >= wanted)
@@ -1230,6 +1282,40 @@ preempt_jobs_for_tokens(int wanted)
     }
 
     return preempted;
+}
+
+static int
+stop_job(struct jData *jPtr)
+{
+    struct signalReq s;
+    struct lsfAuth auth;
+    int cc;
+
+    s.sigValue = SIGSTOP;
+    s.jobId = jPtr->jobId;
+    s.chkPeriod = 0;
+    s.actFlags = 0;
+
+    memset(&auth, 0, sizeof(struct lsfAuth));
+    strcpy(auth.lsfUserName, lsbManager);
+    auth.gid = auth.uid = managerId;
+
+    cc = signalJob(&s, &auth);
+    if (cc != LSBE_NO_ERROR) {
+        ls_syslog(LOG_ERR, "\
+%s: error while suspending job %s state %d", __func__,
+                  lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+        return -1;
+    }
+
+    jPtr->shared->jobBill.beginTime = time(NULL) + 120;
+    jPtr->jFlags |= JFLAG_PREEMPT_GLB;
+
+    ls_syslog(LOG_INFO, "\
+%s: jobid %s stopped upon GLB request",
+              __func__, lsb_jobid2str(jPtr->jobId));
+
+    return 0;
 }
 
 static void

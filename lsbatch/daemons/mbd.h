@@ -91,7 +91,7 @@ typedef enum {
 #define JFLAG_DEPCOND_REJECT    0x8000
 #define JFLAG_SEND_SIG          0x10000
 #define JFLAG_BTOP              0x20000
-#define JFLAG_ADM_BTOP          0x40000
+#define JFLAG_PREEMPT_GLB       0x40000
 #define JFLAG_READY1            0x100000
 #define JFLAG_READY2            0x200000
 #define JFLAG_URGENT            0x400000
@@ -333,7 +333,7 @@ struct jData {
     int    sigValue;
     struct jShared  *shared;
     int     numRef;
-    struct  jgTreeNode*   jgrpNode;
+    struct  jgTreeNode *jgrpNode;
     int     nodeType;
     struct  jData *nextJob;
     int     restartPid;
