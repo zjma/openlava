@@ -839,8 +839,7 @@ check_token_status(void)
 {
     int cc;
     int used;
-    int release_time = 60;
-    static time_t last;
+    static int prev_used;
 
     ls_syslog(LOG_INFO, "%s: Entering...", __func__);
 
@@ -858,68 +857,73 @@ check_token_status(void)
         }
 
         ls_syslog(LOG_INFO, "\
-%s: token %s used %d alloc %d ideal %d recalled %d need_more_tokens %d",
-                  __func__, tokens[cc].name, used,
+%s: token %s used %d prev_used %d alloc %d ideal %d recalled %d need_more_tokens %d",
+                  __func__, tokens[cc].name, used, prev_used,
                   tokens[cc].allocated, tokens[cc].ideal,
                   tokens[cc].recalled, need_more_tokens);
 
         if (tokens[cc].recalled > 0) {
+            int num_preempted;
+
+            num_preempted = 0;
 
             ls_syslog(LOG_INFO, "\
-%s: releasing recalled %d tokens GLB", __func__, tokens[cc].recalled);
-
-            glb_release_tokens(&tokens[cc], tokens[cc].recalled);
-            tokens[cc].recalled = 0;
+%s: GLB is recalling  %d tokens ", __func__, tokens[cc].recalled);
 
             if (used > tokens[cc].ideal) {
                 /* We may need to preempt to release some
                  * of the requested tokens.
                  */
                 ls_syslog(LOG_INFO, "\
-%s: used %d > %d ideal we have to preempt %d tokens", __func__, used,
+%s: used %d %d ideal we have to preempt %d tokens", __func__, used,
                           tokens[cc].ideal, used - tokens[cc].ideal);
 
-                preempt_jobs_for_tokens(used - tokens[cc].ideal);
+                num_preempted = preempt_jobs_for_tokens(used - tokens[cc].ideal);
+
+                ls_syslog(LOG_INFO, "\
+%s: num_preempted %d", __func__, num_preempted);
+
+                if (num_preempted > 0) {
+                    glb_release_tokens(&tokens[cc], num_preempted);
+                    ls_syslog(LOG_INFO, "\
+%s: 1 releasing %d tokens", __func__, num_preempted);
+                    prev_used = used;
+                    continue;
+                }
             }
 
-            /* Don't do anything else under recall
-             */
-            continue;
-        }
+            if (num_preempted == 0
+                && prev_used > used) {
+                glb_release_tokens(&tokens[cc], prev_used - used);
+                ls_syslog(LOG_INFO, "\
+%s: 2 releasing %d tokens", __func__, prev_used - used);
+                prev_used = used;
+            }
+
+            if (used == 0) {
+                glb_release_tokens(&tokens[cc], tokens[cc].recalled);
+                ls_syslog(LOG_INFO, "\
+%s: used is 0 releasing %d tokens", __func__, tokens[cc].recalled);
+            }
+
+        } /* under recall */
 
         if (used < tokens[cc].allocated
             && need_more_tokens == 0) {
-            time_t t;
-
-            if (0) {
-                if (last == 0) {
-                    last = time(NULL);
-                    continue;
-                }
-
-                t = time(NULL) - last;
-                if (t < release_time) {
-                    ls_syslog(LOG_INFO, "\
-%s: used %d < %d allocated but last release time %d < %dsec", __func__,
-                              used, tokens[cc].allocated, t, release_time);
-                    continue;
-                }
-            }
 
             ls_syslog(LOG_INFO, "\
 %s: used %d allocated %d releasing %d to GLB", __func__,
                       tokens[cc].allocated, tokens[cc].allocated - used);
 
             glb_release_tokens(&tokens[cc], tokens[cc].allocated - used);
-            /* reset last time
-             */
-            last = 0;
+            prev_used = used;
             continue;
         }
 
         /* Full use and not recalled ask for more tokens
          */
-       if (need_more_tokens > 0) {
+       if (need_more_tokens > 0
+           && tokens[cc].recalled <= 0) {
            if (glb_get_more_tokens(tokens[cc].name) < 0) {
                ls_syslog(LOG_ERR, "\
 %s: failed to get_more_tokens() glb down?", __func__);
@@ -928,6 +932,8 @@ check_token_status(void)
        }
 
     } /* for (cc = 0; cc < num_tokens; cc++) */
+
+    prev_used = used;
 
     /* Test if we can resume somebody
      */
@@ -1116,7 +1122,7 @@ try_resume_by_time(void)
         if ((jPtr->jStatus & JOB_STAT_USUSP)
             && (jPtr->jFlags & JFLAG_PREEMPT_GLB)
             && jPtr->shared->jobBill.beginTime > 0
-            && (t - jPtr->shared->jobBill.beginTime >= 10)) {
+            && (t - jPtr->shared->jobBill.beginTime >= 5)) {
 
             if (resume_job(jPtr) < 0) {
                 ls_syslog(LOG_INFO, "\
