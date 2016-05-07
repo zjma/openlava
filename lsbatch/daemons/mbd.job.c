@@ -7384,6 +7384,14 @@ tryResume(void)
                 jp->jFlags |= JFLAG_SEND_SIG;
                 jp->hPtr[0]->flags |= HOST_JOB_RESUME;
 
+                /* Clean the flag so that check_token_status()
+                 * will count this job and possibly not return
+                 * this token to glb. Here we are racing with
+                 * sbd that is resuming the job in async way.
+                 */
+                if (jp->jFlags & JFLAG_PREEMPT_GLB)
+                    jp->jFlags &= ~JFLAG_PREEMPT_GLB;
+
                 adjLsbLoad (jp, TRUE, TRUE);
                 if (logclass & (LC_EXEC))
                     ls_syslog (LOG_DEBUG2, "%s: Resume job <%s> with signal value <%d>", fname, lsb_jobid2str(jp->jobId), resumeSig);

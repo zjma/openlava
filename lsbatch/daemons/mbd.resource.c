@@ -1122,7 +1122,7 @@ try_resume_by_time(void)
         if ((jPtr->jStatus & JOB_STAT_USUSP)
             && (jPtr->jFlags & JFLAG_PREEMPT_GLB)
             && jPtr->shared->jobBill.beginTime > 0
-            && (t - jPtr->shared->jobBill.beginTime >= 5)) {
+            && (t - jPtr->shared->jobBill.beginTime >= 2)) {
 
             if (resume_job(jPtr) < 0) {
                 ls_syslog(LOG_INFO, "\
