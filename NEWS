@@ -3,6 +3,10 @@ Release notes for OpenLava versions
 3.3.2
 =====
 
+-- Remove the check if a group name is also a hostname as
+   there can be a host on the network not part of the cluster
+   with the same name.
+
 3.3.1
 ======
 
