@@ -100,6 +100,12 @@ typedef enum {
 #define JFLAG_HAS_BEEN_REQUEUED 0x2000000
 #define JFLAG_JOB_PREEMPTED     0x20000000
 #define JFLAG_BORROWED_SLOTS    0x40000000
+
+/* this does not fit an int
+ * 0x80000000 = 2147483648
+ * INT32_MAX = 2147483647
+ * 2147483647-2147483648 = -1
+ */
 #define JFLAG_WAIT_SWITCH       0x80000000
 
 
@@ -1500,6 +1506,10 @@ extern int check_job_group(struct jData *, struct lsfAuth *);
 extern void check_token_status(void);
 extern bool_t is_token_under_recall(const char *);
 extern void need_tokens(const char *);
-extern int preempt_job(struct jData *);
+extern int requeue_job(struct jData *);
+extern int stop_job(struct jData *, int);
+extern int resume_job(struct jData *jPtr);
+extern void resume_jobs_by_time(void);
+extern char *str_flags(int);
 
 #endif /* _MBD_HEADER_ */

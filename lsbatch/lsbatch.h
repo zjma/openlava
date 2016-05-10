@@ -275,11 +275,11 @@
 /* Load reasons
  */
 #define PEND_HOST_LOAD         2001
-#define PEND_HOST_QUE_RUSAGE  2301
 
 /* Rusage reason
  */
-#define PEND_HOST_JOB_RUSAGE 2601
+#define PEND_HOST_QUE_RUSAGE  2301
+#define PEND_HOST_JOB_RUSAGE  2601
 
 #define PEND_MAX_REASONS 2900
 

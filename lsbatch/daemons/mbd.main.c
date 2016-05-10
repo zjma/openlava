@@ -887,7 +887,8 @@ houseKeeping(int *hsKeeping)
     static int myTurn = RESIG;
 
     ls_syslog(LOG_DEBUG, "\
-%s: mSchedStage=%x schedule=%d eventPending=%d now=%d lastSchedTime=%d nextSchedTime=%d", __func__, mSchedStage, schedule, eventPending,
+%s: mSchedStage=%x schedule=%d eventPending=%d now=%d lastSchedTime=%d nextSchedTime=%d",
+              __func__, mSchedStage, schedule, eventPending,
               (int)now, (int)lastSchedTime, (int)nextSchedTime);
 
     if (lastAcctSched == 0){
@@ -912,12 +913,12 @@ houseKeeping(int *hsKeeping)
             TIMEIT(0, schedule = scheduleAndDispatchJobs(),
                    "scheduleAndDispatchJobs");
             check_token_status();
+            preempt();
             if (schedule == 0) {
                 schedule = FALSE;
             } else {
                 schedule = TRUE;
             }
-            preempt();
             return;
         }
     }
@@ -1368,7 +1369,7 @@ preempt(void)
         }
 
         while ((jPtr = pop_link(rl))) {
-            preempt_job(jPtr);
+            stop_job(jPtr, JFLAG_JOB_PREEMPTED);
         }
         fin_link(rl);
     }
@@ -1378,13 +1379,13 @@ preempt(void)
 }
 
 int
-preempt_job(struct jData *jPtr)
+requeue_job(struct jData *jPtr)
 {
     struct signalReq s;
     struct lsfAuth auth;
     int cc;
 
-    jPtr->shared->jobBill.beginTime = time(NULL) + 120;
+    jPtr->shared->jobBill.beginTime = time(NULL) + msleeptime * 2;
     jPtr->newReason = PEND_JOB_PREEMPTED;
     jPtr->jFlags |= JFLAG_JOB_PREEMPTED;
 
@@ -1414,4 +1415,48 @@ preempt_job(struct jData *jPtr)
     }
 
     return 0;
+}
+
+char *
+str_flags(int flag)
+{
+    static char buf[BUFSIZ];
+
+    buf[0] = 0;
+
+    if (flag & JFLAG_READY)
+        sprintf(buf, "JFLAG_READY");
+    if (flag & JFLAG_EXACT)
+        sprintf(buf + strlen(buf), "JFLAG_EXACT ");
+    if (flag & JFLAG_UPTO)
+        sprintf(buf + strlen(buf), "JFLAG_UPTO ");
+    if (flag & JFLAG_DEPCOND_REJECT)
+        sprintf(buf + strlen(buf), "JFLAG_DEPCOND_REJECT ");
+    if (flag & JFLAG_SEND_SIG)
+        sprintf(buf + strlen(buf), "JFLAG_SEND_SIG ");
+    if (flag & JFLAG_BTOP)
+        sprintf(buf + strlen(buf), "JFLAG_BTOP ");
+    if (flag & JFLAG_PREEMPT_GLB)
+        sprintf(buf + strlen(buf), "JFLAG_PREEMPT_GLB ");
+    if (flag & JFLAG_READY1)
+        sprintf(buf + strlen(buf), "JFLAG_READY1 ");
+    if (flag & JFLAG_READY2)
+        sprintf(buf + strlen(buf), "JFLAG_READY2 ");
+    if (flag & JFLAG_URGENT)
+        sprintf(buf + strlen(buf), "JFLAG_URGENT ");
+    if (flag & JFLAG_URGENT_NOSTOP)
+        sprintf(buf + strlen(buf), "JFLAG_URGENT_NOSTOP ");
+    if (flag & JFLAG_REQUEUE)
+        sprintf(buf + strlen(buf), "JFLAG_REQUEUE ");
+    if (flag & JFLAG_HAS_BEEN_REQUEUED)
+        sprintf(buf + strlen(buf), "JFLAG_HAS_BEEN_REQUEUED ");
+    if (flag & JFLAG_JOB_PREEMPTED)
+        sprintf(buf + strlen(buf), "JFLAG_JOB_PREEMPTED ");
+    if (flag & JFLAG_BORROWED_SLOTS)
+        sprintf(buf + strlen(buf), "JFLAG_BORROWED_SLOTS ");
+    if (flag & JFLAG_WAIT_SWITCH)
+        sprintf(buf + strlen(buf), "JFLAG_BORROWED_SLOTS ");
+
+    return buf;
+
 }
