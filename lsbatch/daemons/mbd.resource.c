@@ -63,7 +63,6 @@ static struct jData **sort_sjl_by_queue_priority(link_t *);
 static struct jData **sjl;
 static int num_sjl_jobs;
 static int need_more_tokens;
-static int resumed_job;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
 static struct glb_token *is_a_token(const char *);
@@ -842,7 +841,6 @@ check_token_status(void)
 
     for (cc = 0; cc < num_tokens; cc++) {
 
-        resumed_job = 0;
         used = compute_used_tokens(&tokens[cc]);
 
         if (used > 0 && tokens[cc].allocated <= 0) {
@@ -936,16 +934,8 @@ check_token_status(void)
      */
     for (cc = 0; cc < num_tokens; cc++) {
 
-        resume_jobs_by_time();
+        ssusp_jobs();
 
-        /* A resumed job needs more tokens.
-         */
-        if (resumed_job) {
-            if (glb_get_more_tokens(tokens[cc].name) < 0) {
-                ls_syslog(LOG_ERR, "\
-%s: failed to get_more_tokens() glb down?", __func__);
-            }
-        }
     }
 }
 
@@ -1084,12 +1074,15 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
              * has been suspended by MBD because of token recall
              */
             if (jPtr->jStatus & JOB_STAT_USUSP
-                && jPtr->jFlags & JFLAG_PREEMPT_GLB)
+                && ((jPtr->jFlags & JFLAG_PREEMPT_GLB)
+                    || (jPtr->jFlags & JFLAG_JOB_PREEMPTED))) {
                 return 0.0;
+            }
 
             if (jPtr->jStatus & JOB_STAT_SSUSP
-                && jPtr->jFlags & JFLAG_PREEMPT_GLB) {
-                ++resumed_job;
+                && ((jPtr->jFlags & JFLAG_PREEMPT_GLB)
+                    || (jPtr->jFlags & JFLAG_JOB_PREEMPTED))) {
+                ++need_more_tokens;
                 return 0;
             }
 
@@ -1105,12 +1098,9 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
 }
 
 void
-resume_jobs_by_time(void)
+ssusp_jobs(void)
 {
     struct jData *jPtr;
-    time_t t;
-
-    t = time(NULL);
 
     ls_syslog(LOG_INFO, "%s: Entering ...", __func__);
 
@@ -1120,14 +1110,13 @@ resume_jobs_by_time(void)
 
         if ((jPtr->jStatus & JOB_STAT_USUSP)
             && (jPtr->jFlags & JFLAG_PREEMPT_GLB
-                || jPtr->jFlags & JFLAG_JOB_PREEMPTED)
-            && jPtr->shared->jobBill.beginTime > 0
-            && (t - jPtr->shared->jobBill.beginTime >= 60)) {
+                || jPtr->jFlags & JFLAG_JOB_PREEMPTED)) {
 
             if (resume_job(jPtr) < 0) {
                 ls_syslog(LOG_INFO, "\
 %s: failed in resuming job %s jflags %s", __func__,
-                          lsb_jobid2str(jPtr->jobId), str_flags(jPtr->jFlags));
+                          lsb_jobid2str(jPtr->jobId),
+                          str_flags(jPtr->jFlags));
             }
         }
     }
@@ -1164,9 +1153,6 @@ resume_job(struct jData *jPtr)
     /* Don't clean the flags as mbatchd has to ask for more
      * tokens.
      */
-    jPtr->shared->jobBill.beginTime = 0;
-    ++resumed_job;
-
     return 0;
 }
 
@@ -1311,12 +1297,11 @@ stop_job(struct jData *jPtr, int flag)
     cc = signalJob(&s, &auth);
     if (cc != LSBE_NO_ERROR) {
         ls_syslog(LOG_ERR, "\
-%s: error while suspending job %s state %d", __func__,
+%s: error while suspending job %s state 0x%x", __func__,
                   lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
         return -1;
     }
 
-    jPtr->shared->jobBill.beginTime = time(NULL) + 60;
     jPtr->jFlags |= flag;
 
     ls_syslog(LOG_INFO, "\

@@ -895,7 +895,19 @@ replay_newstat(char *filename, int lineNum)
         jp->cpuTime = newStat->cpuTime;
     }
 
+    if (newStat->jStatus & JOB_STAT_USUSP) {
+        if (newStat->jFlags & JFLAG_PREEMPT_GLB)
+            jp->jFlags |= JFLAG_PREEMPT_GLB;
+        else if (newStat->jFlags & JFLAG_JOB_PREEMPTED)
+            jp->jFlags |= JFLAG_JOB_PREEMPTED;
+    }
 
+    if (newStat->jStatus & JOB_STAT_SSUSP) {
+        if (newStat->jFlags & JFLAG_PREEMPT_GLB)
+            jp->jFlags |= JFLAG_PREEMPT_GLB;
+        else if (newStat->jFlags & JFLAG_JOB_PREEMPTED)
+            jp->jFlags |= JFLAG_JOB_PREEMPTED;
+    }
 
     return true;
 
@@ -1821,7 +1833,7 @@ log_newstatus(struct jData * job)
         logPtr->eventLog.jobStatusLog.jStatus = job->jStatus;
 
     logPtr->eventLog.jobStatusLog.jStatus &= MASK_INT_JOB_STAT;
-
+    logPtr->eventLog.jobStatusLog.jFlags = job->jFlags;
 
 
     if (putEventRec(fname) < 0) {

@@ -4357,9 +4357,11 @@ scheduleAndDispatchJobs(void)
         lastSharedResourceUpdateTime = now_disp;
     }
 
-    if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
-        TIMEIT(0, tryResume(), "tryResume()");
-        mSchedStage |= M_STAGE_RESUME_SUSP;
+    if (0) {
+        if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
+            TIMEIT(0, tryResume(), "tryResume()");
+            mSchedStage |= M_STAGE_RESUME_SUSP;
+        }
     }
 
     if (logclass & LC_SCHED) {
@@ -4507,6 +4509,11 @@ scheduleAndDispatchJobs(void)
                 dispatchAJob0(jPtr, false);
             }
         }
+    }
+
+    if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
+        TIMEIT(0, tryResume(), "tryResume()");
+        mSchedStage |= M_STAGE_RESUME_SUSP;
     }
 
     if (logclass & LC_SCHED) {

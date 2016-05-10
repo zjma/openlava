@@ -1369,6 +1369,7 @@ preempt(void)
         }
 
         while ((jPtr = pop_link(rl))) {
+            jPtr->scratch = 0;
             stop_job(jPtr, JFLAG_JOB_PREEMPTED);
         }
         fin_link(rl);

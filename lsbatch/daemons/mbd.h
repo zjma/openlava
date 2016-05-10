@@ -354,13 +354,14 @@ struct jData {
     int    numOfGroups;
     int    reservedGrp;
     int    currentGrp;
-    int*   inEligibleGroups;
+    int *inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
     int numMsg;
     struct lsbMsg **msgs;
     char *run_rusage;   /* "rusage[x=1:y=2||z=3:w=4]" */
     int abs_run_limit;  /* absolute run limit in seconds */
+    int scratch; /* counter for when it is needed */
 };
 
 
@@ -1509,7 +1510,7 @@ extern void need_tokens(const char *);
 extern int requeue_job(struct jData *);
 extern int stop_job(struct jData *, int);
 extern int resume_job(struct jData *jPtr);
-extern void resume_jobs_by_time(void);
+extern void ssusp_jobs(void);
 extern char *str_flags(int);
 
 #endif /* _MBD_HEADER_ */

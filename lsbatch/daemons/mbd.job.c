@@ -4757,6 +4757,7 @@ initJData(struct jShared  *shared)
     job->inEligibleGroups = NULL;
     job->run_rusage = NULL;
     job->abs_run_limit = -1;
+    job->scratch = 0;
 
     return job;
 }
@@ -7391,6 +7392,8 @@ tryResume(void)
                  */
                 if (jp->jFlags & JFLAG_PREEMPT_GLB)
                     jp->jFlags &= ~JFLAG_PREEMPT_GLB;
+                if (jp->jFlags & JFLAG_JOB_PREEMPTED)
+                    jp->jFlags &= ~JFLAG_JOB_PREEMPTED;
 
                 adjLsbLoad (jp, TRUE, TRUE);
                 if (logclass & (LC_EXEC))
