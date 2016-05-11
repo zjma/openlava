@@ -6,7 +6,7 @@ include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I$(top_srcdir)/lsf  -I$(top_srcdir)/lsf/lib \
            -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./ \
-	   -I/usr/local/glb-0.1/include
+	   -I/usr/local/glb/include
 
 sbin_PROGRAMS = mbatchd sbatchd
 mbatchd_SOURCES  = \

@@ -1311,6 +1311,35 @@ stop_job(struct jData *jPtr, int flag)
     return 0;
 }
 
+int
+get_glb_tokens_size(int *n)
+{
+    int cc;
+    int size;
+
+    size = 0;
+    for (cc = 0; cc < num_tokens; cc++) {
+        size = size + ALIGNWORD_(strlen(tokens[cc].name) + 1)
+            + 3 * sizeof(int);
+    }
+    *n = num_tokens;
+
+    return size;
+}
+
+int
+encode_glb_tokens(XDR *xdrs, struct LSFHeader *hdr)
+{
+    int cc;
+
+    for (cc = 0; cc < num_tokens; cc++) {
+        if (! xdr_glb_token(xdrs, &tokens[cc], hdr))
+            return -1;
+    }
+
+    return 0;
+}
+
 static void
 initQPRValues(struct qPRValues *qPRValuesPtr, struct qData *qPtr)
 {

@@ -5,11 +5,12 @@
 include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I$(top_srcdir)/lsf  -I$(top_srcdir)/lsf/lib \
-           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./
+           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./ \
+	   -I./ -I/usr/local/glb/include
 
 bin_PROGRAMS = badmin bkill bparams brestart btop bbot bmgroup \
 bpeek brun busers bhosts bmig bqueues bsub bjobs bmod \
-brequeue bswitch bpost bread bjdep bgadd bgdel bjgroups
+brequeue bswitch bpost bread bjdep bgadd bgdel bjgroups btokens
 
 badmin_SOURCES = badmin.c cmd.bqc.c cmd.hist.c \
 	cmd.bhc.c cmd.misc.c cmd.job.c cmd.prt.c \
@@ -286,6 +287,15 @@ bjgroups_LDADD = \
         ../../lsf/intlib/.libs/liblsfint.a -lm -lnsl
 if SOLARIS
 bjgroups_LDADD += -lsocket -lnsl
+endif
+
+btokens_SOURCES = btokens.c cmd.jobid.c cmd.err.c cmd.h
+btokens_LDADD = \
+        ../lib/.libs/liblsbatch.a \
+        ../../lsf/lib/.libs/liblsf.a \
+        ../../lsf/intlib/.libs/liblsfint.a -lm -lnsl
+if SOLARIS
+btokens_LDADD += -lsocket -lnsl
 endif
 
 install-data-local:

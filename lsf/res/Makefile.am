@@ -4,7 +4,8 @@
 
 include $(top_srcdir)/common.mk
 
-AM_CPPFLAGS += -I$(top_srcdir)/lsf
+AM_CPPFLAGS += -I$(top_srcdir)/lsf -I./ -I/usr/local/glb/include \
+	-I./ -I/usr/local/glb/include
 
 sbin_PROGRAMS = res nios
 res_SOURCES  = \

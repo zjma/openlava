@@ -1,11 +1,12 @@
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2016 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I$(top_srcdir)/lsf  -I$(top_srcdir)/lsf/lib \
-           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./
+           -I$(top_srcdir)/lsbatch  -I$(top_srcdir)/lsbatch/lib -I./ \
+	   -I./ -I/usr/local/glb/include
 
 bin_PROGRAMS = bhist
 bhist_SOURCES  = bhist.c read.event.c bhist.h

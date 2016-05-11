@@ -2002,3 +2002,15 @@ xdr_jobgroup(XDR *xdrs, struct job_group *jgPtr, struct LSFHeader *hdr)
 
     return true;
 }
+
+bool_t
+xdr_glb_token(XDR *xdrs, struct glb_token *t, struct LSFHeader *hdr)
+{
+    if (! xdr_wrapstring(xdrs, &t->name)
+        || ! xdr_int(xdrs, &t->allocated)
+        || ! xdr_int(xdrs, &t->ideal)
+        || ! xdr_int(xdrs, &t->recalled))
+        return false;
+
+    return true;
+}

@@ -3,7 +3,8 @@
 #
 #
 
-AM_CPPFLAGS = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsbatch
+AM_CPPFLAGS = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsbatch \
+	-I./ -I/usr/local/glb/include
 
 SUBDIRS = docker
 noinst_PROGRAMS = client gethostbyaddr gethostbyname \

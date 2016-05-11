@@ -1,11 +1,11 @@
 #
-# Copyright (C) 2011-2014 David Bigagli
+# Copyright (C) 2011-2016 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I$(top_srcdir)/lsf -I$(top_srcdir)/lsf/lib \
-           -I$(top_srcdir)/lsbatch -I./
+           -I$(top_srcdir)/lsbatch -I./ -I/usr/local/glb/include
 
 lib_LTLIBRARIES = liblsbatch.la
 

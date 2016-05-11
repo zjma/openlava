@@ -3211,3 +3211,73 @@ do_jobGroupInfo(XDR *xdrs,
 
     return 0;
 }
+
+int
+do_glbTokenInfo(XDR *xdrs,
+                int chfd,
+                struct sockaddr_in *from,
+                char *hostname,
+                struct LSFHeader *hdr)
+{
+    int size;
+    int n;
+    int cc;
+    int len;
+    XDR xdrs2;
+    struct LSFHeader hdr2;
+    char *buf;
+    int buf_size;
+
+    size = get_glb_tokens_size(&n);
+
+    buf_size = size + sizeof(struct LSFHeader);
+    buf_size = buf_size * sizeof(int);
+
+    buf = calloc(buf_size, sizeof(char));
+    xdrmem_create(&xdrs2, buf, buf_size, XDR_ENCODE);
+
+    initLSFHeader_(&hdr2);
+    hdr2.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (! xdr_int(&xdrs2, &n)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        return -1;
+    }
+
+    cc = encode_glb_tokens(&xdrs2, hdr);
+    if (cc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encoding %d bytes", __func__, size);
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    len = XDR_GETPOS(&xdrs2);
+    hdr2.length = len - LSF_HEADER_LEN;
+    XDR_SETPOS(&xdrs2, 0);
+
+    if (!xdr_LSFHeader(&xdrs2, &hdr2)) {
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        return -1;
+    }
+
+    XDR_SETPOS(&xdrs2, len);
+
+    if (chanWrite_(chfd, buf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "%s: chanWrite() %dbytes failed",
+                  __func__, XDR_GETPOS(&xdrs2));
+        _free_(buf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    _free_(buf);
+    xdr_destroy(&xdrs2);
+
+    return 0;
+}

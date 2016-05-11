@@ -824,6 +824,14 @@ processClient(struct clientNode *client, int *needFree)
                                       &reqHdr),
                    "do_jobGroupInfo()");
             break;
+        case BATCH_TOKEN_INFO:
+            TIMEIT(0, do_glbTokenInfo(&xdrs,
+                                      s,
+                                      &from,
+                                      client->fromHost,
+                                      &reqHdr),
+                   "do_glbTokenInfo()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)
