@@ -114,7 +114,7 @@ lsb_parameterinfo(char **names, int *numUsers, int options)
 /* lsb_gettokens()
  */
 struct glb_token *
-lsb_gettokens(int *num)
+lsb_gettokens(const char *master, const char *port, int *num)
 {
     struct LSFHeader hdr;
     XDR xdrs;
@@ -132,6 +132,14 @@ lsb_gettokens(int *num)
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
         return NULL;
+    }
+
+    if (master != NULL
+        && port != NULL) {
+        /* fool callmbd into calling a non local MBD
+         */
+        setenv("MBD_HOST", master, 1);
+        setenv("MBD_PORT", port, 1);
     }
 
     reply_buf = NULL;
@@ -156,7 +164,9 @@ lsb_gettokens(int *num)
         return NULL;
     }
 
-    tokens = decode_tokens(reply_buf, &hdr, num);
+    tokens = decode_tokens(reply_buf,
+                           &hdr,
+                           num);
     if (tokens == NULL) {
         _free_(reply_buf);
         return NULL;

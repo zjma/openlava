@@ -22,17 +22,19 @@
 static void
 usage(void)
 {
-    fprintf(stderr, "btokens: [ -h ] [ -V ]\n");
+    fprintf(stderr, "btokens: [-m master] [-p port] [ -h ] [ -V ]\n");
 }
 
 static void
-print_tokens(int, struct glb_token *);
+print_tokens(int, struct glb_token *, const char *master, const char *port);
 
 int
 main(int argc, char **argv)
 {
     int num;
     int cc;
+    char *port;
+    char *master;
     struct glb_token *t;
 
     if (lsb_init(argv[0]) < 0) {
@@ -40,8 +42,15 @@ main(int argc, char **argv)
         return -1;
     }
 
-    while ((cc = getopt(argc, argv, "hV")) != EOF) {
+    master = port = NULL;
+    while ((cc = getopt(argc, argv, "hVm:p:")) != EOF) {
         switch (cc) {
+            case 'm':
+                master = optarg;
+                break;
+            case 'p':
+                port = optarg;
+                break;
             case 'V':
                 fputs(_LS_VERSION_, stderr);
                 return 0;
@@ -52,7 +61,7 @@ main(int argc, char **argv)
     }
 
 
-    t = lsb_gettokens(&num);
+    t = lsb_gettokens(master, port, &num);
     if (t == NULL) {
         if (lsberrno == LSBE_NO_ERROR) {
             fprintf(stderr, "\
@@ -63,7 +72,7 @@ btokens: No tokens in the system.\n");
         return -1;
     }
 
-    print_tokens(num, t);
+    print_tokens(num, t, master, port);
 
     free_tokens(num, t);
 
@@ -71,13 +80,20 @@ btokens: No tokens in the system.\n");
 }
 
 static void
-print_tokens(int num, struct glb_token *t)
+print_tokens(int num,
+             struct glb_token *t,
+             const char *master,
+             const char *port)
 {
     int cc;
 
+    if (master && port) {
+        printf("master: %-10s port: %s\n", master, port);
+    }
+
     for (cc = 0; cc < num; cc++) {
         printf("\
-name: %-10s ideal: %d allocated: %d recalled: %d\n", t[cc].name, t[cc].ideal,
+  name: %-10s ideal: %d allocated: %d recalled: %d\n", t[cc].name, t[cc].ideal,
                t[cc].allocated, t[cc].recalled);
     }
 }

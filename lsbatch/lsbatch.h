@@ -1600,7 +1600,7 @@ extern int lsb_addjgrp(struct job_group *);
 extern int lsb_deljgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
-extern struct glb_token *lsb_gettokens(int *);
+extern struct glb_token *lsb_gettokens(const char *, const char *, int *);
 extern void free_tokens(int, struct glb_token *);
 
 #endif

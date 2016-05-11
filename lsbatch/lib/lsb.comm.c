@@ -343,6 +343,14 @@ callmbd(char *clusterName,
 
     mbd_port = get_mbd_port();
 
+    if (getenv("MBD_HOST")
+        && getenv("MBD_PORT")) {
+        int port;
+        masterHost = getenv("MBD_HOST");
+        port = atoi(getenv("MBD_PORT"));
+        mbd_port = htons(port);
+    }
+
     cc = call_server(masterHost,
                      mbd_port,
                      request_buf,
