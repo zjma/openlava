@@ -59,7 +59,7 @@ main(int argc, char **argv)
 btokens: No tokens in the system.\n");
             return -1;
         }
-        fprintf(stderr, "btokenss: %s.\n", lsb_sysmsg());
+        fprintf(stderr, "btokens: %s.\n", lsb_sysmsg());
         return -1;
     }
 
