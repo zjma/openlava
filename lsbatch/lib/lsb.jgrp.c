@@ -20,8 +20,8 @@
 
 static int operate_jobgroup(int, struct job_group *);
 static struct jobGroupInfo *decode_groups(char *,
-					  struct LSFHeader *,
-					  int *);
+                                          struct LSFHeader *,
+                                          int *);
 
 /* lsb_addjgrp()
  */
@@ -60,35 +60,35 @@ operate_jobgroup(int opcode, struct job_group *jgrp)
     xdrmem_create(&xdrs, request_buf, sizeof(request_buf), XDR_ENCODE);
 
     if (!xdr_encodeMsg(&xdrs,
-		       (char *)jgrp,
-		       &hdr,
-		       xdr_jobgroup,
-		       0,
-		       &auth)) {
+                       (char *)jgrp,
+                       &hdr,
+                       xdr_jobgroup,
+                       0,
+                       &auth)) {
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
         return -1;
     }
 
     cc = callmbd(NULL,
-		 request_buf,
-		 XDR_GETPOS(&xdrs),
-		 &reply_buf,
-		 &hdr,
-		 NULL,
-		 NULL,
-		 NULL);
+                 request_buf,
+                 XDR_GETPOS(&xdrs),
+                 &reply_buf,
+                 &hdr,
+                 NULL,
+                 NULL,
+                 NULL);
     if (cc < 0) {
         xdr_destroy(&xdrs);
-    	lsberrno = LSBE_LSLIB;
-    	return -1;
+        lsberrno = LSBE_LSLIB;
+        return -1;
     }
 
     xdr_destroy(&xdrs);
     if (hdr.opCode != LSBE_NO_ERROR) {
-	_free_(reply_buf);
-	lsberrno = hdr.opCode;
-	return -1;
+        _free_(reply_buf);
+        lsberrno = hdr.opCode;
+        return -1;
     }
 
     return 0;
@@ -112,30 +112,30 @@ lsb_getjgrp(int *num)
     xdrmem_create(&xdrs, buf, sizeof(struct LSFHeader), XDR_ENCODE);
 
     if (! xdr_LSFHeader(&xdrs, &hdr)) {
-	lsberrno = LSBE_XDR;
-	xdr_destroy(&xdrs);
-	return NULL;
+        lsberrno = LSBE_XDR;
+        xdr_destroy(&xdrs);
+        return NULL;
     }
 
     cc = callmbd(NULL,
                  buf,
                  XDR_GETPOS(&xdrs),
                  &reply,
-		 &hdr,
+                 &hdr,
                  NULL,
                  NULL,
                  NULL);
     if (cc < 0) {
-	xdr_destroy(&xdrs);
+        xdr_destroy(&xdrs);
         lsberrno = LSBE_PROTOCOL;
-	return NULL;
+        return NULL;
     }
     xdr_destroy(&xdrs);
 
     if (hdr.opCode != LSBE_NO_ERROR) {
-	_free_(reply);
-	lsberrno = hdr.opCode;
-	return NULL;
+        _free_(reply);
+        lsberrno = hdr.opCode;
+        return NULL;
     }
 
     jgrp = decode_groups(reply, &hdr, num);
@@ -157,34 +157,34 @@ decode_groups(char *reply, struct LSFHeader *hdr, int *num)
     xdrmem_create(&xdrs, reply, hdr->length, XDR_DECODE);
 
     if (! xdr_int(&xdrs, num)) {
-	xdr_destroy(&xdrs);
+        xdr_destroy(&xdrs);
         lsberrno = LSBE_PROTOCOL;
-	return NULL;
+        return NULL;
     }
 
     /* No groups yet.
      */
     if (*num == 0) {
-	lsberrno = LSBE_NO_ERROR;
-	return NULL;
+        lsberrno = LSBE_NO_ERROR;
+        return NULL;
     }
 
     jgrp = calloc(*num, sizeof(struct jobGroupInfo));
     for (cc = 0; cc < *num; cc++) {
 
-	jgrp[cc].path = calloc(MAXLINELEN, sizeof(char));
-	jgrp[cc].name = calloc(MAXLINELEN, sizeof(char));
+        jgrp[cc].path = calloc(MAXLINELEN, sizeof(char));
+        jgrp[cc].name = calloc(MAXLINELEN, sizeof(char));
 
-	if (! xdr_wrapstring(&xdrs, &jgrp[cc].path)
-	    || ! xdr_wrapstring(&xdrs, &jgrp[cc].name)) {
-	    goto pryc;
-	}
+        if (! xdr_wrapstring(&xdrs, &jgrp[cc].path)
+            || ! xdr_wrapstring(&xdrs, &jgrp[cc].name)) {
+            goto pryc;
+        }
 
-	for (i = 0; i < NUM_JGRP_COUNTERS; i++) {
-	    if (! xdr_int(&xdrs, &jgrp[cc].counts[i])) {
-		goto pryc;
-	    }
-	}
+        for (i = 0; i < NUM_JGRP_COUNTERS; i++) {
+            if (! xdr_int(&xdrs, &jgrp[cc].counts[i])) {
+                goto pryc;
+            }
+        }
     }
 
     return jgrp;
@@ -204,8 +204,8 @@ free_jobgroupinfo(int num, struct jobGroupInfo *jgrp)
     int cc;
 
    for (cc = 0; cc < num; cc++) {
-	_free_(jgrp[cc].path);
-	_free_(jgrp[cc].name);
+        _free_(jgrp[cc].path);
+        _free_(jgrp[cc].name);
     }
     _free_(jgrp);
 }
