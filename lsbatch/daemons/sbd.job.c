@@ -877,6 +877,16 @@ setJobEnv(struct jobCard *jp)
     sprintf (val, "%d", jp->w_status);
     putEnv ("LSB_JOBEXIT_STAT", val);
 
+    sprintf (val, "%d", jp->jobSpecs.maxNumProcessors);
+    putEnv ("LSB_MAX_NUM_PROCESSORS", val);
+
+    sprintf (val, "%d", jp->jobSpecs.numToHosts);
+    putEnv ("LSB_DJOB_NUMPROC", val);
+
+    putEnv ("LSB_JOB_EXECUSER", jp->execUsername);
+
+    putEnv ("LSB_EFFECTIVE_RSRCREQ", jp->jobSpecs.resReq);
+
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
     return 0;
 }

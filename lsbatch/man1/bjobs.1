@@ -21,6 +21,11 @@
 [\fB-g\fR \fIjob_group_name\fR]
 [\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
 .PP
+\fBbjobs\fR [\fB-d\fR] [\fB-p\fR] [\fB-r\fR] [\fB-s\fR] [\fB-A\fR] [\fB-noheader\fR] [\fB-J\fR \fIjob_name\fR]
+[\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR]
+[\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR]
+[\fB-g\fR \fIjob_group_name\fR]
+[\fB-q\fR \fIqueue_name\fR] [\fB-u \fR\fIuser_name\fR | \fB-u\fR \fIuser_group\fR | \fB-u all\fR]\fB \fR\fIjob_ID ...\fR
 \fBbjobs \fR[\fB-h\fR | \fB-V\fR]
 .SH DESCRIPTION
 .BR
@@ -140,6 +145,16 @@ resource limits information.
 Use bjobs -A -l to display detailed information for job arrays 
 including job array job limit (%\fIjob_limit\fR) if set.
 
+.TP
+\fB-noheader\fR
+.IP
+When specified, the bjobs displays the values of the fields without
+displaying the names of the fields. This is useful for script parsing,
+when column headings are not necessary.
+.IP
+This option applies to output for the bjobs command with no options,
+and to output for all bjobs options with short form output except for
+-l, -UF, -N, -h, and -V.
 .TP
 \fB-UF
 \fR
