@@ -6,6 +6,9 @@ Release notes for OpenLava versions
 -- Remove the check if a group name is also a hostname as
    there can be a host on the network not part of the cluster
    with the same name.
+-- Add the noheader option for bjobs.
+-- Add LSB_MAX_NUM_PROCESSORS, LSB_DJOB_NUMPROC, LSB_JOB_EXECUSER
+   and LSB_EFFECTIVE_RSRCREQ variables in the job environment. 
 
 3.3.1
 ======
