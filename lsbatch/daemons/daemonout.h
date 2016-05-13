@@ -68,11 +68,16 @@ typedef enum {
     BATCH_STATUS_CHUNK   = 40,
     BATCH_JOBMSG_INFO,
     BATCH_SET_JOB_ATTR   = 90,
-    BATCH_JOBDEP_INFO,
-    BATCH_JGRP_ADD,
-    BATCH_JGRP_DEL,
-    BATCH_JGRP_INFO,
-    BATCH_TOKEN_INFO,
+    BATCH_JOBDEP_INFO    = 91,
+    BATCH_JGRP_ADD       = 92,
+    BATCH_JGRP_DEL       = 93,
+    BATCH_JGRP_INFO      = 94,
+/*
+ * Defined in glb.h included by MBD
+ *
+ *   BATCH_TOKEN_INFO     = 95,
+ *   BATCH_TOKEN_INFO_REPLY = 96,
+ */
     READY_FOR_OP         = 1023,
     PREPARE_FOR_OP       = 1024
 } mbdReqType;

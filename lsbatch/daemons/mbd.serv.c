@@ -3237,7 +3237,7 @@ do_glbTokenInfo(XDR *xdrs,
     xdrmem_create(&xdrs2, buf, buf_size, XDR_ENCODE);
 
     initLSFHeader_(&hdr2);
-    hdr2.opCode = LSBE_NO_ERROR;
+    hdr2.opCode = BATCH_TOKEN_INFO_REPLY;
     XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
 
     if (! xdr_int(&xdrs2, &n)) {
