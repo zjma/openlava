@@ -795,6 +795,7 @@ get_glb_tokens(int *num)
     if (t == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh cannot get tokens from GLB %d", __func__, glberrno);
+        *num = 0;
         return NULL;
     }
 
@@ -810,7 +811,8 @@ add_tokens(struct glb_token *t, int num_tokens,
     int n;
     char buf[64];
 
-    if (num_tokens == 0)
+    if (num_tokens == 0
+        || tokens == NULL)
         return;
 
     for (i = 0; i < num_tokens; i++) {
@@ -848,6 +850,7 @@ check_token_status(void)
 %s: tokens %s has %d allocated tokens but %d used GLB and MBD out of sync?",
                       __func__, tokens[cc].name,
                       tokens[cc].allocated, used);
+            tokens[cc].allocated = used;
             continue;
         }
 
@@ -865,26 +868,24 @@ check_token_status(void)
             ls_syslog(LOG_INFO, "\
 %s: GLB is recalling  %d tokens ", __func__, tokens[cc].recalled);
 
-            if (used > tokens[cc].ideal) {
-                /* We may need to preempt to release some
-                 * of the requested tokens.
-                 */
-                ls_syslog(LOG_INFO, "\
+            /* We may need to preempt to release some
+             * of the requested tokens.
+             */
+            ls_syslog(LOG_INFO, "\
 %s: used %d %d ideal we have to preempt %d tokens", __func__, used,
-                          tokens[cc].ideal, used - tokens[cc].ideal);
+                      tokens[cc].ideal, used - tokens[cc].ideal);
 
-                num_preempted = preempt_jobs_for_tokens(used - tokens[cc].ideal);
+            num_preempted = preempt_jobs_for_tokens(tokens[cc].recalled);
 
-                ls_syslog(LOG_INFO, "\
+            ls_syslog(LOG_INFO, "\
 %s: num_preempted %d", __func__, num_preempted);
 
-                if (num_preempted > 0) {
-                    glb_release_tokens(&tokens[cc], num_preempted);
-                    ls_syslog(LOG_INFO, "\
+            if (num_preempted > 0) {
+                glb_release_tokens(&tokens[cc], num_preempted);
+                ls_syslog(LOG_INFO, "\
 %s: 1 releasing %d tokens", __func__, num_preempted);
-                    prev_used = used;
-                    continue;
-                }
+                prev_used = used;
+                continue;
             }
 
             if (num_preempted == 0

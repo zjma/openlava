@@ -3228,6 +3228,8 @@ do_glbTokenInfo(XDR *xdrs,
     char *buf;
     int buf_size;
 
+    ls_syslog(LOG_DEBUG, "%s: Entering ...", __func__);
+
     size = get_glb_tokens_size(&n);
 
     buf_size = size + sizeof(struct LSFHeader);

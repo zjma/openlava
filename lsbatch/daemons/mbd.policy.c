@@ -4387,6 +4387,7 @@ scheduleAndDispatchJobs(void)
 
     if (numLsbUsable <= 0) {
         numLsbUsable = numQUsable = 0;
+        TIMEIT(0, tryResume(), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
@@ -4441,6 +4442,7 @@ scheduleAndDispatchJobs(void)
 
     if (numQUsable <= 0) {
         numQUsable = 0;
+        TIMEIT(0, tryResume(), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
@@ -4454,6 +4456,7 @@ scheduleAndDispatchJobs(void)
     if (LIST_NUM_ENTRIES(jRefList) == 0) {
         ls_syslog(LOG_INFO, "\
 %s: no pending or migrating to jobs to schedule at the moment.", __func__);
+        TIMEIT(0, tryResume(), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
