@@ -1671,8 +1671,8 @@ hasResSpanHosts(struct resVal *resVal)
     if (resVal == NULL) {
         return false;
     }
-    if ((resVal->options & PR_SPAN) &&
-        (resVal->numHosts == 1)) {
+    if ((resVal->options & PR_SPAN)
+        && (resVal->numHosts == 1)) {
         return true;
     }
     return false;

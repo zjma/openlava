@@ -328,6 +328,7 @@ static void free_reserve_memory(struct jData *);
 static void handle_reserve_memory(struct jData *, int);
 static struct jData *jiter_next_job2(LIST_T *);
 static bool_t run_time_ok(struct jData *);
+static bool_t decrease_mem_by_slots(struct jData *);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -1697,6 +1698,7 @@ ckResReserve(struct hData *hPtr,
          */
         state = 1;
         for (cc = 0; cc < allLsInfo->nRes; cc++) {
+            float x;
 
             if (NOT_NUMERIC(allLsInfo->resTable[cc]))
                 continue;
@@ -1715,6 +1717,13 @@ ckResReserve(struct hData *hPtr,
              */
             if (cc < allLsInfo->numIndx) {
 
+                x = r2.val[cc];
+
+                if (cc == MEM
+                    && decrease_mem_by_slots(jPtr)) {
+                    x = r2.val[cc]/jPtr->shared->jobBill.numProcessors;
+                }
+
                 if (fabs(hPtr->lsfLoad[cc] - INFINIT_LOAD) < 0.001 * INFINIT_LOAD) {
                     /* state = !ok
                      */
@@ -1726,7 +1735,7 @@ ckResReserve(struct hData *hPtr,
 
                     if (hPtr->loadStop[cc] < INFINIT_LOAD) {
                         use_val = (int)((hPtr->loadStop[cc]
-                                         - hPtr->lsfLoad[cc])/ r2.val[cc]);
+                                         - hPtr->lsfLoad[cc])/x);
                         if (use_val <= 0) {
                             /* state = !ok
                              */
@@ -1739,10 +1748,10 @@ ckResReserve(struct hData *hPtr,
 
                     if (hPtr->loadStop[cc] >= INFINIT_LOAD
                         || hPtr->loadStop[cc] <= -INFINIT_LOAD)
-                        use_val = (int)(hPtr->lsbLoad[cc]/ r2.val[cc]);
+                        use_val = (int)(hPtr->lsbLoad[cc]/x);
                     else
                         use_val = (int)((hPtr->lsbLoad[cc]
-                                         - hPtr->loadStop[cc])/r2.val[cc]);
+                                         - hPtr->loadStop[cc])/x);
                     if (use_val <= 0) {
                             /* state = !ok
                              */
@@ -1751,7 +1760,7 @@ ckResReserve(struct hData *hPtr,
                     }
                 }
                 if (cc == MEM
-                    && (((int)(hPtr->leftRusageMem/r2.val[MEM])) == 0)){
+                    && (((int)(hPtr->leftRusageMem/x)) == 0)){
                     state = 0;
                     break;
                 }
@@ -7147,4 +7156,17 @@ run_time_ok(struct jData *jPtr)
         return false;
 
     return true;
+}
+
+bool_t
+decrease_mem_by_slots(struct jData *jPtr)
+{
+    if ((hasResSpanHosts(jPtr->shared->resValPtr)
+         || hasResSpanHosts(jPtr->qPtr->resValPtr))
+        && (jPtr->shared->jobBill.numProcessors > 1)
+        && (jPtr->shared->jobBill.numProcessors == jPtr->shared->jobBill.maxNumProcessors)) {
+        return true;
+    }
+
+    return false;
 }

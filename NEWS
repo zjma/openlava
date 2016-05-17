@@ -8,7 +8,10 @@ Release notes for OpenLava versions
    with the same name.
 -- Add the noheader option for bjobs.
 -- Add LSB_MAX_NUM_PROCESSORS, LSB_DJOB_NUMPROC, LSB_JOB_EXECUSER
-   and LSB_EFFECTIVE_RSRCREQ variables in the job environment. 
+   and LSB_EFFECTIVE_RSRCREQ variables in the job environment.
+-- When a multiprocessor job (-n) specifies memory rusage and span[hosts=1]
+   the memory rusage applies to the entire job instead of each slots
+   of the job.
 
 3.3.1
 ======
