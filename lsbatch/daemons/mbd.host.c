@@ -1274,6 +1274,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
     struct resourceInstance *instance;
     static int *rusage_bit_map;
     int adjForPreemptableResource = FALSE;
+    int sameHost = FALSE;
 
     if (logclass & LC_TRACE)
         ls_syslog(LOG_DEBUG, "%s: Entering this routine...", __func__);
@@ -1298,6 +1299,12 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
     if (resAssign == 0)
         return;
 
+    if ((hasResSpanHosts(jpbw->shared->resValPtr)
+         || hasResSpanHosts(jpbw->qPtr->resValPtr))
+        && (jpbw->shared->jobBill.numProcessors > 1)
+        && (jpbw->shared->jobBill.numProcessors == jpbw->shared->jobBill.maxNumProcessors)) {
+        sameHost = TRUE;
+    }
     duration = (float) resValPtr->duration;
     decay = resValPtr->decay;
     if (resValPtr->duration != INFINIT_INT && (duration - jpbw->runTime <= 0)){
@@ -1374,6 +1381,18 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
             jackValue = resValPtr->val[ldx];
             if (jackValue >= INFINIT_LOAD || jackValue <= -INFINIT_LOAD)
                 continue;
+
+            if (jackValue > 0 && ldx == MEM && sameHost) {
+                jackValue /= jpbw->shared->jobBill.numProcessors;
+                if (logclass & LC_SCHED) {
+                    ls_syslog(LOG_DEBUG1, "\
+%s: Updating reserved memory of job <%s> to <%f> as all <%d> processors are on the same host.",
+                     __func__,
+                     lsb_jobid2str(jpbw->jobId),
+                     jackValue,
+                     jpbw->shared->jobBill.numProcessors);
+                }
+            }
 
             if (ldx < allLsInfo->numIndx)
                 load = jpbw->hPtr[i]->lsbLoad[ldx];
@@ -1644,6 +1663,19 @@ hasResReserve(struct resVal *resVal)
     }
     return false;
 
+}
+
+int
+hasResSpanHosts(struct resVal *resVal)
+{
+    if (resVal == NULL) {
+        return false;
+    }
+    if ((resVal->options & PR_SPAN) &&
+        (resVal->numHosts == 1)) {
+        return true;
+    }
+    return false;
 }
 
 /* addMigrantHost()
