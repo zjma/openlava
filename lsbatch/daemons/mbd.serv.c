@@ -168,8 +168,8 @@ do_jobInfoReq(XDR *xdrs,
 %s: Entering this routine...; channel=%d", __func__,chfd);
 
     if (qsort_jobs) {
-	sort_job_list(MJL);
-	sort_job_list(PJL);
+        sort_job_list(MJL);
+        sort_job_list(PJL);
     }
 
     jobInfoHead.hostNames = NULL;
@@ -1609,8 +1609,8 @@ do_groupInfoReq(XDR *xdrs,
         } else {
 
             groupInfoReply.groups = my_calloc(numofhgroups,
-					      sizeof(struct groupInfoEnt),
-					      "do_groupInfoReq");
+                                              sizeof(struct groupInfoEnt),
+                                              "do_groupInfoReq");
 
             reply = checkGroups(&groupInfoReq, &groupInfoReply);
 
@@ -2903,11 +2903,11 @@ do_setJobAttr(XDR * xdrs, int s, struct sockaddr_in * from, char *hostName,
  */
 int
 do_resizeJob(XDR *xdrs,
-	     int chfd,
-	     struct sockaddr_in *from,
-	     char *hostName,
-	     struct LSFHeader *reqHdr,
-	     struct lsfAuth *auth)
+             int chfd,
+             struct sockaddr_in *from,
+             char *hostName,
+             struct LSFHeader *reqHdr,
+             struct lsfAuth *auth)
 {
     char reply_buf[MSGSIZE];
     XDR xdrs2;
@@ -2928,34 +2928,34 @@ do_resizeJob(XDR *xdrs,
     rs.hslots = calloc(MAXLSFNAMELEN, sizeof(char));
     rs.cmd = calloc(PATH_MAX, sizeof(char));
     if (rs.hslots == NULL
-	|| rs.cmd == NULL) {
-	ls_syslog(LOG_ERR, "%s: calloc() failed: %m", __func__);
-	_free_(rs.hslots);
-	_free_(rs.cmd);
-	reply = LSBE_NO_MEM;
-	goto pryc;
+        || rs.cmd == NULL) {
+        ls_syslog(LOG_ERR, "%s: calloc() failed: %m", __func__);
+        _free_(rs.hslots);
+        _free_(rs.cmd);
+        reply = LSBE_NO_MEM;
+        goto pryc;
     }
 
     if (! xdr_resizeJob(xdrs, &rs, reqHdr)) {
-	reply = LSBE_XDR;
-	ls_syslog(LOG_ERR, "%s: xdr_resizeJob() failed", __func__);
-	_free_(rs.hslots);
-	_free_(rs.cmd);
-	goto pryc;
+        reply = LSBE_XDR;
+        ls_syslog(LOG_ERR, "%s: xdr_resizeJob() failed", __func__);
+        _free_(rs.hslots);
+        _free_(rs.cmd);
+        goto pryc;
     }
 
     if ((jPtr = getJobData(rs.jobid)) == NULL) {
         reply = LSBE_NO_JOB;
-	_free_(rs.hslots);
-	_free_(rs.cmd);
+        _free_(rs.hslots);
+        _free_(rs.cmd);
         goto pryc;
     }
 
     if (IS_PEND(jPtr->jStatus)
-	|| IS_FINISH(jPtr->jStatus)) {
-	reply = LSBE_NO_RESIZE_JOB;
-	_free_(rs.hslots);
-	_free_(rs.cmd);
+        || IS_FINISH(jPtr->jStatus)) {
+        reply = LSBE_NO_RESIZE_JOB;
+        _free_(rs.hslots);
+        _free_(rs.cmd);
         goto pryc;
     }
 
@@ -2967,14 +2967,14 @@ do_resizeJob(XDR *xdrs,
     }
 
     if (rs.opcode == JOB_RESIZE_ADD) {
-	reply = mbd_grow_job(jPtr, &rs);
+        reply = mbd_grow_job(jPtr, &rs);
     } else if (rs.opcode == JOB_RESIZE_RELEASE) {
-	reply = mbd_shrink_job(jPtr, &rs);
+        reply = mbd_shrink_job(jPtr, &rs);
     } else {
-	reply = LSBE_BAD_ARG;
-	_free_(rs.hslots);
-	_free_(rs.cmd);
-	goto pryc;
+        reply = LSBE_BAD_ARG;
+        _free_(rs.hslots);
+        _free_(rs.cmd);
+        goto pryc;
     }
 
 pryc:
@@ -2991,8 +2991,8 @@ pryc:
                        NULL)) {
         ls_syslog(LOG_ERR, "%s: xdr encode failed", __func__);
         xdr_destroy(&xdrs2);
-	_free_(rs.hslots);
-	_free_(rs.cmd);
+        _free_(rs.hslots);
+        _free_(rs.cmd);
         return -1;
     }
 
@@ -3000,8 +3000,8 @@ pryc:
 
     if (chanEnqueue_(chfd, buf) < 0) {
         ls_syslog(LOG_ERR, "%s: chanEnque() failed %M", __func__);
-	_free_(rs.hslots);
-	_free_(rs.cmd);
+        _free_(rs.hslots);
+        _free_(rs.cmd);
         xdr_destroy(&xdrs2);
         return -1;
     }
