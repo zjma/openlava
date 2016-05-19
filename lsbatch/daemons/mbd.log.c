@@ -92,7 +92,6 @@ void                    log_timeExpired(int, time_t);
 static int canSwitch(struct eventRec *, struct jData *);
 static char *instrJobStarter1(char *, int, char *, char *, char *);
 static int streamEvent(struct eventRec *);
-static int countStream(char *);
 static int do_switch_child_end(void);
 
 int                     nextJobId_t = 1;
@@ -5083,7 +5082,7 @@ streamEvent(struct eventRec *logPtr)
             /* MBD starting let's count the records
              * in the stream file to test.
              */
-            n = countStream(streamFile);
+            n = count_stream(streamFile);
             if (n > 0) {
                 mode = "a";
                 /* This in theory should never happen unless
@@ -5155,12 +5154,12 @@ streamEvent(struct eventRec *logPtr)
     return 0;
 }
 
-/* countStream()
+/* count_stream()
  *
- * Count records in the stream file
+ * Count records in any file.
  */
-static int
-countStream(char *file)
+int
+count_stream(char *file)
 {
     FILE *fp;
     int cc;

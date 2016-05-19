@@ -29,7 +29,8 @@ static void addSharedResource (struct lsSharedResourceInfo *);
 static void addInstances (struct lsSharedResourceInfo *, struct sharedResource *);
 static void freeHostInstances (void);
 static void initHostInstances (int);
-static int copyResource (struct lsbShareResourceInfoReply *, struct sharedResource *, char *);
+static int copyResource (struct lsbShareResourceInfoReply *,
+                         struct sharedResource *, char *);
 
 struct objPRMO *pRMOPtr = NULL;
 
@@ -51,7 +52,7 @@ checkOrTakeAvailableByPreemptPRHQValue(int index,
 static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
 static int num_tokens;
-static struct glb_token *get_glb_tokens(int *);
+static struct glb_token *get_glb_tokens(void);
 static struct glb_token *tokens;
 static void add_tokens(struct glb_token *, int,
                        struct lsSharedResourceInfo *, int);
@@ -66,6 +67,9 @@ static int need_more_tokens;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
 static struct glb_token *is_a_token(const char *);
+static char old_path[PATH_MAX];
+static char new_path[PATH_MAX];
+static int save_glb_allocation_state(void);
 
 void
 getLsbResourceInfo(void)
@@ -83,13 +87,19 @@ getLsbResourceInfo(void)
         return;
     }
 
-    /* this is very important variable, the scheduler
+    /* need_more_tokens is very important variable, the scheduler
      * uses it to signal there is a need for tokens,
      * so that after the scheduling in check_token_status()
      * we can take the appropriate acctions.
+     * num_tokens is a global variable in this module
+     * which tells MBD how many tokens we got from GLB
+     * each scheduling cycle.
      */
-    need_more_tokens = 0;
-    tokens = get_glb_tokens(&num_tokens);
+    tokens = NULL;
+    num_tokens = need_more_tokens = 0;
+    tokens = get_glb_tokens();
+
+    save_glb_allocation_state();
 
     if (numResources > 0)
         freeSharedResource();
@@ -770,12 +780,11 @@ pryc:
 /* get_glb_tokens()
  */
 static struct glb_token *
-get_glb_tokens(int *num)
+get_glb_tokens(void)
 {
     struct glb_token *t;
-    int first = 1;
+    static int first = 1;
 
-    *num = 0;
     if (first) {
         char *p;
 
@@ -791,12 +800,16 @@ get_glb_tokens(int *num)
         first = 0;
     }
 
-    t = glb_gettokens(clusterName, num);
+    t = glb_gettokens(clusterName, &num_tokens);
     if (t == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh cannot get tokens from GLB %d", __func__, glberrno);
-        *num = 0;
-        return NULL;
+        t = recover_glb_allocation_state();
+        if (t == NULL) {
+            num_tokens = 0;
+            return NULL;
+        }
+        return t;
     }
 
     return t;
@@ -1194,6 +1207,13 @@ glb_release_tokens(struct glb_token *t, int how_many)
         return -1;
     }
 
+    /* Upate your state since the allocation has
+     * changed because of the release.
+     */
+    t->allocated = t->allocated - how_many;
+    assert(t->allocated >= 0);
+    save_glb_allocation_state();
+
     return 0;
 }
 
@@ -1339,6 +1359,90 @@ encode_glb_tokens(XDR *xdrs, struct LSFHeader *hdr)
     }
 
     return 0;
+}
+
+static int
+save_glb_allocation_state(void)
+{
+    int i;
+    FILE *fp;
+
+    if (num_tokens == 0) {
+        assert(tokens == NULL);
+        return -1;
+    }
+
+    sprintf(old_path, "%s/logdir/glb.tokens.0",
+            daemonParams[LSB_SHAREDIR].paramValue);
+    sprintf(new_path, "%s/logdir/glb.tokens",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    fp = fopen(old_path, "w");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed fopen %s: %m cannot save GLB alloc state", __func__, old_path);
+        return -1;
+    }
+
+    for (i = 0; i < num_tokens; i++) {
+        fprintf(fp, "%s %d\n", tokens[i].name, tokens[i].allocated);
+    }
+
+    fclose(fp);
+
+    if (rename(old_path, new_path) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: rename() failed from %s to %s %m, cannot save state",
+                  __func__, old_path, new_path);
+        return -1;
+    }
+
+    return 0;
+}
+
+struct glb_token *
+recover_glb_allocation_state(void)
+{
+    FILE *fp;
+    struct glb_token *t;
+    int cc;
+
+    sprintf(new_path, "%s/logdir/glb.tokens",
+            daemonParams[LSB_SHAREDIR].paramValue);
+
+    /* count the number of lines
+     */
+    num_tokens = count_stream(new_path);
+    if (num_tokens == 0) {
+        ls_syslog(LOG_WARNING, "\
+%s: file %s has %d num_tokens GLB state not saved yet.",
+                  __func__, new_path, num_tokens);
+        return NULL;
+    }
+
+    fp = fopen(new_path, "r");
+    if (fp == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: failed fopen %s: %m cannot save GLB alloc state", __func__, new_path);
+        num_tokens = 0;
+        return NULL;
+    }
+
+    t = calloc(num_tokens, sizeof(struct glb_token));
+
+    for (cc = 0; cc < num_tokens; cc++) {
+
+        t[cc].name = calloc(MAXLSFNAMELEN, sizeof(char));
+
+        fscanf(fp, "%s %d", t[cc].name, &t[cc].allocated);
+        ls_syslog(LOG_INFO, "\
+%s: token %s allocated %d", __func__, t[cc].name, t[cc].allocated);
+
+    }
+
+    fclose(fp);
+
+    return t;
 }
 
 static void

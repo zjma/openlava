@@ -3227,12 +3227,20 @@ do_glbTokenInfo(XDR *xdrs,
     struct LSFHeader hdr2;
     char *buf;
     int buf_size;
+    struct glb_token *t;
 
     ls_syslog(LOG_DEBUG, "%s: Entering ...", __func__);
 
-    size = get_glb_tokens_size(&n);
+    n = size = 0;
+    t = recover_glb_allocation_state();
+    if (t) {
+        /* Give me the number of tokens and the
+         * total number of bytes they occupy
+         */
+        size = get_glb_tokens_size(&n);
+    }
 
-    buf_size = size + sizeof(struct LSFHeader);
+    buf_size = size + MAXHOSTNAMELEN + sizeof(struct LSFHeader);
     buf_size = buf_size * sizeof(int);
 
     buf = calloc(buf_size, sizeof(char));
@@ -3241,6 +3249,14 @@ do_glbTokenInfo(XDR *xdrs,
     initLSFHeader_(&hdr2);
     hdr2.opCode = BATCH_TOKEN_INFO_REPLY;
     XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (! xdr_wrapstring(&xdrs2, &clusterName)) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encoding clusterName %s", __func__, clusterName);
+        sendLSFHeader(chfd, LSBE_XDR);
+        _free_(buf);
+        return -1;
+    }
 
     if (! xdr_int(&xdrs2, &n)) {
         sendLSFHeader(chfd, LSBE_XDR);

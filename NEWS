@@ -10,6 +10,9 @@ Release notes for OpenLava versions
 -- Implement intercluster GLB preemption and scheduler logic not to
    schedule if under recall or ask for more tokens if there are
    still pending jobs that need tokens.
+-- Implemented the GLB tokens status recovery. MBD keeps state of the
+   tokens allocated to it and each time the allocation changes and
+   it sync up with GLB upon GLB boot.
 
 3.3.pre.2
 =========

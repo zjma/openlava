@@ -1517,5 +1517,7 @@ extern int do_glbTokenInfo(XDR *, int,
                            char *, struct LSFHeader *);
 extern int get_glb_tokens_size(int *);
 extern int encode_glb_tokens(XDR *, struct LSFHeader *);
+extern int count_stream(char *);
+struct glb_token *recover_glb_allocation_state(void);
 
 #endif /* _MBD_HEADER_ */
