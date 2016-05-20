@@ -886,7 +886,7 @@ check_token_status(void)
              */
             ls_syslog(LOG_INFO, "\
 %s: used %d %d ideal we have to preempt %d tokens", __func__, used,
-                      tokens[cc].ideal, used - tokens[cc].ideal);
+                      tokens[cc].ideal, tokens[cc].recalled);
 
             num_preempted = preempt_jobs_for_tokens(tokens[cc].recalled);
 
@@ -900,6 +900,12 @@ check_token_status(void)
                 prev_used = used;
                 continue;
             }
+
+            /* prev_used, this is used when high priority jobs
+             * cannot be preempted by GLB but some of them
+             * finished so that prev_used > used now, we can
+             * release them.
+             */
 
             if (num_preempted == 0
                 && prev_used > used) {

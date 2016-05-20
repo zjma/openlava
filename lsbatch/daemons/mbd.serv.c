@@ -3229,6 +3229,9 @@ do_glbTokenInfo(XDR *xdrs,
     int buf_size;
     struct glb_token *t;
 
+    /* This code is unused now.
+     */
+
     ls_syslog(LOG_DEBUG, "%s: Entering ...", __func__);
 
     n = size = 0;
