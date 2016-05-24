@@ -21,7 +21,10 @@
 static struct jData *
 find_first_pend_job(struct qData *);
 static bool_t
-is_pend_for_license(struct jData *, const char *);
+is_pend_for_license(struct jData *);
+static bool_t
+is_preemptable_resource(const char *);
+
 
 /* prm_init()
  */
@@ -77,7 +80,7 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
         assert(jPtr->jStatus & JOB_STAT_PEND
                || jPtr->jStatus & JOB_STAT_PSUSP);
 
-        if (! is_pend_for_license(jPtr, "vcs")) {
+        if (! is_pend_for_license(jPtr)) {
             if (logclass & LC_PREEMPT) {
                 ls_syslog(LOG_INFO, "\
 %s: job %s queue %s can NOT trigger preemption", __func__,
@@ -206,7 +209,7 @@ find_first_pend_job(struct qData *qPtr)
 }
 
 static bool_t
-is_pend_for_license(struct jData *jPtr, const char *license)
+is_pend_for_license(struct jData *jPtr)
 {
     struct resVal *resPtr;
     int cc;
@@ -254,7 +257,7 @@ is_pend_for_license(struct jData *jPtr, const char *license)
             if (cc < allLsInfo->numIndx)
                 continue;
 
-            if (strcmp(allLsInfo->resTable[cc].name, license) == 0)
+            if (is_preemptable_resource(allLsInfo->resTable[cc].name))
                 goto dal;
         }
     }
@@ -269,6 +272,25 @@ dal:
             return true;
         if (reason >= PEND_HOST_QUE_RUSAGE
             && reason < PEND_HOST_JOB_RUSAGE)
+            return true;
+    }
+
+    return false;
+}
+
+
+static bool_t
+is_preemptable_resource(const char *res)
+{
+    static char buf[MAXLSFNAMELEN];
+    char *p;
+    char *str;
+
+    strcpy(buf, mbdParams->preemptableResources);
+
+    str = buf;
+    while ((p = getNextWord_(&str))) {
+        if (strcmp(p, res) == 0)
             return true;
     }
 

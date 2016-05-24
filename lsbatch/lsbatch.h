@@ -864,6 +864,7 @@ struct parameterInfo {
     int acctArchiveInSize;
     int maxPreemptJobs;
     int maxStreamRecords;
+    char *preemptableResources;
 };
 
 

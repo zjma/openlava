@@ -303,7 +303,7 @@ lsb_readparam(struct lsConf *conf)
         freeParameterInfo ( pConf->param );
         FREEUP(pConf->param);
     } else {
-        if ((pConf = malloc(sizeof(struct paramConf))) == NULL) {
+        if ((pConf = calloc(1, sizeof(struct paramConf))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                       sizeof(struct paramConf));
             lsberrno = LSBE_CONF_FATAL;
@@ -312,7 +312,7 @@ lsb_readparam(struct lsConf *conf)
         pConf->param = NULL;
     }
     fname = conf->confhandle->fname;
-    if ((pConf->param = malloc(sizeof(struct parameterInfo))) == NULL) {
+    if ((pConf->param = calloc(1, sizeof(struct parameterInfo))) == NULL) {
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "malloc",
                   sizeof(struct parameterInfo));
         lsberrno = LSBE_CONF_FATAL;
@@ -366,49 +366,51 @@ static char
 do_Param(struct lsConf *conf, char *fname, int *lineNum)
 {
     char *linep;
-    int i, value;
-
-    struct keymap keylist[] = {
-        {"LSB_MANAGER", NULL, 0},
-        {"DEFAULT_QUEUE", NULL, 0},
-        {"DEFAULT_HOST_SPEC", 0},
-        {"DEFAULT_PROJECT", NULL, 0},
-        {"JOB_ACCEPT_INTERVAL", NULL, 0},
-        {"PG_SUSP_IT", NULL, 0},
-        {"MBD_SLEEP_TIME", NULL, 0},
-        {"CLEAN_PERIOD", NULL, 0},
-        {"MAX_RETRY", NULL, 0},
-        {"SBD_SLEEP_TIME", NULL, 0},
-        {"MAX_JOB_NUM", NULL, 0},
-        {"RETRY_INTERVAL", NULL, 0},
-        {"MAX_SBD_FAIL", NULL, 0},
-        {"RUSAGE_UPDATE_RATE", NULL, 0},    /* control how often sbatchd */
-        {"RUSAGE_UPDATE_PERCENT", NULL, 0}, /* report job rusage to mbd */
-        {"COND_CHECK_TIME", NULL, 0},       /* time to check conditions  */
-        {"MAX_SBD_CONNS", NULL, 0},       /* Undocumented parameter for
-                                           * specifying how many sbd
-                                           * connections to keep around
-                                           */
-        {"MAX_SCHED_STAY", NULL, 0},
-        {"LOAD_UPDATE_INTVL", NULL, 0}, /* 18 mbd to call lim for resources */
-        {"MAX_JOB_ARRAY_SIZE", NULL, 0},
-        {"DISABLE_UACCT_MAP", NULL, 0},
-        {"JOB_TERMINATE_INTERVAL", NULL, 0},
-        {"JOB_RUN_TIMES", NULL, 0},
-        {"JOB_DEP_LAST_SUB", NULL, 0},
-        {"JOB_SPOOL_DIR", NULL,0},
-        {"MAX_USER_PRIORITY", NULL, 0},
-        {"JOB_PRIORITY_OVER_TIME", NULL, 0},
-        {"SHARED_RESOURCE_UPDATE_FACTOR", NULL, 0},
-        {"SCHE_RAW_LOAD", NULL, 0},
-        {"PRE_EXEC_DELAY", NULL, 0},
-        {"SLOT_RESOURCE_RESERVE", NULL, 0},
-        {"MAX_JOBID", NULL, 0},
-        {"MAX_ACCT_ARCHIVE_FILE", NULL, 0},
-        {"ACCT_ARCHIVE_SIZE", NULL, 0},
-        {"ACCT_ARCHIVE_AGE", NULL, 0},
-        {"MAX_PREEMPT_JOBS", NULL, 0},
-        {"MAX_STREAM_RECORDS", NULL, 0},
+    int i;
+    int value;
+    struct keymap keylist[]
+        = {
+        /* 0 */       {"LSB_MANAGER", NULL, 0},
+        /* 1 */       {"DEFAULT_QUEUE", NULL, 0},
+        /* 2 */       {"DEFAULT_HOST_SPEC", 0},
+        /* 3 */       {"DEFAULT_PROJECT", NULL, 0},
+        /* 4 */       {"JOB_ACCEPT_INTERVAL", NULL, 0},
+        /* 5 */       {"PG_SUSP_IT", NULL, 0},
+        /* 6 */       {"MBD_SLEEP_TIME", NULL, 0},
+        /* 7 */       {"CLEAN_PERIOD", NULL, 0},
+        /* 8 */       {"MAX_RETRY", NULL, 0},
+        /* 9 */       {"SBD_SLEEP_TIME", NULL, 0},
+        /* 10 */      {"MAX_JOB_NUM", NULL, 0},
+        /* 11 */      {"RETRY_INTERVAL", NULL, 0},
+        /* 12 */      {"MAX_SBD_FAIL", NULL, 0},
+        /* 13 */      {"RUSAGE_UPDATE_RATE", NULL, 0},    /* control how often sbatchd */
+        /* 14 */      {"RUSAGE_UPDATE_PERCENT", NULL, 0}, /* report job rusage to mbd */
+        /* 15 */      {"COND_CHECK_TIME", NULL, 0},       /* time to check conditions  */
+        /* 16 */      {"MAX_SBD_CONNS", NULL, 0},       /* Undocumented parameter for
+                                                         * specifying how many sbd
+                                                         * connections to keep around
+                                                         */
+        /* 17 */      {"MAX_SCHED_STAY", NULL, 0},
+        /* 18 */      {"LOAD_UPDATE_INTVL", NULL, 0}, /* 18 mbd to call lim for resources */
+        /* 19 */      {"MAX_JOB_ARRAY_SIZE", NULL, 0},
+        /* 20 */      {"DISABLE_UACCT_MAP", NULL, 0},
+        /* 21 */      {"JOB_TERMINATE_INTERVAL", NULL, 0},
+        /* 22 */      {"JOB_RUN_TIMES", NULL, 0},
+        /* 23 */      {"JOB_DEP_LAST_SUB", NULL, 0},
+        /* 24 */      {"JOB_SPOOL_DIR", NULL,0},
+        /* 25 */      {"MAX_USER_PRIORITY", NULL, 0},
+        /* 26 */      {"JOB_PRIORITY_OVER_TIME", NULL, 0},
+        /* 27 */      {"SHARED_RESOURCE_UPDATE_FACTOR", NULL, 0},
+        /* 28 */      {"SCHE_RAW_LOAD", NULL, 0},
+        /* 29 */      {"PRE_EXEC_DELAY", NULL, 0},
+        /* 30 */      {"SLOT_RESOURCE_RESERVE", NULL, 0},
+        /* 31 */      {"MAX_JOBID", NULL, 0},
+        /* 32 */      {"MAX_ACCT_ARCHIVE_FILE", NULL, 0},
+        /* 33 */      {"ACCT_ARCHIVE_SIZE", NULL, 0},
+        /* 34 */      {"ACCT_ARCHIVE_AGE", NULL, 0},
+        /* 35 */      {"MAX_PREEMPT_JOBS", NULL, 0},
+        /* 36 */      {"MAX_STREAM_RECORDS", NULL, 0},
+        /* 37 */      {"PREEMPTABLE_RESOURCES", NULL, 0},
         {NULL, NULL, 0}
     };
 
@@ -650,7 +652,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     pConf->param->slotResourceReserve = FALSE;
                 }
             } else if (i > 5) {
-                if ( i < 23)
+                if (i < 23)
                     value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 else
                     value = atoi(keylist[i].val);
@@ -741,6 +743,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 36:
                             pConf->param->maxStreamRecords = value;
+                            break;
+                        case 37:
+                            pConf->param->preemptableResources = putstr_(keylist[i].val);
                             break;
                         default:
                             ls_syslog(LOG_ERR, "\
@@ -838,6 +843,7 @@ initParameterInfo(struct parameterInfo *param)
     param->acctArchiveInSize = -1;
     param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
     param->maxStreamRecords = 0;
+    param->preemptableResources = NULL;
 }
 
 static void
@@ -848,6 +854,7 @@ freeParameterInfo(struct parameterInfo *param)
         FREEUP(param->defaultHostSpec);
         FREEUP(param->defaultProject);
         FREEUP(param->pjobSpoolDir);
+        FREEUP(param->preemptableResources);
     }
 }
 

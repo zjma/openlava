@@ -329,6 +329,7 @@ static void free_reserve_memory(struct jData *);
 static void handle_reserve_memory(struct jData *, int);
 static struct jData *jiter_next_job2(LIST_T *);
 static bool_t run_time_ok(struct jData *);
+static bool_t higher_queues_has_pend_jobs(struct qData *);
 
 static bool_t lsbPtilePack = FALSE;
 
@@ -4438,7 +4439,8 @@ scheduleAndDispatchJobs(void)
         for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
             hEnt *ent;
 
-            if ((ent = h_getEnt_(susp_jobs, qp->queue))) {
+            if ((ent = h_getEnt_(susp_jobs, qp->queue))
+                && higher_queues_has_pend_jobs(qp) == false) {
                 ls_syslog(LOG_INFO, "\
 %s: check if jobs in queue %s can be resumed", __func__, qp->queue);
                 tryResume(qp);
@@ -4781,6 +4783,35 @@ jiter_next_job2(LIST_T *jRefList)
     }
 
     return NULL;
+}
+
+static bool_t
+higher_queues_has_pend_jobs(struct qData *qPtr)
+{
+    struct qData *qp;
+
+    for (qp = qDataList->forw;
+         qp != qDataList;
+         qp = qp->forw) {
+
+        if (qp->priority > qPtr->priority
+            && qp->numPEND > 0) {
+            ls_syslog(LOG_INFO, "\
+%s: found queue %s priority %d higher than mine %s %d with %d pendjobs", __func__,
+                      qp->queue, qp->priority, qPtr->queue, qPtr->priority,
+                      qp->numPEND);
+            return true;
+        }
+
+        if (qp->priority <= qPtr->priority) {
+            ls_syslog(LOG_INFO, "\
+%s: no queues higher than mine %s %d with pendjobs", __func__,
+                      qPtr->queue, qPtr->priority);
+            return false;
+        }
+    }
+
+    return false;
 }
 
 static int

@@ -1946,7 +1946,8 @@ setParams(struct paramConf *paramConf)
         mbdParams->defaultHostSpec = strdup(params->defaultHostSpec);
     if (params->pjobSpoolDir)
         mbdParams->pjobSpoolDir = strdup(params->pjobSpoolDir);
-
+    if (params->preemptableResources)
+        mbdParams->preemptableResources = strdup(params->preemptableResources);
 }
 
 static void

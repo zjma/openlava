@@ -15,6 +15,8 @@ Release notes for OpenLava versions
    it sync up with GLB upon GLB boot.
 -- When there are SSUSP and PEND jobs in the same queue, resume the SSUSP
    first as they have been submitted earlier.
+-- Implemented PREEMPTABLE_RESOURCES in lsb.params where one specifies the
+   licenses the MBD preempts for.
 
 3.3.pre.2
 =========
