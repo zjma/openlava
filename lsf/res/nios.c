@@ -132,7 +132,9 @@ static void myHandler(int sig)
 int ls_niosetdebug(int);
 
 static int niosDebug = 0;
-static int maxtasks;
+
+#define NIOS_MAX_TASKTBL       10024
+static int maxtasks = NIOS_MAX_TASKTBL;
 static int maxfds;
 
 static struct config_param niosParams[] = {
@@ -151,15 +153,15 @@ static struct config_param niosParams[] = {
 #define LSB_INTERACT_MSG_EXITTIME 6
         {"LSB_INTERACT_MSG_EXITTIME", NULL},
 #define NIOS_RWAIT_SELECT 7
-	{"NIOS_RWAIT_SELECT", NULL},
+        {"NIOS_RWAIT_SELECT", NULL},
+#define NIOS_MAX_TASKS 8
+        {"NIOS_MAX_TASKS", NULL},
         {NULL, NULL}
     };
 
 #define MSG_POLLING_INTR 60
 
 extern void checkJobStatus(int numTries);
-
-#define NIOS_MAX_TASKTBL       10024
 
 #define MAX_TRY_TIMES           20
 
@@ -231,6 +233,14 @@ main(int argc, char **argv)
         }
     }
 
+    if (niosParams[NIOS_MAX_TASKS].paramValue) {
+        if (isint_(niosParams[NIOS_MAX_TASKS].paramValue)) {
+            maxtasks = atoi(niosParams[NIOS_MAX_TASKS].paramValue);
+            if ( maxtasks <= 0) {
+                maxtasks = NIOS_MAX_TASKTBL;
+            }
+        }
+    }
 
     timeout = getenv("LSF_NIOS_PEND_TIMEOUT");
     if (timeout != NULL) {
@@ -433,9 +443,6 @@ main(int argc, char **argv)
 
     }
 
-    maxtasks = NIOS_MAX_TASKTBL;
-
-
     sigprocmask(SIG_UNBLOCK, &sigmask, NULL);
 
     if (isatty(0)) {
@@ -537,8 +544,8 @@ serv(char **argv, int asock)
                 die();
             }
         } else if (m < 0) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_niotasks");
             PassSig(SIGKILL);
-            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "ls_niotasks");
             die();
         }
 
@@ -1306,7 +1313,7 @@ getStdin(struct lslibNiosHdr *hdr)
     retVal = ls_niotasks(req.r.set_on ? NIO_TASK_STDINON : NIO_TASK_STDINOFF,
                        reply.rpidlist, maxtasks);
     if (retVal < 0) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "ls_niotasks");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "ls_niotasks");
 
         PassSig(SIGKILL);
         die();
