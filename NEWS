@@ -13,6 +13,8 @@ Release notes for OpenLava versions
 -- Implemented the GLB tokens status recovery. MBD keeps state of the
    tokens allocated to it and each time the allocation changes and
    it sync up with GLB upon GLB boot.
+-- When there are SSUSP and PEND jobs in the same queue, resume the SSUSP
+   first as they have been submitted earlier.
 
 3.3.pre.2
 =========

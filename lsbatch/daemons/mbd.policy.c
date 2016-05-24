@@ -4187,6 +4187,9 @@ scheduleAndDispatchJobs(void)
     struct jData *jPtr;
     int count;
     bool_t has_ownership;
+    static hTab *susp_jobs;
+    hEnt *ent;
+    sTab stab;
 
     now_disp = time(NULL);
     ZERO_OUT_TIMERS();
@@ -4194,6 +4197,15 @@ scheduleAndDispatchJobs(void)
     if (qsort_jobs) {
         sort_job_list(MJL);
         TIMEIT(0, sort_job_list(PJL), "sort_job_list()");
+    }
+
+    if (susp_jobs == NULL) {
+        susp_jobs = calloc(1, sizeof(hTab));
+        h_initTab_(susp_jobs, 181);
+    }
+    while ((ent = h_firstEnt_(susp_jobs, &stab))) {
+        h_rmEnt_(susp_jobs, ent);
+        ent = h_nextEnt_(&stab);
     }
 
     if (jRefList == NULL)
@@ -4312,6 +4324,13 @@ scheduleAndDispatchJobs(void)
                 if (jPtr->jStatus & JOB_STAT_RUN) {
                     accumRunTime(jPtr, jPtr->jStatus, now_disp);
                 }
+
+                if (jPtr->jStatus & JOB_STAT_SSUSP) {
+                    h_addEnt_(susp_jobs, jPtr->qPtr->queue, NULL);
+                    ls_syslog(LOG_INFO, "\
+%s: found ssusp job  %s in queue %s", __func__, lsb_jobid2str(jPtr->jobId),
+                              jPtr->qPtr->queue);
+                }
             }
 
             lastUpdTime = now_disp;
@@ -4359,7 +4378,7 @@ scheduleAndDispatchJobs(void)
 
     if (0) {
         if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
-            TIMEIT(0, tryResume(), "tryResume()");
+            TIMEIT(0, tryResume(NULL), "tryResume()");
             mSchedStage |= M_STAGE_RESUME_SUSP;
         }
     }
@@ -4387,7 +4406,7 @@ scheduleAndDispatchJobs(void)
 
     if (numLsbUsable <= 0) {
         numLsbUsable = numQUsable = 0;
-        TIMEIT(0, tryResume(), "tryResume()");
+        TIMEIT(0, tryResume(NULL), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
@@ -4417,6 +4436,13 @@ scheduleAndDispatchJobs(void)
          * number.
          */
         for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
+            hEnt *ent;
+
+            if ((ent = h_getEnt_(susp_jobs, qp->queue))) {
+                ls_syslog(LOG_INFO, "\
+%s: check if jobs in queue %s can be resumed", __func__, qp->queue);
+                tryResume(qp);
+            }
 
             if (qp->numPEND == 0 && qp->numRESERVE == 0)
                 continue;
@@ -4442,7 +4468,7 @@ scheduleAndDispatchJobs(void)
 
     if (numQUsable <= 0) {
         numQUsable = 0;
-        TIMEIT(0, tryResume(), "tryResume()");
+        TIMEIT(0, tryResume(NULL), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
@@ -4456,7 +4482,7 @@ scheduleAndDispatchJobs(void)
     if (LIST_NUM_ENTRIES(jRefList) == 0) {
         ls_syslog(LOG_INFO, "\
 %s: no pending or migrating to jobs to schedule at the moment.", __func__);
-        TIMEIT(0, tryResume(), "tryResume()");
+        TIMEIT(0, tryResume(NULL), "tryResume()");
         resetSchedulerSession();
         return 0;
     }
@@ -4515,7 +4541,7 @@ scheduleAndDispatchJobs(void)
     }
 
     if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
-        TIMEIT(0, tryResume(), "tryResume()");
+        TIMEIT(0, tryResume(NULL), "tryResume()");
         mSchedStage |= M_STAGE_RESUME_SUSP;
     }
 

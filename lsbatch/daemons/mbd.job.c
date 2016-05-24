@@ -7311,7 +7311,7 @@ getReserveParams (struct resVal *resValPtr, int *duration, int *rusage_bit_map)
 }
 
 void
-tryResume(void)
+tryResume(struct qData *qPtr)
 {
     char fname[] = "tryResume";
     struct jData *jp;
@@ -7365,6 +7365,11 @@ tryResume(void)
                 continue;
             }
         }
+
+        if (qPtr != NULL
+            && jp->qPtr != qPtr)
+            continue;
+
         if (jp->jStatus & JOB_STAT_RESERVE) {
             updResCounters (jp, jp->jStatus & ~JOB_STAT_RESERVE);
             jp->jStatus &= ~JOB_STAT_RESERVE;

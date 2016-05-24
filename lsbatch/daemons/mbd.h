@@ -1073,7 +1073,7 @@ extern void                 jobStatusSignal(sbdReplyType reply,
                                             struct jData *jData,
                                             int sigValue, int chkFlags,
                                             struct jobReply *jobReply);
-extern void                 tryResume (void);
+extern void                 tryResume(struct qData *);
 extern void                 freeSubmitReq (struct submitReq *);
 extern int                  shouldLockJob (struct jData *, int);
 extern int                  sigPFjob (struct jData *, int, time_t, int);

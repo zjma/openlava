@@ -1007,7 +1007,7 @@ periodicCheck(void)
 
     if (now - last_tryControlJobs > sbdSleepTime) {
         last_tryControlJobs = now;
-        TIMEIT(0, tryResume(), "tryResume()");
+        TIMEIT(0, tryResume(NULL), "tryResume()");
     }
 
     if (now - last_checkConf > condCheckTime) {
