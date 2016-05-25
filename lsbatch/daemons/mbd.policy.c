@@ -3118,6 +3118,7 @@ dispatch_it (struct jData *jp)
     jp->dispTime = now_disp;
 
     TIMEIT (2, (reply = start_job(jp, jp->qPtr, &jobReply)), "start_job");
+    INC_CNT(PROF_CNT_dispatchJob);
 
     jptr = jp;
     i = 1;
