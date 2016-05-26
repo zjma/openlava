@@ -1295,7 +1295,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
         while ((hPtr = traverse_link(&iter))) {
 
             i = hPtr->hostId;
-            INC_CNT(PROF_CNT_firstLoopgetJUsable);
+            INC_CNT(PROF_CNT_firstLoopgetJUsableProxy);
             if (HOST_UNUSABLE_TO_JOB_DUE_TO_H_REASON(hReasonTb[1][i], jp))
                 continue;
 
@@ -1313,7 +1313,6 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
 
             if (! isAskedHost(hPtr, jp))
                 continue;
-
             jUsable[numHosts++] = hPtr;
             if (numHosts == jp->numAskedPtr)
                 break;

@@ -122,6 +122,7 @@ MBD_PROF_COUNTER(nqsLoopresigJobs)
 MBD_PROF_COUNTER(fourthLoopresigJobs)
 MBD_PROF_COUNTER(resigJobs1)
 MBD_PROF_COUNTER(dispatchJob)
+MBD_PROF_COUNTER(firstLoopgetJUsableProxy)
 #ifdef HPART_ENHANCEMENT
 MBD_PROF_COUNTER(numNonSchedulableJobsInHpart)
 MBD_PROF_COUNTER(numSchedulableJobsInHpart)
