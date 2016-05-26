@@ -286,6 +286,9 @@ is_preemptable_resource(const char *res)
     char *p;
     char *str;
 
+    if (mbdParams->preemptableResources ==NULL) 
+        return false;
+
     strcpy(buf, mbdParams->preemptableResources);
 
     str = buf;

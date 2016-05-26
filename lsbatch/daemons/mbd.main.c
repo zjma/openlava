@@ -923,6 +923,7 @@ houseKeeping(int *hsKeeping)
                    "scheduleAndDispatchJobs");
             check_token_status();
             preempt();
+            ssusp_jobs();
             if (schedule == 0) {
                 schedule = FALSE;
             } else {
