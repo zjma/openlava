@@ -12,6 +12,8 @@ Release notes for OpenLava versions
 -- When a multiprocessor job (-n) specifies memory rusage and span[hosts=1]
    the memory rusage applies to the entire job instead of each slots
    of the job.
+-- Fix a bug in lsb.log which was causing 'bsub -K' event being
+   badly interpreted by library which printed "Bad event format".
 
 3.3.1
 ======
