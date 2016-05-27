@@ -862,12 +862,10 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
     line += ccount + 1;
 
     if ((jobNewLog->options2 & SUB2_BSUB_BLOCK)){
-        line += ccount;
-        if (*line != '\0') {
-            cc = sscanf(line, "%d%n", &jobNewLog->niosPort, &ccount);
-            if (cc != 1)
-                return LSBE_EVENT_FORMAT;
-        }
+        cc = sscanf(line, "%d%n", &jobNewLog->niosPort, &ccount);
+        if (cc != 1)
+            return LSBE_EVENT_FORMAT;
+        line += ccount + 1;
     }
 
     if (!(jobNewLog->options & SUB_RLIMIT_UNIT_IS_KB)) {

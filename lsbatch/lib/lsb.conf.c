@@ -1434,13 +1434,6 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                     continue;
                 }
             }
-            if (options != CONF_NO_CHECK && type == HOST_GRP
-                && isHostName(keylist[0].val)) {
-                ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5105,
-                                                     "%s: File %s at line %d: Group name <%s> conflicts with host name; ignoring line"), __func__, fname, *lineNum, keylist[0].val); /* catgets 5105 */
-                lsberrno = LSBE_CONF_WARNING;
-                continue;
-            }
             if (options != CONF_NO_CHECK &&
                 getGrpData (groups, keylist[0].val, *ngroups)) {
                 ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5106,

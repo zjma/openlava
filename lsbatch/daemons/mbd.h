@@ -953,6 +953,7 @@ extern void                 adjLsbLoad(struct jData *, int, bool_t);
 extern int                  countHostJobs(struct hData *);
 extern void                 getLsbResourceInfo(void);
 extern struct resVal *      getReserveValues(struct resVal *,struct resVal *);
+extern int                  hasResSpanHosts(struct resVal *);
 extern void                 getLsfHostInfo(int);
 extern struct hData *       getHostByType(char *);
 

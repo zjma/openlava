@@ -46,6 +46,7 @@ static int foundJids;
 #define MAX_TIMESTRLEN          20
 int uflag = false;
 int Wflag = false;
+int noheaderflag = false;
 
 static int isLSFAdmin(void);
 static char *Timer2String(float timer);
@@ -60,7 +61,7 @@ Usage: %s [-h] [-V] [-w |-l] [-a] [-d] [-p] [-s] [-r] [-g job_group]\n", cmd);
     fprintf(stderr, "\
              [-A] [-m host_name] [-q queue_name] [-u user_name | -u all]\n");
     fprintf(stderr,"\
-             [-P project_name] [-N host_spec] [-J name_spec] [-UF]\n");
+             [-P project_name] [-N host_spec] [-J name_spec] [-UF] [-noheader]\n");
     fprintf(stderr, "\
              [jobId | \"jobId[idxList]\" ...]\n");
 
@@ -273,7 +274,7 @@ do_options(int argc,
     *jobName = NULL;
     *format = 0;
 
-    while ((cc = getopt(argc, argv, "VladpsrwWRAhJ:q:u:m:N:P:SU:g:")) != EOF) {
+    while ((cc = getopt(argc, argv, "VladpsrwWRAhJ:q:u:m:n:N:P:SU:g:")) != EOF) {
         switch (cc) {
             case 'w':
                 if (*format == LONG_FORMAT || *format == LSFUF_FORMAT)
@@ -346,6 +347,16 @@ do_options(int argc,
                     *format = LSFUF_FORMAT;
                     break;
                 }
+		usage(argv[0]);
+            case 'n':
+                if (strcmp(optarg,"oheader")==0) {
+		    if ((*format==0) || (*format==WIDE_FORMAT)) {
+			/* short format or wide format */
+                        noheaderflag=true;
+		    }
+		    break;
+                }
+                usage(argv[0]);
             case 'g':
                 if (*job_group)
                     usage(argv[0]);
@@ -448,7 +459,7 @@ displayJobs(struct jobInfoEnt *job, struct jobInfoHead *jInfoH,
             exec_host = job->exHosts[0];
     }
 
-    if (first) {
+    if (first && noheaderflag==false) {
         first = false;
         if (job->jType == JGRP_NODE_ARRAY)
             printf("JOBID    ARRAY_SPEC  OWNER   NJOBS PEND DONE  RUN EXIT SSUSP USUSP PSUSP\n");

@@ -1404,7 +1404,7 @@ emusig(int tid, int st)
 	     * configure the sigmask of management threads of golang.
 	     */
 	    if (niosParams[NIOS_RWAIT_SELECT].paramValue) {
-		hdr.opCode = LSE_NO_ERR;
+		hdr.opCode = CHILD_EXIT;
 		hdr.len = 0;
 		if (b_write_fix(chfd, (char *)&hdr,
 				sizeof(struct lslibNiosHdr)) !=

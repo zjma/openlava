@@ -87,7 +87,7 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
         return -1;
     }
 
-
+  Select:
     cc = select(cli_nios_fd[0] + 1, &rmask, 0, 0, &timeout);
     if (cc <= 0) {
         if (cc < 0)
@@ -130,6 +130,8 @@ rwait_(int tid, LS_WAIT_T *status, int options, struct rusage *ru)
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
         return (rpid);
 
+      case CHILD_EXIT:
+        goto Select;
       default:
 
         lserrno = LSE_PROTOC_NIOS;
