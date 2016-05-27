@@ -3663,9 +3663,15 @@ getNumericLoadValue(struct hData *hPtr, int lidx)
         return (-INFINIT_LOAD);
     }
 
-    /* Sort by free MXJ
+    /* Sort by MXJ
      */
     if (allLsInfo->resTable[lidx].flags & RESF_MBD_MXJ) {
+        return hPtr->maxJobs;
+    }
+
+    /* Sort by free slots
+     */
+    if (allLsInfo->resTable[lidx].flags & RESF_MBD_FREE_SLOTS) {
         return hPtr->maxJobs - (hPtr->numRUN + hPtr->numSSUSP + hPtr->numUSUSP);
     }
 
