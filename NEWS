@@ -16,8 +16,8 @@ Release notes for OpenLava versions
    badly interpreted by library which printed "Bad event format".
 -- Implement built in resource maxslots which represents the MBD
    MXJ parameter. This allows users to sort hosts based on MXJ.
--- Implement NUMA awarness and binding of processes based on the
-   machine's NUMA architeture.
+-- Implement NUMA awareness and binding of processes based on the
+   machine's NUMA architecture.
 
 3.3.1
 ======
