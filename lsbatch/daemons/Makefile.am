@@ -38,6 +38,10 @@ if SOLARIS
 mbatchd_LDADD += -lsocket -lnsl
 sbatchd_LDADD += -lsocket -lnsl
 endif
+if HWLOC
+sbatchd_LDADD += -lhwloc -lnuma
+sbatchd_SOURCES += sbd.numa.c
+endif
 
 lib_LTLIBRARIES = libfairshare.la libpreempt.la 
 libfairshare_la_SOURCES = libfairshare.c fairshare.h 

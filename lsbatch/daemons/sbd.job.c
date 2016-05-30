@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
+#ifdef HAVE_HWLOC_H
+#include <numa.h>
+#endif
 #include "../../lsf/intlib/jidx.h"
 #include "../../lsf/lib/lib.rcp.h"
 #include "../daemons/daemons.h"
@@ -89,7 +92,8 @@ extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
 static void setup_mem_cgroup(struct jobCard *);
 static void rm_mem_cgroup(struct jobCard *);
-static void setup_cpu_bind(struct jobCard *);
+static void setup_cpu_bind(struct jobCard *, int*);
+static int* select_cpu_to_bind(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -133,6 +137,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
 {
     struct jobSpecs *jobSpecsPtr;
     int pid;
+    int *cores;
 
     jobSpecsPtr = &(jobCardPtr->jobSpecs);
     if (logclass & LC_EXEC) {
@@ -144,16 +149,36 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     jobSpecsPtr->reasons = 0;
     jobSpecsPtr->subreasons = 0;
 
+    cores = select_cpu_to_bind(jobCardPtr);
     pid = fork();
 
     if (pid < 0) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh fork() failed starting job %s: %m",
                   __func__, lsb_jobid2str(jobSpecsPtr->jobId));
+        FREEUP(cores);
         return ERR_FORK_FAIL;
     }
 
+    /* centos6 does not support hwloc API to bind memory on process pid, so
+     * let the child process bind itself to local memory
+     */
     if (pid == 0) {
+#ifdef HAVE_HWLOC_H
+        int localonly;
+
+        /* Hard code for Cadence case!!!
+         * Replace following code with "affinity" interface.
+         */
+        if (daemonParams[SBD_BIND_CPU].paramValue &&
+                strstr(jobSpecsPtr->resReq, "affinity")) {
+            if (strstr(jobSpecsPtr->resReq, "membind=localonly"))
+                localonly = 1;
+            else
+                localonly = 0;
+            bind_to_numa_mem(cores, localonly);
+        }
+#endif
         closeBatchSocket();
         sbdChildCloseChan (chfd);
         execJob(jobCardPtr, chfd);
@@ -178,7 +203,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
 
     /* Setup the cpu binding
      */
-    setup_cpu_bind(jobCardPtr);
+    setup_cpu_bind(jobCardPtr, cores);
 
     return ERR_NO_ERROR;
 }
@@ -2155,7 +2180,7 @@ addJob (struct jobSpecs *jobSpecs, int mbdVersion)
     }
 
     if (daemonParams[SBD_BIND_CPU].paramValue) {
-        int num;
+        int *num;
 
         num = find_bound_core(jobSpecs->jobPid);
         ls_syslog(LOG_DEBUG, "\
@@ -2347,9 +2372,9 @@ jobGone(struct jobCard *jp)
 
     /* Clean up the allocated core
      */
-    if (jp->core_num != -1) {
-        free_core(jp->core_num);
-        jp->core_num = -1;
+    if (jp->core_num != NULL) {
+        free_core(jp->jobSpecs.numToHosts, jp->core_num);
+        FREEUP(jp->core_num);
     }
 
     if (jp->jobSpecs.actPid == 0 && jp->exitPid == -1) {
@@ -2622,6 +2647,7 @@ deallocJobCard(struct jobCard *jobCard)
     freeWeek (jobCard->week);
     freeToHostsEtc (&jobCard->jobSpecs);
 
+    FREEUP(jobCard->core_num);
 
     if (jobCard->runRusage.npgids > 0) {
         FREEUP(jobCard->runRusage.pgid);
@@ -3901,7 +3927,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
 
     jp->postJobStarted = 0;
     jp->userJobSucc = FALSE;
-    jp->core_num = -1;
+    jp->core_num = NULL;
 
     return 0;
 }
@@ -4129,38 +4155,51 @@ rm_mem_cgroup(struct jobCard *jPtr)
     }
 }
 
+/* select_cpu_to_bind()
+ */
+static int*
+select_cpu_to_bind(struct jobCard *jPtr)
+{
+    int *selected;
+
+    if (! daemonParams[SBD_BIND_CPU].paramValue)
+        return NULL;
+
+    selected = find_free_core(jPtr->jobSpecs.numToHosts);
+    if (!selected) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to find free core for job %d", __func__,
+              jPtr->jobSpecs.jobId);
+    }
+    return selected;
+}
+
 /* setup_cpu_bind()
  */
 static void
-setup_cpu_bind(struct jobCard *jPtr)
+setup_cpu_bind(struct jobCard *jPtr, int* selected)
 {
     int cc;
-    int num;
 
-    if (! daemonParams[SBD_BIND_CPU].paramValue)
+    if (!selected)
         return;
 
-    num = find_free_core();
-    if (num < 0) {
-        ls_syslog(LOG_ERR, "\
-%s: failed to find a free core for job %d pid %d", __func__,
-                  jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
-        return;
-    }
-
-    cc = bind_to_core(jPtr->jobSpecs.jobPid, num);
+    cc = bind_to_core(jPtr->jobSpecs.jobPid,
+                      jPtr->jobSpecs.numToHosts,
+                      selected);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
 %s: failed to bind to core %d job %d pid %d", __func__,
-                  num, jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
+                  selected[0], jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
+        FREEUP(selected);
         return;
     }
 
     if (logclass & LC_EXEC) {
-	ls_syslog(LOG_INFO, "%\
+        ls_syslog(LOG_INFO, "%\
 s: job %d pid %d bound to core %d", __func__, jPtr->jobSpecs.jobId,
-		  jPtr->jobSpecs.jobPid, num);
+		  jPtr->jobSpecs.jobPid, selected[0]);
     }
 
-    jPtr->core_num = num;
+    jPtr->core_num = selected;
 }
