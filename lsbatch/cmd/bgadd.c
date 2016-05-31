@@ -31,32 +31,32 @@ main(int argc, char **argv)
     struct job_group jg;
 
     if (lsb_init(argv[0]) < 0) {
-	lsb_perror("lsb_init");
-	return -1;
+        lsb_perror("lsb_init");
+        return -1;
     }
 
     while ((cc = getopt(argc, argv, "hV")) != EOF) {
-	switch (cc) {
-	    case 'V':
-		fputs(_LS_VERSION_, stderr);
-		return 0;
-	    case 'h':
-		usage();
-		exit(-1);
-	}
+        switch (cc) {
+            case 'V':
+                fputs(_LS_VERSION_, stderr);
+                return 0;
+            case 'h':
+                usage();
+                exit(-1);
+        }
     }
 
     if (argc <= optind) {
-	usage();
-	return -1;
+        usage();
+        return -1;
     }
 
     jg.group_name = argv[argc - 1];
 
     cc = lsb_addjgrp(&jg);
     if (cc != LSBE_NO_ERROR) {
-	fprintf(stderr, "bgadd: %s.\n", lsb_sysmsg());
-	return -1;
+        fprintf(stderr, "bgadd: %s.\n", lsb_sysmsg());
+        return -1;
     }
 
     printf("Group %s added successfully.\n", jg.group_name);
