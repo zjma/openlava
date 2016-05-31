@@ -540,6 +540,9 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         jReason = PEND_JOB_ARRAY_JLIMIT;
     }
 
+    if (! jobgroup_limit_ok(jpbw))
+        jReason = PEND_JGROUP_LIMIT;
+
     if (jReason) {
         jpbw->newReason = jReason;
         jpbw->numReasons = 0;
@@ -557,7 +560,9 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
     jpbw->jFlags &= ~JFLAG_JOB_PREEMPTED;
 
     if (logclass & (LC_PEND))
-        ls_syslog(LOG_DEBUG3, "%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__, lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
+        ls_syslog(LOG_DEBUG3, "\
+%s: Job %s is ready for dispatch; numSlots=%d numAvailSlots=%d", __func__,
+                  lsb_jobid2str(jpbw->jobId), jpbw->numSlots, *numAvailSlots);
 
     INC_CNT(PROF_CNT_numReadyJobsPerSession);
 

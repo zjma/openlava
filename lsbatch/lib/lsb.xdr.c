@@ -1997,7 +1997,8 @@ xdr_jobdep(XDR *xdrs, struct job_dep *jobdep, struct LSFHeader *hdr)
 bool_t
 xdr_jobgroup(XDR *xdrs, struct job_group *jgPtr, struct LSFHeader *hdr)
 {
-    if (! xdr_wrapstring(xdrs, &jgPtr->group_name))
+    if (! xdr_wrapstring(xdrs, &jgPtr->group_name)
+        || !xdr_int(xdrs, &jgPtr->max_jobs))
         return false;
 
     return true;

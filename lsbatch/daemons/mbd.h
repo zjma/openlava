@@ -332,7 +332,7 @@ struct jData {
     int    sigValue;
     struct jShared  *shared;
     int     numRef;
-    struct  jgTreeNode*   jgrpNode;
+    struct  jgTreeNode *jgrpNode;
     int     nodeType;
     struct  jData *nextJob;
     int     restartPid;
@@ -347,7 +347,7 @@ struct jData {
     int    numOfGroups;
     int    reservedGrp;
     int    currentGrp;
-    int*   inEligibleGroups;
+    int *inEligibleGroups;
     int numSlotsReserve;
     int numAvailSlotsReserve;
     int numMsg;
@@ -1499,5 +1499,6 @@ extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
 extern int check_job_group(struct jData *, struct lsfAuth *);
+extern bool_t jobgroup_limit_ok(struct jData *);
 
 #endif /* _MBD_HEADER_ */

@@ -2721,8 +2721,9 @@ readNewJgrp(char *line, struct jgrpLog *jgrp)
     copyQStr(&line, MAXLSFNAMELEN, 0, jgrp->user);
 
     cc = sscanf(line, "\
-%d %d %d %n", &jgrp->uid, &jgrp->status, (int *)&jgrp->submit_time, &n);
-    if (cc != 3)
+%d %d %d %d %n", &jgrp->uid, &jgrp->status,
+                (int *)&jgrp->submit_time, &jgrp->max_jobs, &n);
+    if (cc != 4)
 	return LSBE_EVENT_FORMAT;
     line = line + n;
 
@@ -2805,8 +2806,10 @@ writeNewJgrp(FILE *fp, struct jgrpLog *jgrp)
         return LSBE_SYS_CALL;
 
     if (fprintf(fp, "\
- %d %d %d\n", jgrp->uid, jgrp->status, (int)jgrp->submit_time) < 0)
+ %d %d %d %d\n", jgrp->uid, jgrp->status,
+                (int)jgrp->submit_time, jgrp->max_jobs) < 0) {
         return LSBE_SYS_CALL;
+    }
 
     return LSBE_NO_ERROR;
 }

@@ -185,6 +185,9 @@ decode_groups(char *reply, struct LSFHeader *hdr, int *num)
                 goto pryc;
             }
         }
+
+        if (! xdr_int(&xdrs, &jgrp[cc].max_jobs))
+            goto pryc;
     }
 
     return jgrp;

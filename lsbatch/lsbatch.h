@@ -191,6 +191,7 @@
 #define PEND_JOB_ARRAY_JLIMIT  38
 #define PEND_CHKPNT_DIR        39
 #define PEND_JOB_PREEMPTED     40
+#define PEND_JGROUP_LIMIT      41
 
 /* Queue and sys reasons
  */
@@ -626,20 +627,23 @@ struct submig {
 
 /* Job group counters
  */
-#define JGRP_COUNT_NJOBS   0
-#define JGRP_COUNT_PEND    1
-#define JGRP_COUNT_NPSUSP  2
-#define JGRP_COUNT_NRUN    3
-#define JGRP_COUNT_NSSUSP  4
-#define JGRP_COUNT_NUSUSP  5
-#define JGRP_COUNT_NEXIT   6
-#define JGRP_COUNT_NDONE   7
-#define NUM_JGRP_COUNTERS 8
+typedef enum {
+    JGRP_COUNT_NJOBS,
+    JGRP_COUNT_PEND,
+    JGRP_COUNT_NPSUSP,
+    JGRP_COUNT_NRUN,
+    JGRP_COUNT_NSSUSP,
+    JGRP_COUNT_NUSUSP,
+    JGRP_COUNT_NEXIT,
+    JGRP_COUNT_NDONE,
+    NUM_JGRP_COUNTERS
+} jgrp_count_;
 
 struct jobGroupInfo {
     char *name;
     char *path;
     int counts[NUM_JGRP_COUNTERS + 1];
+    int max_jobs;
 };
 
 struct jobAttrInfoEnt {
@@ -889,6 +893,7 @@ struct job_dep {
  */
 struct job_group {
     char *group_name;
+    int max_jobs;
 };
 
 #define USER_GRP          0x1
@@ -1325,6 +1330,7 @@ struct jgrpLog {
     char user[MAXLSFNAMELEN];
     int status;
     time_t submit_time;
+    int max_jobs;
 };
 
 union  eventLog {

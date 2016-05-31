@@ -1317,6 +1317,7 @@ replay_newjgrp(char *file, int num)
     jgrp.group_name = strdup(jgrp_log->path);
     auth.uid = jgrp_log->uid;
     strcpy(auth.lsfUserName, jgrp_log->user);
+    jgrp.max_jobs = jgrp_log->max_jobs;
 
     add_job_group(&jgrp, &auth);
 
@@ -2114,6 +2115,7 @@ log_newjgrp(struct jgTreeNode *jgrp)
     logPtr->eventLog.jgrpLog.uid = JGRP_DATA(jgrp)->userId;
     logPtr->eventLog.jgrpLog.status = JGRP_DATA(jgrp)->status;
     logPtr->eventLog.jgrpLog.submit_time = JGRP_DATA(jgrp)->submit_time;
+    logPtr->eventLog.jgrpLog.max_jobs = JGRP_DATA(jgrp)->max_jobs;
 
     if (putEventRec(__func__) < 0) {
         ls_syslog(LOG_ERR, "\
