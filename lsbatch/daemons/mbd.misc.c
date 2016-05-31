@@ -1228,6 +1228,10 @@ checkParams(struct infoReq *req, struct parameterInfo *reply)
     reply->maxStreamRecords = mbdParams->maxStreamRecords;
     reply->freshPeriod = freshPeriod;
     reply->maxSbdConnections = maxSbdConnections;
+    if (mbdParams->preemptableResources)
+        reply->preemptableResources = mbdParams->preemptableResources;
+    else
+        reply->preemptableResources = "";
 }
 
 void
