@@ -18,6 +18,8 @@ Release notes for OpenLava versions
    MXJ parameter. This allows users to sort hosts based on MXJ.
 -- Implement NUMA awareness and binding of processes based on the
    machine's NUMA architecture.
+-- Fix xdr error in mbatchd if there are no job groups defined
+   and user run bjgroups command.
 
 3.3.1
 ======
