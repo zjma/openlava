@@ -236,11 +236,24 @@ int
 matchName(char *pattern, char *name)
 {
     int i, ip;
+    char *p1, *n1;
 
     if (!pattern || !name)
         return false;
 
     ip = (int)strlen(pattern);
+    if (pattern[0]=='*' && pattern[1]!='\0') {
+        if (pattern[ip-1]=='*')
+            p1=strndup(pattern+1, ip-2);
+        else
+            p1=strdup(pattern+1);
+        n1=strstr(name, p1);
+        free (p1);
+        if (n1==NULL)
+            return false;
+        else
+            return true;
+    }
     for (i = 0; i < ip && pattern[i] != '['; i++) {
 
         if (pattern[i] == '*')

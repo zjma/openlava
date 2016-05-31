@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
+#ifdef HAVE_HWLOC_H
+#include <numa.h>
+#endif
 #include "../../lsf/intlib/jidx.h"
 #include "../../lsf/lib/lib.rcp.h"
 #include "../daemons/daemons.h"
@@ -89,7 +92,8 @@ extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
 static void setup_mem_cgroup(struct jobCard *);
 static void rm_mem_cgroup(struct jobCard *);
-static void setup_cpu_bind(struct jobCard *);
+static void setup_cpu_bind(struct jobCard *, int*);
+static int* select_cpu_to_bind(struct jobCard *);
 
 static struct passwd *
 __getpwnam__(const char *name)
@@ -133,6 +137,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
 {
     struct jobSpecs *jobSpecsPtr;
     int pid;
+    int *cores;
 
     jobSpecsPtr = &(jobCardPtr->jobSpecs);
     if (logclass & LC_EXEC) {
@@ -144,16 +149,36 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
     jobSpecsPtr->reasons = 0;
     jobSpecsPtr->subreasons = 0;
 
+    cores = select_cpu_to_bind(jobCardPtr);
     pid = fork();
 
     if (pid < 0) {
         ls_syslog(LOG_ERR, "\
 %s: ohmygosh fork() failed starting job %s: %m",
                   __func__, lsb_jobid2str(jobSpecsPtr->jobId));
+        FREEUP(cores);
         return ERR_FORK_FAIL;
     }
 
+    /* centos6 does not support hwloc API to bind memory on process pid, so
+     * let the child process bind itself to local memory
+     */
     if (pid == 0) {
+#ifdef HAVE_HWLOC_H
+        int localonly;
+
+        /* Hard code for Cadence case!!!
+         * Replace following code with "affinity" interface.
+         */
+        if (daemonParams[SBD_BIND_CPU].paramValue &&
+                strstr(jobSpecsPtr->resReq, "affinity")) {
+            if (strstr(jobSpecsPtr->resReq, "membind=localonly"))
+                localonly = 1;
+            else
+                localonly = 0;
+            bind_to_numa_mem(cores, localonly);
+        }
+#endif
         closeBatchSocket();
         sbdChildCloseChan (chfd);
         execJob(jobCardPtr, chfd);
@@ -178,7 +203,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
 
     /* Setup the cpu binding
      */
-    setup_cpu_bind(jobCardPtr);
+    setup_cpu_bind(jobCardPtr, cores);
 
     return ERR_NO_ERROR;
 }
@@ -280,8 +305,8 @@ createJobTmpDir(struct jobCard *jobCardPtr)
 static void
 execJob(struct jobCard *jobCardPtr, int chfd)
 {
-    static char fname[] = "execJob";
     int i;
+    int cc;
     struct jobSpecs *jobSpecsPtr;
     struct hostent *fromHp;
     struct lenData jf;
@@ -307,10 +332,11 @@ execJob(struct jobCard *jobCardPtr, int chfd)
         || !PURE_INTERACTIVE(jobSpecsPtr)) {
 
         xdrmem_create(&xdrs, buf, MSGSIZE, XDR_DECODE);
-        if (readDecodeHdr_(chfd, buf, chanRead_, &xdrs, &replyHdr) < 0) {
+        cc = readDecodeHdr_(chfd, buf, chanRead_, &xdrs, &replyHdr);
+        if (cc < 0) {
             ls_syslog(LOG_WARNING, "\
-%s: Fail to get go-ahead from mbatchd; abort job %s",
-                      fname, lsb_jobid2str(jobSpecsPtr->jobId));
+%s: Fail to get go-ahead from mbatchd; abort job %s cc %d %m",
+                      __func__, lsb_jobid2str(jobSpecsPtr->jobId), cc);
 
             jobSetupStatus(JOB_STAT_PEND, PEND_JOB_START_FAIL, jobCardPtr);
         }
@@ -321,7 +347,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     ls_syslog(LOG_DEBUG, "\
 %s: Got job start ok from mbatchd for job <%s>",
-              fname, lsb_jobid2str(jobSpecsPtr->jobId));
+              __func__, lsb_jobid2str(jobSpecsPtr->jobId));
 
     if (acctMapTo(jobCardPtr) < 0)  {
         jobSetupStatus(JOB_STAT_PEND, PEND_NO_MAPPING, jobCardPtr);
@@ -334,7 +360,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
     if (setJobEnv(jobCardPtr) < 0) {
         ls_syslog(LOG_DEBUG, "\
-%s: setJobEnv() failed for job <%s>", fname,
+%s: setJobEnv() failed for job <%s>", __func__,
                   lsb_jobid2str(jobSpecsPtr->jobId));
         jobSetupStatus(JOB_STAT_PEND, PEND_JOB_ENV, jobCardPtr);
     }
@@ -435,7 +461,7 @@ execJob(struct jobCard *jobCardPtr, int chfd)
 
             ls_syslog(LOG_DEBUG, "\
 %s: job %s execArgv[0] is %s, execArg[1] is %s",
-                      fname,
+                      __func__,
                       lsb_jobid2str(jobSpecsPtr->jobId),
                       execArgv[0],
                       execArgv[1]);
@@ -477,7 +503,7 @@ LSF: Unable to execute jobfile %s job %s: %s\n",
             if (logclass & LC_EXEC)
                 ls_syslog(LOG_DEBUG2, "\
 %s: options=%x sock=%d shellPath=%s",
-                          fname, jobSpecsPtr->options,
+                          __func__, jobSpecsPtr->options,
                           chanSock_(chfd), shellPath);
 
             putenv("PATH=/bin:/usr/bin:/local/bin:/usr/local/bin");
@@ -875,6 +901,16 @@ setJobEnv(struct jobCard *jp)
 
     sprintf (val, "%d", jp->w_status);
     putEnv ("LSB_JOBEXIT_STAT", val);
+
+    sprintf (val, "%d", jp->jobSpecs.maxNumProcessors);
+    putEnv ("LSB_MAX_NUM_PROCESSORS", val);
+
+    sprintf (val, "%d", jp->jobSpecs.numToHosts);
+    putEnv ("LSB_DJOB_NUMPROC", val);
+
+    putEnv ("LSB_JOB_EXECUSER", jp->execUsername);
+
+    putEnv ("LSB_EFFECTIVE_RSRCREQ", jp->jobSpecs.resReq);
 
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
     return 0;
@@ -2144,7 +2180,7 @@ addJob (struct jobSpecs *jobSpecs, int mbdVersion)
     }
 
     if (daemonParams[SBD_BIND_CPU].paramValue) {
-        int num;
+        int *num;
 
         num = find_bound_core(jobSpecs->jobPid);
         ls_syslog(LOG_DEBUG, "\
@@ -2336,9 +2372,9 @@ jobGone(struct jobCard *jp)
 
     /* Clean up the allocated core
      */
-    if (jp->core_num != -1) {
-        free_core(jp->core_num);
-        jp->core_num = -1;
+    if (jp->core_num != NULL) {
+        free_core(jp->jobSpecs.numToHosts, jp->core_num);
+        FREEUP(jp->core_num);
     }
 
     if (jp->jobSpecs.actPid == 0 && jp->exitPid == -1) {
@@ -2611,6 +2647,7 @@ deallocJobCard(struct jobCard *jobCard)
     freeWeek (jobCard->week);
     freeToHostsEtc (&jobCard->jobSpecs);
 
+    FREEUP(jobCard->core_num);
 
     if (jobCard->runRusage.npgids > 0) {
         FREEUP(jobCard->runRusage.pgid);
@@ -3890,7 +3927,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
 
     jp->postJobStarted = 0;
     jp->userJobSucc = FALSE;
-    jp->core_num = -1;
+    jp->core_num = NULL;
 
     return 0;
 }
@@ -4118,38 +4155,51 @@ rm_mem_cgroup(struct jobCard *jPtr)
     }
 }
 
+/* select_cpu_to_bind()
+ */
+static int*
+select_cpu_to_bind(struct jobCard *jPtr)
+{
+    int *selected;
+
+    if (! daemonParams[SBD_BIND_CPU].paramValue)
+        return NULL;
+
+    selected = find_free_core(jPtr->jobSpecs.numToHosts);
+    if (!selected) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to find free core for job %d", __func__,
+              jPtr->jobSpecs.jobId);
+    }
+    return selected;
+}
+
 /* setup_cpu_bind()
  */
 static void
-setup_cpu_bind(struct jobCard *jPtr)
+setup_cpu_bind(struct jobCard *jPtr, int* selected)
 {
     int cc;
-    int num;
 
-    if (! daemonParams[SBD_BIND_CPU].paramValue)
+    if (!selected)
         return;
 
-    num = find_free_core();
-    if (num < 0) {
-        ls_syslog(LOG_ERR, "\
-%s: failed to find a free core for job %d pid %d", __func__,
-                  jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
-        return;
-    }
-
-    cc = bind_to_core(jPtr->jobSpecs.jobPid, num);
+    cc = bind_to_core(jPtr->jobSpecs.jobPid,
+                      jPtr->jobSpecs.numToHosts,
+                      selected);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
 %s: failed to bind to core %d job %d pid %d", __func__,
-                  num, jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
+                  selected[0], jPtr->jobSpecs.jobId, jPtr->jobSpecs.jobPid);
+        FREEUP(selected);
         return;
     }
 
     if (logclass & LC_EXEC) {
-	ls_syslog(LOG_INFO, "%\
+        ls_syslog(LOG_INFO, "%\
 s: job %d pid %d bound to core %d", __func__, jPtr->jobSpecs.jobId,
-		  jPtr->jobSpecs.jobPid, num);
+		  jPtr->jobSpecs.jobPid, selected[0]);
     }
 
-    jPtr->core_num = num;
+    jPtr->core_num = selected;
 }

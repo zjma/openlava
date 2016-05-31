@@ -838,6 +838,10 @@ typedef enum profCounterType {
 
 
 extern LIST_T *hostList;
+/* Build in getLsbUsable() as proxy link of usable hosts.
+ */
+extern link_t *hosts_link;
+extern int num_finish;
 extern struct hTab            hostTab;
 extern struct jData           *jDataList[];
 extern struct migJob          *migJobList;
@@ -959,6 +963,7 @@ extern void                 adjLsbLoad(struct jData *, int, bool_t);
 extern int                  countHostJobs(struct hData *);
 extern void                 getLsbResourceInfo(void);
 extern struct resVal *      getReserveValues(struct resVal *,struct resVal *);
+extern int                  hasResSpanHosts(struct resVal *);
 extern void                 getLsfHostInfo(int);
 extern struct hData *       getHostByType(char *);
 
@@ -1519,5 +1524,6 @@ extern int get_glb_tokens_size(int *);
 extern int encode_glb_tokens(XDR *, struct LSFHeader *);
 extern int count_stream(char *);
 struct glb_token *recover_glb_allocation_state(void);
+extern bool_t jobgroup_limit_ok(struct jData *);
 
 #endif /* _MBD_HEADER_ */

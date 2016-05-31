@@ -82,7 +82,7 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
     jp->jobSpecs.subreasons = 0;
     /* Initialize the core number
      */
-    jp->core_num = -1;
+    jp->core_num = NULL;
 
     if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
 	if (lockHosts (jp) < 0) {
@@ -95,6 +95,7 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
 	    goto sendReply;
         }
     }
+
     jp->runTime = 0;
     if (initJobCard(jp, &jobSpecs, (int *)&reply) < 0) {
 

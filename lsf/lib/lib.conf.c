@@ -152,6 +152,10 @@ struct builtIn builtInRes[] = {
     },
     {"slots",
      "Available slots (MBD slots resource)",
+     LS_NUMERIC, DECR, RESF_MBD_FREE_SLOTS, 0
+    },
+    {"maxslots",
+     "Available MXJ slots (MBD MXJ resource)",
      LS_NUMERIC, DECR, RESF_MBD_MXJ, 0
     },
     { NULL,

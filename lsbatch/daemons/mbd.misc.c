@@ -1483,8 +1483,21 @@ updHostLeftRusageMem(struct jData *jobP, int order)
 
 
             if (resValPtr->duration != INFINIT_INT)
-
                 return;
+
+            if ((hasResSpanHosts(jobP->shared->resValPtr)
+                 || hasResSpanHosts(jobP->qPtr->resValPtr))
+                && (jobP->shared->jobBill.numProcessors > 1)
+                && (jobP->shared->jobBill.numProcessors == jobP->shared->jobBill.maxNumProcessors)) {
+                resMem /= jobP->shared->jobBill.numProcessors;
+                if (logclass & (LC_TRACE | LC_SCHED )) {
+                    ls_syslog(LOG_DEBUG, "\
+%s: Updating job <%s>'s reserved mem to <%f> as all processors of the job are allocated on the same host.",
+                    fname,
+                    lsb_jobid2str(jobP->jobId),
+                    resMem);
+                }
+            }
 
             for (numHost = 0; numHost < jobP->numHostPtr; numHost++) {
                 if (jobP->hPtr[numHost]->leftRusageMem == INFINIT_LOAD){

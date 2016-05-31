@@ -51,14 +51,14 @@ int      push_link(link_t *, void *);
 int      enqueue_link(link_t *, void *);
 void     *dequeue_link(link_t *);
 int      enqueue_sort_link(link_t *,
-			   void *,
-			   void *,
-			   int (*cmp)(const void *,
-				      const void *));
+                           void *,
+                           void *,
+                           int (*cmp)(const void *,
+                                      const void *));
 void     *pop_link(link_t *);
 void     *visit_link(link_t *);
 void     traverse_init(const link_t *,
-		      linkiter_t *);
+                      linkiter_t *);
 void     *traverse_link(linkiter_t *);
 
 #endif /* __LINK__ */

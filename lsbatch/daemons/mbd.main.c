@@ -91,6 +91,12 @@ time_t now;
 long   schedSeqNo = 0;
 struct hTab uDataList;
 
+/* Link to usable proxy hosts and counter of
+ * finished jobs.
+ */
+link_t *hosts_link = NULL;
+int num_finish = 0;
+
 /* Host data main global data structures.
  */
 struct hTab hostTab;
@@ -139,7 +145,6 @@ struct sharedResource **sharedResources = NULL;
 int sharedResourceUpdFactor = INFINIT_INT;
 long   schedSeqNo;
 int    schedule;
-int    scheRawLoad;
 int lsbModifyAllJobs = FALSE;
 int max_job_sched = INT32_MAX;
 int qsort_jobs = 0;
@@ -714,6 +719,10 @@ processClient(struct clientNode *client, int *needFree)
         case BATCH_STATUS_MSG_ACK:
         case BATCH_STATUS_JOB:
         case BATCH_RUSAGE_JOB:
+            if (logclass & LC_SCHED)
+            ls_syslog(LOG_INFO, "\
+%s: mSchedStage is now 0x%x", __func__, mSchedStage);
+
             TIMEIT(0, (statusReqCC = do_statusReq(&xdrs, s, &from,
                                                   &schedule1, &reqHdr)),
                    "do_statusReq()");
@@ -723,6 +732,7 @@ processClient(struct clientNode *client, int *needFree)
             }
             if (client->lastTime == 0)
                 nSbdConnections++;
+
             break;
         case BATCH_STATUS_CHUNK:
             TIMEIT(0, (statusReqCC = do_chunkStatusReq(&xdrs, s, &from,
@@ -859,6 +869,7 @@ endLoop:
          && reqHdr.opCode != BATCH_JGRP_ADD
          && reqHdr.opCode != BATCH_JGRP_DEL
          && reqHdr.opCode != BATCH_TOKEN_INFO)
+         && reqHdr.opCode != BATCH_JGRP_DEL)
         || statusReqCC < 0) {
         shutDownClient(client);
         return -1;
@@ -1159,6 +1170,7 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_JOB_PEEK
         || req == BATCH_JOBDEP_INFO
         || req == BATCH_TOKEN_INFO) {
+        || req == BATCH_JOBDEP_INFO) {
         return 1;
     }
 

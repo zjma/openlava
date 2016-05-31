@@ -88,7 +88,8 @@ static bool_t isSameUser(struct lsfAuth *, int, char *);
 static struct jgTreeNode *tree_new_node(struct jgTreeNode *,
                                         const char *,
                                         const char *,
-                                        struct lsfAuth *);
+                                        struct lsfAuth *,
+                                        struct job_group *);
 
 char treeFile[48];
 
@@ -114,6 +115,7 @@ treeInit(void)
     JGRP_DATA(groupRoot)->userName = safeSave(lsbSys);
     JGRP_DATA(groupRoot)->status = JGRP_ACTIVE;
     JGRP_DATA(groupRoot)->numRef = 0;
+    JGRP_DATA(groupRoot)->max_jobs = INT32_MAX;
     sprintf(treeFile, "/tmp/jgrpTree.%d", mbdPid);
 
     /* Initialize the hash table of nodes and insert
@@ -1358,7 +1360,7 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
     sprintf(path, "/%s", node);
     e = h_getEnt_(&nodeTab, path);
     if (e == NULL) {
-        jgrp = tree_new_node(groupRoot, node, path, auth);
+        jgrp = tree_new_node(groupRoot, node, path, auth, jgPtr);
     } else {
         jgrp = e->hData;
     }
@@ -1370,7 +1372,13 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
         sprintf(path + strlen(path), "/%s", node);
         e = h_getEnt_(&nodeTab, path);
         if (e == NULL) {
-            jgrp = tree_new_node(parent, node, path, auth);
+            jgrp = tree_new_node(parent, node, path, auth, jgPtr);
+            if (jgrp == NULL) {
+                ls_syslog(LOG_ERR, "\
+%s: error while adding node %s path %s to parent %s", __func__,
+                          node, path, parent->name);
+                    return LSBE_BAD_GROUP;
+            }
         } else {
             jgrp = e->hData;
         }
@@ -1431,6 +1439,10 @@ encode_nodes(XDR *xdrs,
                 goto bail;
         }
 
+        cc = xdr_int(xdrs, &g->max_jobs);
+        if (cc != true)
+            goto bail;
+
         ++(*num);
 
       next:
@@ -1487,7 +1499,7 @@ tree_size(int *num)
 
         cc = cc + ALIGNWORD_(strlen(n->path))
             + ALIGNWORD_(strlen(n->name))
-            + NUM_JGRP_COUNTERS * sizeof(int);
+            + NUM_JGRP_COUNTERS * sizeof(int) + sizeof(int);
 
         (*num)++;
       next:
@@ -1567,22 +1579,46 @@ static struct jgTreeNode *
 tree_new_node(struct jgTreeNode *parent,
               const char *name,
               const char *path,
-              struct lsfAuth *auth)
+              struct lsfAuth *auth,
+              struct job_group *jg)
 {
+    struct jgTreeNode *parent2;
     struct jgTreeNode *jgrp;
+    struct jgrpData *gData;
+    struct jgrpData *gData2;
     hEnt *e;
 
+    parent2 = parent;
     jgrp = treeNewNode(JGRP_NODE_GROUP);
+
+    gData = jgrp->ndInfo;
+    gData->max_jobs = jg->max_jobs;
+
+    while (parent != groupRoot) {
+        gData2 = parent->ndInfo;
+        if (gData->max_jobs > gData2->max_jobs) {
+            ls_syslog(LOG_ERR, "\
+%s: max_jobs %d of group %s greater then parent %s max_jobs %d", __func__,
+                      gData->max_jobs, name,
+                      gData2->max_jobs, parent->path);
+            freeTreeNode(jgrp);
+            return NULL;
+        }
+        parent = parent->parent;
+    }
+
     jgrp->name = strdup(name);
     jgrp->path = strdup(path);
-    treeInsertChild(parent, jgrp);
+    /* put me under the original parent
+     */
+    treeInsertChild(parent2, jgrp);
     e = h_addEnt_(&nodeTab, jgrp->path, NULL);
     e->hData = jgrp;
 
-    JGRP_DATA(jgrp)->userId = auth->uid;
-    JGRP_DATA(jgrp)->userName = safeSave(auth->lsfUserName);
-    JGRP_DATA(jgrp)->status = JGRP_ACTIVE;
-    JGRP_DATA(jgrp)->submit_time = time(NULL);
+    gData->userId = auth->uid;
+    gData->userName = safeSave(auth->lsfUserName);
+    gData->status = JGRP_ACTIVE;
+    gData->submit_time = time(NULL);
 
     /* log only if not replaying
      */
@@ -1648,4 +1684,56 @@ check_job_group(struct jData *jPtr, struct lsfAuth *auth)
     jgrp.group_name = jPtr->shared->jobBill.job_group;
 
     return add_job_group(&jgrp, auth);
+}
+
+/* jobgroup_limit_ok()
+ */
+bool_t
+jobgroup_limit_ok(struct jData *jPtr)
+{
+    hEnt *ent;
+    struct jgrpData *gData;
+    struct jgrpData *gData2;
+    struct jgTreeNode *jgptr;
+    struct jgTreeNode *parent;
+
+    if (! (jPtr->shared->jobBill.options2 & SUB2_JOB_GROUP))
+        return true;
+
+    ent = h_getEnt_(&nodeTab, jPtr->shared->jobBill.job_group);
+    if (ent == NULL) {
+        ls_syslog(LOG_WARNING, "\
+%s: job %s has  SUB2_JOB_GROUP flag on but no entry in groupTree?",
+                  __func__, lsb_jobid2str(jPtr->jobId));
+        return true;
+    }
+
+    /* First compare yourself to yourself and then to
+     * your parents and ancestors up to the root.
+     */
+    parent = jgptr = ent->hData;
+    gData2 = gData = (struct jgrpData *)jgptr->ndInfo;
+
+    do {
+        if ((gData2->counts[JGRP_COUNT_NRUN]
+            + gData2->counts[JGRP_COUNT_NSSUSP]
+            + gData2->counts[JGRP_COUNT_NUSUSP]) >= gData->max_jobs ) {
+            if (logclass & LC_JGRP) {
+                ls_syslog(LOG_INFO, "\
+%s: job %s reached group limit %d of parent %s", __func__,
+                          lsb_jobid2str(jPtr->jobId),
+                          (gData2->counts[JGRP_COUNT_NRUN]
+                           + gData2->counts[JGRP_COUNT_NSSUSP]
+                           + gData2->counts[JGRP_COUNT_NUSUSP]),
+                          jgptr->parent->name);
+            }
+            return false;
+        }
+
+        parent = parent->parent;
+        gData2 = (struct jgrpData *)parent->ndInfo;
+
+    } while (parent != groupRoot);
+
+    return true;
 }

@@ -54,7 +54,8 @@ typedef enum {
     STDOUT_FAIL,
     STDOUT_OK,
     SYNC_FAIL,
-    SYNC_OK
+    SYNC_OK,
+    CHILD_EXIT
 } libNiosReply;
 
 struct lslibNiosHdr {

@@ -274,6 +274,17 @@ parseResReq(char *resReq,
             return cc;
     }
 
+    /* Hard code for Cadence case!!!
+     * Only support two strings about affinity.
+     * Replace following code with a fucntion parseAffinity().
+     */
+    if (strstr(resReq, "affinity")) {
+        if (!strstr(resReq, "affinity[core(1)*1:cpubind=core]") &&
+            !strstr(resReq, "affinity[core(1,exclusive=(core,alljobs)):cpubind=core:membind=localonly:distribute=pack]")) {
+            return PARSE_BAD_EXP;
+        }
+    }
+
     return(PARSE_OK);
 }
 

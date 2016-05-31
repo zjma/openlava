@@ -70,7 +70,7 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
         FREEUP(submitReq->loginShell);
         FREEUP(submitReq->schedHostType);
         FREEUP(submitReq->userGroup);
-	_free_(submitReq->job_group);
+        _free_(submitReq->job_group);
 
         if (numAskedHosts > 0) {
             for (i = 0; i < numAskedHosts; i++)
@@ -333,14 +333,14 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
         return false;
 
     if (xdrs->x_op == XDR_ENCODE)
-	itime = signalReq->chkPeriod;
+        itime = signalReq->chkPeriod;
 
     if (signalReq->sigValue == SIG_CHKPNT
         || signalReq->sigValue == SIG_DELETE_JOB
         || signalReq->sigValue == SIG_ARRAY_REQUEUE) {
         if (! xdr_int(xdrs, &itime)
-	    || !xdr_int(xdrs, &(signalReq->actFlags))) {
-	    return false;
+            || !xdr_int(xdrs, &(signalReq->actFlags))) {
+            return false;
         }
     }
 
@@ -350,7 +350,7 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
 
     if (xdrs->x_op == XDR_DECODE) {
         jobId32To64(&signalReq->jobId,jobArrId,jobArrElemId);
-	signalReq->chkPeriod = itime;
+        signalReq->chkPeriod = itime;
     }
 
     return true;
@@ -358,8 +358,8 @@ xdr_signalReq(XDR *xdrs, struct signalReq *signalReq, struct LSFHeader *hdr)
 
 bool_t
 xdr_submitMbdReply(XDR *xdrs,
-		   struct submitMbdReply *reply,
-		   struct LSFHeader *hdr)
+                   struct submitMbdReply *reply,
+                   struct LSFHeader *hdr)
 {
     static char queueName[MAX_LSB_NAME_LEN];
     static char jobName[MAX_CMD_DESC_LEN];
@@ -472,8 +472,8 @@ xdr_parameterInfo(XDR *xdrs,
             || ! xdr_int(xdrs, &paramInfo->freshPeriod))
             return false;
 
-	if (! xdr_int(xdrs, &paramInfo->maxSbdConnections))
-	    return false;
+        if (! xdr_int(xdrs, &paramInfo->maxSbdConnections))
+            return false;
     }
 
     return true;
@@ -512,7 +512,7 @@ xdr_jobInfoHead(XDR *xdrs, struct jobInfoHead *jobInfoHead,
             FREEUP (jobIds);
             numJobs = 0;
             if ((jobIds = calloc (jobInfoHead->numJobs,
-				  sizeof(LS_LONG_INT))) == NULL) {
+                                  sizeof(LS_LONG_INT))) == NULL) {
                 lsberrno = LSBE_NO_MEM;
                 return false;
             }
@@ -525,7 +525,7 @@ xdr_jobInfoHead(XDR *xdrs, struct jobInfoHead *jobInfoHead,
             numHosts = 0;
             FREEUP (hostNames);
             if ((hostNames = calloc(jobInfoHead->numHosts,
-				    sizeof(char *))) == NULL) {
+                                    sizeof(char *))) == NULL) {
                 lsberrno = LSBE_NO_MEM;
                 return false;
             }
@@ -746,8 +746,8 @@ xdr_jobInfoReply(XDR *xdrs,
     }
 
     if (!xdr_arrayElement(xdrs,
-			  (char *)(jobInfoReply->jobBill),
-			  hdr,
+                          (char *)(jobInfoReply->jobBill),
+                          hdr,
                           xdr_submitReq)) {
         if (xdrs->x_op == XDR_DECODE) {
             for (j = 0; j < jobInfoReply->numToHosts; j++)
@@ -1108,8 +1108,8 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
         return false;
 
     if (hdr->version >= 32) {
-	if (! xdr_int(xdrs, &s->numBORROWED))
-	    return false;
+        if (! xdr_int(xdrs, &s->numBORROWED))
+            return false;
     }
 
     return true;
@@ -1559,10 +1559,10 @@ xdr_groupInfoEnt(XDR *xdrs, struct groupInfoEnt *gInfo,
     }
 
     if (hdr->version >= 32) {
-	if (! xdr_var_string(xdrs, &gInfo->group_slots))
-	    return false;
-	if (! xdr_int(xdrs, &gInfo->max_slots))
-	    return false;
+        if (! xdr_var_string(xdrs, &gInfo->group_slots))
+            return false;
+        if (! xdr_int(xdrs, &gInfo->max_slots))
+            return false;
     }
 
     return true;
@@ -1986,10 +1986,10 @@ bool_t
 xdr_jobdep(XDR *xdrs, struct job_dep *jobdep, struct LSFHeader *hdr)
 {
     if (! xdr_wrapstring(xdrs, &jobdep->dependency)
-	|| ! xdr_wrapstring(xdrs, &jobdep->jobid)
-	|| ! xdr_int(xdrs, &jobdep->jstatus)
-	|| ! xdr_int(xdrs, &jobdep->depstatus))
-	return false;
+        || ! xdr_wrapstring(xdrs, &jobdep->jobid)
+        || ! xdr_int(xdrs, &jobdep->jstatus)
+        || ! xdr_int(xdrs, &jobdep->depstatus))
+        return false;
 
     return true;
 }
@@ -1997,8 +1997,9 @@ xdr_jobdep(XDR *xdrs, struct job_dep *jobdep, struct LSFHeader *hdr)
 bool_t
 xdr_jobgroup(XDR *xdrs, struct job_group *jgPtr, struct LSFHeader *hdr)
 {
-    if (! xdr_wrapstring(xdrs, &jgPtr->group_name))
-	return false;
+    if (! xdr_wrapstring(xdrs, &jgPtr->group_name)
+        || !xdr_int(xdrs, &jgPtr->max_jobs))
+        return false;
 
     return true;
 }

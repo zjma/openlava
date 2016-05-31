@@ -89,7 +89,12 @@ nb_read_fix(int s, char *buf, int len)
 	{
             gettimeofday(&now, &junk);
 	    if (US_DIFF(now, start) > IO_TIMEOUT * 1000) {
-		errno = ETIMEDOUT;
+                // channle is valid, give a chance to select again
+                if (len == length) {
+                    errno = EAGAIN;
+                } else {
+                    errno = ETIMEDOUT;
+                }
 		return -1;
 	    }
 	    millisleep_(IO_TIMEOUT / 20);

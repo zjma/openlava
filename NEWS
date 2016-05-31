@@ -1,9 +1,47 @@
 Release notes for OpenLava versions
 
-3.3.0
+3.3.2
+=====
+
+-- Remove the check if a group name is also a hostname as
+   there can be a host on the network not part of the cluster
+   with the same name.
+-- Add the noheader option for bjobs.
+-- Add LSB_MAX_NUM_PROCESSORS, LSB_DJOB_NUMPROC, LSB_JOB_EXECUSER
+   and LSB_EFFECTIVE_RSRCREQ variables in the job environment.
+-- When a multiprocessor job (-n) specifies memory rusage and span[hosts=1]
+   the memory rusage applies to the entire job instead of each slots
+   of the job.
+-- Fix a bug in lsb.log which was causing 'bsub -K' event being
+   badly interpreted by library which printed "Bad event format".
+-- Implement built in resource maxslots which represents the MBD
+   MXJ parameter. This allows users to sort hosts based on MXJ.
+-- Implement NUMA awareness and binding of processes based on the
+   machine's NUMA architecture.
+-- Fix xdr error in mbatchd if there are no job groups defined
+   and user run bjgroups command.
+-- Implemented the job group limit 'bgadd -L n /x/y/z'. This allows
+   the users to set running job limits at different level of the job group
+   hierachy. If the limit is reached jobs attached to the group will be
+   pending with reason "The job group limit has been reached"
+
+3.3.1
 ======
 
-3.3 official release
+-- Update the lsb.queues man page describing the OWNERSHIP policy.
+-- Improve error message should sbatchd failed to get go ahead
+   from mbatchd,
+-- Fix a bug in LIM name resolution should the caller be using
+   127.0.0.1
+-- Add * pattern in job name.
+-- Fix bug in parsing all hosts in groups in lsb.hosts.
+-- Introduced new performance enhancement parameters in lsb.params.
+-- Fix res/nios blocking problems preventing olmake to run
+   properly.
+-- Fix nios when NIOS_RWAIT_SELECT is set in lsf.conf.
+
+3.3.0 official release
+=======
 
 -- Implemented get_glb_tokens() to get tokens from the Global License Broker
    and populate the host and display it with bhosts -s.
@@ -53,6 +91,7 @@ Release notes for OpenLava versions
 3.2.1
 ======
 -- Fix the parsing algorithm for compact host name.
+-- Fix a bug in bmgroup where by mistake the -s and -r options were dropped.
 
 3.2.0
 ======

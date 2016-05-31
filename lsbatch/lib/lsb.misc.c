@@ -23,7 +23,7 @@ void
 initTab(struct hTab *tabPtr)
 {
     if (tabPtr) {
-        h_initTab_ (tabPtr, 50);
+        h_initTab_ (tabPtr, 10891);
     }
 }
 
