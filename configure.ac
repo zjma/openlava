@@ -52,6 +52,23 @@ if test "x$ac_compiler_gnu" = xyes; then
     CFLAGS="$CFLAGS -Wall -ggdb -O0 -Wno-switch -fPIC -rdynamic"
 fi
 
+# --with-hwloc to turn on numa support
+AM_CONDITIONAL([HWLOC], [false])
+AC_ARG_WITH(
+    [hwloc],
+    [AS_HELP_STRING(
+        [--with-hwloc[[=DIR]]],
+        [Specify path to hwloc installation]
+    )],
+    [CPPFLAGS="-I$withval/include $CPPFLAGS"
+        LDFLAGS="-L$withval/lib -L$withval/lib64 $LDFLAGS"
+        AC_CHECK_HEADERS([hwloc.h], [], [AC_MSG_ERROR([cannot build openlava without hwloc])])
+        AC_CHECK_LIB([hwloc], [hwloc_topology_init], [], [AC_MSG_ERROR([cannot build openlava without hwloc])])
+        AC_CHECK_HEADER([numa.h], [], [AC_MSG_ERROR([cannot build openlava without numa])])
+        AC_CHECK_LIB([numa], [numa_bitmask_alloc], [], [AC_MSG_ERROR([cannot build openlava without numa])])
+        AM_CONDITIONAL([HWLOC], [true])
+])
+
 AC_CHECK_HEADERS(ncurses.h,[cf_cv_ncurses_header="ncurses.h"], [
  AC_MSG_ERROR([cannot build openlava without ncurses])
 ])

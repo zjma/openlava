@@ -26,9 +26,9 @@ void
 usage(const char *cmd)
 {
     if (strstr(cmd, "bugroup") != NULL)
-	fprintf(stderr, "%s [-h] [-V] [group_name ...]\n", cmd);
+	fprintf(stderr, "%s [-h] [-V] [-r] [group_name ...]\n", cmd);
     else
-        fprintf(stderr, "%s [-h] [-V] [-s] [group_name ...]\n", cmd);
+        fprintf(stderr, "%s [-h] [-V] [-r] [-s] [group_name ...]\n", cmd);
 }
 
 int
@@ -50,7 +50,7 @@ main(int argc, char **argv)
     }
 
     slots = 0;
-    while ((cc = getopt(argc, argv, "Vhs")) != EOF) {
+    while ((cc = getopt(argc, argv, "Vhrs")) != EOF) {
         switch (cc) {
 	    case 'r':
 		options |= GRP_RECURSIVE;

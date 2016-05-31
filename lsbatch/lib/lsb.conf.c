@@ -104,22 +104,22 @@ static struct userInfoEnt *getUserData(char *);
 static struct hostInfoEnt *getHostData(char *);
 static struct queueInfoEnt *getQueueData(char *);
 
-static void initParameterInfo ( struct parameterInfo *);
-static void freeParameterInfo ( struct parameterInfo *);
-static void initUserInfo ( struct userInfoEnt *);
-static void freeUserInfo ( struct userInfoEnt *);
-static void initGroupInfo ( struct groupInfoEnt *);
-static void freeGroupInfo ( struct groupInfoEnt *);
-static void initHostInfo ( struct hostInfoEnt *);
-static void freeHostInfo ( struct hostInfoEnt *);
-static void initQueueInfo ( struct queueInfoEnt *);
-static void freeQueueInfo ( struct queueInfoEnt *);
+static void initParameterInfo(struct parameterInfo *);
+static void freeParameterInfo(struct parameterInfo *);
+static void initUserInfo(struct userInfoEnt *);
+static void freeUserInfo(struct userInfoEnt *);
+static void initGroupInfo(struct groupInfoEnt *);
+static void freeGroupInfo(struct groupInfoEnt *);
+static void initHostInfo(struct hostInfoEnt *);
+static void freeHostInfo(struct hostInfoEnt *);
+static void initQueueInfo(struct queueInfoEnt *);
+static void freeQueueInfo(struct queueInfoEnt *);
 
-int checkSpoolDir ( char *spoolDir );
-int checkJobAttaDir ( char * );
-void freeWorkUser (int);
-void freeWorkHost (int);
-void freeWorkQueue (int);
+int checkSpoolDir(char *spoolDir);
+int checkJobAttaDir(char *);
+void freeWorkUser(int);
+void freeWorkHost(int);
+void freeWorkQueue(int);
 
 static void initThresholds(struct lsInfo *, float *, float *);
 static void getThresh(struct lsInfo *, struct keymap *, float *, float *,
@@ -460,13 +460,12 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
     for (i = 0; keylist[i].key != NULL; i++) {
 
         if (keylist[i].val != NULL && strcmp (keylist[i].val, "")) {
+
             if (i == 0) {
                 ls_syslog(LOG_WARNING, "\
 %s: Ignore LSB_MANAGER value <%s>; use MANAGERS  defined in cluster file instead");
                 lsberrno = LSBE_CONF_WARNING;
-            }
-
-            else if (i == 1) {
+            } else if (i == 1) {
                 pConf->param->defaultQueues = putstr_ (keylist[i].val);
                 if (pConf->param->defaultQueues == NULL) {
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
@@ -475,9 +474,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     freekeyval (keylist);
                     return FALSE;
                 }
-            }
-
-            else if (i == 2) {
+            } else if (i == 2) {
                 pConf->param->defaultHostSpec = putstr_ (keylist[i].val);
                 if (pConf->param->defaultHostSpec == NULL) {
                     ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
@@ -486,8 +483,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     freekeyval (keylist);
                     return FALSE;
                 }
-            }
-            else if (i == 24) {
+            } else if (i == 24) {
 
                 if (checkSpoolDir(keylist[i].val) == 0) {
                     pConf->param->pjobSpoolDir = putstr_ (keylist[i].val);
@@ -504,8 +500,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                                                      "%s: Invalid JOB_SPOOL_DIR!"), __func__); /* catgets 5095 */
                     lsberrno = LSBE_CONF_WARNING;
                 }
-            }
-            else if (i == 32) {
+            } else if (i == 32) {
 
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if (value == INFINIT_INT){
@@ -517,8 +512,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 else{
                     pConf->param->maxAcctArchiveNum = value;
                 }
-            }
-            else if (i == 33) {
+            } else if (i == 33) {
 
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if (value == INFINIT_INT){
@@ -611,10 +605,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 } else {
                     pConf->param->sharedResourceUpdFactor = value;
                 }
-            }
-
-            else if (i == 31)
-            {
+            } else if (i == 31) {
                 int value = 0;
                 value = my_atoi(keylist[i].val, INFINIT_INT, 0);
                 if ( (value < MAX_JOBID_LOW)
@@ -638,13 +629,6 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 {
                     pConf->param->maxJobId = value;
                 }
-            }
-
-            else if (i == 28) {
-                if (strcasecmp(keylist[i].val, "Y") == 0)
-                    pConf->param->scheRawLoad = TRUE;
-                else
-                    pConf->param->scheRawLoad = FALSE;
             } else if (i == 30) {
                 if (strcasecmp(keylist[i].val, "Y") == 0) {
                     pConf->param->slotResourceReserve  = TRUE;
@@ -723,15 +707,16 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 25:
                             value = my_atoi(keylist[i].val, INFINIT_INT, -1);
-                            if ( value != INFINIT_INT) {
-
-                                if ( value > 0) {
+                            if (value != INFINIT_INT) {
+                                if (value > 0) {
                                     pConf->param->maxUserPriority = value;
                                 }
                             }
                             else {
-                                ls_syslog(LOG_ERR, I18N(5452,"%s: File%s in section Parameters ending at line %d: invalid value <%s> of <%s> : ignored;"), /* catgets 5452 */
-                                          __func__, fname, *lineNum, keylist[i].val,
+                                ls_syslog(LOG_ERR, "\
+%s: File %s section Parameters line %d: invalid value <%s> of <%s> : ignored",
+                                          __func__, fname, *lineNum,
+                                          keylist[i].val,
                                           keylist[i].key);
                             }
                             break;
@@ -746,6 +731,14 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 37:
                             pConf->param->preemptableResources = putstr_(keylist[i].val);
+                            break;
+                            pConf->param->max_num_candidates = value;
+                            break;
+                        case 38 :
+                            pConf->param->enable_proxy_hosts = value;
+                            break;
+                        case 39:
+                            pConf->param->disable_peer_jobs = value;
                             break;
                         default:
                             ls_syslog(LOG_ERR, "\
@@ -834,7 +827,6 @@ initParameterInfo(struct parameterInfo *param)
     param->jobPriorityValue=-1;
     param->jobPriorityTime=-1;
     param->sharedResourceUpdFactor = INFINIT_INT;
-    param->scheRawLoad = 0;
     param->preExecDelay = INFINIT_INT;
     param->slotResourceReserve = FALSE;
     param->maxJobId = INFINIT_INT;
@@ -844,6 +836,9 @@ initParameterInfo(struct parameterInfo *param)
     param->maxPreemptJobs = DEF_MAX_PREEMPT_JOBS;
     param->maxStreamRecords = 0;
     param->preemptableResources = NULL;
+    param->max_num_candidates = 0;
+    param->enable_proxy_hosts = 0;
+    param->disable_peer_jobs = 0;
 }
 
 static void
@@ -1444,13 +1439,6 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                     continue;
                 }
             }
-            if (options != CONF_NO_CHECK && type == HOST_GRP
-                && isHostName(keylist[0].val)) {
-                ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5105,
-                                                     "%s: File %s at line %d: Group name <%s> conflicts with host name; ignoring line"), __func__, fname, *lineNum, keylist[0].val); /* catgets 5105 */
-                lsberrno = LSBE_CONF_WARNING;
-                continue;
-            }
             if (options != CONF_NO_CHECK &&
                 getGrpData (groups, keylist[0].val, *ngroups)) {
                 ls_syslog(LOG_WARNING, _i18n_msg_get(ls_catd , NL_SETN, 5106,
@@ -1529,7 +1517,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
 	     * a[n-N]
 	     */
             hl = NULL;
-            if (type == HOST_GRP)
+            if (!allFlag && type == HOST_GRP)
                 hl = host_base_name(sp);
 	    if (hl) {
 		while ((wp = pop_link(hl))) {

@@ -329,6 +329,8 @@ lsb_pendreason(int numReasons, int *rsTb, struct jobInfoHead *jInfoH,
           "Preempted job is waiting to be resumed"},
         { PEND_JOB_REQUEUED,
           "The job has been requeued"},
+        {  PEND_JGROUP_LIMIT,
+           "The job group limit has been reached"},
         { 0, NULL}
     };
 

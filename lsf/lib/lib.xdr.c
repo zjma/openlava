@@ -216,7 +216,13 @@ readDecodeHdr_(int s,
                XDR *xdrs,
                struct LSFHeader *hdr)
 {
-    if ((*readFunc)(s, buf, LSF_HEADER_LEN) != LSF_HEADER_LEN) {
+    int retVal;
+    retVal = (*readFunc)(s, buf, LSF_HEADER_LEN);
+    if (retVal != LSF_HEADER_LEN) {
+        //channle is valid, but resource is temporarily unavailable
+        if (errno == EAGAIN) {
+            return -3;
+        }
         lserrno = LSE_MSG_SYS;
         return -2;
     }

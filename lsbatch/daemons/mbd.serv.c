@@ -3160,7 +3160,7 @@ do_jobGroupInfo(XDR *xdrs,
      * nodes on the tree itself.
      */
     size = tree_size(&n);
-    size = size * sizeof(int) + sizeof(struct LSFHeader);
+    size = size * sizeof(int) + sizeof(struct LSFHeader) + sizeof(int);
 
     buf = calloc(size, sizeof(char));
 
@@ -3171,6 +3171,8 @@ do_jobGroupInfo(XDR *xdrs,
     XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
 
     if (! xdr_int(&xdrs2, &n)) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encoding num nodes %d bytes", __func__, size);
         sendLSFHeader(chfd, LSBE_XDR);
         _free_(buf);
         return -1;
@@ -3179,7 +3181,7 @@ do_jobGroupInfo(XDR *xdrs,
     cc = encode_nodes(&xdrs2, &n, JGRP_NODE_GROUP, hdr);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed encoding %d bytes", __func__, size);
+%s: failed encoding nodes %d bytes", __func__, size);
         sendLSFHeader(chfd, LSBE_XDR);
         _free_(buf);
         xdr_destroy(&xdrs2);

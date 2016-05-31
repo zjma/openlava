@@ -21,42 +21,63 @@
 static void
 usage(void)
 {
-    fprintf(stderr, "bgadd: [ -h ] [ -V ] group_name\n");
+    fprintf(stderr, "\
+bgadd: [ -h ] [ -V ] [-L job limit] group_name\n");
 }
+
+/* in lsb.misc.c
+ */
+extern char isint_(char *);
 
 int
 main(int argc, char **argv)
 {
     int cc;
     struct job_group jg;
+    char *max_jobs;
 
     if (lsb_init(argv[0]) < 0) {
-	lsb_perror("lsb_init");
-	return -1;
+        lsb_perror("lsb_init");
+        return -1;
     }
 
-    while ((cc = getopt(argc, argv, "hV")) != EOF) {
-	switch (cc) {
-	    case 'V':
-		fputs(_LS_VERSION_, stderr);
-		return 0;
-	    case 'h':
-		usage();
-		exit(-1);
-	}
+    max_jobs = NULL;
+    while ((cc = getopt(argc, argv, "hVL:")) != EOF) {
+        switch (cc) {
+            case 'V':
+                fputs(_LS_VERSION_, stderr);
+                return 0;
+            case 'L':
+                max_jobs = optarg;
+                break;
+            case 'h':
+                usage();
+                exit(-1);
+        }
     }
 
     if (argc <= optind) {
-	usage();
-	return -1;
+        usage();
+        return -1;
+    }
+
+    if (max_jobs
+        && (! isint_(max_jobs)
+            || atoi(max_jobs)) < 0) {
+        fprintf(stderr, "\
+%s is not a valid integer in the interval [0-%d]\n", max_jobs, INT32_MAX);
+        return -1;
     }
 
     jg.group_name = argv[argc - 1];
+    jg.max_jobs = INT32_MAX;
+    if (max_jobs)
+        jg.max_jobs = atoi(max_jobs);
 
     cc = lsb_addjgrp(&jg);
     if (cc != LSBE_NO_ERROR) {
-	fprintf(stderr, "bgadd: %s.\n", lsb_sysmsg());
-	return -1;
+        fprintf(stderr, "bgadd: %s.\n", lsb_sysmsg());
+        return -1;
     }
 
     printf("Group %s added successfully.\n", jg.group_name);

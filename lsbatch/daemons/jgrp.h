@@ -68,6 +68,7 @@ struct jgrpData {
     time_t submit_time;
     void (*freeJgArray)(void *);
     int counts[NUM_JGRP_COUNTERS + 1];
+    int max_jobs;
 };
 
 /* Helper macros

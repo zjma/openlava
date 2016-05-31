@@ -32,6 +32,10 @@ extern int mbdExitCnt;
 static struct ol_core *cores;
 static int num_cores;
 
+#ifdef HAVE_HWLOC_H
+static int numa_enabled;
+#endif
+
 void
 milliSleep( int msec )
 {
@@ -335,6 +339,12 @@ init_cores(void)
     if (! daemonParams[SBD_BIND_CPU].paramValue)
         return;
 
+#ifdef HAVE_HWLOC_H
+    /* use numa topology if OS is numa-aware */
+    if ((numa_enabled = init_numa_topology()))
+        return;
+#endif
+
     num_cores = ls_get_numcpus();
     if (num_cores <= 0) {
         ls_syslog(LOG_ERR, "%s: huh no cores on this box?", __func__);
@@ -349,54 +359,85 @@ init_cores(void)
 }
 
 /* find_free_core()
+ *
+ * bind multiple cores for numa topology
+ * only bind 1 core for non-numa
+ *
  */
-int
-find_free_core(void)
+int*
+find_free_core(int num)
 {
     int i;
+    int* selected;
+
+#ifdef HAVE_HWLOC_H
+    if (numa_enabled)
+        return find_free_numa_core(num);
+#endif
 
     if (! cores)
-        return -1;
+        return NULL;
 
     for (i = 0; i < num_cores; i++) {
-        if (cores[i].bound == 0)
-            return i;
+        if (cores[i].bound == 0) {
+            selected = calloc(1, sizeof(int));
+            *selected = cores[i].core_num;
+            return selected;
+        }
     }
 
-    return -1;
+    return NULL;
 }
 
 /* bind_to_core()
+ *
+ * bind multiple cores for numa topology
+ * only bind 1 core for non-numa
+ *
  */
 int
-bind_to_core(pid_t pid, int core_num)
+bind_to_core(pid_t pid, int num, int* selected_cores)
 {
     cpu_set_t  set;
     int cc;
+
+#ifdef HAVE_HWLOC_H
+    if (numa_enabled)
+        return bind_to_numa_core(pid, num, selected_cores);
+#endif
 
     if (! cores)
         return -1;
 
     CPU_ZERO(&set);
-    CPU_SET(core_num, &set);
+    CPU_SET(selected_cores[0], &set);
 
     cc = sched_setaffinity(pid, sizeof(cpu_set_t), &set);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed binding process %d to cpu %d %m", __func__, pid, core_num);
+%s: failed binding process %d to cpu %d %m", __func__, pid, selected_cores[0]);
         return -1;
     }
-    cores[core_num].bound++;
+    cores[selected_cores[0]].bound++;
 
     return 0;
 }
 
 /* free_core()
+ *
+ * bind multiple cores for numa topology
+ * only bind 1 core for non-numa
+ *
  */
 void
-free_core(int core_num)
+free_core(int num, int* core_num)
 {
     int i;
+
+#ifdef HAVE_HWLOC_H
+    if (numa_enabled)
+        return free_numa_core(num, core_num);
+#endif
 
     if (! cores)
         return;
@@ -407,7 +448,7 @@ free_core(int core_num)
         return;
 
     for (i = 0; i < num_cores; i++) {
-        if (cores[i].core_num == core_num) {
+        if (cores[i].core_num == core_num[0]) {
             cores[i].bound--;
             return;
         }
@@ -415,15 +456,25 @@ free_core(int core_num)
 }
 
 /* find_bound_core()
+ *
+ * bind multiple cores for numa topology
+ * only bind 1 core for non-numa
+ *
  */
-int
+int*
 find_bound_core(pid_t pid)
 {
     cpu_set_t set;
     int cc;
+    int* selected_cores;
+
+#ifdef HAVE_HWLOC_H
+    if (numa_enabled)
+        return find_numa_bound_core(pid);
+#endif
 
     if (! cores)
-        return -1;
+        return NULL;
 
     CPU_ZERO(&set);
 
@@ -431,13 +482,16 @@ find_bound_core(pid_t pid)
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
 %s: sched_getaffinity() failed for pid %d %m", __func__, pid);
-        return -1;
+        return NULL;
     }
 
     for (cc = 0; cc < num_cores; cc++) {
-        if (CPU_ISSET(cc, &set))
-            return cc;
+        if (CPU_ISSET(cc, &set)) {
+            selected_cores = calloc(1, sizeof(int));
+            *selected_cores = cc;
+            return selected_cores;
+        }
     }
 
-    return -1;
+    return NULL;
 }
