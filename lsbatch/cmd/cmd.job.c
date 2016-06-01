@@ -1132,6 +1132,6 @@ displayUF (struct jobInfoEnt *job, struct jobInfoHead *jInfoH, float cpuFactor)
     }
 
     printf ("\n RESOURCE REQUIREMENT DETAILS:\n");
-    printf (" Combined: N/A\n Effective: N/A\n");
+    printf (" Combined: %s\n Effective: %s\n", job->submit.resReq, job->submit.resReq);
     return;
 }
