@@ -2953,6 +2953,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 	    case 'g':
 		req->options2 |= SUB2_JOB_GROUP;
 		req->job_group = optarg;
+		break;
 
             case 'i':
 
