@@ -328,6 +328,13 @@
 
 #define LSB_MODE_BATCH    0x1
 
+/*
+ * Error codes for lsblib calls
+ * Each error code has its corresponding error message defined in lsb.err.c
+ * The code number is just the position number of its message.
+ * Adding a new code here must add its message there in the corresponding
+ * position.  Changing any code number here must change the position there.
+ */
 #define    LSBE_NO_ERROR      0
 #define    LSBE_NO_JOB        1
 #define    LSBE_NOT_STARTED   2
@@ -463,7 +470,8 @@
 #define    LSBE_JGRP_EXIST          132  /* the job group exists */
 #define    LSBE_NODEP_COND          133
 #define    LSBE_JGRP_NOTEMPTY       134  /* jgrp is not empty */
-#define    LSBE_NUM_ERR             135
+#define    LSBE_JGRP_LIMIT          135  /* jgrp limit violated */
+#define    LSBE_NUM_ERR             136
 
 
 #define  SUB_JOB_NAME       0x01

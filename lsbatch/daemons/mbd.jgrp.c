@@ -1377,7 +1377,7 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
                 ls_syslog(LOG_ERR, "\
 %s: error while adding node %s path %s to parent %s", __func__,
                           node, path, parent->name);
-                    return LSBE_BAD_GROUP;
+                    return LSBE_JGRP_LIMIT;
             }
         } else {
             jgrp = e->hData;
@@ -1600,7 +1600,7 @@ tree_new_node(struct jgTreeNode *parent,
             ls_syslog(LOG_ERR, "\
 %s: max_jobs %d of group %s greater then parent %s max_jobs %d", __func__,
                       gData->max_jobs, name,
-                      gData2->max_jobs, parent->path);
+                      parent->path, gData2->max_jobs);
             freeTreeNode(jgrp);
             return NULL;
         }
@@ -1681,7 +1681,12 @@ check_job_group(struct jData *jPtr, struct lsfAuth *auth)
         jPtr->shared->jobBill.job_group = p;
     }
 
+    /* Max job cannot be specified at submission
+     * so we set it to max and then compare with
+     * the group limit if any.
+     */
     jgrp.group_name = jPtr->shared->jobBill.job_group;
+    jgrp.max_jobs = INT32_MAX;
 
     return add_job_group(&jgrp, auth);
 }

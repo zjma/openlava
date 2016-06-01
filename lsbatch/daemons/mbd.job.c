@@ -260,10 +260,6 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     newjob->restartPid = newjob->shared->jobBill.restartPid;
     newjob->chkpntPeriod = newjob->shared->jobBill.chkpntPeriod;
 
-    if (newjob->shared->jobBill.options2 & SUB2_JOB_GROUP) {
-        check_job_group(newjob, auth);
-    }
-
     logJobInfo(subReq, newjob, &jf);
     FREEUP (jf.data);
 
@@ -6145,13 +6141,19 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
         }
 
     }
-    else if ( maxUserPriority > 0 ) {
+    else if (maxUserPriority > 0) {
 
         job->jobPriority  = maxUserPriority/2;
     }
 
+    if (subReq->options2 & SUB2_JOB_GROUP) {
+        int cc;
+        cc = check_job_group(job, auth);
+        if (cc != LSBE_NO_ERROR)
+            return cc;
+    }
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
