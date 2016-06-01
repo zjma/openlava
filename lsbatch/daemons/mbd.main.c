@@ -831,6 +831,15 @@ processClient(struct clientNode *client, int *needFree)
                                       &reqHdr),
                    "do_jobGroupInfo()");
             break;
+        case BATCH_JGRP_MOD:
+            TIMEIT(0, do_jobGroupModify(&xdrs,
+                                        s,
+                                        &from,
+                                        client->fromHost,
+                                        &reqHdr,
+                                        &auth),
+                   "do_jobGroupModify()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)
@@ -856,7 +865,8 @@ endLoop:
          && reqHdr.opCode != BATCH_STATUS_MSG_ACK
          && reqHdr.opCode != BATCH_STATUS_CHUNK
          && reqHdr.opCode != BATCH_JGRP_ADD
-         && reqHdr.opCode != BATCH_JGRP_DEL)
+         && reqHdr.opCode != BATCH_JGRP_DEL
+         && reqHdr.opCode != BATCH_JGRP_MOD)
         || statusReqCC < 0) {
         shutDownClient(client);
         return -1;
@@ -1088,7 +1098,8 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_JOB_MSG
           || reqType == BATCH_JOBMSG_INFO
           || reqType == BATCH_JGRP_ADD
-          || reqType == BATCH_JGRP_DEL))
+          || reqType == BATCH_JGRP_DEL
+          || reqType == BATCH_JGRP_MOD))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {

@@ -72,6 +72,7 @@ typedef enum {
     BATCH_JGRP_ADD,
     BATCH_JGRP_DEL,
     BATCH_JGRP_INFO,
+    BATCH_JGRP_MOD,
     READY_FOR_OP         = 1023,
     PREPARE_FOR_OP       = 1024
 } mbdReqType;

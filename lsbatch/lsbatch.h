@@ -897,7 +897,7 @@ struct job_dep {
     int depstatus;        /* dependency status */
 };
 
-/* structure for lsb_addjgrp() call
+/* structure for lsb_addjgrp()/lsb_deljgrp()/lsb_modjgrp() call
  */
 struct job_group {
     char *group_name;
@@ -1615,6 +1615,7 @@ extern struct job_dep *lsb_jobdep(LS_LONG_INT, int *);
 extern void free_jobdep(int, struct job_dep *);
 extern int lsb_addjgrp(struct job_group *);
 extern int lsb_deljgrp(struct job_group *);
+extern int lsb_modjgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
 

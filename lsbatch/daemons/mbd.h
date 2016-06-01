@@ -1493,8 +1493,12 @@ extern int do_jobGroupDel(XDR *, int,
 extern int do_jobGroupInfo(XDR *, int,
                            struct sockaddr_in *,
                            char *, struct LSFHeader *);
+extern int do_jobGroupModify(XDR *, int,
+                             struct sockaddr_in *,
+                             char *, struct LSFHeader *, struct lsfAuth *);
 extern int add_job_group(struct job_group *, struct lsfAuth *);
 extern int del_job_group(struct job_group *, struct lsfAuth *);
+extern int modify_job_group(struct job_group *, struct lsfAuth *);
 extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);

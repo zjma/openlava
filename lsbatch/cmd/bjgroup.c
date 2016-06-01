@@ -113,7 +113,10 @@ print_groups(int num, struct jobGroupInfo *jgrp)
         printf("%-5d   ", jgrp[cc].counts[4] + jgrp[cc].counts[5]);
         printf("%-5d   ", jgrp[cc].counts[6]);
         printf("%-5d   ", jgrp[cc].counts[7]);
-        printf("%-7d   ", jgrp[cc].max_jobs);
+        if (jgrp[cc].max_jobs == INT32_MAX)
+            printf("%-7s   ", "-");
+        else
+            printf("%-7d   ", jgrp[cc].max_jobs);
 
         printf("\n");
     }

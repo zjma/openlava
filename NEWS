@@ -25,6 +25,7 @@ Release notes for OpenLava versions
    hierachy. If the limit is reached jobs attached to the group will be
    pending with reason "The job group limit has been reached"
 -- Renamed the bjgroups command in bjgroup.
+-- Implemented bgmod to change the limits of a job group.
 
 3.3.1
 ======

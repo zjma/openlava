@@ -3213,3 +3213,34 @@ do_jobGroupInfo(XDR *xdrs,
 
     return 0;
 }
+
+/* do_jobGroupModify()
+ */
+int
+do_jobGroupModify(XDR *xdrs,
+                  int chfd,
+                  struct sockaddr_in *from,
+                  char *hostname,
+                  struct LSFHeader *hdr,
+                  struct lsfAuth *auth)
+{
+    struct job_group group;
+    int cc;
+
+    group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
+
+    if (! xdr_jobgroup(xdrs, &group, hdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+        enqueueLSFHeader(chfd, LSBE_XDR);
+        return -1;
+    }
+
+    cc = modify_job_group(&group, auth);
+
+    /* send back the answer to the library
+     */
+    enqueueLSFHeader(chfd, cc);
+    _free_(group.group_name);
+
+    return 0;
+}

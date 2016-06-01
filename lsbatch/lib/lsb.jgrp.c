@@ -39,6 +39,12 @@ lsb_deljgrp(struct job_group *jgrp)
     return operate_jobgroup(BATCH_JGRP_DEL, jgrp);
 }
 
+int
+lsb_modjgrp(struct job_group *jgrp)
+{
+    return operate_jobgroup(BATCH_JGRP_MOD, jgrp);
+}
+
 /* operate_jobgroup()
  */
 static int
