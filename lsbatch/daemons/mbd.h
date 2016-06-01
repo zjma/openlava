@@ -1345,8 +1345,8 @@ extern sbdReplyType         shutdownSbd(char *);
 extern struct dptNode       *parseDepCond(char *, struct lsfAuth * ,
                                           int *, char **,int *, int);
 extern int                  evalDepCond(struct dptNode *,
-					struct jData *,
-					link_t *);
+                                        struct jData *,
+                                        link_t *);
 extern void                 freeDepCond(struct dptNode *);
 extern void                 resetDepCond(struct dptNode *);
 extern bool_t               autoAdjustIsEnabled(void);
@@ -1482,17 +1482,17 @@ extern inline int numofhosts(void);
 extern int postMsg2Job(char **, struct jData *);
 extern int fork_mbd(void);
 extern int do_jobDepInfo(XDR *, int,
-			 struct sockaddr_in *,
-			 char *, struct LSFHeader *);
+                         struct sockaddr_in *,
+                         char *, struct LSFHeader *);
 extern int do_jobGroupAdd(XDR *, int,
-			  struct sockaddr_in *,
-			  char *, struct LSFHeader *, struct lsfAuth *);
+                          struct sockaddr_in *,
+                          char *, struct LSFHeader *, struct lsfAuth *);
 extern int do_jobGroupDel(XDR *, int,
-			  struct sockaddr_in *,
-			  char *, struct LSFHeader *, struct lsfAuth *);
+                          struct sockaddr_in *,
+                          char *, struct LSFHeader *, struct lsfAuth *);
 extern int do_jobGroupInfo(XDR *, int,
-			   struct sockaddr_in *,
-			   char *, struct LSFHeader *);
+                           struct sockaddr_in *,
+                           char *, struct LSFHeader *);
 extern int add_job_group(struct job_group *, struct lsfAuth *);
 extern int del_job_group(struct job_group *, struct lsfAuth *);
 extern int tree_size(int *);
