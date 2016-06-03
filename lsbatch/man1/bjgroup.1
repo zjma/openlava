@@ -65,26 +65,32 @@ The number of job slots for exited jobs in the job group.
 .IP
 The number of job slots for done jobs in the job group.
 .PP
+\fBJLIMIT\fR
+.IP
+The job group limit set by bgadd -L or bgmod -L. Job groups
+that have no configured limits or no limit usage are indicated
+by a dash (-).
+.PP
 .SH EXAMPLE
 .PP
 bjgroup
 .PP
-GROUP      NJOBS   PEND    RUN     SUSP    EXITED  DONE
+GROUP      NJOBS   PEND    RUN     SUSP    EXITED  DONE   JLIMIT
 .br
-/u0        1       0       1       0       0       0
+/u0        1       0       1       0       0       0      3
 .br
-/ol        1       0       1       0       0       0
+/ol        1       0       1       0       0       0      -
 .br
-/bbb       1       0       0       0       1       0
+/bbb       1       0       0       0       1       0      -
 .br
-/aaa       1       0       0       0       1       0
+/aaa       1       0       0       0       1       0      10
 .br
-/ol/ol     1       0       1       0       0       0
+/ol/ol     1       0       1       0       0       0      -
 .br
-/u0/u0     1       0       1       0       0       0
+/u0/u0     1       0       1       0       0       0      -
 .PP
 .SH SEE ALSO
 .BR
 .PP
 .PP
-bgadd(1), bgdel(1)
+bgadd(1), bgdel(1), bgmod(1)

@@ -94,7 +94,7 @@ print_groups(int num, struct jobGroupInfo *jgrp)
         printf(" ");
     /* NJOBS   PEND   RUN   SUSP   EXITED   DONE JLIMIT
      */
-    printf("%-5s   %-5s   %-5s   %-5s   %-5s   %-5s  %-6s\n",
+    printf("%-5s   %-5s   %-5s   %-5s   %-5s  %-5s   %-6s\n",
            "NJOBS", "PEND", "RUN", "SUSP", "EXITED", "DONE", "JLIMIT");
 
     for (cc = 0; cc < num; cc++) {
