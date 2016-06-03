@@ -1304,6 +1304,7 @@ extern void                 log_logSwitch(int);
 extern void                 log_jobmsg(struct jData *, struct lsbMsg *);
 extern void                 log_newjgrp(struct jgTreeNode *);
 extern void                 log_deljgrp(struct jgTreeNode *);
+extern void                 log_modjgrp(struct jgTreeNode *);
 extern void                 replay_requeuejob(struct jData *);
 extern int                  init_log(void);
 extern void                 switchELog(void);

@@ -68,6 +68,7 @@ static int              replay_jobattrset(char *, int );
 static int              replay_jobmsg(char *, int);
 static int              replay_newjgrp(char *, int);
 static int              replay_deljgrp(char *, int);
+static int              replay_modjgrp(char *, int);
 static int replay_logSwitch(char *, int);
 extern bool_t memberOfVacateList(struct lsQueueEntry *, struct lsQueue *);
 
@@ -441,6 +442,8 @@ replay_event(char *filename, int lineNum)
             return replay_newjgrp(filename, lineNum);
         case EVENT_DEL_JGRP:
             return replay_deljgrp(filename, lineNum);
+        case EVENT_MOD_JGRP:
+            return replay_modjgrp(filename, lineNum);
         default:
             ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Invalid event_type %c",
@@ -1350,6 +1353,23 @@ replay_deljgrp(char *file, int num)
     return true;
 }
 
+static int
+replay_modjgrp(char *file, int num)
+{
+    struct jgrpModLog *jgrp_mod;
+    struct job_group jgrp;
+
+    jgrp_mod = &logPtr->eventLog.jgrpMod;
+
+    jgrp.group_name = strdup(jgrp_mod->path);
+    jgrp.max_jobs = jgrp_mod->max_jobs;
+
+    modify_job_group(&jgrp, NULL);
+
+    _free_(jgrp.group_name);
+
+    return true;
+}
 
 int
 log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
@@ -2147,6 +2167,29 @@ log_deljgrp(struct jgTreeNode *jgrp)
         ls_syslog(LOG_ERR, "\
 %s: failed in putEventRec() %m", __func__);
     }
+}
+
+/* log_modjgrp()
+ */
+void
+log_modjgrp(struct jgTreeNode *jgrp)
+{
+    if (openEventFile(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed in openEventFile() %m", __func__);
+        mbdDie(MASTER_FATAL);
+    }
+
+    logPtr->type = EVENT_MOD_JGRP;
+
+    strcpy(logPtr->eventLog.jgrpMod.path, jgrp->path);
+    logPtr->eventLog.jgrpMod.max_jobs = JGRP_DATA(jgrp)->max_jobs;
+
+    if (putEventRec(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed in putEventRec() %m", __func__);
+    }
+
 }
 
 static void

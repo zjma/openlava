@@ -165,6 +165,7 @@
 #define    EVENT_STREAM_END       30
 #define    EVENT_NEW_JGRP         31
 #define    EVENT_DEL_JGRP         32
+#define    EVENT_MOD_JGRP         33
 
 /* Job specific reasons
  */
@@ -1341,6 +1342,13 @@ struct jgrpLog {
     int max_jobs;
 };
 
+/* Modify the max_job limit in a job group
+ */
+struct jgrpModLog {
+    char path[PATH_MAX];
+    int max_jobs;
+};
+
 union  eventLog {
     struct jobNewLog jobNewLog;
     struct jobStartLog jobStartLog;
@@ -1372,6 +1380,7 @@ union  eventLog {
     struct jobAttrSetLog jobAttrSetLog;
     struct endStream eos;
     struct jgrpLog jgrpLog;
+    struct jgrpModLog jgrpMod;
 };
 
 

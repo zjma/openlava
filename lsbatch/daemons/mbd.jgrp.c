@@ -1348,9 +1348,20 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
     struct jgTreeNode *parent;
     struct jgTreeNode *jgrp;
     hEnt *e;
+    int l;
 
     if (! jgPtr)
         return LSBE_JGRP_NULL;
+
+    /* strip trailing slash just in case...
+     */
+    l = strlen(jgPtr->group_name);
+    if (jgPtr->group_name[l - 1] == '/')
+        jgPtr->group_name[l - 1] = 0;
+
+    e = h_getEnt_(&nodeTab, jgPtr->group_name);
+    if (e)
+        return LSBE_JGRP_EXIST;
 
     p0 = name = strdup(jgPtr->group_name);
 
@@ -1413,9 +1424,6 @@ encode_nodes(XDR *xdrs,
         int i;
         struct jgrpData *g;
 
-        if (n->child)
-            push_link(stack, n->child);
-
         if (logclass & LC_JGRP) {
             ls_syslog(LOG_DEBUG, "\
 %s: node %s %s %d", __func__, n->name, n->path, type);
@@ -1423,6 +1431,9 @@ encode_nodes(XDR *xdrs,
 
         if (n->nodeType != type)
             goto next;
+
+        if (n->child)
+            push_link(stack, n->child);
 
         cc = xdr_wrapstring(xdrs, &n->path);
         if (cc != TRUE)
@@ -1828,6 +1839,7 @@ modify_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
                       jgrp->name, max_jobs);
             return LSBE_JGRP_LIMIT;
         }
+        child = child->child;
     }
 
 bez:
@@ -1841,7 +1853,7 @@ bez:
     jSpec->max_jobs = max_jobs;
 
     if (mSchedStage != M_STAGE_REPLAY) {
-        log_newjgrp(jgrp);
+        log_modjgrp(jgrp);
     }
 
     return LSBE_NO_ERROR;
