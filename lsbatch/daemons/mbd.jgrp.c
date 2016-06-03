@@ -1486,9 +1486,6 @@ tree_size(int *num)
   again:
     while (n) {
 
-        if (n->child)
-            push_link(stack, n->child);
-
         if (logclass & LC_JGRP) {
             ls_syslog(LOG_DEBUG, "\
 %s: node %s %s %d", __func__, n->name, n->path, n->nodeType);
@@ -1496,6 +1493,9 @@ tree_size(int *num)
 
         if (n->nodeType != JGRP_NODE_GROUP)
             goto next;
+
+        if (n->child)
+            push_link(stack, n->child);
 
         cc = cc + ALIGNWORD_(strlen(n->path))
             + ALIGNWORD_(strlen(n->name))
