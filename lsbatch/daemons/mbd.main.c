@@ -868,7 +868,7 @@ endLoop:
          && reqHdr.opCode != BATCH_STATUS_CHUNK
          && reqHdr.opCode != BATCH_JGRP_ADD
          && reqHdr.opCode != BATCH_JGRP_DEL
-         && reqHdr.opCode != BATCH_TOKEN_INFO)
+         && reqHdr.opCode != BATCH_TOKEN_INFO
          && reqHdr.opCode != BATCH_JGRP_DEL)
         || statusReqCC < 0) {
         shutDownClient(client);
@@ -1169,7 +1169,7 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_USER_INFO
         || req == BATCH_JOB_PEEK
         || req == BATCH_JOBDEP_INFO
-        || req == BATCH_TOKEN_INFO) {
+        || req == BATCH_TOKEN_INFO
         || req == BATCH_JOBDEP_INFO) {
         return 1;
     }
