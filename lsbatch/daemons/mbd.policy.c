@@ -4424,7 +4424,7 @@ scheduleAndDispatchJobs(void)
 
     if (0) {
         if (!(mSchedStage & M_STAGE_RESUME_SUSP)) {
-            TIMEIT(0, tryResume(), "tryResume()");
+            TIMEIT(0, tryResume(NULL), "tryResume()");
             mSchedStage |= M_STAGE_RESUME_SUSP;
         }
 
