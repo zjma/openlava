@@ -142,10 +142,10 @@ hash_install(struct hash_tab *tab,
     ent->e = e;
 
     if (tab->v[z] == NULL)
-        tab->v[z] = list_make("ulist");
+        tab->v[z] = listmake("ulist");
 
     tab->num++;
-    list_enque(tab->v[z], (struct list_ *)ent);
+    listenque(tab->v[z], (struct list_ *)ent);
     if (dup)
         *dup = 0;
 
@@ -173,7 +173,7 @@ hash_rm(struct hash_tab *tab,
         if (strcmp(ent->key, ukey) == 0) {
             void   *e;
 
-            list_rm(tab->v[z], (struct list_ *)ent);
+            listrm(tab->v[z], (struct list_ *)ent);
             e = ent->e;
             free(ent->key);
             free(ent);
@@ -211,7 +211,7 @@ re_hash(struct hash_tab *tab,
         if (tab->v[c] == NULL)
             continue;
 
-        while ((ent = (struct hash_ent *)list_pop(tab->v[c]))) {
+        while ((ent = (struct hash_ent *)listpop(tab->v[c]))) {
             int   dup;
 
             hash_install(&tab2, ent->key, ent->e, &dup);
@@ -219,7 +219,7 @@ re_hash(struct hash_tab *tab,
             free(ent->key);
             free(ent);
         }
-        list_free(tab->v[c], NULL);
+        listfree(tab->v[c], NULL);
     }
 
     free(tab->v);
@@ -242,7 +242,7 @@ hash_free(struct hash_tab *tab,
         if (tab->v[c] == NULL)
             continue;
 
-        while ((ent = (struct hash_ent *)list_pop(tab->v[c]))) {
+        while ((ent = (struct hash_ent *)listpop(tab->v[c]))) {
 
             if (f)
                 (*f)(ent->e);
@@ -250,7 +250,7 @@ hash_free(struct hash_tab *tab,
             free(ent->key);
             free(ent);
         }
-        list_free(tab->v[c], NULL);
+        listfree(tab->v[c], NULL);
 
     } /* for(c = 0; ...) */
 
