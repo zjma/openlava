@@ -2854,15 +2854,21 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
                 checkSubDelOption (SUB_RES_REQ, "Rn");
                 if (mask & SUB_RES_REQ) {
+                    while (*optarg == ' ')
+                        optarg++;
                     if (req->resReq != NULL){
-                        PRINT_ERRMSG0(errMsg, _i18n_msg_get(ls_catd,NL_SETN,442,
-                                                            "Invalid syntax; the -R option was used more than once.\n")); /* catgets 442 */
-                        return -1;
+                         if (mergeResreq(&req->resReq, optarg)==-1) {
+                             fprintf(stderr, "Resource requirements too long\n");
+                             return -1;
+                         }
                     }
-                    req->resReq = optarg;
+                    else {
+                         if ((req->resReq=strdup(optarg))==NULL){
+                             fprintf(stderr, "Resource requirements too long\n");
+                             return -1;
+                         }
+                    }
                     req->options |= SUB_RES_REQ;
-                    while (*(req->resReq) == ' ')
-                        req->resReq++;
                 }
                 break;
 

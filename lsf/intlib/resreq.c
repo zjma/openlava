@@ -1436,3 +1436,125 @@ strip_spaces(const char *str)
 
     return s;
 }
+
+/* break_sections()
+ */
+static int
+split_sections(char *resreq, struct sections *sec)
+{
+    char *section_name[5]={"select","rusage","order","span","affinity"};
+    char *p1[5], *p2[5];
+    int i;
+
+    for (i=0; i<5; i++) {
+        if ((p1[i]=strstr(resreq,section_name[i]))!=NULL) {
+            if ((p2[i]=strchr(p1[i], ']'))==NULL)
+                return -1;
+        }
+    }
+    if (p1[0]!=NULL) {
+        sec->select=strchr(p1[0],'[')+1;
+        *p2[0]='\0';
+    }
+    else
+        sec->select=NULL;
+    if (p1[1]!=NULL) {
+        sec->rusage=strchr(p1[1],'[')+1;
+        *p2[1]='\0';
+    }
+    else
+        sec->rusage=NULL;
+    if (p1[2]!=NULL) {
+        sec->order=strchr(p1[2],'[')+1;
+        *p2[2]='\0';
+    }
+    else
+        sec->order=NULL;
+    if (p1[3]!=NULL) {
+        sec->span=strchr(p1[3],'[')+1;
+        *p2[3]='\0';
+    }
+    else
+        sec->span=NULL;
+    if (p1[4]!=NULL) {
+        sec->filter=strchr(p1[4],'[')+1;
+        *p2[4]='\0';
+    }
+    else
+       sec->filter=NULL;
+    return 0;
+}
+/* mergeResReq()
+ * Merge two resource requirement strings
+ */
+int
+mergeResreq(char **orig, char *resreq)
+{
+    struct sections orsec, ressec;
+    char *orig_req, *req1;
+    if ((*orig=(char *)realloc(*orig,
+        sizeof(char)*(strlen(*orig)+strlen(resreq))))==NULL)
+        return -1;
+    if ((orig_req=strdup(*orig))==NULL || (req1=strdup(resreq))==NULL)
+        return -1;
+    if (split_sections(orig_req, &orsec)!=0)
+        goto return_label;
+    if (split_sections(req1, &ressec)!=0)
+        goto return_label;
+
+    *orig[0]='\0';
+    if (orsec.select!=NULL || ressec.select!=NULL) {
+        strcat(*orig,"select[");
+        if (orsec.select!=NULL) {
+            strcat(*orig, orsec.select);
+            if (ressec.select!=NULL)
+                strcat(*orig,"&&");
+        }
+        if (ressec.select!=NULL)
+            strcat(*orig, ressec.select);
+        strcat(*orig,"]");
+    }
+    if (orsec.rusage!=NULL || ressec.rusage!=NULL) {
+        strcat(*orig,"rusage[");
+        if (orsec.rusage!=NULL) {
+            strcat(*orig, orsec.rusage);
+            if (ressec.rusage!=NULL)
+                strcat(*orig,",");
+        }
+        if (ressec.rusage!=NULL)
+            strcat(*orig, ressec.rusage);
+        strcat(*orig, "]");
+    }
+    if (orsec.order!=NULL || ressec.order!=NULL) {
+        strcat(*orig,"order[");
+        if (orsec.order!=NULL) {
+            strcat(*orig, orsec.order);
+            if (ressec.order!=NULL)
+                strcat(*orig,":");
+        }
+        if (ressec.order!=NULL)
+            strcat(*orig, ressec.order);
+        strcat(*orig, "]");
+    }
+    if (orsec.span!=NULL || ressec.span!=NULL) {
+        strcat(*orig,"span[");
+        if (orsec.span!=NULL)
+            strcat(*orig, orsec.span);
+        else
+            strcat(*orig, ressec.span);
+        strcat(*orig, "]");
+    }
+    if (orsec.filter!=NULL || ressec.filter!=NULL) {
+        strcat(*orig,"affinity[");
+        if (orsec.filter!=NULL)
+            strcat(*orig, orsec.filter);
+        else
+            strcat(*orig, ressec.filter);
+        strcat(*orig, "]");
+    }
+
+  return_label:
+    free(orig_req);
+    free(req1);
+    return 0;
+}
