@@ -26,6 +26,7 @@ Release notes for OpenLava versions
    pending with reason "The job group limit has been reached"
 -- Renamed the bjgroups command in bjgroup.
 -- Implemented bgmod to change the limits of a job group.
+-- Fix mbatchd core dump when running egroup.
 
 3.3.1
 ======

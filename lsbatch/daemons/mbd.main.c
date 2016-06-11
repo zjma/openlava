@@ -1061,7 +1061,8 @@ mbd_child_handler (int sig)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        if (pid == swchild->pid) {
+        if (swchild
+            && pid == swchild->pid) {
             swchild->child_gone = true;
             swchild->status = status;
         }
