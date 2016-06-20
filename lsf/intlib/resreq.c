@@ -280,6 +280,7 @@ parseResReq(char *resReq,
      */
     if (strstr(resReq, "affinity")) {
         if (!strstr(resReq, "affinity[core(1)*1:cpubind=core]") &&
+            !strstr(resReq, "affinity[core(1):cpubind=core]") &&
             !strstr(resReq, "affinity[core(1,exclusive=(core,alljobs)):cpubind=core:membind=localonly:distribute=pack]")) {
             return PARSE_BAD_EXP;
         }
