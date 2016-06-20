@@ -1443,46 +1443,62 @@ strip_spaces(const char *str)
 static int
 split_sections(char *resreq, struct sections *sec)
 {
-    char *section_name[5]={"select","rusage","order","span","affinity"};
-    char *p1[5], *p2[5];
+#define NUM_SECTIONS 5
+    char *section_name[NUM_SECTIONS] =
+        {"select","rusage","order","span","affinity"};
+    char *p1[NUM_SECTIONS], *p2[NUM_SECTIONS], *p;
     int i;
 
-    for (i=0; i<5; i++) {
-        if ((p1[i]=strstr(resreq,section_name[i]))!=NULL) {
-            if ((p2[i]=strchr(p1[i], ']'))==NULL)
+    for (i = 0; i < NUM_SECTIONS; i++) {
+        if ((p1[i] = strstr(resreq,section_name[i])) != NULL) {
+            if ((p2[i] = strchr(p1[i], ']')) == NULL)
                 return -1;
         }
     }
     if (p1[0]!=NULL) {
-        sec->select=strchr(p1[0],'[')+1;
-        *p2[0]='\0';
+        sec->select = strchr(p1[0],'[') + 1;
+        *p2[0] = '\0';
     }
-    else
-        sec->select=NULL;
-    if (p1[1]!=NULL) {
-        sec->rusage=strchr(p1[1],'[')+1;
+    else {
+        /* select string could be specified without the keyword
+         * 'select', both -R select[xxx] and -R xxx are valid
+         */
+        p = resreq + strlen(resreq);
+        for (i = 1; i < NUM_SECTIONS; i++)
+            if (p1[i] != NULL && p1[i] < p)
+                p = p1[i];
+        if (p == resreq)
+            sec->select = NULL;
+        else {
+            sec->select = resreq;
+            *p='\0';
+        }
+    }
+    if (p1[1] != NULL) {
+        sec->rusage = strchr(p1[1] + 1,'[') + 1;
         *p2[1]='\0';
     }
     else
-        sec->rusage=NULL;
-    if (p1[2]!=NULL) {
-        sec->order=strchr(p1[2],'[')+1;
-        *p2[2]='\0';
+        sec->rusage = NULL;
+    if (p1[2] != NULL) {
+        sec->order = strchr(p1[2] + 1,'[') + 1;
+        *p2[2] = '\0';
     }
     else
-        sec->order=NULL;
-    if (p1[3]!=NULL) {
-        sec->span=strchr(p1[3],'[')+1;
-        *p2[3]='\0';
+        sec->order = NULL;
+    if (p1[3] != NULL) {
+        sec->span = strchr(p1[3] + 1,'[') + 1;
+        *p2[3] = '\0';
     }
     else
-        sec->span=NULL;
-    if (p1[4]!=NULL) {
-        sec->filter=strchr(p1[4],'[')+1;
-        *p2[4]='\0';
+        sec->span = NULL;
+    if (p1[4] != NULL) {
+        sec->filter = strchr(p1[4] + 1,'[') + 1;
+        *p2[4] = '\0';
     }
     else
-       sec->filter=NULL;
+       sec->filter = NULL;
+
     return 0;
 }
 /* mergeResReq()
@@ -1491,71 +1507,83 @@ split_sections(char *resreq, struct sections *sec)
 int
 mergeResreq(char **orig, char *resreq)
 {
+    char *dup_orig, *dup_res;
     struct sections orsec, ressec;
-    char *orig_req, *req1;
-    if ((*orig=(char *)realloc(*orig,
-        sizeof(char)*(strlen(*orig)+strlen(resreq))))==NULL)
-        return -1;
-    if ((orig_req=strdup(*orig))==NULL || (req1=strdup(resreq))==NULL)
-        return -1;
-    if (split_sections(orig_req, &orsec)!=0)
-        goto return_label;
-    if (split_sections(req1, &ressec)!=0)
-        goto return_label;
 
-    *orig[0]='\0';
-    if (orsec.select!=NULL || ressec.select!=NULL) {
+    if ((dup_orig = strdup(*orig)) == NULL)
+        return -1;
+    if ((dup_res = strdup(resreq)) == NULL) {
+        free (dup_orig);
+        return -1;
+    }
+
+    if (split_sections(dup_orig, &orsec) != 0) {
+        free(dup_orig);
+        free(dup_res);
+        return -1;
+    }
+    if (split_sections(dup_res, &ressec) != 0) {
+        free(dup_orig);
+        free(dup_res);
+        return -1;
+    }
+
+    if ((*orig = realloc(*orig,
+        sizeof(char)*(strlen(*orig) + strlen(resreq) + 10))) == NULL)
+        return -1;
+
+    *orig[0] = '\0';
+    if (orsec.select != NULL || ressec.select != NULL) {
         strcat(*orig,"select[");
-        if (orsec.select!=NULL) {
+        if (orsec.select != NULL) {
             strcat(*orig, orsec.select);
-            if (ressec.select!=NULL)
+            if (ressec.select != NULL)
                 strcat(*orig,"&&");
         }
-        if (ressec.select!=NULL)
+        if (ressec.select != NULL)
             strcat(*orig, ressec.select);
         strcat(*orig,"]");
     }
-    if (orsec.rusage!=NULL || ressec.rusage!=NULL) {
+    if (orsec.rusage != NULL || ressec.rusage != NULL) {
         strcat(*orig,"rusage[");
-        if (orsec.rusage!=NULL) {
+        if (orsec.rusage != NULL) {
             strcat(*orig, orsec.rusage);
-            if (ressec.rusage!=NULL)
+            if (ressec.rusage != NULL)
                 strcat(*orig,",");
         }
-        if (ressec.rusage!=NULL)
+        if (ressec.rusage != NULL)
             strcat(*orig, ressec.rusage);
         strcat(*orig, "]");
     }
-    if (orsec.order!=NULL || ressec.order!=NULL) {
+    if (orsec.order != NULL || ressec.order != NULL) {
         strcat(*orig,"order[");
-        if (orsec.order!=NULL) {
+        if (orsec.order != NULL) {
             strcat(*orig, orsec.order);
-            if (ressec.order!=NULL)
+            if (ressec.order != NULL)
                 strcat(*orig,":");
         }
-        if (ressec.order!=NULL)
+        if (ressec.order != NULL)
             strcat(*orig, ressec.order);
         strcat(*orig, "]");
     }
-    if (orsec.span!=NULL || ressec.span!=NULL) {
+    if (orsec.span != NULL || ressec.span != NULL) {
         strcat(*orig,"span[");
-        if (orsec.span!=NULL)
+        if (orsec.span != NULL)
             strcat(*orig, orsec.span);
         else
             strcat(*orig, ressec.span);
         strcat(*orig, "]");
     }
-    if (orsec.filter!=NULL || ressec.filter!=NULL) {
+    if (orsec.filter != NULL || ressec.filter != NULL) {
         strcat(*orig,"affinity[");
-        if (orsec.filter!=NULL)
+        if (orsec.filter != NULL)
             strcat(*orig, orsec.filter);
         else
             strcat(*orig, ressec.filter);
         strcat(*orig, "]");
     }
 
-  return_label:
-    free(orig_req);
-    free(req1);
+    free(dup_orig);
+    free(dup_res);
     return 0;
 }

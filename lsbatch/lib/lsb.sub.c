@@ -2857,13 +2857,13 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                     while (*optarg == ' ')
                         optarg++;
                     if (req->resReq != NULL){
-                         if (mergeResreq(&req->resReq, optarg)==-1) {
-                             fprintf(stderr, "Resource requirements too long\n");
+                         if (mergeResreq(&req->resReq, optarg) == -1) {
+                             fprintf(stderr, "Resource requirements too long or invalid\n");
                              return -1;
                          }
                     }
                     else {
-                         if ((req->resReq=strdup(optarg))==NULL){
+                         if ((req->resReq=strdup(optarg)) == NULL){
                              fprintf(stderr, "Resource requirements too long\n");
                              return -1;
                          }

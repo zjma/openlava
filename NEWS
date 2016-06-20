@@ -27,6 +27,9 @@ Release notes for OpenLava versions
 -- Renamed the bjgroups command in bjgroup.
 -- Implemented bgmod to change the limits of a job group.
 -- Fix mbatchd core dump when running egroup.
+-- Support bsub with multiple -R options.
+-- OpenLava service script sources the custom ulimit scripts.
+-- Add preemption for multi-thread jobs when a host is not full.
 
 3.3.1
 ======
