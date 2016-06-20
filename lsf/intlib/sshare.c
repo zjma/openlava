@@ -89,9 +89,9 @@ z:
         root = t->root;
 
     if (l == NULL) {
-	free_sacct(t->root->data);
-	fin_link(stack);
-	tree_free(t);
+        free_sacct(t->root->data);
+        fin_link(stack);
+        tree_free(t);
         return NULL;
     }
 
@@ -130,14 +130,14 @@ z:
          */
         sacct = n->data;
         if (n->child == NULL) {
-	    /* all and default are synonyms as they
-	     * both indicate a user that is not explicitly
-	     * defined.
-	     */
+            /* all and default are synonyms as they
+             * both indicate a user that is not explicitly
+             * defined.
+             */
             if (strcasecmp(sacct->name, "all") == 0
-		|| strcasecmp(sacct->name, "default") == 0) {
+                || strcasecmp(sacct->name, "default") == 0) {
                 sacct->options |= SACCT_USER_ALL;
-	    }
+            }
             sacct->options |= SACCT_USER;
             sprintf(buf, "%s/%s", n->parent->name, n->name);
             hash_install(t->node_tab, buf, n, NULL);
@@ -252,7 +252,7 @@ znovu:
  */
 int
 sshare_distribute_own_slots(struct tree_ *t,
-			    uint32_t slots)
+                            uint32_t slots)
 {
     struct tree_node_ *n;
     link_t *stack;
@@ -300,17 +300,17 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-	/* Enforce the ownership/guarantee at the
-	 * first level of the tree.
-	 */
-	if (first == 0) {
-	    if (sacct->numRUN > sacct->shares)
-		sacct->sent = 0;
-	    else
-		sacct->sent = sacct->shares - sacct->numRUN;
-	} else {
-	    avail = avail - compute_slots(n, slots, avail);
-	}
+        /* Enforce the ownership/guarantee at the
+         * first level of the tree.
+         */
+        if (first == 0) {
+            if (sacct->numRUN > sacct->shares)
+                sacct->sent = 0;
+            else
+                sacct->sent = sacct->shares - sacct->numRUN;
+        } else {
+            avail = avail - compute_slots(n, slots, avail);
+        }
 
         assert(avail >= 0);
         /* As we traverse in priority order
@@ -694,11 +694,11 @@ parse_group_member(const char *gname,
     g = NULL;
     for (cc = 0; cc < num; cc++) {
 
-	/* Match the group name and the group
-	 * must have shares.
-	 */
+        /* Match the group name and the group
+         * must have shares.
+         */
         if (strcmp(gname, grps[cc].group) == 0
-	    && grps[cc].user_shares) {
+            && grps[cc].user_shares) {
             g = calloc(1, sizeof(struct group_acct));
             assert(g);
             g->group = strdup(grps[cc].group);
