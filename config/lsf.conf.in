@@ -19,10 +19,10 @@ LSF_LOG_MASK=LOG_WARNING
 
 # Daemons listening ports must not
 # be in use by other programs.
-LSF_LIM_PORT=6322
-LSF_RES_PORT=6323
-LSB_MBD_PORT=6324
-LSB_SBD_PORT=6325
+LSF_LIM_PORT=16322
+LSF_RES_PORT=16323
+LSB_MBD_PORT=16324
+LSB_SBD_PORT=16325
 #
 # Use eauth authentication.
 LSF_AUTH=eauth
