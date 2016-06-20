@@ -30,6 +30,8 @@ Release notes for OpenLava versions
 -- Support bsub with multiple -R options.
 -- OpenLava service script sources the custom ulimit scripts.
 -- Add preemption for multi-thread jobs when a host is not full.
+-- Increase the daemons' port numbers in lsf.conf.in to prevent conflicts
+   with other programs.
 
 3.3.1
 ======
