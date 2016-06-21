@@ -3,6 +3,7 @@ Release notes for OpenLava versions
 3.3.3
 =====
 
+
 3.3.2
 ======
 
@@ -22,7 +23,7 @@ Release notes for OpenLava versions
 -- Implement NUMA awareness and binding of processes based on the
    machine's NUMA architecture.
 -- Fix xdr error in mbatchd if there are no job groups defined
-   and user run bjgroups command.
+   and user run bjgroup command.
 -- Implemented the job group limit 'bgadd -L n /x/y/z'. This allows
    the users to set running job limits at different level of the job group
    hierachy. If the limit is reached jobs attached to the group will be
@@ -36,6 +37,7 @@ Release notes for OpenLava versions
 -- Increase the daemons' port numbers in lsf.conf.in to prevent conflicts
    with other programs.
 -- Implement bsub -Jd to support specifying job description to jobs.
+-- Implement tech preview of lsb.resources.
 
 3.3.1
 ======
