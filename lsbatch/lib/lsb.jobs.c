@@ -367,6 +367,7 @@ lsb_readjobinfo(int *more)
     jobInfo.submit.xf = jobInfoReply.jobBill->xf;
     jobInfo.submit.userGroup = jobInfoReply.jobBill->userGroup;
     jobInfo.submit.job_group = jobInfoReply.jobBill->job_group;
+    jobInfo.submit.job_description = jobInfoReply.jobBill->job_description;
 
     jobInfo.jRusageUpdateTime = jobInfoReply.jRusageUpdateTime;
     jobInfo.runRusage.npids = npids;

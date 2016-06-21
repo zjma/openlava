@@ -904,6 +904,12 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         jobNewLog->job_group = strdup("");
     }
 
+    if (jobNewLog->options2 & SUB2_JOB_DESC) {
+        saveQStr(line, jobNewLog->job_description);
+    } else {
+        jobNewLog->job_description = strdup("");
+    }
+
     return LSBE_NO_ERROR;
 }
 
@@ -1055,6 +1061,10 @@ readJobMod(char *line, struct jobModLog *jobModLog)
         if ( cc != 1)
             return LSBE_EVENT_FORMAT;
         line += ccount + 1;
+    }
+
+    if (jobModLog->options2 & SUB2_JOB_DESC) {
+        saveQStr(line, jobModLog->job_description);
     }
 
     return LSBE_NO_ERROR;
@@ -2085,6 +2095,11 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
     if (addQStr(log_fp, jobNewLog->job_group) < 0)
         return LSBE_SYS_CALL;
 
+    if (jobNewLog->options2 & SUB2_JOB_DESC) {
+        if (addQStr(log_fp, jobNewLog->job_description) < 0)
+            return LSBE_SYS_CALL;
+    }
+
     if (fprintf(log_fp, "\n") < 0)
         return LSBE_SYS_CALL;
 
@@ -2219,6 +2234,11 @@ writeJobMod(FILE *log_fp, struct jobModLog *jobModLog)
 
     if ((jobModLog->options2 & SUB2_JOB_PRIORITY)
         && fprintf(log_fp, " %d", jobModLog->userPriority) < 0) {
+        return LSBE_SYS_CALL;
+    }
+
+    if ((jobModLog->options2 & SUB2_JOB_DESC) &&
+        (addQStr(log_fp, jobModLog->job_description) < 0)) {
         return LSBE_SYS_CALL;
     }
 

@@ -250,6 +250,8 @@ read_newjob(struct eventRec *log)
     submitPtr->userPriority = jobNewLog->userPriority;
     job->jobPriority = jobNewLog->userPriority;
 
+    submitPtr->job_description = jobNewLog->job_description;
+
     if ((logclass & LC_TRACE))
         ls_syslog(LOG_DEBUG2, "%s: jobId=%s", fname, lsb_jobid2str(job->jobId));
 
@@ -343,6 +345,7 @@ copyJobModLog(struct jobModLog *des, struct jobModLog *src)
     des->loginShell = putstr_(src->loginShell);
     des->schedHostType = putstr_(src->schedHostType);
     des->userPriority   = src->userPriority;
+    des->job_description  = src->job_description;
 }
 
 struct jobInfoEnt *

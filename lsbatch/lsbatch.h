@@ -33,6 +33,7 @@
 #define  MAX_CHARLEN         20
 #define  MAX_LSB_NAME_LEN    60
 #define  MAX_CMD_DESC_LEN    256
+#define  MAX_JOB_DESC_LEN    4096
 #define  MAX_USER_EQUIVALENT 128
 #define  MAX_RES_LIMITS      256
 #define  DEFAULT_MSG_DESC    "no description"
@@ -522,6 +523,7 @@
 #define  SUB2_MODIFY_RUN_JOB 0x800
 #define  SUB2_MODIFY_PEND_JOB 0x1000
 #define  SUB2_JOB_GROUP       0x2000
+#define  SUB2_JOB_DESC      0x4000
 
 #define  LOST_AND_FOUND  "lost_and_found"
 
@@ -574,6 +576,7 @@ struct submit {
     int    userPriority;
     char *userGroup;
     char *job_group; /* job group the job is attached to */
+    char *job_description;
 };
 
 struct submitReply {
@@ -1015,6 +1018,7 @@ struct jobNewLog {
     char *userGroup;
     int abs_run_limit;
     char *job_group;
+    char *job_description;
 };
 
 struct jobModLog {
@@ -1072,6 +1076,7 @@ struct jobModLog {
     char    *loginShell;
     char    *schedHostType;
     int     userPriority;
+    char    *job_description;
 };
 
 

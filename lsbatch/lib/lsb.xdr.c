@@ -71,6 +71,7 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
         FREEUP(submitReq->schedHostType);
         FREEUP(submitReq->userGroup);
         _free_(submitReq->job_group);
+        _free_(submitReq->job_description);
 
         if (numAskedHosts > 0) {
             for (i = 0; i < numAskedHosts; i++)
@@ -227,8 +228,13 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
             if (!xdr_var_string(xdrs, &submitReq->job_group))
                 goto Error1;
         } else {
-            submitReq->userGroup = strdup("");
+            submitReq->job_group = strdup("");
         }
+    }
+
+    if (submitReq->options2 & SUB2_JOB_DESC) {
+        if (!xdr_var_string(xdrs, &submitReq->job_description))
+            goto Error1;
     }
 
     return true;

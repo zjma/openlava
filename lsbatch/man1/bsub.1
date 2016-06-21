@@ -48,6 +48,8 @@
 .br
 \fB-J\fR \fIjob_name | \fR\fB-J\fR  \fB"\fRjob_name\fB[\fRindex_list\fB]%\fRjob_limit\fB"\fR
 .br
+\fB-Jd "\fR\fIjob_description\fR"
+.br
 \fB-k "\fRcheckpoint_dir [\fIcheckpoint_period\fR] [\fBmethod=\fRmethod_name]\fB"\fR
 .br
 \fB-L\fR login_shell
@@ -643,6 +645,12 @@ Specify \fB"\fRjob_ID\fB[\fRindex\fB]"\fR to\fB \fRwork with elements of a parti
 Specify \fB"\fRjob_name\fB[\fRindex\fB]"\fR to work with elements of all arrays with the
 same name. Since job names are not unique, multiple job arrays may
 have the same name with a different or same set of indices.
+
+.TP
+\fB-Jd \fR"job_description"
+\fR
+.IP
+Assigns the specified description to the job.
 
 
 .TP

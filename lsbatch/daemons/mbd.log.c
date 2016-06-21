@@ -1437,6 +1437,7 @@ log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
     jobModLog->schedHostType   = modReq->submitReq.schedHostType;
 
     jobModLog->userPriority = modReq->submitReq.userPriority;
+    jobModLog->job_description = modReq->submitReq.job_description;
 
     if (putEventRec(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -1521,8 +1522,6 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     } else if ((hostFactor = getModelFactor(jobNewLog->hostSpec)) == NULL) {
         hostFactor = getHostFactor(jobNewLog->hostSpec);
         if (hostFactor == NULL) {
-            LS_LONG_INT tmpJobId;
-            tmpJobId = jobNewLog->jobId;
             ls_syslog(LOG_ERR, "\
 %s: cannot get hostFactor for job %s host spec %s", __func__,
                       lsb_jobid2str(job->jobId),
@@ -1611,6 +1610,12 @@ log_jobdata(struct jData *job, const char *fname1, int type)
         jobNewLog->job_group = jobBill->job_group;
     else
         jobNewLog->job_group = "";
+
+    if (jobBill->options2 & SUB2_JOB_DESC) {
+        jobNewLog->job_description = jobBill->job_description;
+    } else {
+        jobNewLog->job_description = "";
+    }
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, "\
@@ -3911,6 +3916,7 @@ replay_modifyjob2(char *filename, int lineNum)
     modifyReq.submitReq.loginShell = jobModLog->loginShell ;
     modifyReq.submitReq.schedHostType = jobModLog->schedHostType ;
     modifyReq.submitReq.userPriority = jobModLog->userPriority;
+    modifyReq.submitReq.job_description = jobModLog->job_description;
 
     modifyJob(&modifyReq, NULL, &auth);
     return true;
@@ -4104,6 +4110,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     job->abs_run_limit = jobNewLog->abs_run_limit;
 
     jobBill->job_group = strdup(jobNewLog->job_group);
+
+    jobBill->job_description = strdup(jobNewLog->job_description);
 
     return job;
 }
