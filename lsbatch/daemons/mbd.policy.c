@@ -566,7 +566,7 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
         if (logclass & (LC_PEND))
             ls_syslog(LOG_DEBUG2, "\
 %s: Job %s isn't ready for scheduling; newReason=%d", __func__,
-                    lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+                      lsb_jobid2str(jpbw->jobId), jpbw->newReason);
         return FALSE;
     }
 
@@ -597,7 +597,7 @@ getMinGSlots(struct uData *uPtr, struct qData *qPtr, int *numGAvailSlots)
     numGUnUsedSlots = MAX(0, uPtr->maxJobs
                           - (uPtr->numJobs - uPtr->numPEND));
     *numGAvailSlots = MIN(grpUAcct->numAvailSUSP + numGUnUsedSlots,
-                         uPtr->maxJobs - (uPtr->numRUN - uPtr->numRESERVE));
+                          uPtr->maxJobs - (uPtr->numRUN - uPtr->numRESERVE));
     minNumAvailSlots = MIN(minNumAvailSlots, *numGAvailSlots);
 
     if (uPtr->maxJobs == INFINIT_INT)
@@ -1786,10 +1786,10 @@ ckResReserve(struct hData *hPtr,
                         use_val = (int)((hPtr->lsbLoad[cc]
                                          - hPtr->loadStop[cc])/x);
                     if (use_val <= 0) {
-                            /* state = !ok
-                             */
-                            state = 0;
-                            break;
+                        /* state = !ok
+                         */
+                        state = 0;
+                        break;
                     }
                 }
                 if (cc == MEM
@@ -2912,7 +2912,7 @@ checkResLimit(struct jData *jp, char* hostname)
     for (i = 0; i < limitConf->nLimit; i++) {
         /* no consumer defined, ignore */
         if (limitConf->limits[i].nConsumer <= 0
-                || limitConf->limits[i].nRes <= 0)
+            || limitConf->limits[i].nRes <= 0)
             continue;
 
         /* only support resource "SLOTS" */
@@ -2923,7 +2923,7 @@ checkResLimit(struct jData *jp, char* hostname)
 
         /* no SLOTS defined or SLOTS is not 0, ignore */
         if (k == limitConf->limits[i].nRes
-                || limitConf->limits[i].res[k].value != 0)
+            || limitConf->limits[i].res[k].value != 0)
             continue;
 
         for (j = 0; j < limitConf->limits[i].nConsumer; j++) {
@@ -2944,7 +2944,7 @@ checkResLimit(struct jData *jp, char* hostname)
 
         /* checking hostname but HOSTS is not defined in limit, ignore */
         if ((hostname && !host)
-                || (!hostname && host))
+            || (!hostname && host))
             goto clean4next;
 
         /* enforce limit only if job is submitted to this particular queue */
@@ -2963,7 +2963,7 @@ checkResLimit(struct jData *jp, char* hostname)
         /* enforce limit only if scheduler is evaluating particular hosts */
         if (host) {
             hasMe = FALSE;
-            while ( ( word = getNextWord_ ( &host) ) != NULL ) {
+            while (( word = getNextWord_(&host)) != NULL ) {
                 if (strcasecmp(word, hostname) == 0) {
                     hasMe = TRUE;
                     break;
@@ -2976,7 +2976,7 @@ checkResLimit(struct jData *jp, char* hostname)
         /* check if user is allowed to use the queue/host */
         if (user) {
             hasMe = FALSE;
-            while ( ( word = getNextWord_ ( &user) ) != NULL ) {
+            while ((word = getNextWord_(&user)) != NULL ) {
                 if (strcasecmp(word, jp->userName) == 0) {
                     hasMe = TRUE;
                     break;
@@ -2999,7 +2999,7 @@ checkResLimit(struct jData *jp, char* hostname)
             if (strstr(project, all) != NULL)
                 projectHasAll = TRUE;
 
-            while ( ( word = getNextWord_ ( &project) ) != NULL ) {
+            while ((word = getNextWord_( &project)) != NULL) {
                 if (word[0] == '~') {
                     neg = TRUE;
                     word++;
@@ -3011,9 +3011,9 @@ checkResLimit(struct jData *jp, char* hostname)
                 neg = FALSE;
             }
 
-            if ((!projectHasAll && hasMe)
-                    || (projectHasAll && hasMe && !neg)
-                    || (projectHasAll && !hasMe)) {
+            if ((!projectHasAll && hasMe)
+                || (projectHasAll && hasMe && !neg)
+                || (projectHasAll && !hasMe)) {
                 FREEUP(save_queue);
                 FREEUP(save_project);
                 FREEUP(save_host);
@@ -3022,7 +3022,7 @@ checkResLimit(struct jData *jp, char* hostname)
             }
         }
 
-clean4next:
+    clean4next:
         FREEUP(save_queue);
         FREEUP(save_project);
         FREEUP(save_host);

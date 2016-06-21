@@ -66,12 +66,12 @@
 
 #define LSB_HOST_UNAVAIL(status)     ((status & HOST_STAT_UNAVAIL) != 0)
 
-#define LSB_HOST_UNUSABLE(status)  ((status & (HOST_STAT_WIND |      \
-                                               HOST_STAT_DISABLED | \
-                                               HOST_STAT_LOCKED |   \
+#define LSB_HOST_UNUSABLE(status)  ((status & (HOST_STAT_WIND |         \
+                                               HOST_STAT_DISABLED |     \
+                                               HOST_STAT_LOCKED |       \
                                                HOST_STAT_LOCKED_MASTER | \
-                                               HOST_STAT_NO_LIM | \
-                                               HOST_STAT_UNREACH | \
+                                               HOST_STAT_NO_LIM |       \
+                                               HOST_STAT_UNREACH |      \
                                                HOST_STAT_UNAVAIL)) != 0)
 #define HOST_BUSY_NOT          0x000
 #define HOST_BUSY_R15S         0x001

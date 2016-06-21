@@ -193,10 +193,10 @@ static int expandWordAll(int*, int*, struct inNames**, char*);
 static int expandUserAll(int*, int*, struct inNames**, char*);
 static int expandQueueAll(int*, int*, struct inNames**, char*);
 static int readHvalues_conf(struct keymap *, char *, struct lsConf *,
-			    char *, int *, int, char *);
+                            char *, int *, int, char *);
 static link_t *host_base_name(const char *);
 static int parse_ownership(struct queueInfoEnt *,
-			   const char *);
+                           const char *);
 
 static int
 readHvalues_conf(struct keymap *keyList, char *linep, struct lsConf *conf,
@@ -760,8 +760,8 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
 
 
     if (pConf->param->maxUserPriority <= 0
-         && pConf->param->jobPriorityValue > 0
-         && pConf->param->jobPriorityTime > 0) {
+        && pConf->param->jobPriorityValue > 0
+        && pConf->param->jobPriorityTime > 0) {
         ls_syslog(LOG_ERR, I18N(5453,
                                 "%s: File%s in section Parameters : MAX_USER_PRIORITY should be defined first so that JOB_PRIORITY_OVER_TIME can be used: job priority control disabled"), /* catgets 5453 */
                   __func__, fname);
@@ -1344,7 +1344,7 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
         {"GROUP_MEMBER", NULL, 0},
         {"USER_SHARES",  NULL, 0},
         {"GROUP_SLOT", NULL, 0},
-	{"MAX_SLOTS", NULL, 0},
+        {"MAX_SLOTS", NULL, 0},
         {NULL, NULL, 0}
     };
     char *linep;
@@ -1518,47 +1518,47 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 allFlag = TRUE;
             }
 
-	    /* Support the compact hostname notation
-	     * a[n-N]
-	     */
+            /* Support the compact hostname notation
+             * a[n-N]
+             */
             hl = NULL;
             if (!allFlag && type == HOST_GRP)
                 hl = host_base_name(sp);
-	    if (hl) {
-		while ((wp = pop_link(hl))) {
-		    if (! addMember(gp,
-				    wp,
-				    type,
-				    fname,
-				    *lineNum,
-				    "",
-				    options,
-				    true)
-			&& lsberrno == LSBE_NO_MEM) {
-			_free_(wp);
-			while ((wp = pop_link(hl)))
-			    _free_(wp);
-			fin_link(hl);
-			return false;
-		    }
-		    _free_(wp);
-		}
-		fin_link(hl);
-	    } else {
-		while (!allFlag && (wp = getNextWord_(&sp)) != NULL) {
-		    if (!addMember(gp,
-				   wp,
-				   type,
-				   fname,
-				   *lineNum,
-				   "",
-				   options,
-				   TRUE)
-                    && lsberrno == LSBE_NO_MEM) {
-			return FALSE;
-		    }
-		}
-	    }
+            if (hl) {
+                while ((wp = pop_link(hl))) {
+                    if (! addMember(gp,
+                                    wp,
+                                    type,
+                                    fname,
+                                    *lineNum,
+                                    "",
+                                    options,
+                                    true)
+                        && lsberrno == LSBE_NO_MEM) {
+                        _free_(wp);
+                        while ((wp = pop_link(hl)))
+                            _free_(wp);
+                        fin_link(hl);
+                        return false;
+                    }
+                    _free_(wp);
+                }
+                fin_link(hl);
+            } else {
+                while (!allFlag && (wp = getNextWord_(&sp)) != NULL) {
+                    if (!addMember(gp,
+                                   wp,
+                                   type,
+                                   fname,
+                                   *lineNum,
+                                   "",
+                                   options,
+                                   TRUE)
+                        && lsberrno == LSBE_NO_MEM) {
+                        return FALSE;
+                    }
+                }
+            }
 
             if (allFlag) {
                 if (!addMember (gp,
@@ -1597,9 +1597,9 @@ do_Groups(struct groupInfoEnt **groups, struct lsConf *conf, char *fname,
                 set_group_slots(gp, keylist[3].val);
             }
 
-	    if (type == HOST_GRP && keylist[4].val) {
-		set_group_max_slots(gp, keylist[4].val);
-	    }
+            if (type == HOST_GRP && keylist[4].val) {
+                set_group_max_slots(gp, keylist[4].val);
+            }
         }
 
         ls_syslog(LOG_WARNING, I18N_FILE_PREMATURE, __func__, fname, *lineNum);
@@ -1841,7 +1841,7 @@ addMember (struct groupInfoEnt *gp, char *word, int grouptype,
                 ls_syslog(LOG_WARNING, "\
 %s: File %s%s at line %d: Unknown user <%s> in group <%s>",__func__,
                           fname, section, lineNum, myWord, gp->group);
-                    lsberrno = LSBE_CONF_WARNING;
+                lsberrno = LSBE_CONF_WARNING;
 
                 if (!addMembStr(&unknownUsers, myWord)) {
                     FREEUP(myWord);
@@ -2640,18 +2640,18 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             continue;
         }
 
-	hcount = 0;
-	hl = NULL;
-	host_name = NULL;
+        hcount = 0;
+        hl = NULL;
+        host_name = NULL;
         if (strcmp (keylist[HKEY_HNAME].val, "default") != 0) {
 
-	    hl = host_base_name(keylist[HKEY_HNAME].val);
-	    if (hl) {
-		host_name = pop_link(hl);
-	    } else {
-		host_name = keylist[HKEY_HNAME].val;
-	    }
-	znovu:
+            hl = host_base_name(keylist[HKEY_HNAME].val);
+            if (hl) {
+                host_name = pop_link(hl);
+            } else {
+                host_name = keylist[HKEY_HNAME].val;
+            }
+        znovu:
             hp = Gethostbyname_(host_name);
             if (!hp && options != CONF_NO_CHECK) {
 
@@ -2703,7 +2703,7 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
         } else { /* hostname is default */
             strcpy (hostname,  "default");
-	}
+        }
 
         h_addEnt_(tmpHosts, hostname, &new);
         if (!new) {
@@ -2783,34 +2783,34 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
         }
 
-	/* If we are dealing with the compact notation we reuse
-	 * the hostInfo data structure so make sure we don't
-	 * leak memory
-	 */
+        /* If we are dealing with the compact notation we reuse
+         * the hostInfo data structure so make sure we don't
+         * leak memory
+         */
         if (info->numIndx
-	    && hcount == 0) {
+            && hcount == 0) {
 
-	    host.loadSched = calloc(info->numIndx, sizeof(float *));
-	    if (host.loadSched == NULL) {
-		ls_syslog(LOG_ERR, "%s: loadSched calloc() %dbytes failed %m",
-			  __func__, info->numIndx*sizeof(float *));
-		lsberrno = LSBE_NO_MEM;
-		goto Error1;
-	    }
-	}
+            host.loadSched = calloc(info->numIndx, sizeof(float *));
+            if (host.loadSched == NULL) {
+                ls_syslog(LOG_ERR, "%s: loadSched calloc() %dbytes failed %m",
+                          __func__, info->numIndx*sizeof(float *));
+                lsberrno = LSBE_NO_MEM;
+                goto Error1;
+            }
+        }
 
         if (info->numIndx
-	    && hcount == 0) {
+            && hcount == 0) {
 
-	    host.loadStop = calloc(info->numIndx, sizeof(float *));
+            host.loadStop = calloc(info->numIndx, sizeof(float *));
 
-	    if (host.loadStop == NULL) {
-		ls_syslog(LOG_ERR, "%s: loadStop calloc() %dbytes failed %m",
-			  __func__, info->numIndx*sizeof(float *));
-		lsberrno = LSBE_NO_MEM;
-		goto Error1;
-	    }
-	}
+            if (host.loadStop == NULL) {
+                ls_syslog(LOG_ERR, "%s: loadStop calloc() %dbytes failed %m",
+                          __func__, info->numIndx*sizeof(float *));
+                lsberrno = LSBE_NO_MEM;
+                goto Error1;
+            }
+        }
 
         getThresh (info, keylist, host.loadSched, host.loadStop,
                    fname, lineNum, " in section Host ending");
@@ -2849,13 +2849,13 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
                 num = 0;
                 ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Can't find the information of host <%s>",
-			  __func__, fname, *lineNum, hostname);
+                          __func__, fname, *lineNum, hostname);
                 lsberrno = LSBE_CONF_WARNING;
             } else if (cConf.hosts[i].isServer != TRUE) {
                 num = 0;
                 ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Host <%s> is not a server;ignoring",
-			  __func__, fname, *lineNum, hostname);
+                          __func__, fname, *lineNum, hostname);
                 lsberrno = LSBE_CONF_WARNING;
             } else {
                 num = 1;
@@ -2886,25 +2886,25 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
                 goto Error1;
             }
         }
-	/* If we expanded the hostname from its base name
-	 * free the processed name and get the next one
-	 */
-	if (hl && LINK_NUM_ENTRIES(hl) > 0) {
-	    _free_(host_name);
-	    host_name = pop_link(hl);
-	    ++hcount;
-	    goto znovu;
-	}
-	/* Don't use freeHostInfo()
-	 * host.host will be double freed
-	 */
-	FREEUP(host.windows);
+        /* If we expanded the hostname from its base name
+         * free the processed name and get the next one
+         */
+        if (hl && LINK_NUM_ENTRIES(hl) > 0) {
+            _free_(host_name);
+            host_name = pop_link(hl);
+            ++hcount;
+            goto znovu;
+        }
+        /* Don't use freeHostInfo()
+         * host.host will be double freed
+         */
+        FREEUP(host.windows);
         FREEUP(host.loadSched);
         FREEUP(host.loadStop);
-	if (hl) {
-	    fin_link(hl);
-	    _free_(host_name);
-	}
+        if (hl) {
+            fin_link(hl);
+            _free_(host_name);
+        }
     } /* while (linep = getnextline() */
 
     ls_syslog(LOG_ERR, I18N_FILE_PREMATURE, __func__, fname, *lineNum);
@@ -4546,26 +4546,26 @@ do_Queues(struct lsConf *conf,
             }
         }
 
-	if (keylist[QKEY_PRE_POST_EXEC_USER].val != NULL
-	    && strcmp(keylist[QKEY_PRE_POST_EXEC_USER].val, "")) {
-	    if (strlen (keylist[QKEY_PRE_POST_EXEC_USER].val) >= MAXLINELEN) {
-		ls_syslog(LOG_ERR, I18N(5352,
-					"%s: User name %s in section Queue ending at line %d: PRE_POST_EXEC_USER of the queue <%s> is too long <%s>; ignoring"),
-			__func__, fname, *lineNum, queue.queue, keylist[QKEY_PRE_POST_EXEC_USER].val); /* catgets 5352 */
-		lsberrno = LSBE_CONF_WARNING;
-	    } else {
-		queue.prepostUsername = putstr_ (keylist[QKEY_PRE_POST_EXEC_USER].val);
-		if (queue.prepostUsername == NULL) {
-		    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
-			      "malloc",
-			      strlen(keylist[QKEY_PRE_POST_EXEC_USER].val)+1);
-		    lsberrno = LSBE_NO_MEM;
-		    freekeyval (keylist);
-		    freeQueueInfo ( &queue );
-		    return FALSE;
-		}
-	    }
-	}
+        if (keylist[QKEY_PRE_POST_EXEC_USER].val != NULL
+            && strcmp(keylist[QKEY_PRE_POST_EXEC_USER].val, "")) {
+            if (strlen (keylist[QKEY_PRE_POST_EXEC_USER].val) >= MAXLINELEN) {
+                ls_syslog(LOG_ERR, I18N(5352,
+                                        "%s: User name %s in section Queue ending at line %d: PRE_POST_EXEC_USER of the queue <%s> is too long <%s>; ignoring"),
+                          __func__, fname, *lineNum, queue.queue, keylist[QKEY_PRE_POST_EXEC_USER].val); /* catgets 5352 */
+                lsberrno = LSBE_CONF_WARNING;
+            } else {
+                queue.prepostUsername = putstr_ (keylist[QKEY_PRE_POST_EXEC_USER].val);
+                if (queue.prepostUsername == NULL) {
+                    ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__,
+                              "malloc",
+                              strlen(keylist[QKEY_PRE_POST_EXEC_USER].val)+1);
+                    lsberrno = LSBE_NO_MEM;
+                    freekeyval (keylist);
+                    freeQueueInfo ( &queue );
+                    return FALSE;
+                }
+            }
+        }
 
         if (keylist[QKEY_POST_EXEC].val != NULL
             && strcmp(keylist[QKEY_POST_EXEC].val, "")) {
@@ -4622,16 +4622,16 @@ do_Queues(struct lsConf *conf,
         if (keylist[QKEY_SLOT_RESERVE].val != NULL
             && strcmp(keylist[QKEY_SLOT_RESERVE].val, "")) {
 
-	    if (keylist[QKEY_SLOT_MEMORY_RESERVE].val) {
-		ls_syslog(LOG_ERR, "\
+            if (keylist[QKEY_SLOT_MEMORY_RESERVE].val) {
+                ls_syslog(LOG_ERR, "\
  %s: File %s in section Queue ending at line %d: SLOT_RESERVE cannot be specified with SLOT_MEMORY_RESERVE for queue <%s>;ignoring",
-			  __func__, fname, *lineNum,
-			  queue.queue);
+                          __func__, fname, *lineNum,
+                          queue.queue);
                 lsberrno = LSBE_CONF_WARNING;
-	    } else {
-		getReserve(keylist[QKEY_SLOT_RESERVE].val, &queue, fname,
-			   *lineNum);
-	    }
+            } else {
+                getReserve(keylist[QKEY_SLOT_RESERVE].val, &queue, fname,
+                           *lineNum);
+            }
         }
 
         if (keylist[QKEY_RESUME_COND].val != NULL &&
@@ -4703,27 +4703,27 @@ do_Queues(struct lsConf *conf,
 
         if (keylist[QKEY_FAIRSHARE].val != NULL) {
 
-	    if (keylist[QKEY_OWNERSHIP].val != NULL) {
-		ls_syslog(LOG_ERR, "\
+            if (keylist[QKEY_OWNERSHIP].val != NULL) {
+                ls_syslog(LOG_ERR, "\
 %s: FAIRSHARE and OWNERSHIP cannot be specified together in %s at line %d",
-			  __func__, fname, *lineNum);
-		FREEUP(queue.fairshare);
-		FREEUP(queue.ownership);
+                          __func__, fname, *lineNum);
+                FREEUP(queue.fairshare);
+                FREEUP(queue.ownership);
                 lsberrno = LSBE_CONF_WARNING;
-	    } else {
-		if (strcasestr(keylist[QKEY_FAIRSHARE].val, "USER_SHARES")) {
-		    queue.fairshare = strdup(keylist[QKEY_FAIRSHARE].val);
-		} else  {
-		    ls_syslog(LOG_ERR, "\
+            } else {
+                if (strcasestr(keylist[QKEY_FAIRSHARE].val, "USER_SHARES")) {
+                    queue.fairshare = strdup(keylist[QKEY_FAIRSHARE].val);
+                } else  {
+                    ls_syslog(LOG_ERR, "\
 %s: unsupported FAIRSHARE %s key, ignored",
-			      __func__,keylist[QKEY_FAIRSHARE].val);
-		    lsberrno = LSBE_CONF_WARNING;
-		    freekeyval(keylist);
-		    freeQueueInfo(&queue);
-		    return FALSE;
-		}
-	    }
-	}
+                              __func__,keylist[QKEY_FAIRSHARE].val);
+                    lsberrno = LSBE_CONF_WARNING;
+                    freekeyval(keylist);
+                    freeQueueInfo(&queue);
+                    return FALSE;
+                }
+            }
+        }
 
         if (keylist[QKEY_PREEMPTION].val != NULL) {
             if (strcasestr(keylist[QKEY_PREEMPTION].val, "PREEMPTIVE")) {
@@ -4744,51 +4744,51 @@ do_Queues(struct lsConf *conf,
             }
         }
 
-	/* Support slot ownership in queue
-	 */
+        /* Support slot ownership in queue
+         */
         if (keylist[QKEY_OWNERSHIP].val != NULL) {
 
-	    if (keylist[QKEY_FAIRSHARE].val != NULL) {
-		ls_syslog(LOG_ERR, "\
+            if (keylist[QKEY_FAIRSHARE].val != NULL) {
+                ls_syslog(LOG_ERR, "\
 %s: FAIRSHARE and OWNERSHIP cannot be specified together in %s at line %d",
-			  __func__, fname, *lineNum);
-		lsberrno = LSBE_CONF_WARNING;
-		FREEUP(queue.fairshare);
-		FREEUP(queue.ownership);
-	    } else {
-		if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USERS")) {
-		    if (parse_ownership(&queue, keylist[QKEY_OWNERSHIP].val) < 0) {
-			ls_syslog(LOG_ERR, "\
-%s: failed parsing %s file %s at line, ignoring the keyword", __func__,
-				  keylist[QKEY_OWNERSHIP].val, fname, *lineNum);
-			lsberrno = LSBE_CONF_WARNING;
-			FREEUP(queue.ownership);
-		    }
-		} else  {
-		    ls_syslog(LOG_ERR, "\
-%s: unsupported OWNERSHIP %s key, file %s at line %d inignored",
-			      __func__,keylist[QKEY_OWNERSHIP].val,
-			      fname, *lineNum);
-		    lsberrno = LSBE_CONF_WARNING;
-		    FREEUP(queue.ownership);
-		}
-	    }
-	}
-	/* Reserve slots and memory
-	 */
-	if (keylist[QKEY_SLOT_MEMORY_RESERVE].val != NULL) {
-	    if (keylist[QKEY_SLOT_RESERVE].val) {
-		ls_syslog(LOG_ERR, "\
- %s: File %s in section Queue ending at line %d: SLOT_RESERVE cannot be specified with SLOT_MEMORY_RESERVE for queue <%s>;ignoring",
-			  __func__, fname, *lineNum,
-			  queue.queue);
+                          __func__, fname, *lineNum);
                 lsberrno = LSBE_CONF_WARNING;
-	    } else {
-		getReserve(keylist[QKEY_SLOT_MEMORY_RESERVE].val, &queue, fname,
-			   *lineNum);
-		queue.qAttrib |= Q_ATTRIB_MEM_RESERVE;
-	    }
-	}
+                FREEUP(queue.fairshare);
+                FREEUP(queue.ownership);
+            } else {
+                if (strcasestr(keylist[QKEY_OWNERSHIP].val, "USERS")) {
+                    if (parse_ownership(&queue, keylist[QKEY_OWNERSHIP].val) < 0) {
+                        ls_syslog(LOG_ERR, "\
+%s: failed parsing %s file %s at line, ignoring the keyword", __func__,
+                                  keylist[QKEY_OWNERSHIP].val, fname, *lineNum);
+                        lsberrno = LSBE_CONF_WARNING;
+                        FREEUP(queue.ownership);
+                    }
+                } else  {
+                    ls_syslog(LOG_ERR, "\
+%s: unsupported OWNERSHIP %s key, file %s at line %d inignored",
+                              __func__,keylist[QKEY_OWNERSHIP].val,
+                              fname, *lineNum);
+                    lsberrno = LSBE_CONF_WARNING;
+                    FREEUP(queue.ownership);
+                }
+            }
+        }
+        /* Reserve slots and memory
+         */
+        if (keylist[QKEY_SLOT_MEMORY_RESERVE].val != NULL) {
+            if (keylist[QKEY_SLOT_RESERVE].val) {
+                ls_syslog(LOG_ERR, "\
+ %s: File %s in section Queue ending at line %d: SLOT_RESERVE cannot be specified with SLOT_MEMORY_RESERVE for queue <%s>;ignoring",
+                          __func__, fname, *lineNum,
+                          queue.queue);
+                lsberrno = LSBE_CONF_WARNING;
+            } else {
+                getReserve(keylist[QKEY_SLOT_MEMORY_RESERVE].val, &queue, fname,
+                           *lineNum);
+                queue.qAttrib |= Q_ATTRIB_MEM_RESERVE;
+            }
+        }
 
         if (info->numIndx
             && (queue.loadSched = calloc(info->numIndx,
@@ -4912,7 +4912,7 @@ freeLimitInfo(struct resLimit *rl)
 
 char
 checkRequeEValues(struct queueInfoEnt *qp,
-		  char *word, char *fname, int *lineNum)
+                  char *word, char *fname, int *lineNum)
 {
 #define NORMAL_EXIT 0
 #define EXCLUDE_EXIT 1
@@ -5012,7 +5012,7 @@ addQueue(struct queueInfoEnt *qp, char *fname, int lineNum)
         else
             queuesize *= 2;
         if ((tmpQueues = myrealloc(queues, queuesize
-				   * sizeof(struct queueInfoEnt *))) == NULL) {
+                                   * sizeof(struct queueInfoEnt *))) == NULL) {
             ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, __func__, "myrealloc",
                       queuesize * sizeof(struct queueInfoEnt *));
             lsberrno = LSBE_NO_MEM;
@@ -5228,7 +5228,7 @@ parseCpuAndRunLimit(struct keymap *keylist,
                     char *fname,
                     int *lineNum,
                     char *pname,
-                     struct lsInfo *info,
+                    struct lsInfo *info,
                     int options)
 {
     struct keymap key;
@@ -7780,19 +7780,19 @@ static int
 set_group_max_slots(struct groupInfoEnt *gp, const char *max_slots)
 {
     if (gp == NULL
-	|| max_slots == NULL)
-	return -1;
+        || max_slots == NULL)
+        return -1;
 
     if (max_slots[0] == 0) {
-	gp->max_slots = INT32_MAX;
-	return 0;
+        gp->max_slots = INT32_MAX;
+        return 0;
     }
 
     gp->max_slots = atoi(max_slots);
     if (gp->max_slots <= 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: invalid max_group_slot %s assuming INT32_MAX", __func__, max_slots);
-	gp->max_slots = INT32_MAX;
+        gp->max_slots = INT32_MAX;
     }
 
     return 0;
@@ -7824,43 +7824,43 @@ host_base_name(const char *name)
 
     while ((h2 = getNextWord_(&basename))) {
 
-	if (! strchr(h2, '[')
-	    || ! strchr(h2, ']')
-	    || ! strchr(h2, '-')) {
+        if (! strchr(h2, '[')
+            || ! strchr(h2, ']')
+            || ! strchr(h2, '-')) {
 
-	    hname = strdup(h2);
-	    enqueue_link(l, hname);
-	    continue;
-	}
+            hname = strdup(h2);
+            enqueue_link(l, hname);
+            continue;
+        }
 
-	/* get the hostname
-	 */
-	p = strchr(h2, '[');
-	*p = 0;
-	++p;
-	strcpy(name2, h2);
+        /* get the hostname
+         */
+        p = strchr(h2, '[');
+        *p = 0;
+        ++p;
+        strcpy(name2, h2);
 
-	for (i = 0; p[i] != 0; i++) {
-	    if (p[i] == ']'
-		|| p[i] == '-')
-		p[i] = ' ';
-	}
+        for (i = 0; p[i] != 0; i++) {
+            if (p[i] == ']'
+                || p[i] == '-')
+                p[i] = ' ';
+        }
 
-	/* Get the numbers...
-	 */
-	cc = sscanf(p, "%d%d", &n, &N);
-	if (cc != 2) {
-	    ls_syslog(LOG_ERR, "\
+        /* Get the numbers...
+         */
+        cc = sscanf(p, "%d%d", &n, &N);
+        if (cc != 2) {
+            ls_syslog(LOG_ERR, "\
 %s: unrecognized format %s of host base name", __func__, name);
-	    free(p0);
-	    return NULL;
-	}
+            free(p0);
+            return NULL;
+        }
 
-	for (i = n; i <= N; i++) {
-	    sprintf(buf, "%s%d", name2, i);
-	    hname = strdup(buf);
-	    enqueue_link(l, hname);
-	}
+        for (i = n; i <= N; i++) {
+            sprintf(buf, "%s%d", name2, i);
+            hname = strdup(buf);
+            enqueue_link(l, hname);
+        }
     }
 
     free(p0);
@@ -7875,7 +7875,7 @@ host_base_name(const char *name)
  */
 static int
 parse_ownership(struct queueInfoEnt *queue,
-		const char *val)
+                const char *val)
 {
     char *l;
     char *p;
@@ -7886,21 +7886,21 @@ parse_ownership(struct queueInfoEnt *queue,
      */
     l = strstr(p, "LOAN_DURATION");
     if (l) {
-	char *b;
-	char *b2;
+        char *b;
+        char *b2;
 
-	*l = 0;
-	++l;
-	b = strchr(l,'[');
-	if (b == NULL)
-	    return -1;
-	b2 = strchr(l, ']');
-	if (b2 == NULL)
-	    return -1;
-	*b = 0;
-	++b;
-	*b2 = 0;
-	queue->loan_duration = atoi(b);
+        *l = 0;
+        ++l;
+        b = strchr(l,'[');
+        if (b == NULL)
+            return -1;
+        b2 = strchr(l, ']');
+        if (b2 == NULL)
+            return -1;
+        *b = 0;
+        ++b;
+        *b2 = 0;
+        queue->loan_duration = atoi(b);
     }
 
     queue->ownership = p;
@@ -8040,7 +8040,7 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
 
     if (isSectionEnd(linep, fname, lineNum, "Limit")) {
         ls_syslog(LOG_WARNING, I18N_EMPTY_SECTION,
-                __func__, fname, *lineNum, "limit");
+                  __func__, fname, *lineNum, "limit");
         lsberrno = LSBE_CONF_WARNING;
         return FALSE;
     }
@@ -8073,8 +8073,8 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     for (i = 0; keylist[i].key != NULL; i++) {
         for (j = 0; j < LIMIT_CONSUMER_TYPE_NUM; j++) {
             if (strcasecmp(keylist[i].key, mapConsumerType2Name[j]) == 0
-                    && keylist[i].val
-                    && strcmp(keylist[i].val, "")) {
+                && keylist[i].val
+                && strcmp(keylist[i].val, "")) {
                 limitPtr->nConsumer++;
                 break;
             }
@@ -8085,8 +8085,8 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     for (i = 0; keylist[i].key != NULL; i++) {
         for (j = 0; j < LIMIT_RESOURCE_TYPE_NUM; j++) {
             if (strcasecmp(keylist[i].key, mapResType2Name[j]) == 0
-                    && keylist[i].val
-                    && strcmp(keylist[i].val, "")) {
+                && keylist[i].val
+                && strcmp(keylist[i].val, "")) {
                 limitPtr->nRes++;
                 break;
             }
@@ -8120,11 +8120,11 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
         limitPtr->consumers[idx].def = putstr_(keylist[1].val);
 
         ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
-                          "the string is \'%s\'", keylist[1].val);
+                  "the string is \'%s\'", keylist[1].val);
         numQueues = parseQueues(keylist[1].val, &outQueues);
         if (numQueues > 0) {
             ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
-                              "the string is replaced with \'%s\'", outQueues);
+                      "the string is replaced with \'%s\'", outQueues);
         } else if (numQueues < 0 || outQueues == NULL) {
             ls_syslog(LOG_ERR, "\
     %s: File %s in section Limit ending at line %d: No valid queues specified in QUEUES; ignoring the limit",  __func__, fname, *lineNum);
@@ -8158,11 +8158,11 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
         limitPtr->consumers[idx].def = putstr_(keylist[3].val);
 
         ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
-                      "the string is \'%s\'", keylist[3].val);
+                  "the string is \'%s\'", keylist[3].val);
         numHosts = parseHosts(keylist[3].val, &outHosts);
         if (numHosts > 0) {
             ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
-                          "the string is replaced with \'%s\'", outHosts);
+                      "the string is replaced with \'%s\'", outHosts);
         } else if (numHosts < 0 || outHosts == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: File %s in section Limit ending at line %d: No valid hosts or host group specified in HOSTS; ignoring the limit",  __func__, fname, *lineNum);
@@ -8187,11 +8187,11 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
         limitPtr->consumers[idx].def = putstr_(keylist[4].val);
 
         ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
-                      "the string is \'%s\'", keylist[4].val);
+                  "the string is \'%s\'", keylist[4].val);
         numUsers = parseUsers(keylist[4].val, &outUsers);
         if (numUsers > 0) {
             ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
-                          "the string is replaced with \'%s\'", outUsers);
+                      "the string is replaced with \'%s\'", outUsers);
         } else if (numUsers < 0 || outUsers == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: File %s in section Limit ending at line %d: No valid users or user group specified in USERS; ignoring the limit",  __func__, fname, *lineNum);
@@ -8234,8 +8234,8 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
                      INFINIT_INT, -1)) == INFINIT_INT) {
             ls_syslog(LOG_ERR, "\
 %s: File %s in section Limit ending at line %d: JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
-                                  __func__, fname, *lineNum,
-                                  keylist[6].val, INFINIT_INT);
+                      __func__, fname, *lineNum,
+                      keylist[6].val, INFINIT_INT);
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
