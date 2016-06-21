@@ -57,10 +57,12 @@ static struct lsConf *paramFileConf = NULL;
 static struct lsConf *userFileConf = NULL;
 static struct lsConf *hostFileConf = NULL;
 static struct lsConf *queueFileConf = NULL;
+static struct lsConf *resFileConf = NULL;
 struct userConf *userConf = NULL;
 static struct hostConf *hostConf = NULL;
 static struct queueConf *queueConf = NULL;
 static struct paramConf *paramConf = NULL;
+struct resLimitConf *limitConf = NULL;
 static struct gData *tempUGData[MAX_GROUPS];
 static struct gData *tempHGData[MAX_GROUPS];
 static int nTempUGroups;
@@ -71,6 +73,7 @@ static char batchName[MAX_LSB_NAME_LEN] = "root";
 #define USER_FILE     0x02
 #define HOST_FILE     0x04
 #define QUEUE_FILE    0x08
+#define RESOURCE_FILE 0x16
 
 #define HDATA         1
 #define UDATA         2
@@ -83,6 +86,7 @@ static void readParamConf(int);
 static int  readHostConf(int);
 static void readUserConf(int);
 static void readQueueConf(int);
+static void readResConf(int);
 
 static int isHostAlias (char *);
 static int searchAll(char *);
@@ -290,6 +294,7 @@ minit(int mbdInitFlags)
 
     TIMEIT(0, readUserConf(mbdInitFlags), "minit_readUserConf");
     TIMEIT(0, readQueueConf(mbdInitFlags), "minit_readQueueConf");
+    TIMEIT(0, readResConf(mbdInitFlags), "minit_readResConf");
     copyGroups(FALSE);
 
     updUserList(mbdInitFlags);
@@ -706,6 +711,49 @@ createDefQueue(void)
     qp->askedOthPrio = 0;
     qp->acceptIntvl = accept_intvl;
     inQueueList(qp);
+}
+
+static void
+readResConf(int mbdInitFlags)
+{
+    char file[PATH_MAX];
+
+    if (mbdInitFlags == FIRST_START
+        || mbdInitFlags == RECONFIG_CONF) {
+        sprintf(file, "%s/lsb.resources", daemonParams[LSB_CONFDIR].paramValue);
+        resFileConf = getFileConf(file, RESOURCE_FILE);
+        if (resFileConf == NULL && lserrno == LSE_NO_FILE) {
+            ls_syslog(LOG_ERR, "\
+%s: lsb.resources not found %M, no resource limit", __FUNCTION__);
+            limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+            return;
+        }
+    } else if (resFileConf == NULL) {
+        ls_syslog(LOG_DEBUG, "\
+%s: lsb.resources not found, no resource limit", __FUNCTION__);
+        limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+        return;
+    }
+
+    if ((limitConf = lsb_readres(resFileConf)) == NULL) {
+        if (lsberrno == LSBE_CONF_FATAL) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __FUNCTION__, "lsb_readres");
+            if (lsb_CheckMode) {
+                lsb_CheckError = FATAL_ERR;
+                return;
+            }
+            mbdDie(MASTER_FATAL);
+        }
+
+        if (lsberrno == LSBE_CONF_WARNING)
+            lsb_CheckError = WARNING_ERR;
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, __FUNCTION__, "lsb_readres");
+        limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+        return;
+    }
+
+    if (lsberrno == LSBE_CONF_WARNING)
+        lsb_CheckError = WARNING_ERR;
 }
 
 /* addHost()

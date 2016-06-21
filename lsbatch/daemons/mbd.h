@@ -926,6 +926,8 @@ extern int                     freedSomeReserveSlot;
 extern long                    schedSeqNo;
 extern struct switch_child     *swchild;
 
+extern struct resLimitConf     *limitConf;
+
 extern void                 pollSbatchds(int);
 extern void                 hStatChange(struct hData *, int status);
 extern int                  checkHosts(struct infoReq*,

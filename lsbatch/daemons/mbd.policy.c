@@ -227,6 +227,7 @@ static int cntUserJobs(struct jData *, struct gData *, struct hData *,
 
 static int candHostOk(struct jData *jp, int indx, int *numAvailSlots,
                       int *hReason);
+static int checkResLimit(struct jData *jp, char*);
 static int allocHosts(struct jData *jp);
 static int deallocHosts(struct jData *jp);
 static void jobStarted(struct jData *, struct jobReply *);
@@ -553,6 +554,19 @@ readyToDisp (struct jData *jpbw, int *numAvailSlots)
             ls_syslog(LOG_DEBUG2, "\
 %s: Job %s isn't ready for dispatch; newReason=%d", __func__,
                       lsb_jobid2str(jpbw->jobId), jpbw->newReason);
+        return FALSE;
+    }
+
+    if (! checkResLimit(jpbw, NULL)) {
+        jpbw->newReason = PEND_RES_LIMIT;
+        jpbw->numReasons = 0;
+        FREEUP (jpbw->reasonTb);
+        jpbw->numSlots = 0;
+        *numAvailSlots = 0;
+        if (logclass & (LC_PEND))
+            ls_syslog(LOG_DEBUG2, "\
+%s: Job %s isn't ready for scheduling; newReason=%d", __func__,
+                    lsb_jobid2str(jpbw->jobId), jpbw->newReason);
         return FALSE;
     }
 
@@ -1354,6 +1368,22 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
     }
 
     num = numHosts;
+    numHosts = 0;
+    for (i = 0; i < num; i++) {
+        if (checkResLimit(jp, jUsable[i]->host)) {
+            if (numHosts != i) {
+                jUsable[numHosts] = jUsable[i];
+            }
+            numHosts++;
+        } else {
+            jUnusable[numReasons] = jUsable[i];
+            jReasonTb[numReasons++] = PEND_RES_LIMIT;
+            if (logclass & (LC_SCHED | LC_PEND))
+                ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
+        }
+    }
+
+    num = numHosts;
     if ((!jp->qPtr->resValPtr
          || !(jp->qPtr->qAttrib & Q_ATTRIB_NO_HOST_TYPE))
         && !jp->shared->resValPtr
@@ -1457,7 +1487,6 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
     *numJUsable = 0;
     *nProc = 0;
     for (i = 0; i < numHosts; i++) {
-
         INC_CNT(PROF_CNT_innerLoopgetJUsable);
         hReason = 0;
         numSlots = 0;
@@ -2857,6 +2886,157 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
         ls_syslog(LOG_DEBUG3, "%s: job=%s, host=%s, numAvailSlots=%d, slots=%d", fname, lsb_jobid2str(jp->jobId), hp->host, *numAvailSlots, slots);
 
     return (slots);
+}
+
+static int
+checkResLimit(struct jData *jp, char* hostname)
+{
+    int i, j, k;
+    char* queue = NULL;
+    char* save_queue = NULL;
+    char* project = NULL;
+    char* save_project = NULL;
+    char* user = NULL;
+    char* save_user =NULL;
+    char* host = NULL;
+    char* save_host = NULL;
+    char *word = NULL;
+    int hasMe = FALSE;
+    char all[4] = "all ";
+    int projectHasAll = FALSE;
+    int neg = FALSE;
+
+    if (limitConf == NULL || limitConf->nLimit == 0)
+        return TRUE;
+
+    for (i = 0; i < limitConf->nLimit; i++) {
+        /* no consumer defined, ignore */
+        if (limitConf->limits[i].nConsumer <= 0
+                || limitConf->limits[i].nRes <= 0)
+            continue;
+
+        /* only support resource "SLOTS" */
+        for (k = 0; k < limitConf->limits[i].nRes; k++) {
+            if (limitConf->limits[i].res[k].res == LIMIT_RESOURCE_SLOTS)
+                break;
+        }
+
+        /* no SLOTS defined or SLOTS is not 0, ignore */
+        if (k == limitConf->limits[i].nRes
+                || limitConf->limits[i].res[k].value != 0)
+            continue;
+
+        for (j = 0; j < limitConf->limits[i].nConsumer; j++) {
+            if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_QUEUES) {
+                queue = strdup(limitConf->limits[i].consumers[j].value);
+                save_queue = queue;
+            } else if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_PROJECTS) {
+                project = strdup(limitConf->limits[i].consumers[j].value);
+                save_project = project;
+            } else if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_HOSTS) {
+                host = strdup(limitConf->limits[i].consumers[j].value);
+                save_host = host;
+            } else if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_USERS) {
+                user = strdup(limitConf->limits[i].consumers[j].value);
+                save_user = user;
+            }
+        }
+
+        /* checking hostname but HOSTS is not defined in limit, ignore */
+        if ((hostname && !host)
+                || (!hostname && host))
+            goto clean4next;
+
+        /* enforce limit only if job is submitted to this particular queue */
+        if (queue) {
+            hasMe = FALSE;
+            while ( ( word = getNextWord_ ( &queue) ) != NULL ) {
+                if (strcasecmp(word, jp->qPtr->queue) == 0) {
+                    hasMe = TRUE;
+                    break;
+                }
+            }
+            if (!hasMe)
+                goto clean4next;
+        }
+
+        /* enforce limit only if scheduler is evaluating particular hosts */
+        if (host) {
+            hasMe = FALSE;
+            while ( ( word = getNextWord_ ( &host) ) != NULL ) {
+                if (strcasecmp(word, hostname) == 0) {
+                    hasMe = TRUE;
+                    break;
+                }
+            }
+            if (!hasMe)
+                goto clean4next;
+        }
+
+        /* check if user is allowed to use the queue/host */
+        if (user) {
+            hasMe = FALSE;
+            while ( ( word = getNextWord_ ( &user) ) != NULL ) {
+                if (strcasecmp(word, jp->userName) == 0) {
+                    hasMe = TRUE;
+                    break;
+                }
+            }
+
+            if (hasMe) {
+                FREEUP(save_queue);
+                FREEUP(save_project);
+                FREEUP(save_host);
+                FREEUP(save_user);
+                return FALSE;
+            }
+        }
+
+        /* check if project is allowed to use the queue/host */
+        if (project) {
+            hasMe = FALSE;
+
+            if (strstr(project, all) != NULL)
+                projectHasAll = TRUE;
+
+            while ( ( word = getNextWord_ ( &project) ) != NULL ) {
+                if (word[0] == '~') {
+                    neg = TRUE;
+                    word++;
+                }
+                if (strcasecmp(word, jp->shared->jobBill.projectName) == 0) {
+                    hasMe = TRUE;
+                    break;
+                }
+                neg = FALSE;
+            }
+
+            if ((!projectHasAll && hasMe)
+                    || (projectHasAll && hasMe && !neg)
+                    || (projectHasAll && !hasMe)) {
+                FREEUP(save_queue);
+                FREEUP(save_project);
+                FREEUP(save_host);
+                FREEUP(save_user);
+                return FALSE;
+            }
+        }
+
+clean4next:
+        FREEUP(save_queue);
+        FREEUP(save_project);
+        FREEUP(save_host);
+        FREEUP(save_user);
+        queue = NULL;
+        project = NULL;
+        host = NULL;
+        user = NULL;
+        hasMe = FALSE;
+        projectHasAll = FALSE;
+        neg = FALSE;
+    }
+
+    return TRUE;
 }
 
 static int

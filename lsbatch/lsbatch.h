@@ -34,6 +34,7 @@
 #define  MAX_LSB_NAME_LEN    60
 #define  MAX_CMD_DESC_LEN    256
 #define  MAX_USER_EQUIVALENT 128
+#define  MAX_RES_LIMITS      256
 #define  DEFAULT_MSG_DESC    "no description"
 
 #define HOST_STAT_OK         0x0
@@ -209,6 +210,7 @@
 #define PEND_QUE_PJOB_LIMIT        314
 #define PEND_QUE_WINDOW_WILL_CLOSE 315
 #define PEND_QUE_PROCLIMIT         316
+#define PEND_RES_LIMIT             317
 
 /* User reasons
  */
@@ -1486,6 +1488,44 @@ struct queueConf {
     struct queueInfoEnt *queues;
 };
 
+typedef enum limitConsumerType {
+    LIMIT_CONSUMER_QUEUES = 0,
+    LIMIT_CONSUMER_PROJECTS = 1,
+    LIMIT_CONSUMER_HOSTS = 2,
+    LIMIT_CONSUMER_USERS = 3,
+    LIMIT_CONSUMER_TYPE_NUM = 4    /* how many consumer types */
+} limitConsumerType_t;
+
+typedef struct limitConsumer {
+    limitConsumerType_t consumer;
+    char* def;
+    char* value;
+} limitConsumer_t;
+
+typedef enum limitResType {
+    LIMIT_RESOURCE_SLOTS = 0,
+    LIMIT_RESOURCE_JOBS = 1,
+    LIMIT_RESOURCE_TYPE_NUM = 2  /* how many resource types */
+} limitResType_t;
+
+typedef struct limitRes {
+    limitResType_t res;
+    float value;
+} limitRes_t;
+
+typedef struct resLimit {
+    char*   name;
+    int     nConsumer;
+    limitConsumer_t* consumers;
+    int     nRes;
+    limitRes_t* res;
+} resLimit_t;
+
+typedef struct resLimitConf {
+    int       nLimit;
+    resLimit_t* limits;
+} resLimitConf_t;
+
 
 #define  IS_PEND(s)  (((s) & JOB_STAT_PEND) || ((s) & JOB_STAT_PSUSP))
 
@@ -1531,6 +1571,8 @@ extern struct hostConf *lsb_readhost(struct lsConf *, struct lsInfo *, int,
                                      struct clusterConf *);
 extern struct queueConf *lsb_readqueue(struct lsConf *, struct lsInfo *,
                                        int, struct sharedConf *);
+extern struct resLimitConf *lsb_readres(struct lsConf *);
+
 extern void updateClusterConf(struct clusterConf *);
 
 
