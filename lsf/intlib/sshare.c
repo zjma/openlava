@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2015 David Bigagli
+ * Copyright (C) 2014 - 2016 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -24,6 +24,8 @@
 
 #include "sshare.h"
 #include <assert.h>
+
+extern void ls_syslog(int, const char *, ...);
 
 static link_t *parse_user_shares(const char *);
 static link_t *parse_group_member(const char *,
@@ -162,6 +164,18 @@ z:
     sort_tree_by_shares(t);
 
     return t;
+}
+
+void
+sshare_sort_tree_by_ran_job(struct tree_ *t)
+{
+   /* This must be emptied after every scheduling
+     * cycle. There could be still some leafs
+     * if not all jobs got dispatched.
+     */
+    while (pop_link(t->leafs))
+        ;
+    sort_tree_by_deviate(t);
 }
 
 /* sshare_distribute_slots()
@@ -489,6 +503,13 @@ znovu:
         /* sum up the historical.
          */
         sum = sum + s->numRAN;
+
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
+%s: updating %s pend %d run %d ran %d", __func__,
+                      s->name, s->numPEND, s->numRAN, s->numRUN);
+        }
+
         n = n->right;
     }
 
@@ -502,6 +523,20 @@ znovu:
     }
 
     sort_siblings(root, node_cmp2);
+
+    if (logclass & LC_FAIR) {
+        /* Verify the sorting order which should be from
+         * less numRAN to higher ones.
+         */
+        n = root->child;
+        while (n) {
+            s = n->data;
+            ls_syslog(LOG_INFO, "\
+%s: sorted %s pend %d ran %d run %d", __func__,
+                      s->name, s->numPEND, s->numRAN, s->numRUN);
+            n = n->right;
+        }
+    }
 
     n = pop_link(stack);
     if (n) {
@@ -534,6 +569,12 @@ compute_deviate(struct tree_node_ *n,
      * you should have used.
      */
     s->dsrv2 = u - s->numRAN;
+
+    if (logclass & LC_FAIR) {
+        ls_syslog(LOG_INFO, "\
+%s: shares %s ideal %f ceil(ideal) %d numRAN %d deserve %d", __func__,
+                  s->name, q, u, s->numRAN, (u - s->numRAN));
+    }
 
     return s->dsrv2;
 }

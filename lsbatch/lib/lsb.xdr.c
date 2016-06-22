@@ -482,6 +482,11 @@ xdr_parameterInfo(XDR *xdrs,
             return false;
     }
 
+    if (hdr->version >= 33) {
+        if (! xdr_int(xdrs, &paramInfo->hist_mins))
+            return false;
+    }
+
     return true;
 }
 
@@ -1115,6 +1120,11 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
 
     if (hdr->version >= 32) {
         if (! xdr_int(xdrs, &s->numBORROWED))
+            return false;
+    }
+
+    if (hdr->version >= 33) {
+        if (! xdr_int(xdrs, &s->numRAN))
             return false;
     }
 

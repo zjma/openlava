@@ -886,6 +886,7 @@ struct parameterInfo {
     int max_num_candidates;
     int enable_proxy_hosts;
     int disable_peer_jobs;
+    int hist_mins;
 };
 
 

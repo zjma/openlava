@@ -330,6 +330,8 @@ lsb_readparam(struct lsConf *conf)
         return NULL;
     }
 
+    /* Initialize all parameters
+     */
     initParameterInfo(pConf->param);
 
     conf->confhandle->curNode = conf->confhandle->rootNode;
@@ -418,8 +420,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         {"MAX_PREEMPT_JOBS", NULL, 0},      /* 35 */
         {"MAX_STREAM_RECORDS", NULL, 0},    /* 36 */
         {"MAX_NUM_CANDIDATES", NULL, 0},    /* 37 */
-        {"ENABLE_PROXY_HOSTS", NULL, 0},           /* 38 */
-        {"DISABLE_PEER_JOBS", NULL, 0},          /* 39 */
+        {"ENABLE_PROXY_HOSTS", NULL, 0},    /* 38 */
+        {"DISABLE_PEER_JOBS", NULL, 0},     /* 39 */
+        {"HIST_MINUTES", NULL, 0},          /* 40 */
         {NULL, NULL, 0}
     };
 
@@ -580,7 +583,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     pConf->param->disableUAcctMap = FALSE;
                 }
             }
-            else if ( i == 26 )  {
+            else if (i == 26)  {
 
                 int value = 0, mytime = 0;
                 char str[100], *ptr;
@@ -651,9 +654,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                     value = atoi(keylist[i].val);
                 if (value == INFINIT_INT) {
                     ls_syslog(LOG_ERR,"\
-%s: File %s in section Parameters ending at line %d: Value <%s> of %s isn't a positive \
- integer between 1 and %d; ignored", __func__, fname, *lineNum, keylist[i].val,
-                              keylist[i].key, INFINIT_INT - 1);
+%s: File %s in section Parameters ending at line %d: Value <%s> of %s \
+isn't a positive  integer between 1 and %d; ignored", __func__, fname, *lineNum,
+                              keylist[i].val, keylist[i].key, INFINIT_INT - 1);
                     lsberrno = LSBE_CONF_WARNING;
                 } else
                     switch (i) {
@@ -697,9 +700,10 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             pConf->param->freshPeriod = value;
                             break;
                         case 19:
-                            if ( value < 1 || value >= LSB_MAX_ARRAY_IDX) {
-                                ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5073,
-                                                                 "%s: File %s in section Parameters ending at line %d: Value <%s> of %s is out of range[1-65534]); ignored"), __func__, fname, *lineNum, keylist[i].val, keylist[i].key) ; /* catgets 5073 */
+                            if (value < 1 || value >= LSB_MAX_ARRAY_IDX) {
+                                ls_syslog(LOG_ERR, "\
+%s: File %s in section Parameters ending at line %d: Value <%s> of %s is out of range[1-65534]); ignored", __func__, fname, *lineNum, keylist[i].val,
+                                          keylist[i].key) ;
                                 lsberrno = LSBE_CONF_WARNING;
                             }
                             else
@@ -746,6 +750,9 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                             break;
                         case 39:
                             pConf->param->disable_peer_jobs = value;
+                            break;
+                        case 40:
+                            pConf->param->hist_mins = value;
                             break;
                         default:
                             ls_syslog(LOG_ERR, "\
@@ -845,6 +852,7 @@ initParameterInfo(struct parameterInfo *param)
     param->max_num_candidates = 0;
     param->enable_proxy_hosts = 0;
     param->disable_peer_jobs = 0;
+    param->hist_mins = -1;
 }
 
 static void

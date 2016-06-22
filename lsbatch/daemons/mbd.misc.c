@@ -1228,6 +1228,7 @@ checkParams(struct infoReq *req, struct parameterInfo *reply)
     reply->maxStreamRecords = mbdParams->maxStreamRecords;
     reply->freshPeriod = freshPeriod;
     reply->maxSbdConnections = maxSbdConnections;
+    reply->hist_mins = mbdParams->hist_mins;
 }
 
 void

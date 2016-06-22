@@ -19,8 +19,14 @@
 
 #if !defined(_FAIRSHARE_HEADER_)
 #define _FAIRSHARE_HEADER_
+
 #include "mbd.h"
 #include "../../lsf/intlib/sshare.h"
+
+/* Every HIST_HOUR decay the accumulated numRAN by this
+ * factor.
+ */
+#define DECAY_FACTOR 10
 
 /* Fairshare scheduling plugin
  */
@@ -35,13 +41,15 @@ struct fair_sched {
                            int,  /* numJobs */
                            int,  /* numPEND */
                            int,  /* numRUN */
-			   int,  /* numUSUSP */
-			   int); /* numSSUSP */
+                           int,  /* numUSUSP */
+                           int); /* numSSUSP */
     int (*fs_init_sched_session)(struct qData *);
     int (*fs_init_own_sched_session)(struct qData *);
     int (*fs_elect_job)(struct qData *, LIST_T *, struct jRef **);
     int (*fs_fin_sched_session)(struct qData *);
     int (*fs_get_saccts)(struct qData *, int *, struct share_acct ***);
+    int (*fs_decay_ran_time)(struct qData *);
 };
+
 
 #endif

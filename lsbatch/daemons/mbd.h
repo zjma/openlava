@@ -47,8 +47,10 @@
 #define DEF_FRESH_PERIOD     15
 #define DEF_PEND_EXIT       512
 #define DEF_JOB_ARRAY_SIZE  1000
-
 #define DEF_LONG_JOB_TIME  1800
+/* Default decay of the accumulated ran time of share accounts.
+ */
+#define DEF_HIST_MINUTES 120;
 
 #define MAX_JOB_PRIORITY   INFINIT_INT
 

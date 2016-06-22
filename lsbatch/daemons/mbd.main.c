@@ -20,6 +20,7 @@
 
 #include "mbd.h"
 #include "preempt.h"
+#include "fairshare.h"
 
 #define MBD_THREAD_MIN_STACKSIZE  512
 #define POLL_INTERVAL MAX(msleeptime/10, 1)
@@ -175,6 +176,7 @@ extern int do_chunkStatusReq(XDR *, int, struct sockaddr_in *, int *,
 extern int do_setJobAttr(XDR *, int, struct sockaddr_in *, char *,
                          struct LSFHeader *, struct lsfAuth *);
 static void preempt(void);
+static void decay_run_time(void);
 
 static struct chanData *chans;
 
@@ -1036,6 +1038,8 @@ periodicCheck(void)
         getLsbHostInfo();
         last_hostInfoRefreshTime = now;
     }
+
+    decay_run_time();
 }
 
 
@@ -1430,4 +1434,40 @@ preempt(void)
 
     if (logclass & LC_PREEMPT)
         ls_syslog(LOG_INFO, "%s: leaving ...", __func__);
+}
+
+static void
+decay_run_time(void)
+{
+    static time_t last_decay;
+    struct qData *qPtr;
+
+    if (mbdParams->hist_mins <= 0)
+        return;
+
+    if (last_decay == 0)
+        goto decay;
+
+    if (time(NULL) - last_decay < mbdParams->hist_mins)
+        return;
+
+decay:
+    if (logclass * LC_FAIR) {
+        ls_syslog(LOG_INFO, "\
+%s: decaying fairshare/ownership queue", __func__);
+    }
+
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->fsSched) {
+            (*qPtr->fsSched->fs_decay_ran_time)(qPtr);
+        }
+        if (qPtr->own_sched) {
+            (*qPtr->own_sched->fs_decay_ran_time)(qPtr);
+        }
+    }
+
+    last_decay = time(NULL);
 }

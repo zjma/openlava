@@ -86,6 +86,12 @@ fs_update_sacct(struct qData *qPtr,
     sacct = n->data;
     sacct->uid = jPtr->userId;
 
+    if (logclass & LC_FAIR) {
+        ls_syslog(LOG_INFO, "\
+%s: updating %s pend %d run %d ususp %d ssusp %d", __func__,
+                  sacct->name, numPEND, numRUN, numUSUSP, numSSUSP);
+    }
+
     /* The job is starting so decrease the
      * counter of slots this can use.
      */
@@ -105,11 +111,32 @@ fs_update_sacct(struct qData *qPtr,
         numRAN = numRUN;
 
     while (n) {
+
         sacct = n->data;
         sacct->numPEND = sacct->numPEND + numPEND;
         sacct->numRUN = sacct->numRUN + numRUN;
         sacct->numRAN = sacct->numRAN + numRAN;
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
+%s: 2 updating %s pend %d run ran %d %d ususp %d ssusp %d", __func__,
+                      sacct->name, numPEND, numRAN, numRUN, numUSUSP, numSSUSP);
+        }
         n = n->parent;
+    }
+
+
+    if (numRUN > 0) {
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
+%s: re-sort tree after job %s started", __func__, lsb_jobid2str(jPtr->jobId));
+        }
+        /* resort the tree when a job starts
+         */
+        sshare_sort_tree_by_ran_job(t);
+
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "%s: tree resorted", __func__);
+        }
     }
 
     return 0;
@@ -195,10 +222,11 @@ dalsi:
         return -1;
     }
 
-    if (logclass & LC_FAIR)
+    if (logclass & LC_FAIR) {
         ls_syslog(LOG_INFO, "\
 %s: account %s num slots %d queue %s", __func__, s->name,
-                  s->sent + 1, qPtr->queue);
+                  s->sent, qPtr->queue);
+    }
 
     ent = h_getEnt_(&uDataList, s->name);
     if (ent == NULL) {
@@ -222,13 +250,6 @@ dalsi:
 
         assert(jPtr->userId == s->uid);
         if (jPtr->qPtr == qPtr) {
-            if (logclass & LC_FAIR) {
-                ls_syslog(LOG_INFO, "\
-%s: jqueue %s %p queue %s %p job %p ref %p %d", __func__,
-                          jPtr->qPtr->queue, jPtr->qPtr,
-                          qPtr->queue, qPtr,
-                          jPtr, jref, count);
-            }
             dlink_rm_ent(uPtr->jobs, dl);
             found = true;
             break;
@@ -258,10 +279,12 @@ dalsi:
                       lsb_jobid2str(jPtr->jobId), qPtr->queue, count);
         }
     }
-    /* More to dispatch from this node
-     * so back to the leaf link
+
+    /* Disable the bulk distribution and get one
+     * job from each leaf in priority order.
      */
-    push_link(l, n);
+    if (0)
+        push_link(l, n);
 
     *jRef = jref;
 
@@ -320,6 +343,47 @@ fs_get_saccts(struct qData *qPtr, int *num, struct share_acct ***as)
 
     *as = s;
     *num = nents;
+
+    return 0;
+}
+
+/* fs_decay_ran_time()
+ */
+int
+fs_decay_ran_time(struct qData *qPtr)
+{
+    struct tree_ *t;
+    struct tree_node_ *n;
+    struct share_acct *s;
+
+    t = NULL;
+    if (qPtr->fsSched)
+        t = qPtr->fsSched->tree;
+    else if (qPtr->own_sched)
+        t = qPtr->own_sched->tree;
+
+    if (t == NULL)
+        return -1;
+
+    /* Get the root
+     */
+    n = t->root;
+
+    while ((n = tree_next_node(n))) {
+        int numran;
+
+        s = n->data;
+        /* We can the integer part so this will eventually
+         * drop to zero
+         */
+        numran = s->numRAN;
+        s->numRAN = s->numRAN/DECAY_FACTOR;
+
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
+%s: account %s decayed from %d to %d", __func__, s->name, numran, s->numRAN);
+        }
+    }
 
     return 0;
 }

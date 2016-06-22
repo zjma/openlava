@@ -1605,10 +1605,21 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
             jUnusable[numReasons] = jUsable[i];
             jReasonTb[numReasons++] = hReason;
 
+	    ls_syslog(LOG_INFO, "\
+%s: job %s host %s isn't eligible; reason = %d", fname,
+		      lsb_jobid2str(jp->jobId),
+		      jUsable[i]->host,
+		      jReasonTb[numReasons-1]);
+
             if (logclass & (LC_SCHED | LC_PEND))
                 ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason = %d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
             continue;
         }
+
+	ls_syslog(LOG_INFO, "\
+%s: job %s got one eligible host %s; numSlots=%d numAvailSlots=%d", fname,
+		  lsb_jobid2str(jp->jobId), jUsable[i]->host,
+		  numSlots, numAvailSlots);
 
         if (logclass & (LC_SCHED))
             ls_syslog(LOG_DEBUG3, "%s: Got one eligible host %s; numSlots=%d numAvailSlots=%d", fname, jUsable[i]->host, numSlots, numAvailSlots);
@@ -4419,6 +4430,10 @@ scheduleAndDispatchJobs(void)
 
     if (mSchedStage == 0) {
 
+      ls_syslog(LOG_INFO, "\
+%s: begin a new schedule and dispatch session num_finish %d",
+		__func__, num_finish);
+
         if (logclass & LC_SCHED) {
             gettimeofday(&scheduleStartTime, NULL);
             ls_syslog(LOG_INFO, "\
@@ -4479,12 +4494,6 @@ scheduleAndDispatchJobs(void)
                                        (struct _listEntry *)jR);
                 if (jPtr->qPtr->qAttrib & Q_ATTRIB_FAIRSHARE
                     || jPtr->qPtr->qAttrib & Q_ATTRIB_OWNERSHIP) {
-                    if (logclass & LC_FAIR) {
-                        ls_syslog(LOG_INFO, "\
-%s: user %s job %s queue %s jref %p job %p", __func__, jPtr->userName,
-                                  lsb_jobid2str(jR->job->jobId),
-                                  jR->job->qPtr->queue, jR, jR->job);
-                    }
                     update_udata_jref(jR);
                 }
                 ++count;
@@ -7205,12 +7214,6 @@ update_udata_jref(struct jRef *jref)
     ent = h_getEnt_(&uDataList, jref->job->userName);
     uPtr = ent->hData;
     dlink_insert(uPtr->jobs, jref);
-
-    if (logclass & LC_FAIR)
-        ls_syslog(LOG_INFO, "\
-%s: user %s job %s queue %s jref %p job %p", __func__, uPtr->user,
-                  lsb_jobid2str(jref->job->jobId),
-                  jref->job->qPtr->queue, jref, jref->job);
 }
 
 /* empty_jdata_jref()

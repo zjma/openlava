@@ -1968,8 +1968,7 @@ setParams(struct paramConf *paramConf)
     setValue(maxUserPriority, params->maxUserPriority);
     setValue(jobPriorityValue, params->jobPriorityValue);
     setValue(jobPriorityTime, params->jobPriorityTime);
-    setJobPriUpdIntvl( );
-
+    setJobPriUpdIntvl();
 
     setValue(sharedResourceUpdFactor, params->sharedResourceUpdFactor);
 
@@ -1994,6 +1993,11 @@ setParams(struct paramConf *paramConf)
     if (params->pjobSpoolDir)
         mbdParams->pjobSpoolDir = strdup(params->pjobSpoolDir);
 
+    /* Set default and convert to minutes
+     */
+    if (mbdParams->hist_mins == -1)
+        mbdParams->hist_mins = DEF_HIST_MINUTES;
+    mbdParams->hist_mins = mbdParams->hist_mins * 60;
 }
 
 static void
@@ -3628,7 +3632,17 @@ load_fair_plugin(struct qData *qPtr,
     f->fs_init_own_sched_session = dlsym(f->handle, "fs_init_own_sched_session");
     if (f->fs_init_own_sched_session == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: ohmygosh missing fs_own_init() symbol in %s: %s", __func__,
+%s: ohmygosh missing fs_init_own_sched_session() symbol in %s: %s", __func__,
+                  file, dlerror());
+        dlclose(f->handle);
+        free(f);
+        return NULL;
+    }
+
+    f->fs_decay_ran_time = dlsym(f->handle, "fs_decay_ran_time");
+    if (f->fs_decay_ran_time == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_decay_ran_time() symbol in %s: %s", __func__,
                   file, dlerror());
         dlclose(f->handle);
         free(f);

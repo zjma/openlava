@@ -1704,7 +1704,8 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
 
     count = sizeof(struct parameterInfo) + strlen(paramInfo.defaultQueues)
         + strlen(paramInfo.defaultHostSpec)
-        + strlen(paramInfo.defaultProject) + 100 + jobSpoolDirLen;
+        + strlen(paramInfo.defaultProject) + jobSpoolDirLen;
+    count = count * sizeof(int);
 
     reply_buf = my_malloc(count, "do_paramInfoReq");
     xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);

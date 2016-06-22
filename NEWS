@@ -6,6 +6,17 @@ Release notes for OpenLava versions
 -- Implement bsub -Jd to support specifying job description to jobs.
 -- Implement tech preview of lsb.resources.
 -- Implement the bresource command and the lsb_getlimits() API.
+-- Fix scheduler bug in which the priority tree was not sorted
+   after each job was dispatched.
+-- Do not perform bulk slot allocation in the fairshare scheduler
+   but distribute slots from higher to low priority jobs.
+-- Implement periodic decay of used slots in the fairshare tree.
+-- Implement a parameter HIST_MINUTES in lsb.params to control
+   the time at which the decay of used slots is performed.
+-- Modify the bparams command to display the HIST_MINUTES in its
+   long output format.
+-- The fairshare layer will log detail informations if the logclass
+   in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 
 3.3.2
 ======
