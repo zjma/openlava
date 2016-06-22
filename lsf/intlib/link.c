@@ -46,7 +46,7 @@ make_link(void)
 int
 in_link(link_t *head, void *val)
 {
-    link_t   *el;
+    link_t *el;
 
     if (!head)
         return -1;
@@ -61,7 +61,6 @@ in_link(link_t *head, void *val)
     head->num++;
 
     return 0;
-
 }
 
 void
@@ -74,7 +73,6 @@ fin_link(link_t * head)
         head->num--;
 
     free(head);
-
 }
 
 /* Just wrap the inLink() and call it push.
@@ -82,7 +80,7 @@ fin_link(link_t * head)
 int
 push_link(link_t *head, void *val)
 {
-    int   cc;
+    int cc;
 
     if (!head)
         return -1;
@@ -90,16 +88,15 @@ push_link(link_t *head, void *val)
     cc = in_link(head, val);
 
     return cc;
-
 }
 
 /* The stack pop operation.
  */
 void *
-pop_link(link_t * head)
+pop_link(link_t *head)
 {
-    link_t   *p;
-    void     *t;
+    link_t *p;
+    void *t;
 
     if (!head)
         return NULL;
@@ -114,7 +111,6 @@ pop_link(link_t * head)
     }
 
     return NULL;
-
 }
 
 /* Queue operation. If the link is long
@@ -123,8 +119,8 @@ pop_link(link_t * head)
 int
 enqueue_link(link_t *head, void *val)
 {
-    link_t   *p;
-    link_t   *p2;
+    link_t *p;
+    link_t *p2;
 
     if (!head)
         return -1;
@@ -145,7 +141,6 @@ enqueue_link(link_t *head, void *val)
     head->num++;
 
     return 0;
-
 }
 
 /* The opposite of pop_link(), return
@@ -156,9 +151,9 @@ enqueue_link(link_t *head, void *val)
 void *
 dequeue_link(link_t *head)
 {
-    link_t   *p;
-    link_t   *p2;
-    void     *t;
+    link_t *p;
+    link_t *p2;
+    void *t;
 
     if (!head
         || !head->next)
@@ -178,7 +173,6 @@ dequeue_link(link_t *head)
     head->num--;
 
     return t;
-
 }
 
 /* Insert in the linked list based on some priority defined
@@ -187,10 +181,10 @@ dequeue_link(link_t *head)
  */
 int
 enqueue_sort_link(link_t *head,
-		  void *val,
-		  void *extra,
-		  int (*cmp)(const void *,
-			     const void *))
+                  void *val,
+                  void *extra,
+                  int (*cmp)(const void *,
+                             const void *))
 {
     link_t *t;
     link_t *t2;
@@ -234,7 +228,7 @@ enqueue_sort_link(link_t *head,
 void *
 visit_link(link_t *head)
 {
-    void   *p;
+    void *p;
 
     if (!head || !head->next)
         return NULL;
@@ -278,7 +272,6 @@ rm_link(link_t *head, void *val)
     }
 
     return p;
-
 }
 
 
@@ -299,7 +292,6 @@ peek_link(link_t *head, void *val)
     }
 
     return NULL;
-
 }
 
 /* We could this interface as
@@ -325,13 +317,12 @@ traverse_init(const link_t *head, linkiter_t *iter)
     }
 
     iter->pos = head->next;
-
 }
 
 void *
 traverse_link(linkiter_t *iter)
 {
-    void   *p;
+    void *p;
 
     if (!iter)
         return NULL;
@@ -343,7 +334,6 @@ traverse_link(linkiter_t *iter)
     }
 
     return NULL;
-
 }
 
 #if 0

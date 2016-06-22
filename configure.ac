@@ -60,8 +60,8 @@ AC_ARG_WITH(
         [--with-hwloc[[=DIR]]],
         [Specify path to hwloc installation]
     )],
-    [CPPFLAGS="-I$withval/include $CPPFLAGS"
-        LDFLAGS="-L$withval/lib -L$withval/lib64 $LDFLAGS"
+    [AS_IF([test "x$withval" != "xyes"], [CPPFLAGS="-I$withval/include $CPPFLAGS"
+        LDFLAGS="-L$withval/lib -L$withval/lib64 $LDFLAGS"])
         AC_CHECK_HEADERS([hwloc.h], [], [AC_MSG_ERROR([cannot build openlava without hwloc])])
         AC_CHECK_LIB([hwloc], [hwloc_topology_init], [], [AC_MSG_ERROR([cannot build openlava without hwloc])])
         AC_CHECK_HEADER([numa.h], [], [AC_MSG_ERROR([cannot build openlava without numa])])

@@ -68,6 +68,8 @@ lsb_modify(struct submit *jobSubReq, struct submitReply *submitRep, LS_LONG_INT 
     subNewLine_(jobSubReq->errFile);
     subNewLine_(jobSubReq->chkpntDir);
     subNewLine_(jobSubReq->projectName);
+    subNewLine_(jobSubReq->job_description);
+
     for(loop = 0; loop < jobSubReq->numAskedHosts; loop++) {
         subNewLine_(jobSubReq->askedHosts[loop]);
     }

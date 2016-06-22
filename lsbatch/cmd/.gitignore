@@ -27,3 +27,6 @@ bgadd
 bgdel
 btokens
 bjgroup
+bgmod
+bresources
+

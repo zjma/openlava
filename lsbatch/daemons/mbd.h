@@ -48,8 +48,10 @@
 #define DEF_FRESH_PERIOD     15
 #define DEF_PEND_EXIT       512
 #define DEF_JOB_ARRAY_SIZE  1000
-
 #define DEF_LONG_JOB_TIME  1800
+/* Default decay of the accumulated ran time of share accounts.
+ */
+#define DEF_HIST_MINUTES 120;
 
 #define MAX_JOB_PRIORITY   INFINIT_INT
 
@@ -936,6 +938,8 @@ extern int                     freedSomeReserveSlot;
 extern long                    schedSeqNo;
 extern struct switch_child     *swchild;
 
+extern struct resLimitConf     *limitConf;
+
 extern void                 pollSbatchds(int);
 extern void                 hStatChange(struct hData *, int status);
 extern int                  checkHosts(struct infoReq*,
@@ -1314,6 +1318,7 @@ extern void                 log_logSwitch(int);
 extern void                 log_jobmsg(struct jData *, struct lsbMsg *);
 extern void                 log_newjgrp(struct jgTreeNode *);
 extern void                 log_deljgrp(struct jgTreeNode *);
+extern void                 log_modjgrp(struct jgTreeNode *);
 extern void                 replay_requeuejob(struct jData *);
 extern int                  init_log(void);
 extern void                 switchELog(void);
@@ -1503,8 +1508,12 @@ extern int do_jobGroupDel(XDR *, int,
 extern int do_jobGroupInfo(XDR *, int,
                            struct sockaddr_in *,
                            char *, struct LSFHeader *);
+extern int do_jobGroupModify(XDR *, int,
+                             struct sockaddr_in *,
+                             char *, struct LSFHeader *, struct lsfAuth *);
 extern int add_job_group(struct job_group *, struct lsfAuth *);
 extern int del_job_group(struct job_group *, struct lsfAuth *);
+extern int modify_job_group(struct job_group *, struct lsfAuth *);
 extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
@@ -1525,5 +1534,7 @@ extern int encode_glb_tokens(XDR *, struct LSFHeader *);
 extern int count_stream(char *);
 struct glb_token *recover_glb_allocation_state(void);
 extern bool_t jobgroup_limit_ok(struct jData *);
+
+extern int do_resLimitInfo(XDR *, int, struct sockaddr_in *, struct LSFHeader *);
 
 #endif /* _MBD_HEADER_ */

@@ -20,6 +20,7 @@
 
 #include "mbd.h"
 #include "preempt.h"
+#include "fairshare.h"
 
 #define MBD_THREAD_MIN_STACKSIZE  512
 #define POLL_INTERVAL MAX(msleeptime/10, 1)
@@ -178,6 +179,7 @@ extern int do_chunkStatusReq(XDR *, int, struct sockaddr_in *, int *,
 extern int do_setJobAttr(XDR *, int, struct sockaddr_in *, char *,
                          struct LSFHeader *, struct lsfAuth *);
 static void preempt(void);
+static void decay_run_time(void);
 
 static struct chanData *chans;
 
@@ -841,6 +843,21 @@ processClient(struct clientNode *client, int *needFree)
                                       client->fromHost,
                                       &reqHdr),
                    "do_glbTokenInfo()");
+        case BATCH_JGRP_MOD:
+            TIMEIT(0, do_jobGroupModify(&xdrs,
+                                        s,
+                                        &from,
+                                        client->fromHost,
+                                        &reqHdr,
+                                        &auth),
+                   "do_jobGroupModify()");
+            break;
+        case BATCH_RESLIMIT_INFO:
+            TIMEIT(0, do_resLimitInfo(&xdrs,
+                                      s,
+                                      &from,
+                                      &reqHdr),
+                   "do_resLimitInfo()");
             break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
@@ -870,6 +887,7 @@ endLoop:
          && reqHdr.opCode != BATCH_JGRP_DEL
          && reqHdr.opCode != BATCH_TOKEN_INFO
          && reqHdr.opCode != BATCH_JGRP_DEL)
+         && reqHdr.opCode != BATCH_JGRP_MOD)
         || statusReqCC < 0) {
         shutDownClient(client);
         return -1;
@@ -1035,6 +1053,8 @@ periodicCheck(void)
         getLsbHostInfo();
         last_hostInfoRefreshTime = now;
     }
+
+    decay_run_time();
 }
 
 
@@ -1067,7 +1087,8 @@ mbd_child_handler (int sig)
     sigprocmask(SIG_BLOCK, &newmask, &oldmask);
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        if (pid == swchild->pid) {
+        if (swchild
+            && pid == swchild->pid) {
             swchild->child_gone = true;
             swchild->status = status;
         }
@@ -1104,7 +1125,8 @@ authRequest(struct lsfAuth *auth,
           || reqType == BATCH_JOB_MSG
           || reqType == BATCH_JOBMSG_INFO
           || reqType == BATCH_JGRP_ADD
-          || reqType == BATCH_JGRP_DEL))
+          || reqType == BATCH_JGRP_DEL
+          || reqType == BATCH_JGRP_MOD))
         return LSBE_NO_ERROR;
 
     if (!xdr_lsfAuth(xdrs, auth, reqHdr)) {
@@ -1402,6 +1424,7 @@ preempt(void)
         ls_syslog(LOG_INFO, "%s: leaving ...", __func__);
 }
 
+<<<<<<< HEAD
 int
 requeue_job(struct jData *jPtr)
 {
@@ -1483,4 +1506,38 @@ str_flags(int flag)
 
     return buf;
 
+static void
+decay_run_time(void)
+{
+    static time_t last_decay;
+    struct qData *qPtr;
+
+    if (mbdParams->hist_mins <= 0)
+        return;
+
+    if (last_decay == 0)
+        goto decay;
+
+    if (time(NULL) - last_decay < mbdParams->hist_mins)
+        return;
+
+decay:
+    if (logclass * LC_FAIR) {
+        ls_syslog(LOG_INFO, "\
+%s: decaying fairshare/ownership queue", __func__);
+    }
+
+    for (qPtr = qDataList->forw;
+         qPtr != qDataList;
+         qPtr = qPtr->forw) {
+
+        if (qPtr->fsSched) {
+            (*qPtr->fsSched->fs_decay_ran_time)(qPtr);
+        }
+        if (qPtr->own_sched) {
+            (*qPtr->own_sched->fs_decay_ran_time)(qPtr);
+        }
+    }
+
+    last_decay = time(NULL);
 }

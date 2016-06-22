@@ -22,6 +22,10 @@
 # change it if installed somewhere else.
 export OPENLAVA_TOP=@prefix@
 
+if [ -f $OPENLAVA_TOP/etc/limits.sh ]; then
+    . $OPENLAVA_TOP/etc/limits.sh
+fi
+
 # kill the old daemons first.
 #
 kill_daemons()

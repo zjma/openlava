@@ -101,7 +101,7 @@ extern char **environ;
 #define MAXMODELS               128
 #define MAXTYPES_31             25
 #define MAXMODELS_31            30
-#define MAXFILENAMELEN          256
+#define MAXFILENAMELEN          PATH_MAX
 
 #define FIRST_RES_SOCK  20
 

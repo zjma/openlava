@@ -68,6 +68,7 @@ static int              replay_jobattrset(char *, int );
 static int              replay_jobmsg(char *, int);
 static int              replay_newjgrp(char *, int);
 static int              replay_deljgrp(char *, int);
+static int              replay_modjgrp(char *, int);
 static int replay_logSwitch(char *, int);
 extern bool_t memberOfVacateList(struct lsQueueEntry *, struct lsQueue *);
 
@@ -440,6 +441,8 @@ replay_event(char *filename, int lineNum)
             return replay_newjgrp(filename, lineNum);
         case EVENT_DEL_JGRP:
             return replay_deljgrp(filename, lineNum);
+        case EVENT_MOD_JGRP:
+            return replay_modjgrp(filename, lineNum);
         default:
             ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: Invalid event_type %c",
@@ -1361,6 +1364,23 @@ replay_deljgrp(char *file, int num)
     return true;
 }
 
+static int
+replay_modjgrp(char *file, int num)
+{
+    struct jgrpModLog *jgrp_mod;
+    struct job_group jgrp;
+
+    jgrp_mod = &logPtr->eventLog.jgrpMod;
+
+    jgrp.group_name = strdup(jgrp_mod->path);
+    jgrp.max_jobs = jgrp_mod->max_jobs;
+
+    modify_job_group(&jgrp, NULL);
+
+    _free_(jgrp.group_name);
+
+    return true;
+}
 
 int
 log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
@@ -1428,6 +1448,7 @@ log_modifyjob(struct modifyReq * modReq, struct lsfAuth *auth)
     jobModLog->schedHostType   = modReq->submitReq.schedHostType;
 
     jobModLog->userPriority = modReq->submitReq.userPriority;
+    jobModLog->job_description = modReq->submitReq.job_description;
 
     if (putEventRec(fname) < 0) {
         ls_syslog(LOG_ERR, I18N_JOB_FAIL_S,
@@ -1512,8 +1533,6 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     } else if ((hostFactor = getModelFactor(jobNewLog->hostSpec)) == NULL) {
         hostFactor = getHostFactor(jobNewLog->hostSpec);
         if (hostFactor == NULL) {
-            LS_LONG_INT tmpJobId;
-            tmpJobId = jobNewLog->jobId;
             ls_syslog(LOG_ERR, "\
 %s: cannot get hostFactor for job %s host spec %s", __func__,
                       lsb_jobid2str(job->jobId),
@@ -1602,6 +1621,12 @@ log_jobdata(struct jData *job, const char *fname1, int type)
         jobNewLog->job_group = jobBill->job_group;
     else
         jobNewLog->job_group = "";
+
+    if (jobBill->options2 & SUB2_JOB_DESC) {
+        jobNewLog->job_description = jobBill->job_description;
+    } else {
+        jobNewLog->job_description = "";
+    }
 
     if (putEventRec(fname1) < 0) {
         ls_syslog(LOG_ERR, "\
@@ -2158,6 +2183,29 @@ log_deljgrp(struct jgTreeNode *jgrp)
         ls_syslog(LOG_ERR, "\
 %s: failed in putEventRec() %m", __func__);
     }
+}
+
+/* log_modjgrp()
+ */
+void
+log_modjgrp(struct jgTreeNode *jgrp)
+{
+    if (openEventFile(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed in openEventFile() %m", __func__);
+        mbdDie(MASTER_FATAL);
+    }
+
+    logPtr->type = EVENT_MOD_JGRP;
+
+    strcpy(logPtr->eventLog.jgrpMod.path, jgrp->path);
+    logPtr->eventLog.jgrpMod.max_jobs = JGRP_DATA(jgrp)->max_jobs;
+
+    if (putEventRec(__func__) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed in putEventRec() %m", __func__);
+    }
+
 }
 
 static void
@@ -3879,6 +3927,7 @@ replay_modifyjob2(char *filename, int lineNum)
     modifyReq.submitReq.loginShell = jobModLog->loginShell ;
     modifyReq.submitReq.schedHostType = jobModLog->schedHostType ;
     modifyReq.submitReq.userPriority = jobModLog->userPriority;
+    modifyReq.submitReq.job_description = jobModLog->job_description;
 
     modifyJob(&modifyReq, NULL, &auth);
     return true;
@@ -4072,6 +4121,8 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     job->abs_run_limit = jobNewLog->abs_run_limit;
 
     jobBill->job_group = strdup(jobNewLog->job_group);
+
+    jobBill->job_description = strdup(jobNewLog->job_description);
 
     return job;
 }

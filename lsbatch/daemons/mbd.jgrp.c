@@ -1348,9 +1348,20 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
     struct jgTreeNode *parent;
     struct jgTreeNode *jgrp;
     hEnt *e;
+    int l;
 
     if (! jgPtr)
         return LSBE_JGRP_NULL;
+
+    /* strip trailing slash just in case...
+     */
+    l = strlen(jgPtr->group_name);
+    if (jgPtr->group_name[l - 1] == '/')
+        jgPtr->group_name[l - 1] = 0;
+
+    e = h_getEnt_(&nodeTab, jgPtr->group_name);
+    if (e)
+        return LSBE_JGRP_EXIST;
 
     p0 = name = strdup(jgPtr->group_name);
 
@@ -1377,7 +1388,7 @@ add_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
                 ls_syslog(LOG_ERR, "\
 %s: error while adding node %s path %s to parent %s", __func__,
                           node, path, parent->name);
-                    return LSBE_BAD_GROUP;
+                    return LSBE_JGRP_LIMIT;
             }
         } else {
             jgrp = e->hData;
@@ -1413,9 +1424,6 @@ encode_nodes(XDR *xdrs,
         int i;
         struct jgrpData *g;
 
-        if (n->child)
-            push_link(stack, n->child);
-
         if (logclass & LC_JGRP) {
             ls_syslog(LOG_DEBUG, "\
 %s: node %s %s %d", __func__, n->name, n->path, type);
@@ -1423,6 +1431,9 @@ encode_nodes(XDR *xdrs,
 
         if (n->nodeType != type)
             goto next;
+
+        if (n->child)
+            push_link(stack, n->child);
 
         cc = xdr_wrapstring(xdrs, &n->path);
         if (cc != TRUE)
@@ -1486,9 +1497,6 @@ tree_size(int *num)
   again:
     while (n) {
 
-        if (n->child)
-            push_link(stack, n->child);
-
         if (logclass & LC_JGRP) {
             ls_syslog(LOG_DEBUG, "\
 %s: node %s %s %d", __func__, n->name, n->path, n->nodeType);
@@ -1496,6 +1504,9 @@ tree_size(int *num)
 
         if (n->nodeType != JGRP_NODE_GROUP)
             goto next;
+
+        if (n->child)
+            push_link(stack, n->child);
 
         cc = cc + ALIGNWORD_(strlen(n->path))
             + ALIGNWORD_(strlen(n->name))
@@ -1592,21 +1603,35 @@ tree_new_node(struct jgTreeNode *parent,
     jgrp = treeNewNode(JGRP_NODE_GROUP);
 
     gData = jgrp->ndInfo;
-    gData->max_jobs = jg->max_jobs;
 
+    /* This is a submission bsub -g
+     */
+    if (jg->max_jobs == -1) {
+        gData2 = parent->ndInfo;
+        gData->max_jobs = gData2->max_jobs;
+        goto dal;
+    }
+
+    if (jg->max_jobs == INT32_MAX) {
+        gData->max_jobs = jg->max_jobs;
+        goto dal;
+    }
+
+    gData->max_jobs = jg->max_jobs;
     while (parent != groupRoot) {
         gData2 = parent->ndInfo;
         if (gData->max_jobs > gData2->max_jobs) {
             ls_syslog(LOG_ERR, "\
 %s: max_jobs %d of group %s greater then parent %s max_jobs %d", __func__,
                       gData->max_jobs, name,
-                      gData2->max_jobs, parent->path);
+                      parent->path, gData2->max_jobs);
             freeTreeNode(jgrp);
             return NULL;
         }
         parent = parent->parent;
     }
 
+dal:
     jgrp->name = strdup(name);
     jgrp->path = strdup(path);
     /* put me under the original parent
@@ -1682,6 +1707,7 @@ check_job_group(struct jData *jPtr, struct lsfAuth *auth)
     }
 
     jgrp.group_name = jPtr->shared->jobBill.job_group;
+    jgrp.max_jobs = -1;
 
     return add_job_group(&jgrp, auth);
 }
@@ -1692,8 +1718,7 @@ bool_t
 jobgroup_limit_ok(struct jData *jPtr)
 {
     hEnt *ent;
-    struct jgrpData *gData;
-    struct jgrpData *gData2;
+    struct jgrpData *gSpec;
     struct jgTreeNode *jgptr;
     struct jgTreeNode *parent;
 
@@ -1708,32 +1733,128 @@ jobgroup_limit_ok(struct jData *jPtr)
         return true;
     }
 
-    /* First compare yourself to yourself and then to
-     * your parents and ancestors up to the root.
+    /* At each level of the tree the limit must not be reached
      */
     parent = jgptr = ent->hData;
-    gData2 = gData = (struct jgrpData *)jgptr->ndInfo;
+    gSpec = (struct jgrpData *)jgptr->ndInfo;
 
     do {
-        if ((gData2->counts[JGRP_COUNT_NRUN]
-            + gData2->counts[JGRP_COUNT_NSSUSP]
-            + gData2->counts[JGRP_COUNT_NUSUSP]) >= gData->max_jobs ) {
+        if ((gSpec->counts[JGRP_COUNT_NRUN]
+            + gSpec->counts[JGRP_COUNT_NSSUSP]
+            + gSpec->counts[JGRP_COUNT_NUSUSP]) >= gSpec->max_jobs ) {
             if (logclass & LC_JGRP) {
                 ls_syslog(LOG_INFO, "\
 %s: job %s reached group limit %d of parent %s", __func__,
                           lsb_jobid2str(jPtr->jobId),
-                          (gData2->counts[JGRP_COUNT_NRUN]
-                           + gData2->counts[JGRP_COUNT_NSSUSP]
-                           + gData2->counts[JGRP_COUNT_NUSUSP]),
+                          (gSpec->counts[JGRP_COUNT_NRUN]
+                           + gSpec->counts[JGRP_COUNT_NSSUSP]
+                           + gSpec->counts[JGRP_COUNT_NUSUSP]),
                           jgptr->parent->name);
             }
             return false;
         }
 
         parent = parent->parent;
-        gData2 = (struct jgrpData *)parent->ndInfo;
+        gSpec = (struct jgrpData *)parent->ndInfo;
 
     } while (parent != groupRoot);
 
     return true;
+}
+
+/* modify_job_group()
+ */
+int
+modify_job_group(struct job_group *jgPtr, struct lsfAuth *auth)
+{
+    struct jgTreeNode *jgrp;
+    struct jgTreeNode *parent;
+    struct jgTreeNode *child;
+    struct jgrpData *jSpec;
+    struct jgrpData *jSpec2;
+    hEnt *e;
+    int max_jobs;
+
+    /* We always expect a full path
+     */
+    e = h_getEnt_(&nodeTab, jgPtr->group_name);
+    if (e == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: requested group %s does not exist", __func__, jgPtr->group_name);
+        return LSBE_JGRP_BAD;
+    }
+
+    jgrp = e->hData;
+    jSpec = (struct jgrpData *)jgrp->ndInfo;
+
+    if (auth) {
+        if (auth->uid != 0
+            && !isAuthManager(auth)) {
+            ls_syslog(LOG_ERR, "\
+%s: user %s id %d cannot modify job group owned by user %s id %d", __func__,
+                      auth->lsfUserName, auth->uid,
+                      jSpec->userName, jSpec->userId);
+            return LSBE_PERMISSION;
+        }
+    }
+
+    max_jobs = jgPtr->max_jobs;
+
+    /* Undo the limit.
+     */
+    if (max_jobs == INT32_MAX) {
+        if (jgrp->parent != groupRoot) {
+            parent = jgrp->parent;
+            jSpec2 = (struct jgrpData *)parent->ndInfo;
+            max_jobs = jSpec2->max_jobs;
+        }
+        goto bez;
+    }
+
+    /* I cannot be bigger than any of my parents
+     */
+    parent = jgrp->parent;
+    while (parent != groupRoot) {
+
+        jSpec2 = (struct jgrpData *)parent->ndInfo;
+        if (max_jobs > jSpec2->max_jobs) {
+            ls_syslog(LOG_ERR, "\
+%s: parent %s job_limit %d smaller than mine %s %d", __func__,
+                      parent->name, jSpec2->max_jobs,
+                      jgrp->name, max_jobs);
+            return LSBE_JGRP_LIMIT;
+        }
+        parent = parent->parent;
+    }
+
+    /* Any children cannot be bigger than me
+     */
+    child = jgrp->child;
+    while (child) {
+        jSpec2 = (struct jgrpData *)child->ndInfo;
+        if (max_jobs < jSpec2->max_jobs) {
+            ls_syslog(LOG_ERR, "\
+%s: child %s job_limit %d bigger than mine %s %d", __func__,
+                      child->name, jSpec2->max_jobs,
+                      jgrp->name, max_jobs);
+            return LSBE_JGRP_LIMIT;
+        }
+        child = child->child;
+    }
+
+bez:
+
+    if (logclass & LC_JGRP) {
+        ls_syslog(LOG_INFO, "\
+%s: changing job group %s max_job limit from %d to %d", __func__,
+                  jgrp->name, jSpec->max_jobs, max_jobs);
+    }
+
+    jSpec->max_jobs = max_jobs;
+
+    if (mSchedStage != M_STAGE_REPLAY) {
+        log_modjgrp(jgrp);
+    }
+
+    return LSBE_NO_ERROR;
 }

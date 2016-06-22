@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2016 David Bigagli
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor
+ * Boston, MA  02110-1301, USA
+ *
+ */
 
 #include "dlink.h"
 
@@ -33,7 +51,7 @@ dlink_make(void)
  */
 int
 dlink_insert(struct dlink *l,
-	     void *el)
+             void *el)
 {
     struct dlink *dl;
 
@@ -63,7 +81,7 @@ dlink_rm_ent(struct dlink *l, struct dlink *dl)
     void *v;
 
     if (dlink_empty(l))
-	return NULL;
+        return NULL;
 
     dl->back->forw = dl->forw;
     dl->forw->back = dl->back;
@@ -105,12 +123,12 @@ dlink_rm(struct dlink *l)
     struct dlink *dl;
 
     if (dlink_empty(l)) {
-	free(l);
-	return;
+        free(l);
+        return;
     }
 
     while ((dl = dlink_pop(l)))
-	free(dl);
+        free(dl);
 
     free(l);
 }
@@ -119,10 +137,10 @@ static inline int
 dlink_empty(struct dlink *l)
 {
     if (l->forw == l->back
-	&& l->forw == l
-	&& l->back == l) {
-	assert(l->num == 0);
-	return 1;
+        && l->forw == l
+        && l->back == l) {
+        assert(l->num == 0);
+        return 1;
     }
 
     return 0;
@@ -144,62 +162,62 @@ main(int argc, char **argv)
     l = dlink_make();
 
     for (i = 0; i < iter; i++) {
-	n = calloc(1, sizeof(int));
-	*n = i;
-	dlink_insert(l, n);
+        n = calloc(1, sizeof(int));
+        *n = i;
+        dlink_insert(l, n);
     }
 
     printf("dequeue\n");
     while ((n = dlink_dequeue(l))) {
-	printf("%d \n", *n);
-	free(n);
+        printf("%d \n", *n);
+        free(n);
     }
 
     for (i = 0; i < iter; i++) {
-	n = calloc(1, sizeof(int));
-	*n = i;
-	dlink_insert(l, n);
+        n = calloc(1, sizeof(int));
+        *n = i;
+        dlink_insert(l, n);
     }
 
     printf("pop\n");
     while ((n = dlink_pop(l))) {
-	printf("%d \n", *n);
-	free(n);
+        printf("%d \n", *n);
+        free(n);
     }
 
     for (i = 0; i < iter; i++) {
-	n = calloc(1, sizeof(int));
-	*n = i;
-	dlink_insert(l, n);
+        n = calloc(1, sizeof(int));
+        *n = i;
+        dlink_insert(l, n);
     }
 
     printf("iterate\n");
     for (dl = l->back;
-	 dl != l;
-	 dl = dl2) {
+         dl != l;
+         dl = dl2) {
 
-	dl2 = dl->back;
-	n = dl->e;
+        dl2 = dl->back;
+        n = dl->e;
 
-	printf("%d\n", *n);
+        printf("%d\n", *n);
 
     }
 
     printf("remove\n");
     for (dl = l->back;
-	 dl != l;
-	 dl = dl2) {
+         dl != l;
+         dl = dl2) {
 
-	dl2 = dl->back;
-	n = dl->e;
-	if (*n == 2
-	    || *n == 8) {
-	    n = dlink_rm_ent(l, dl);
-	    free(n);
-	    continue;
-	}
+        dl2 = dl->back;
+        n = dl->e;
+        if (*n == 2
+            || *n == 8) {
+            n = dlink_rm_ent(l, dl);
+            free(n);
+            continue;
+        }
 
-	printf("%d\n", *n);
+        printf("%d\n", *n);
 
     }
 

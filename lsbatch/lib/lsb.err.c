@@ -157,6 +157,7 @@ char   *lsb_errmsg[] = {
     /*132*/   "Job group exists already",
     /*133*/   "Job has no dependencies",
     /*134*/   "The job group is not empty",
+    /*135*/   "The modification/creation violates the job group limit",
     /* when you add a new message here, remember  to not
      * forget to add "," after the error message otherwise
      * the error count will be wrong.

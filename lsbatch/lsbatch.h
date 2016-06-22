@@ -34,7 +34,10 @@
 #define  MAX_CHARLEN         20
 #define  MAX_LSB_NAME_LEN    60
 #define  MAX_CMD_DESC_LEN    256
+#define  MAX_JOB_DESC_LEN    4096
 #define  MAX_USER_EQUIVALENT 128
+#define  MAX_RES_LIMITS      256
+#define  MAX_LIMIT_LEN       4096
 #define  DEFAULT_MSG_DESC    "no description"
 
 #define HOST_STAT_OK         0x0
@@ -66,12 +69,12 @@
 
 #define LSB_HOST_UNAVAIL(status)     ((status & HOST_STAT_UNAVAIL) != 0)
 
-#define LSB_HOST_UNUSABLE(status)  ((status & (HOST_STAT_WIND |      \
-                                               HOST_STAT_DISABLED | \
-                                               HOST_STAT_LOCKED |   \
+#define LSB_HOST_UNUSABLE(status)  ((status & (HOST_STAT_WIND |         \
+                                               HOST_STAT_DISABLED |     \
+                                               HOST_STAT_LOCKED |       \
                                                HOST_STAT_LOCKED_MASTER | \
-                                               HOST_STAT_NO_LIM | \
-                                               HOST_STAT_UNREACH | \
+                                               HOST_STAT_NO_LIM |       \
+                                               HOST_STAT_UNREACH |      \
                                                HOST_STAT_UNAVAIL)) != 0)
 #define HOST_BUSY_NOT          0x000
 #define HOST_BUSY_R15S         0x001
@@ -166,6 +169,7 @@
 #define    EVENT_STREAM_END       30
 #define    EVENT_NEW_JGRP         31
 #define    EVENT_DEL_JGRP         32
+#define    EVENT_MOD_JGRP         33
 
 /* Job specific reasons
  */
@@ -209,6 +213,7 @@
 #define PEND_QUE_PJOB_LIMIT        314
 #define PEND_QUE_WINDOW_WILL_CLOSE 315
 #define PEND_QUE_PROCLIMIT         316
+#define PEND_RES_LIMIT             317
 
 /* User reasons
  */
@@ -329,6 +334,13 @@
 
 #define LSB_MODE_BATCH    0x1
 
+/*
+ * Error codes for lsblib calls
+ * Each error code has its corresponding error message defined in lsb.err.c
+ * The code number is just the position number of its message.
+ * Adding a new code here must add its message there in the corresponding
+ * position.  Changing any code number here must change the position there.
+ */
 #define    LSBE_NO_ERROR      0
 #define    LSBE_NO_JOB        1
 #define    LSBE_NOT_STARTED   2
@@ -464,7 +476,8 @@
 #define    LSBE_JGRP_EXIST          132  /* the job group exists */
 #define    LSBE_NODEP_COND          133
 #define    LSBE_JGRP_NOTEMPTY       134  /* jgrp is not empty */
-#define    LSBE_NUM_ERR             135
+#define    LSBE_JGRP_LIMIT          135  /* jgrp limit violated */
+#define    LSBE_NUM_ERR             136
 
 
 #define  SUB_JOB_NAME       0x01
@@ -512,6 +525,7 @@
 #define  SUB2_MODIFY_RUN_JOB 0x800
 #define  SUB2_MODIFY_PEND_JOB 0x1000
 #define  SUB2_JOB_GROUP       0x2000
+#define  SUB2_JOB_DESC      0x4000
 
 #define  LOST_AND_FOUND  "lost_and_found"
 
@@ -564,6 +578,7 @@ struct submit {
     int    userPriority;
     char *userGroup;
     char *job_group; /* job group the job is attached to */
+    char *job_description;
 };
 
 struct submitReply {
@@ -873,6 +888,7 @@ struct parameterInfo {
     int max_num_candidates;
     int enable_proxy_hosts;
     int disable_peer_jobs;
+    int hist_mins;
 };
 
 
@@ -891,7 +907,7 @@ struct job_dep {
     int depstatus;        /* dependency status */
 };
 
-/* structure for lsb_addjgrp() call
+/* structure for lsb_addjgrp()/lsb_deljgrp()/lsb_modjgrp() call
  */
 struct job_group {
     char *group_name;
@@ -1006,6 +1022,7 @@ struct jobNewLog {
     char *userGroup;
     int abs_run_limit;
     char *job_group;
+    char *job_description;
 };
 
 struct jobModLog {
@@ -1063,6 +1080,7 @@ struct jobModLog {
     char    *loginShell;
     char    *schedHostType;
     int     userPriority;
+    char    *job_description;
 };
 
 
@@ -1335,6 +1353,13 @@ struct jgrpLog {
     int max_jobs;
 };
 
+/* Modify the max_job limit in a job group
+ */
+struct jgrpModLog {
+    char path[PATH_MAX];
+    int max_jobs;
+};
+
 union  eventLog {
     struct jobNewLog jobNewLog;
     struct jobStartLog jobStartLog;
@@ -1366,6 +1391,7 @@ union  eventLog {
     struct jobAttrSetLog jobAttrSetLog;
     struct endStream eos;
     struct jgrpLog jgrpLog;
+    struct jgrpModLog jgrpMod;
 };
 
 
@@ -1471,6 +1497,44 @@ struct queueConf {
     struct queueInfoEnt *queues;
 };
 
+typedef enum limitConsumerType {
+    LIMIT_CONSUMER_QUEUES = 0,
+    LIMIT_CONSUMER_PROJECTS = 1,
+    LIMIT_CONSUMER_HOSTS = 2,
+    LIMIT_CONSUMER_USERS = 3,
+    LIMIT_CONSUMER_TYPE_NUM = 4    /* how many consumer types */
+} limitConsumerType_t;
+
+typedef struct limitConsumer {
+    limitConsumerType_t consumer;
+    char* def;
+    char* value;
+} limitConsumer_t;
+
+typedef enum limitResType {
+    LIMIT_RESOURCE_SLOTS = 0,
+    LIMIT_RESOURCE_JOBS = 1,
+    LIMIT_RESOURCE_TYPE_NUM = 2  /* how many resource types */
+} limitResType_t;
+
+typedef struct limitRes {
+    limitResType_t res;
+    float value;
+} limitRes_t;
+
+typedef struct resLimit {
+    char*   name;
+    int     nConsumer;
+    limitConsumer_t* consumers;
+    int     nRes;
+    limitRes_t* res;
+} resLimit_t;
+
+typedef struct resLimitConf {
+    int       nLimit;
+    resLimit_t* limits;
+} resLimitConf_t;
+
 
 #define  IS_PEND(s)  (((s) & JOB_STAT_PEND) || ((s) & JOB_STAT_PSUSP))
 
@@ -1516,6 +1580,8 @@ extern struct hostConf *lsb_readhost(struct lsConf *, struct lsInfo *, int,
                                      struct clusterConf *);
 extern struct queueConf *lsb_readqueue(struct lsConf *, struct lsInfo *,
                                        int, struct sharedConf *);
+extern struct resLimitConf *lsb_readres(struct lsConf *);
+
 extern void updateClusterConf(struct clusterConf *);
 
 
@@ -1609,9 +1675,12 @@ extern struct job_dep *lsb_jobdep(LS_LONG_INT, int *);
 extern void free_jobdep(int, struct job_dep *);
 extern int lsb_addjgrp(struct job_group *);
 extern int lsb_deljgrp(struct job_group *);
+extern int lsb_modjgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
 extern struct glb_token *lsb_gettokens(const char *, const char *, int *);
 extern void free_tokens(int, struct glb_token *);
+extern struct resLimit *lsb_getlimits(int *);
+extern void free_resLimits(int, struct resLimit *);
 
 #endif

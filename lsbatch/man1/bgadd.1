@@ -8,7 +8,7 @@
 .SH SYNOPSIS
 .BR
 .PP
-\fBbgadd\fR \fIjob_group_name\fR
+\fBbgadd\fR [\fB-L\fR limit] \fIjob_group_name\fR
 .PP
 \fBbgadd\fR [\fB-h\fR | \fB-V\fR] 
 .SH DESCRIPTION
@@ -28,7 +28,28 @@ exist, all groups are created with the specified hierarchy.
 .SH OPTIONS
 .BR
 .PP
-.TP 
+.TP
+\fB-L\fR \fIlimit\fR
+.IP
+Specifies the maximum number of concurrent job slots allowed to
+run under the job group (including child groups). The option limits
+the number of started jobs (RUN, SSUSP, USUSP) under the job group.
+Specify a positive number between 0 and INT32_MAX-1 (2147483647).
+If the specified
+limit is zero, no jobs under the job group can run.
+.IP
+You cannot specify a limit for the root job group. The root job
+group has no job limit. Job groups added with no limits specified
+inherit any limits of existing parent job groups. The option only
+limits the lowest level job group created.
+.IP
+By default, a job group has no job slot limit. Limits persist
+across mbatchd restart or reconfiguration.
+.TP
+\fIjob_group_name\fR
+.IP
+Full path of the job group name.
+.TP
 \fB-h
 \fR
 .IP
@@ -57,4 +78,4 @@ bgadd /mygroup/subgroup1
 .BR
 .PP
 .PP
-bgdel(1), bjgroup(1)
+bgdel(1), bgmod(1), bjgroup(1)

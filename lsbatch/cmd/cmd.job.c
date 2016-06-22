@@ -112,9 +112,15 @@ prtHeader(struct jobInfoEnt *job, int prt_q, int tFormat)
     }
     prtLineWUF(prline);
 
+    if ((job->submit.options2 & SUB2_JOB_DESC) &&
+        (job->submit.job_description)) {
+        sprintf(prline, ", Job Description <%s>", job->submit.job_description);
+        prtLineWUF(prline);
+    }
+
     if (job->submit.options2 & SUB2_JOB_GROUP) {
-	sprintf(prline, ", Job Group <%s>", job->submit.job_group);
-	prtLineWUF(prline);
+        sprintf(prline, ", Job Group <%s>", job->submit.job_group);
+        prtLineWUF(prline);
     }
 
     sprintf(prline, "\n");
@@ -395,7 +401,7 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 
 
     if (tFormat) {
-        sprintf (tBuff, "%s <%s>", I18N_Job, lsb_jobid2str(job->jobId));
+        sprintf (tBuff, " %s <%s>", I18N_Job, lsb_jobid2str(job->jobId));
     }
     else if (LSB_ARRAY_IDX(job->jobId) > 0 )
         sprintf (tBuff, " [%d]", LSB_ARRAY_IDX(job->jobId));
@@ -420,7 +426,7 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 					 &startTime),
 		            I18N(604, "The pre-exec command is started on")); /* catgets  604  */
 		else
-	            sprintf(prline, "%s:%s, %s",
+	            sprintf(prline, "%s: %s %s",
 			    _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T,
 					&startTime),
 		            tBuff,
@@ -433,7 +439,7 @@ prtJobStart(struct jobInfoEnt *job, int prtFlag, int jobPid, int tFormat)
 			    _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &startTime),
 			    I18N(606, "The batch job command is started on")); /*catgets 606 */
 		else
-	            sprintf(prline, "%s:%s, %s",
+	            sprintf(prline, "%s: %s %s",
 			   _i18n_ctime(ls_catd, CTIME_FORMAT_a_b_d_T, &startTime),
 			   tBuff,
 			   I18N(607, "the batch job command is started on")); /*catgets 607 */
@@ -1132,6 +1138,6 @@ displayUF (struct jobInfoEnt *job, struct jobInfoHead *jInfoH, float cpuFactor)
     }
 
     printf ("\n RESOURCE REQUIREMENT DETAILS:\n");
-    printf (" Combined: N/A\n Effective: N/A\n");
+    printf (" Combined: %s\n Effective: %s\n", job->submit.resReq, job->submit.resReq);
     return;
 }

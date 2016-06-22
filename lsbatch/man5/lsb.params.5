@@ -148,6 +148,14 @@ Specify y or Y to disable user-level account mapping.
 .SS Default
 .BR
 Undefined
+.SH  HIST_MINUTES
+.BR
+The number of minutes the fairshare schedule performs the decay of accumulated
+number of used slots per user in a fairshare tree. The number of running slots
+is decreased ten times each \fBHIST_MINUTES\fR. This number is used to sort the
+tree by priority, smaller the number less important is the history os used slots.
+The default value is two hours.
+.BR
 .SH JOB_ACCEPT_INTERVAL
 .BR
 .SS Syntax
