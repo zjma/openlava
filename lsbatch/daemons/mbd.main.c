@@ -843,6 +843,7 @@ processClient(struct clientNode *client, int *needFree)
                                       client->fromHost,
                                       &reqHdr),
                    "do_glbTokenInfo()");
+            break;
         case BATCH_JGRP_MOD:
             TIMEIT(0, do_jobGroupModify(&xdrs,
                                         s,
@@ -886,7 +887,7 @@ endLoop:
          && reqHdr.opCode != BATCH_JGRP_ADD
          && reqHdr.opCode != BATCH_JGRP_DEL
          && reqHdr.opCode != BATCH_TOKEN_INFO
-         && reqHdr.opCode != BATCH_JGRP_DEL)
+         && reqHdr.opCode != BATCH_JGRP_DEL
          && reqHdr.opCode != BATCH_JGRP_MOD)
         || statusReqCC < 0) {
         shutDownClient(client);
@@ -1424,7 +1425,6 @@ preempt(void)
         ls_syslog(LOG_INFO, "%s: leaving ...", __func__);
 }
 
-<<<<<<< HEAD
 int
 requeue_job(struct jData *jPtr)
 {
@@ -1505,6 +1505,7 @@ str_flags(int flag)
         sprintf(buf + strlen(buf), "JFLAG_BORROWED_SLOTS ");
 
     return buf;
+}
 
 static void
 decay_run_time(void)
