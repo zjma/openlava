@@ -48,6 +48,8 @@
 .br
 \fB-J\fR \fIjob_name | \fR\fB-J\fR  \fB"\fRjob_name\fB[\fRindex_list\fB]%\fRjob_limit\fB"\fR
 .br
+\fB-Jd "\fR\fIjob_description\fR"
+.br
 \fB-k "\fRcheckpoint_dir [\fIcheckpoint_period\fR] [\fBmethod=\fRmethod_name]\fB"\fR
 .br
 \fB-L\fR login_shell
@@ -64,7 +66,7 @@
 .br
 \fB-q\fR \fB"\fRqueue_name ...\fB"\fR
 .br
-\fB-R\fR \fB"\fRres_req\fB"\fR
+\fB-R\fR \fB"\fRres_req\fB"\fR [\fB-R\fR \fB"\fRres_req\fB"\fR ...]
 .br
 -\fBsp\fR \fIpriority\fR
 .br
@@ -644,6 +646,12 @@ Specify \fB"\fRjob_name\fB[\fRindex\fB]"\fR to work with elements of all arrays 
 same name. Since job names are not unique, multiple job arrays may
 have the same name with a different or same set of indices.
 
+.TP
+\fB-Jd \fR"job_description"
+\fR
+.IP
+Assigns the specified description to the job.
+
 
 .TP
 \fB-k "\fRcheckpoint_dir [checkpoint_period][\fBmethod=\fRmethod_name]\fB"
@@ -863,7 +871,7 @@ queue listed first is considered first.
 
 
 .TP
-\fB-R "\fRres_req\fB"\fR
+\fB-R "\fRres_req\fB"\fR [\fB-R\fR \fB"\fRres_req\fB"\fR ...]
 
 .IP
 Runs the job on a host that meets the specified resource requirements.
@@ -938,7 +946,14 @@ called "packing" scheduling policy):
 .IP
 bsub -R "order[-slots]" mjob
 .IP
-For example, to submit a job that runs on CentOS 6 or CentOS 7:
+Another built-in resource is "maxslots" which represents the MXJ
+(maximum number of job slots) parameter configured in lsb.hosts for
+each host. This resource can be used in the resource requirements string
+in job submission or in the queue configurations (lsb.queues).
+For example, "order[maxslots]" sorts hosts for dispatch in
+descending order based on the maximum number of job slots.
+.IP
+To submit a job that runs on CentOS 6 or CentOS 7:
 .IP
 bsub -R "centos6 || centos7" mjob
 .IP
@@ -1028,6 +1043,15 @@ or 20 MB of memory and 50 MB of swap space for
 bsub -R "rusage[mem=20:app_lic_v15=1||
 .br
 mem=20:swp=50:app_lic_v201=1]" mjob
+.IP
+When a multi-threaded or parallel job that needs to run on one machine (“span[hosts=1]”)
+specifies the memory usage using “–R rusage[mem=...]” , the memory usage requirement
+applies to the single host, rather than being multiplied by the number of job slots. For example:
+.IP
+bsub –n 4 –R "rusage[mem=100] span[hosts=1]" mymulti-threaded-job
+.IP
+In OpenLava 3.2 or previous releases, the scheduler will allocate 4 x 100M = 400 MB of memory.
+Starting from OpenLava 3.3, the scheduler will allocate 100MB.
 .TP
 -\fBsp\fR priority
 

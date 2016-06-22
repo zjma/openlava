@@ -109,7 +109,7 @@ struct jobCard {
     char   *spooledExec;
     char   postJobStarted;
     char   userJobSucc;
-    int    core_num;    /* core number the job is bound to */
+    int    *core_num;    /* core numbers the job is bound to */
 };
 
 /* openlava core representation
@@ -118,6 +118,28 @@ struct ol_core {
     int core_num;  /* core number decimal */
     int bound;      /* number of bound processes */
 };
+
+/* openlava numa represenation
+ */
+typedef enum {
+    NUMA_HOST,       /* numa machine */
+    NUMA_NODE,       /* memory node */
+    NUMA_SOCKET,     /* processor socket */
+    NUMA_CORE,       /* processor core */
+} numa_type;
+
+typedef struct numa_obj {
+    struct numa_obj *forw;
+    struct numa_obj *back;
+    struct numa_obj *parent;
+    struct numa_obj *child;
+    numa_type type;         /* numa object type */
+    int total;              /* number of cores under this object*/
+    int used;               /* number of used cores under this object*/
+    int index;              /* logical index number */
+    int bound;              /* number of bound processes */
+} numa_obj_t;
+
 
 typedef enum {
     NO_SIGLOG,
@@ -334,9 +356,17 @@ extern int sbdCheckUnreportedStatus();
 extern void exeActCmd(struct jobCard *jp, char *actCmd, char *exitFile);
 extern void exeChkpnt(struct jobCard *jp, int chkFlags, char *exitFile);
 extern void init_cores(void);
-extern int find_free_core(void);
-extern void free_core(int);
-extern int bind_to_core(pid_t, int);
-extern int find_bound_core(pid_t);
-
+extern int* find_free_core(int num);
+extern void free_core(int, int*);
+extern int bind_to_core(pid_t, int, int*);
+extern int* find_bound_core(pid_t);
+#ifdef HAVE_HWLOC_H
+extern int init_numa_topology(void);
+extern void init_numa_cores(void);
+extern int* find_free_numa_core(int);
+extern int bind_to_numa_core(pid_t, int, int*);
+extern void bind_to_numa_mem(int*, int);
+extern void free_numa_core(int, int*);
+extern int* find_numa_bound_core(pid_t);
+#endif
 #endif

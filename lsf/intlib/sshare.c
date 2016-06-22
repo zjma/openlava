@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2015 David Bigagli
+ * Copyright (C) 2014 - 2016 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -24,6 +24,8 @@
 
 #include "sshare.h"
 #include <assert.h>
+
+extern void ls_syslog(int, const char *, ...);
 
 static link_t *parse_user_shares(const char *);
 static link_t *parse_group_member(const char *,
@@ -89,9 +91,9 @@ z:
         root = t->root;
 
     if (l == NULL) {
-	free_sacct(t->root->data);
-	fin_link(stack);
-	tree_free(t);
+        free_sacct(t->root->data);
+        fin_link(stack);
+        tree_free(t);
         return NULL;
     }
 
@@ -130,14 +132,14 @@ z:
          */
         sacct = n->data;
         if (n->child == NULL) {
-	    /* all and default are synonyms as they
-	     * both indicate a user that is not explicitly
-	     * defined.
-	     */
+            /* all and default are synonyms as they
+             * both indicate a user that is not explicitly
+             * defined.
+             */
             if (strcasecmp(sacct->name, "all") == 0
-		|| strcasecmp(sacct->name, "default") == 0) {
+                || strcasecmp(sacct->name, "default") == 0) {
                 sacct->options |= SACCT_USER_ALL;
-	    }
+            }
             sacct->options |= SACCT_USER;
             sprintf(buf, "%s/%s", n->parent->name, n->name);
             hash_install(t->node_tab, buf, n, NULL);
@@ -162,6 +164,18 @@ z:
     sort_tree_by_shares(t);
 
     return t;
+}
+
+void
+sshare_sort_tree_by_ran_job(struct tree_ *t)
+{
+   /* This must be emptied after every scheduling
+     * cycle. There could be still some leafs
+     * if not all jobs got dispatched.
+     */
+    while (pop_link(t->leafs))
+        ;
+    sort_tree_by_deviate(t);
 }
 
 /* sshare_distribute_slots()
@@ -252,7 +266,7 @@ znovu:
  */
 int
 sshare_distribute_own_slots(struct tree_ *t,
-			    uint32_t slots)
+                            uint32_t slots)
 {
     struct tree_node_ *n;
     link_t *stack;
@@ -300,17 +314,17 @@ znovu:
         if (n->child)
             enqueue_link(stack, n);
 
-	/* Enforce the ownership/guarantee at the
-	 * first level of the tree.
-	 */
-	if (first == 0) {
-	    if (sacct->numRUN > sacct->shares)
-		sacct->sent = 0;
-	    else
-		sacct->sent = sacct->shares - sacct->numRUN;
-	} else {
-	    avail = avail - compute_slots(n, slots, avail);
-	}
+        /* Enforce the ownership/guarantee at the
+         * first level of the tree.
+         */
+        if (first == 0) {
+            if (sacct->numRUN > sacct->shares)
+                sacct->sent = 0;
+            else
+                sacct->sent = sacct->shares - sacct->numRUN;
+        } else {
+            avail = avail - compute_slots(n, slots, avail);
+        }
 
         assert(avail >= 0);
         /* As we traverse in priority order
@@ -489,6 +503,13 @@ znovu:
         /* sum up the historical.
          */
         sum = sum + s->numRAN;
+
+        if (logclass & LC_FAIR) {
+            ls_syslog(LOG_INFO, "\
+%s: updating %s pend %d run %d ran %d", __func__,
+                      s->name, s->numPEND, s->numRAN, s->numRUN);
+        }
+
         n = n->right;
     }
 
@@ -502,6 +523,20 @@ znovu:
     }
 
     sort_siblings(root, node_cmp2);
+
+    if (logclass & LC_FAIR) {
+        /* Verify the sorting order which should be from
+         * less numRAN to higher ones.
+         */
+        n = root->child;
+        while (n) {
+            s = n->data;
+            ls_syslog(LOG_INFO, "\
+%s: sorted %s pend %d ran %d run %d", __func__,
+                      s->name, s->numPEND, s->numRAN, s->numRUN);
+            n = n->right;
+        }
+    }
 
     n = pop_link(stack);
     if (n) {
@@ -534,6 +569,12 @@ compute_deviate(struct tree_node_ *n,
      * you should have used.
      */
     s->dsrv2 = u - s->numRAN;
+
+    if (logclass & LC_FAIR) {
+        ls_syslog(LOG_INFO, "\
+%s: shares %s ideal %f ceil(ideal) %d numRAN %d deserve %d", __func__,
+                  s->name, q, u, s->numRAN, (u - s->numRAN));
+    }
 
     return s->dsrv2;
 }
@@ -694,11 +735,11 @@ parse_group_member(const char *gname,
     g = NULL;
     for (cc = 0; cc < num; cc++) {
 
-	/* Match the group name and the group
-	 * must have shares.
-	 */
+        /* Match the group name and the group
+         * must have shares.
+         */
         if (strcmp(gname, grps[cc].group) == 0
-	    && grps[cc].user_shares) {
+            && grps[cc].user_shares) {
             g = calloc(1, sizeof(struct group_acct));
             assert(g);
             g->group = strdup(grps[cc].group);

@@ -78,6 +78,7 @@ extern void free_sacct(struct share_acct *);
 extern int sshare_distribute_slots(struct tree_ *,
                                    uint32_t);
 extern int sshare_distribute_own_slots(struct tree_ *,
-				       uint32_t);
+                                       uint32_t);
+extern void sshare_sort_tree_by_ran_job(struct tree_ *);
 
 #endif /* _SSHARE_HEADER_ */

@@ -7,8 +7,26 @@ Release notes for OpenLava versions
 -- Create a new parameter NIOS_MAX_TASKS specifying the maximum number
    of tasks nios can handle.
 
-3.3.2
+3.3.3
 =====
+
+-- Implement bsub -Jd to support specifying job description to jobs.
+-- Implement tech preview of lsb.resources.
+-- Implement the bresource command and the lsb_getlimits() API.
+-- Fix scheduler bug in which the priority tree was not sorted
+   after each job was dispatched.
+-- Do not perform bulk slot allocation in the fairshare scheduler
+   but distribute slots from higher to low priority jobs.
+-- Implement periodic decay of used slots in the fairshare tree.
+-- Implement a parameter HIST_MINUTES in lsb.params to control
+   the time at which the decay of used slots is performed.
+-- Modify the bparams command to display the HIST_MINUTES in its
+   long output format.
+-- The fairshare layer will log detail informations if the logclass
+   in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
+
+3.3.2
+======
 
 -- Remove the check if a group name is also a hostname as
    there can be a host on the network not part of the cluster
@@ -21,6 +39,25 @@ Release notes for OpenLava versions
    of the job.
 -- Fix a bug in lsb.log which was causing 'bsub -K' event being
    badly interpreted by library which printed "Bad event format".
+-- Implement built in resource maxslots which represents the MBD
+   MXJ parameter. This allows users to sort hosts based on MXJ.
+-- Implement NUMA awareness and binding of processes based on the
+   machine's NUMA architecture.
+-- Fix xdr error in mbatchd if there are no job groups defined
+   and user run bjgroup command.
+-- Implemented the job group limit 'bgadd -L n /x/y/z'. This allows
+   the users to set running job limits at different level of the job group
+   hierachy. If the limit is reached jobs attached to the group will be
+   pending with reason "The job group limit has been reached"
+-- Renamed the bjgroups command in bjgroup.
+-- Implemented bgmod to change the limits of a job group.
+-- Fix mbatchd core dump when running egroup.
+-- Support bsub with multiple -R options.
+-- OpenLava service script sources the custom ulimit scripts.
+-- Add preemption for multi-thread jobs when a host is not full.
+-- Increase the daemons' port numbers in lsf.conf.in to prevent conflicts
+   with other programs.
+-- Increase the length of file path to PATH_MAX for bsub -i|-is|-o|-e
 
 3.3.1
 ======

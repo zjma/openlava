@@ -67,11 +67,13 @@ typedef enum {
     BATCH_UNUSED_39      = 39,
     BATCH_STATUS_CHUNK   = 40,
     BATCH_JOBMSG_INFO,
+    BATCH_RESLIMIT_INFO,
     BATCH_SET_JOB_ATTR   = 90,
     BATCH_JOBDEP_INFO,
     BATCH_JGRP_ADD,
     BATCH_JGRP_DEL,
     BATCH_JGRP_INFO,
+    BATCH_JGRP_MOD,
     READY_FOR_OP         = 1023,
     PREPARE_FOR_OP       = 1024
 } mbdReqType;
@@ -120,6 +122,7 @@ struct submitReq {
     char    *userGroup;
     int     userPriority;
     char    *job_group;
+    char    *job_description;
 };
 
 #define SHELLLINE "#! /bin/sh\n\n"
@@ -278,6 +281,11 @@ struct migReq {
     int options;
     int numAskedHosts;
     char **askedHosts;
+};
+
+struct resLimitReply {
+    int    numLimits;
+    struct resLimit *limits;
 };
 
 typedef enum {

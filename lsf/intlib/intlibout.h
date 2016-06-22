@@ -123,5 +123,6 @@ extern void displayShareResource(int, char **, int, int, int);
 extern int makeShareField(char *, int, char ***, char ***, char ***);
 extern char *getMAC(int *);
 extern char *mac2hex(char *, int);
+extern int mergeResreq(char **, char *);
 
 #endif

@@ -1704,7 +1704,8 @@ do_paramInfoReq(XDR * xdrs, int chfd, struct sockaddr_in * from,
 
     count = sizeof(struct parameterInfo) + strlen(paramInfo.defaultQueues)
         + strlen(paramInfo.defaultHostSpec)
-        + strlen(paramInfo.defaultProject) + 100 + jobSpoolDirLen;
+        + strlen(paramInfo.defaultProject) + jobSpoolDirLen;
+    count = count * sizeof(int);
 
     reply_buf = my_malloc(count, "do_paramInfoReq");
     xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
@@ -3160,7 +3161,7 @@ do_jobGroupInfo(XDR *xdrs,
      * nodes on the tree itself.
      */
     size = tree_size(&n);
-    size = size * sizeof(int) + sizeof(struct LSFHeader);
+    size = size * sizeof(int) + sizeof(struct LSFHeader) + sizeof(int);
 
     buf = calloc(size, sizeof(char));
 
@@ -3171,6 +3172,8 @@ do_jobGroupInfo(XDR *xdrs,
     XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
 
     if (! xdr_int(&xdrs2, &n)) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encoding num nodes %d bytes", __func__, size);
         sendLSFHeader(chfd, LSBE_XDR);
         _free_(buf);
         return -1;
@@ -3179,7 +3182,7 @@ do_jobGroupInfo(XDR *xdrs,
     cc = encode_nodes(&xdrs2, &n, JGRP_NODE_GROUP, hdr);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed encoding %d bytes", __func__, size);
+%s: failed encoding nodes %d bytes", __func__, size);
         sendLSFHeader(chfd, LSBE_XDR);
         _free_(buf);
         xdr_destroy(&xdrs2);
@@ -3211,3 +3214,92 @@ do_jobGroupInfo(XDR *xdrs,
 
     return 0;
 }
+
+/* do_jobGroupModify()
+ */
+int
+do_jobGroupModify(XDR *xdrs,
+                  int chfd,
+                  struct sockaddr_in *from,
+                  char *hostname,
+                  struct LSFHeader *hdr,
+                  struct lsfAuth *auth)
+{
+    struct job_group group;
+    int cc;
+
+    group.group_name = calloc(MAXLSFNAMELEN, sizeof(char));
+
+    if (! xdr_jobgroup(xdrs, &group, hdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_jobgroup() failed", __func__);
+        enqueueLSFHeader(chfd, LSBE_XDR);
+        return -1;
+    }
+
+    cc = modify_job_group(&group, auth);
+
+    /* send back the answer to the library
+     */
+    enqueueLSFHeader(chfd, cc);
+    _free_(group.group_name);
+
+    return 0;
+}
+
+/* do_resLimitInfo
+ */
+int
+do_resLimitInfo(XDR *xdrs,
+                int chfd,
+                struct sockaddr_in *from,
+                struct LSFHeader *hdr)
+{
+    XDR xdrs2;
+    struct LSFHeader replyHdr;
+    char *reply_buf;
+    struct resLimitReply limits;
+    int count;
+
+    limits.numLimits = limitConf->nLimit;
+    limits.limits = limitConf->limits;
+
+    count = limits.numLimits * (sizeof(struct resLimit)
+                                   + MAXLSFNAMELEN
+                                   + LIMIT_CONSUMER_TYPE_NUM * (sizeof(struct limitConsumer) + sizeof(int) + 2 * MAX_LIMIT_LEN)
+                                   + LIMIT_RESOURCE_TYPE_NUM * (sizeof(struct limitRes) + sizeof(int) + sizeof(float)))
+                                   + 100;
+    reply_buf = my_calloc(count, sizeof(char), __func__);
+    xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
+
+    initLSFHeader_(&replyHdr);
+    replyHdr.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (!xdr_encodeMsg(&xdrs2,
+                       (char *) &limits,
+                       &replyHdr,
+                       xdr_resLimitReply,
+                       0,
+                       NULL)) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encode %dbytes reply to %s", __func__,
+                  XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        FREEUP(reply_buf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encode %dbytes reply to %s", __func__,
+                  XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        xdr_destroy(&xdrs2);
+        FREEUP(reply_buf);
+        return -1;
+    }
+
+    xdr_destroy(&xdrs2);
+    FREEUP(reply_buf);
+    return 0;
+}
+

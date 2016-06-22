@@ -1228,6 +1228,7 @@ checkParams(struct infoReq *req, struct parameterInfo *reply)
     reply->maxStreamRecords = mbdParams->maxStreamRecords;
     reply->freshPeriod = freshPeriod;
     reply->maxSbdConnections = maxSbdConnections;
+    reply->hist_mins = mbdParams->hist_mins;
 }
 
 void
@@ -1297,7 +1298,7 @@ isAuthManager(struct lsfAuth *auth)
     if (mSchedStage == M_STAGE_REPLAY)
         return true;
 
-    return (isManager(auth->lsfUserName));
+    return isManager(auth->lsfUserName);
 }
 
 char *

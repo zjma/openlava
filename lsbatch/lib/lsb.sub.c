@@ -127,6 +127,7 @@ lsb_submit(struct submit  *jobSubReq, struct submitReply *submitRep)
     subNewLine_(jobSubReq->errFile);
     subNewLine_(jobSubReq->chkpntDir);
     subNewLine_(jobSubReq->projectName);
+    subNewLine_(jobSubReq->job_description);
 
     for(loop = 0; loop < jobSubReq->numAskedHosts; loop++) {
         subNewLine_(jobSubReq->askedHosts[loop]);
@@ -1186,6 +1187,13 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
     } else {
         submitReq->nxf = 0;
     }
+
+    if (jobLog->options2 & SUB2_JOB_DESC) {
+        submitReq->options2 |= SUB2_JOB_DESC;
+        submitReq->job_description = jobLog->job_description;
+    } else {
+        submitReq->job_description = "";
+    }
     if (jobLog->schedHostType)
         submitReq->schedHostType = jobLog->schedHostType;
     else
@@ -1600,6 +1608,21 @@ getOtherParams (struct submit  *jobSubReq, struct submitReq *submitReq,
             submitReq->jobName = jobSubReq->jobName;
     } else
         submitReq->jobName = "";
+
+    if (jobSubReq->options2 & SUB2_JOB_DESC) {
+        if (!jobSubReq->job_description) {
+            lsberrno = LSBE_BAD_ARG;
+            return -1;
+        }
+        if (strlen(jobSubReq->job_description) > MAX_JOB_DESC_LEN - 1) {
+            lsberrno = LSBE_BAD_ARG;
+            errno = ENAMETOOLONG;
+            return -1;
+        }
+        submitReq->job_description = jobSubReq->job_description;
+    } else {
+        submitReq->job_description = "";
+    }
 
     if (jobSubReq->options & SUB_IN_FILE) {
         if (!jobSubReq->inFile) {
@@ -2854,15 +2877,21 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
                 checkSubDelOption (SUB_RES_REQ, "Rn");
                 if (mask & SUB_RES_REQ) {
+                    while (*optarg == ' ')
+                        optarg++;
                     if (req->resReq != NULL){
-                        PRINT_ERRMSG0(errMsg, _i18n_msg_get(ls_catd,NL_SETN,442,
-                                                            "Invalid syntax; the -R option was used more than once.\n")); /* catgets 442 */
-                        return -1;
+                         if (mergeResreq(&req->resReq, optarg) == -1) {
+                             fprintf(stderr, "Resource requirements too long or invalid\n");
+                             return -1;
+                         }
                     }
-                    req->resReq = optarg;
+                    else {
+                         if ((req->resReq=strdup(optarg)) == NULL){
+                             fprintf(stderr, "Resource requirements too long\n");
+                             return -1;
+                         }
+                    }
                     req->options |= SUB_RES_REQ;
-                    while (*(req->resReq) == ' ')
-                        req->resReq++;
                 }
                 break;
 
@@ -2888,7 +2917,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
                     req->options |= SUB_INTERACTIVE | SUB_PTY | SUB_PTY_SHELL;
                     flagI++;
                 } else {
-		    bsub_usage(req->options);
+                    bsub_usage(req->options);
                     return -1;
                 }
                 break;
@@ -2920,7 +2949,7 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
             case 'h':
                 bsub_usage(req->options);
-		return -1;
+                return -1;
 
             case 'm':
                 req->options2 |= SUB2_MODIFY_PEND_JOB;
@@ -2942,17 +2971,25 @@ setOption_(int argc, char **argv, char *template, struct submit *req,
 
             case 'J':
                 req->options2 |= SUB2_MODIFY_PEND_JOB;
-                checkSubDelOption (SUB_JOB_NAME, "Jn");
-                if (mask & SUB_JOB_NAME) {
-                    req->jobName = optarg;
-                    req->options |= SUB_JOB_NAME;
-                    req->options2 |= SUB2_MODIFY_PEND_JOB;
+                if ( strncmp (optName, "Jd", 2) == 0) {
+                    checkSubDelOption2(SUB2_JOB_DESC, "Jdn");
+                    if (!(mask2 & SUB2_JOB_DESC))
+                        break;
+                    req->job_description = optarg;
+                    req->options2 |= SUB2_JOB_DESC;
+                } else {
+                    checkSubDelOption (SUB_JOB_NAME, "Jn");
+                    if (mask & SUB_JOB_NAME) {
+                        req->jobName = optarg;
+                        req->options |= SUB_JOB_NAME;
+                    }
                 }
                 break;
 
-	    case 'g':
-		req->options2 |= SUB2_JOB_GROUP;
-		req->job_group = optarg;
+            case 'g':
+                req->options2 |= SUB2_JOB_GROUP;
+                req->job_group = optarg;
+                break;
 
             case 'i':
 
@@ -4105,6 +4142,7 @@ runBatchEsub(struct lenData *ed, struct submit *jobSubReq)
                    inFile);
     SET_PARM_BOOL_2(SUB2_JOB_CMD_SPOOL, "LSB_SUB2_JOB_CMD_SPOOL", jobSubReq);
     SET_PARM_STR(SUB_USER_GROUP, "LSB_SUB_USER_GROUP", jobSubReq, userGroup);
+    SET_PARM_STR_2(SUB2_JOB_DESC, "LSB_SUB2_JOB_DESC", jobSubReq, job_description);
 
     ls_readconfenv(myParams, NULL);
 
@@ -4523,6 +4561,8 @@ void modifyJobInformation(struct submit *jobSubReq)
                FIELD_OFFSET(submit,termTime),0},
               {"LSB_SUB_COMMAND_LINE",STRPARM,
                FIELD_OFFSET(submit,command),0},
+              {"LSB_SUB2_JOB_DESC",STR2PARM,
+               FIELD_OFFSET(submit,job_description),SUB2_JOB_DESC},
               {NULL,0,0,0}
           };
 

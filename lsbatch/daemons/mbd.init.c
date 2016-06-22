@@ -57,10 +57,12 @@ static struct lsConf *paramFileConf = NULL;
 static struct lsConf *userFileConf = NULL;
 static struct lsConf *hostFileConf = NULL;
 static struct lsConf *queueFileConf = NULL;
+static struct lsConf *resFileConf = NULL;
 struct userConf *userConf = NULL;
 static struct hostConf *hostConf = NULL;
 static struct queueConf *queueConf = NULL;
 static struct paramConf *paramConf = NULL;
+struct resLimitConf *limitConf = NULL;
 static struct gData *tempUGData[MAX_GROUPS];
 static struct gData *tempHGData[MAX_GROUPS];
 static int nTempUGroups;
@@ -71,6 +73,7 @@ static char batchName[MAX_LSB_NAME_LEN] = "root";
 #define USER_FILE     0x02
 #define HOST_FILE     0x04
 #define QUEUE_FILE    0x08
+#define RESOURCE_FILE 0x16
 
 #define HDATA         1
 #define UDATA         2
@@ -83,6 +86,7 @@ static void readParamConf(int);
 static int  readHostConf(int);
 static void readUserConf(int);
 static void readQueueConf(int);
+static void readResConf(int);
 
 static int isHostAlias (char *);
 static int searchAll(char *);
@@ -138,7 +142,7 @@ static int parseFirstHostErr(int,
 static struct hData *mkLostAndFoundHost(void);
 static int init_fairshare_scheduler(void);
 static struct fair_sched *load_fair_plugin(struct qData *,
-					   const char *);
+                                           const char *);
 static int parse_preemption(struct qData *);
 static int sort_queues(void);
 static int queue_cmp(const void *, const void *);
@@ -290,6 +294,7 @@ minit(int mbdInitFlags)
 
     TIMEIT(0, readUserConf(mbdInitFlags), "minit_readUserConf");
     TIMEIT(0, readQueueConf(mbdInitFlags), "minit_readQueueConf");
+    TIMEIT(0, readResConf(mbdInitFlags), "minit_readResConf");
     copyGroups(FALSE);
 
     updUserList(mbdInitFlags);
@@ -706,6 +711,49 @@ createDefQueue(void)
     qp->askedOthPrio = 0;
     qp->acceptIntvl = accept_intvl;
     inQueueList(qp);
+}
+
+static void
+readResConf(int mbdInitFlags)
+{
+    char file[PATH_MAX];
+
+    if (mbdInitFlags == FIRST_START
+        || mbdInitFlags == RECONFIG_CONF) {
+        sprintf(file, "%s/lsb.resources", daemonParams[LSB_CONFDIR].paramValue);
+        resFileConf = getFileConf(file, RESOURCE_FILE);
+        if (resFileConf == NULL && lserrno == LSE_NO_FILE) {
+            ls_syslog(LOG_ERR, "\
+%s: lsb.resources not found %M, no resource limit", __FUNCTION__);
+            limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+            return;
+        }
+    } else if (resFileConf == NULL) {
+        ls_syslog(LOG_DEBUG, "\
+%s: lsb.resources not found, no resource limit", __FUNCTION__);
+        limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+        return;
+    }
+
+    if ((limitConf = lsb_readres(resFileConf)) == NULL) {
+        if (lsberrno == LSBE_CONF_FATAL) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, __FUNCTION__, "lsb_readres");
+            if (lsb_CheckMode) {
+                lsb_CheckError = FATAL_ERR;
+                return;
+            }
+            mbdDie(MASTER_FATAL);
+        }
+
+        if (lsberrno == LSBE_CONF_WARNING)
+            lsb_CheckError = WARNING_ERR;
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, __FUNCTION__, "lsb_readres");
+        limitConf = my_calloc(1, sizeof (struct resLimitConf), __FUNCTION__);
+        return;
+    }
+
+    if (lsberrno == LSBE_CONF_WARNING)
+        lsb_CheckError = WARNING_ERR;
 }
 
 /* addHost()
@@ -1861,18 +1909,18 @@ setManagers(struct clusterInfo clusterInfo)
     /* This message is most likely going to syslog.
      */
     if (ls_logchown(managerId) < 0) {
-	ls_syslog(LOG_ERR, "\
+        ls_syslog(LOG_ERR, "\
 %s: failed to chown() logfile to %d %m", __func__, managerId);
     }
 
     if (setreuid(managerId, managerId) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: failed to set managerId for mbatchd running as uid %d: %m",
-		  __func__, getuid());
-	/* Don't die keep running as root.
-	 */
+                  __func__, getuid());
+        /* Don't die keep running as root.
+         */
     } else {
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: mbatchd running as managerId %d", __func__, managerId);
     }
 }
@@ -1920,8 +1968,7 @@ setParams(struct paramConf *paramConf)
     setValue(maxUserPriority, params->maxUserPriority);
     setValue(jobPriorityValue, params->jobPriorityValue);
     setValue(jobPriorityTime, params->jobPriorityTime);
-    setJobPriUpdIntvl( );
-
+    setJobPriUpdIntvl();
 
     setValue(sharedResourceUpdFactor, params->sharedResourceUpdFactor);
 
@@ -1946,6 +1993,11 @@ setParams(struct paramConf *paramConf)
     if (params->pjobSpoolDir)
         mbdParams->pjobSpoolDir = strdup(params->pjobSpoolDir);
 
+    /* Set default and convert to minutes
+     */
+    if (mbdParams->hist_mins == -1)
+        mbdParams->hist_mins = DEF_HIST_MINUTES;
+    mbdParams->hist_mins = mbdParams->hist_mins * 60;
 }
 
 static void
@@ -2022,8 +2074,8 @@ createTmpGData(struct groupInfoEnt *groups,
          */
         if (gPtr->group_slots) {
             grpPtr->group_slots = strdup(gPtr->group_slots);
-	    grpPtr->max_slots = gPtr->max_slots;
-	}
+            grpPtr->max_slots = gPtr->max_slots;
+        }
 
         if (grpPtr->memberTab.numEnts == 0
             && grpPtr->numGroups == 0
@@ -2316,14 +2368,14 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
             qPtr->qAttrib |= Q_ATTRIB_PREEMPTIVE;
         }
 
-	if (queue->ownership) {
-	    /* Keep using the qAttrib since the
-	     * API library needs it
-	     */
-	    qPtr->ownership = strdup(queue->ownership);
-	    qPtr->qAttrib |= Q_ATTRIB_OWNERSHIP;
-	    qPtr->loan_duration = queue->loan_duration;
-	}
+        if (queue->ownership) {
+            /* Keep using the qAttrib since the
+             * API library needs it
+             */
+            qPtr->ownership = strdup(queue->ownership);
+            qPtr->qAttrib |= Q_ATTRIB_OWNERSHIP;
+            qPtr->loan_duration = queue->loan_duration;
+        }
     }
 
     for (i = 0; i < queueConf->numQueues; i++) {
@@ -2460,8 +2512,8 @@ addQData(struct queueConf *queueConf, int mbdInitFlags )
         if (queue->preCmd)
             qPtr->preCmd = safeSave (queue->preCmd);
 
-	if (queue->prepostUsername)
-	    qPtr->prepostUsername = safeSave (queue->prepostUsername);
+        if (queue->prepostUsername)
+            qPtr->prepostUsername = safeSave (queue->prepostUsername);
 
         if (queue->postCmd)
             qPtr->postCmd = safeSave (queue->postCmd);
@@ -3460,27 +3512,27 @@ init_fairshare_scheduler(void)
         if (qPtr->fairshare == NULL)
             continue;
 
-	qPtr->fsSched = load_fair_plugin(qPtr, buf);
+        qPtr->fsSched = load_fair_plugin(qPtr, buf);
         if (qPtr->fsSched == NULL) {
             ls_syslog(LOG_ERR, "\
 %s: failed loading fairshare plugin, fall back to fcfs", __func__);
             FREEUP(qPtr->fairshare);
-	    qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
+            qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
             continue;
         }
-	/* invoke the plugin initializer
-	 */
-	cc = (*qPtr->fsSched->fs_init)(qPtr, userConf);
-	if (cc < 0) {
+        /* invoke the plugin initializer
+         */
+        cc = (*qPtr->fsSched->fs_init)(qPtr, userConf);
+        if (cc < 0) {
             ls_syslog(LOG_ERR, "\
 %s: failed initializing fairshare plugin, fall back to fcfs", __func__);
-	     dlclose(qPtr->fsSched->handle);
-	    _free_(qPtr->fsSched->name);
-	    _free_(qPtr->fsSched);
-	    _free_(qPtr->fairshare);
-	    qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
-	    return -1;
-	}
+             dlclose(qPtr->fsSched->handle);
+            _free_(qPtr->fsSched->name);
+            _free_(qPtr->fsSched);
+            _free_(qPtr->fairshare);
+            qPtr->qAttrib &= ~Q_ATTRIB_FAIRSHARE;
+            return -1;
+        }
 
         qPtr->numFairSlots = getQueueSlots(qPtr);
         (*qPtr->fsSched->fs_init_sched_session)(qPtr);
@@ -3493,7 +3545,7 @@ init_fairshare_scheduler(void)
  */
 static struct fair_sched *
 load_fair_plugin(struct qData *qPtr,
-		 const char *file)
+                 const char *file)
 {
     struct fair_sched *f;
 
@@ -3580,7 +3632,17 @@ load_fair_plugin(struct qData *qPtr,
     f->fs_init_own_sched_session = dlsym(f->handle, "fs_init_own_sched_session");
     if (f->fs_init_own_sched_session == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: ohmygosh missing fs_own_init() symbol in %s: %s", __func__,
+%s: ohmygosh missing fs_init_own_sched_session() symbol in %s: %s", __func__,
+                  file, dlerror());
+        dlclose(f->handle);
+        free(f);
+        return NULL;
+    }
+
+    f->fs_decay_ran_time = dlsym(f->handle, "fs_decay_ran_time");
+    if (f->fs_decay_ran_time == NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: ohmygosh missing fs_decay_ran_time() symbol in %s: %s", __func__,
                   file, dlerror());
         dlclose(f->handle);
         free(f);
@@ -3718,7 +3780,7 @@ sort_queues(void)
     qsort(v, n, sizeof(struct qData *), queue_cmp);
 
     for (i = 0; i < n; i++) {
-	qPtr = v[i];
+        qPtr = v[i];
         listInsertEntryAtFront(l, (LIST_ENTRY_T *)qPtr);
     }
 
@@ -3887,25 +3949,25 @@ init_ownership_scheduler(void)
             ls_syslog(LOG_ERR, "\
 %s: failed loading ownership plugin, fall back to fcfs", __func__);
             _free_(qPtr->ownership);
-	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
+            qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
             continue;
         }
 
-	cc = (*qPtr->own_sched->fs_own_init)(qPtr, userConf);
-	if (cc < 0) {
+        cc = (*qPtr->own_sched->fs_own_init)(qPtr, userConf);
+        if (cc < 0) {
             ls_syslog(LOG_ERR, "\
 %s: failed initializing fairshare plugin, fall back to fcfs", __func__);
-	    dlclose(qPtr->fsSched->handle);
-	    _free_(qPtr->own_sched);
+            dlclose(qPtr->fsSched->handle);
+            _free_(qPtr->own_sched);
             _free_(qPtr->ownership);
-	    qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
-	    return -1;
-	}
+            qPtr->qAttrib &= ~Q_ATTRIB_OWNERSHIP;
+            return -1;
+        }
 
-	/* Keep both fairshare slots and owned slots as they
-	 * are used in the 2 different algorithms we run
-	 * in the queue.
-	 */
+        /* Keep both fairshare slots and owned slots as they
+         * are used in the 2 different algorithms we run
+         * in the queue.
+         */
         qPtr->numFairSlots = qPtr->num_owned_slots = getQueueSlots(qPtr);
         (*qPtr->own_sched->fs_init_own_sched_session)(qPtr);
     }

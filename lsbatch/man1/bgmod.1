@@ -1,0 +1,96 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH bgmod 1 "OpenLava Version 3.3 - Mar 2016"
+.br
+.SH NAME
+\fBbgmod\fR - modifies job groups 
+.SH SYNOPSIS
+.BR
+.PP
+\fBbgmod\fR [\fB-L\fR limit | \fBLn\fR] \fIjob_group_name\fR
+.PP
+\fBbgmod\fR [\fB-h\fR | \fB-V\fR] 
+.SH DESCRIPTION
+.BR
+.PP
+.PP
+Modifies the job group with the job group name specified by \fIjob_group_name\fR.
+.PP
+Only root, OpenLava administrators, the job group creator, or the creator
+of the parent job groups can use bgmod to modify a job group limit.
+.PP
+You must provide full group path name for the modified job group. The
+last component of the path is the name of the job group to be
+modified.
+.PP
+.SH OPTIONS
+.BR
+.PP
+.TP
+\fB-L\fR \fIlimit\fR
+.IP
+Changes the slot limit of \fIjob_group_name\fR to the
+specified \fIlimit\fR value. If the job group has parent
+job groups, the new limit cannot exceed the limits of any
+higher level job groups. Similarly, if the job group has
+child job groups, the new value must be greater than any
+limits on the lower level job groups.
+.IP
+\fIlimit\fR specifies the
+maximum number of concurrent job slots allowed to
+run under the job group (including child groups). The option limits
+the number of started jobs (RUN, SSUSP, USUSP) under the job group.
+Specify a positive number between 0 and INT32_MAX-1 (2147483647). If the specified
+limit is zero, no jobs under the job group can run.
+.IP
+You cannot specify a limit for the root job group. The root job
+group has no job limit. The option only limits the lowest level
+job group specified.
+.TP
+\fB-Ln\fR
+.IP
+Removes the existing job limit for the job group. If the
+job group has parent job groups, the job modified group
+automatically inherits any limits from its direct parent
+job group.
+.TP
+\fIjob_group_name\fR
+.IP
+Full path of the job group name.
+.TP
+\fB-h
+\fR
+.IP
+Prints command usage to stderr and exits. 
+
+
+.TP 
+\fB-V
+\fR
+.IP
+Prints OpenLava release version to stderr and exits. 
+
+.PP
+.SH EXAMPLES
+.BR
+.PP
+Modify the limit of group /mygroup/subgroup/g1. It does not modify limits of
+/mygroup or /mygroup/subgroup.
+.PP
+bgmod -L 5 /mygroup/subgroup/g1
+.PP
+To modify limits of /mygroup or /mygroup/subgroup, you need to specify
+the exact group name:
+.PP
+bgmod -L 5 /mygroup
+.PP
+or
+.PP
+bgmod -L 5 /mygroup/subgroup1
+.PP
+.SH SEE ALSO
+.BR
+.PP
+.PP
+bgadd(1), bgdel(1), bjgroup(1)

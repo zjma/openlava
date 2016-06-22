@@ -260,10 +260,6 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
     newjob->restartPid = newjob->shared->jobBill.restartPid;
     newjob->chkpntPeriod = newjob->shared->jobBill.chkpntPeriod;
 
-    if (newjob->shared->jobBill.options2 & SUB2_JOB_GROUP) {
-        check_job_group(newjob, auth);
-    }
-
     logJobInfo(subReq, newjob, &jf);
     FREEUP (jf.data);
 
@@ -5404,8 +5400,6 @@ modifyAJob (struct modifyReq *req, struct submitMbdReply *reply,
     struct submitReq *newReq;
     int returnErr;
 
-
-
     if (IS_FINISH (jpbw->jStatus))
         return (LSBE_JOB_FINISH);
 
@@ -6145,13 +6139,19 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
         }
 
     }
-    else if ( maxUserPriority > 0 ) {
+    else if (maxUserPriority > 0) {
 
         job->jobPriority  = maxUserPriority/2;
     }
 
+    if (subReq->options2 & SUB2_JOB_GROUP) {
+        int cc;
+        cc = check_job_group(job, auth);
+        if (cc != LSBE_NO_ERROR)
+            return cc;
+    }
 
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -6372,6 +6372,11 @@ copyJobBill (struct submitReq *subReq,
         jobBill->job_group = strdup(subReq->job_group);
     else
         jobBill->job_group = strdup("");
+
+    if (subReq->options2 & SUB2_JOB_DESC)
+        jobBill->job_description = strdup(subReq->job_description);
+    else
+        jobBill->job_description = strdup("");
 }
 
 void
@@ -6504,7 +6509,7 @@ freeSubmitReq(struct submitReq *jobBill)
  *
  * to: targer submitReq
  * old: is the submitReq of the job
- * req: is teh new requested submitReq
+ * req: is the new requested submitReq
  *
  */
 static int
@@ -6640,6 +6645,8 @@ mergeSubReq(struct submitReq *to, struct submitReq *old,
             to->options2 |= fmask;                                      \
             to->fname = safeSave(old->fname);}                          \
         else to->fname = safeSave("");}
+
+    mergeStrField2(job_description, SUB2_JOB_DESC);
 
     if ( maxUserPriority < 0 ) {
         mergeIntField2(userPriority, SUB2_JOB_PRIORITY, -1);

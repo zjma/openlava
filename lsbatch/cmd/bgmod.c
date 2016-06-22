@@ -22,7 +22,7 @@ static void
 usage(void)
 {
     fprintf(stderr, "\
-bgadd: [ -h ] [ -V ] [-L job limit] group_name\n");
+bgmod: [ -h ] [ -V ] [-L job limit] [-Ln] group_name\n");
 }
 
 /* in lsb.misc.c
@@ -62,6 +62,7 @@ main(int argc, char **argv)
     }
 
     if (max_jobs
+        && max_jobs[0] != 'n'
         && (! isint_(max_jobs)
             || atoi(max_jobs)) < 0) {
         fprintf(stderr, "\
@@ -71,16 +72,17 @@ main(int argc, char **argv)
 
     jg.group_name = argv[argc - 1];
     jg.max_jobs = INT32_MAX;
-    if (max_jobs)
+    if (max_jobs
+        && max_jobs[0] != 'n')
         jg.max_jobs = atoi(max_jobs);
 
-    cc = lsb_addjgrp(&jg);
+    cc = lsb_modjgrp(&jg);
     if (cc != LSBE_NO_ERROR) {
-        fprintf(stderr, "bgadd: %s.\n", lsb_sysmsg());
+        fprintf(stderr, "bgmod: %s.\n", lsb_sysmsg());
         return -1;
     }
 
-    printf("Group %s added successfully.\n", jg.group_name);
+    printf("Group %s modified successfully.\n", jg.group_name);
 
     return 0;
 }

@@ -143,8 +143,6 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
 
                 if (jPtr2->qPtr != qPtr2)
                     continue;
-                if (jPtr2->hPtr[0]->hStatus != HOST_STAT_FULL)
-                    continue;
 
                 num = num + jPtr2->shared->jobBill.numProcessors;
                 push_link(rl, jPtr2);

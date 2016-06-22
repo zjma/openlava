@@ -6,7 +6,7 @@ include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I../
 lib_LTLIBRARIES = liblsfint.la libtools.la
-noinst_PROGRAMS = treetest stest
+#noinst_PROGRAMS = treetest stest
 
 liblsfint_la_SOURCES = admin.c cmdtime.c jidx.c lsftcl.c \
 	resreq.c bitset.c conf.c list.c misc.c \
@@ -22,8 +22,8 @@ libtools_la_SOURCES = tree.c tree.h list2.c list2.h \
 	hash.c hash.h link.h link.c sshare.c sshare.h
 libtools_la_LDFLAGS =  -no-undefined -version-info 0:1
 
-treetest_SOURCES = treetest.c
-treetest_LDADD = libtools.la link.o
+#treetest_SOURCES = treetest.c
+#treetest_LDADD = libtools.la link.o
 
-stest_SOURCES = stest.c
-stest_LDADD = libtools.la link.o
+#stest_SOURCES = stest.c
+#stest_LDADD = libtools.la link.o

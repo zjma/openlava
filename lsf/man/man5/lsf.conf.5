@@ -3378,7 +3378,7 @@ By default, LIM_DEFINE_NCPUS is set to "threads".
 .BR
 .PP
 .PP
-\fBLIM_ACCEPT_FLOAT_CLIENT=\fyes
+\fBLIM_ACCEPT_FLOAT_CLIENT\fR=yes
 .SS Description
 .BR
 .PP
@@ -3391,3 +3391,27 @@ lsf.cluster file. Leave it undefined if you don't want this behavior.
 .BR
 .PP
 By default this parameter is not defined.
+
+.SH NIOS_MAX_TASKS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBNIOS_MAX_TASKS\fR=\fInumber\fR
+.SS Description
+.BR
+.PP
+.PP
+Defines maximum number of concurrent tasks a nios can handle.
+The default is 20,000 remote tasks. Configure this paramter to
+a larger number if an application that uses the OpenLava remote
+execution service (lsrun or equivalent OpenLava C API) to launch and manage
+more than 20,000 remote tasks.
+.PP
+.SS Default
+.BR
+.PP
+20000
+

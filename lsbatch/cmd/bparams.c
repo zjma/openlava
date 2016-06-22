@@ -37,7 +37,7 @@ main (int argc, char **argv)
     int longFormat;
 
     if (lsb_init(argv[0]) < 0) {
-	lsb_perror("lsb_init");
+        lsb_perror("lsb_init");
         return -1;
     }
 
@@ -60,13 +60,13 @@ main (int argc, char **argv)
         }
     }
     if (!(paramInfo = lsb_parameterinfo(NULL, NULL, 0))) {
-	lsb_perror(NULL);
+        lsb_perror(NULL);
         return -1;
     }
     if (longFormat)
         printLong(paramInfo);
     else
-	printShort(paramInfo);
+        printShort(paramInfo);
 
     return 0;
 }
@@ -76,7 +76,7 @@ printShort(struct parameterInfo *reply)
 {
     printf("Default Queues:  %s\n", reply->defaultQueues);
     if (reply->defaultHostSpec[0] != '\0')
-	printf ("Default Host Specification:  %s\n", reply->defaultHostSpec);
+        printf ("Default Host Specification:  %s\n", reply->defaultHostSpec);
     printf("\
 Job Dispatch Interval:  %d seconds\n", reply->mbatchdInterval);
     printf("\
@@ -94,9 +94,9 @@ printLong(struct parameterInfo *reply)
     printf(" %16.16s = %s\n\n",  "DEFAULT_QUEUE", reply->defaultQueues);
 
     if (reply->defaultHostSpec[0] != '\0') {
-	printf("System default host or host model for adjusting CPU time limit");
-	printf(" %20.20s = %s\n\n",  "DEFAULT_HOST_SPEC",
-		reply->defaultHostSpec);
+        printf("System default host or host model for adjusting CPU time limit");
+        printf(" %20.20s = %s\n\n",  "DEFAULT_HOST_SPEC",
+               reply->defaultHostSpec);
     }
 
     printf("The interval for dispatching jobs by master batch daemon:\n");
@@ -107,7 +107,7 @@ printLong(struct parameterInfo *reply)
 
     printf("The interval for a host to accept two batch jobs:\n");
     printf("    JOB_ACCEPT_INTERVAL = %d (* MBD_SLEEP_TIME)\n\n",
-            reply->jobAcceptInterval);
+           reply->jobAcceptInterval);
 
     printf("The idle time of a host for resuming pg suspended jobs:\n");
     printf("    PG_SUSP_IT = %d (seconds)\n\n", reply->pgSuspendIt);
@@ -127,28 +127,28 @@ The maximum number of finished jobs that can be stored in current events file:\n
 
     printf("The interval to terminate a job:\n");
     printf("    JOB_TERMINATE_INTERVAL = %d \n\n",
-        reply->jobTerminateInterval);
+           reply->jobTerminateInterval);
 
     printf("The maximum number of jobs in a job array:\n");
     printf("    MAX_JOB_ARRAY_SIZE = %d\n\n", reply->maxJobArraySize);
     printf("User level account mapping for remote jobs is %s.\n",
-            (reply->disableUAcctMap == TRUE) ?
-            "disabled" : "permitted");
+           (reply->disableUAcctMap == TRUE) ?
+           "disabled" : "permitted");
 
     if (strlen(reply->pjobSpoolDir) > 0) {
-	printf("The batch jobs' temporary output directory:\n");
+        printf("The batch jobs' temporary output directory:\n");
         printf("    JOB_SPOOL_DIR = %s\n\n", reply->pjobSpoolDir);
     }
 
     if ( reply->maxUserPriority > 0 ) {
         printf("Maximal job priority defined for all users:\n");
         printf("    MAX_USER_PRIORITY = %d\n", reply->maxUserPriority);
-	printf("    DEFAULT_USER_PRIORITY = %d", reply->maxUserPriority/2);
+        printf("    DEFAULT_USER_PRIORITY = %d", reply->maxUserPriority/2);
     }
 
     if (reply->jobPriorityValue > 0) {
-	printf("Job priority is increased by the system dynamically based on waiting time:\n");
-	printf("    JOB_PRIORITY_OVER_TIME = %d/%d (minutes)\n\n",
+        printf("Job priority is increased by the system dynamically based on waiting time:\n");
+        printf("    JOB_PRIORITY_OVER_TIME = %d/%d (minutes)\n\n",
                reply->jobPriorityValue, reply->jobPriorityTime);
     }
 
@@ -202,6 +202,7 @@ The maximum number of finished jobs that can be stored in current events file:\n
 
     printf("Maximum open connections with SBD\n");
     printf("    MAX_SBD_CONNS = %d\n\n", reply->maxSbdConnections);
+
+    printf("History minutes\n");
+    printf("    HIST_MINUTES = %d\n\n", reply->hist_mins);
 }
-
-

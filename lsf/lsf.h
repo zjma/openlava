@@ -101,7 +101,7 @@ extern char **environ;
 #define MAXMODELS               128
 #define MAXTYPES_31             25
 #define MAXMODELS_31            30
-#define MAXFILENAMELEN          256
+#define MAXFILENAMELEN          PATH_MAX
 
 #define FIRST_RES_SOCK  20
 
@@ -311,8 +311,9 @@ enum orderType {INCR, DECR, NA};
 #define RESF_SHARED      0x08 /* shared resource for some hosts */
 #define RESF_EXTERNAL    0x10 /* external resource */
 #define RESF_RELEASE     0x20 /* releasable if job suspended */
-#define RESF_MBD_MXJ     0x40 /* MBD slots */
-#define RESF_MBD_CPUF    0x80 /* MBD sort hosts by cpufactor */
+#define RESF_MBD_FREE_SLOTS     0x40 /* MBD slots */
+#define RESF_MBD_CPUF    0x80  /* MBD sort hosts by cpufactor */
+#define RESF_MBD_MXJ     0x100 /* MBD order by MXJ */
 #define RESF_DEFINED_IN_RESOURCEMAP  0x40
 
 #define true TRUE
