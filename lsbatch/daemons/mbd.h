@@ -1508,4 +1508,6 @@ extern int can_switch_jgrp(struct jgrpLog *);
 extern int check_job_group(struct jData *, struct lsfAuth *);
 extern bool_t jobgroup_limit_ok(struct jData *);
 
+extern int do_resLimitInfo(XDR *, int, struct sockaddr_in *, struct LSFHeader *);
+
 #endif /* _MBD_HEADER_ */

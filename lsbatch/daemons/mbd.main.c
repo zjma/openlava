@@ -840,6 +840,13 @@ processClient(struct clientNode *client, int *needFree)
                                         &auth),
                    "do_jobGroupModify()");
             break;
+        case BATCH_RESLIMIT_INFO:
+            TIMEIT(0, do_resLimitInfo(&xdrs,
+                                      s,
+                                      &from,
+                                      &reqHdr),
+                   "do_resLimitInfo()");
+            break;
         default:
             errorBack(s, LSBE_PROTOCOL, &from);
             if (reqHdr.version <= OPENLAVA_XDR_VERSION)

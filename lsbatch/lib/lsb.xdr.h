@@ -161,3 +161,11 @@ extern bool_t xdr_jobID(XDR *,
                         struct LSFHeader *);
 extern bool_t xdr_jobdep(XDR *, struct job_dep *, struct LSFHeader *);
 extern bool_t xdr_jobgroup(XDR *, struct job_group *, struct LSFHeader *);
+extern bool_t xdr_resLimitReply(XDR *,
+                    struct resLimitReply *,
+                    struct LSFHeader *);
+
+extern bool_t xdr_resLimitEnt(XDR *,
+                        struct resLimit *,
+                        struct LSFHeader *);
+

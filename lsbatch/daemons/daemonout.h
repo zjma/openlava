@@ -67,6 +67,7 @@ typedef enum {
     BATCH_UNUSED_39      = 39,
     BATCH_STATUS_CHUNK   = 40,
     BATCH_JOBMSG_INFO,
+    BATCH_RESLIMIT_INFO,
     BATCH_SET_JOB_ATTR   = 90,
     BATCH_JOBDEP_INFO,
     BATCH_JGRP_ADD,
@@ -280,6 +281,11 @@ struct migReq {
     int options;
     int numAskedHosts;
     char **askedHosts;
+};
+
+struct resLimitReply {
+    int    numLimits;
+    struct resLimit *limits;
 };
 
 typedef enum {

@@ -3244,3 +3244,61 @@ do_jobGroupModify(XDR *xdrs,
 
     return 0;
 }
+
+/* do_resLimitInfo
+ */
+int
+do_resLimitInfo(XDR *xdrs,
+                int chfd,
+                struct sockaddr_in *from,
+                struct LSFHeader *hdr)
+{
+    XDR xdrs2;
+    struct LSFHeader replyHdr;
+    char *reply_buf;
+    struct resLimitReply limits;
+    int count;
+
+    limits.numLimits = limitConf->nLimit;
+    limits.limits = limitConf->limits;
+
+    count = limits.numLimits * (sizeof(struct resLimit)
+                                   + MAXLSFNAMELEN
+                                   + LIMIT_CONSUMER_TYPE_NUM * (sizeof(struct limitConsumer) + sizeof(int) + 2 * MAX_LIMIT_LEN)
+                                   + LIMIT_RESOURCE_TYPE_NUM * (sizeof(struct limitRes) + sizeof(int) + sizeof(float)))
+                                   + 100;
+    reply_buf = my_calloc(count, sizeof(char), __func__);
+    xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
+
+    initLSFHeader_(&replyHdr);
+    replyHdr.opCode = LSBE_NO_ERROR;
+    XDR_SETPOS(&xdrs2, LSF_HEADER_LEN);
+
+    if (!xdr_encodeMsg(&xdrs2,
+                       (char *) &limits,
+                       &replyHdr,
+                       xdr_resLimitReply,
+                       0,
+                       NULL)) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encode %dbytes reply to %s", __func__,
+                  XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        FREEUP(reply_buf);
+        xdr_destroy(&xdrs2);
+        return -1;
+    }
+
+    if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed encode %dbytes reply to %s", __func__,
+                  XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        xdr_destroy(&xdrs2);
+        FREEUP(reply_buf);
+        return -1;
+    }
+
+    xdr_destroy(&xdrs2);
+    FREEUP(reply_buf);
+    return 0;
+}
+

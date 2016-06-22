@@ -36,6 +36,7 @@
 #define  MAX_JOB_DESC_LEN    4096
 #define  MAX_USER_EQUIVALENT 128
 #define  MAX_RES_LIMITS      256
+#define  MAX_LIMIT_LEN       4096
 #define  DEFAULT_MSG_DESC    "no description"
 
 #define HOST_STAT_OK         0x0
@@ -1674,5 +1675,7 @@ extern int lsb_deljgrp(struct job_group *);
 extern int lsb_modjgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
+extern struct resLimit *lsb_getlimits(int *);
+extern void free_resLimits(int, struct resLimit *);
 
 #endif
