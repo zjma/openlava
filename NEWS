@@ -39,6 +39,7 @@ Release notes for OpenLava versions
 -- Add preemption for multi-thread jobs when a host is not full.
 -- Increase the daemons' port numbers in lsf.conf.in to prevent conflicts
    with other programs.
+-- Increase the length of file path to 4096 for bsub -i|-is|-o|-e
 
 3.3.1
 ======
