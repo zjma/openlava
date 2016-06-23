@@ -17,6 +17,7 @@ Release notes for OpenLava versions
    long output format.
 -- The fairshare layer will log detail informations if the logclass
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
+-- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
 
 3.3.2
 ======
