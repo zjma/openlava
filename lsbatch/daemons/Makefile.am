@@ -16,7 +16,7 @@ mbd.policy.c mbd.grp.c mbd.jarray.c mbd.log.c mbd.requeue.c mbd.window.c \
 elock.c misc.c mail.c daemons.c daemons.xdr.c \
 mbd.h daemonout.h daemons.h jgrp.h proxy.h mbd.profcnt.def 
 
-mbatchd_LDADD = /usr/local/glb-0.1/lib/libglb.a \
+mbatchd_LDADD = /usr/local/glb/lib/libglb.a \
                 ../lib/.libs/liblsbatch.a \
                 ../../lsf/lib/.libs/liblsf.a \
                 ../../lsf/intlib/.libs/liblsfint.a \
