@@ -3966,8 +3966,15 @@ make_preemption_queues(const char *preempt, link_t *l)
     _free_(p0);
 }
 
+/* sort_preemptable_queues()
+ *
+ * Sort the queues that can be preempted by priority
+ * in ascending order. When GLB will ask us to return
+ * some tokens we will walk the array of preempt queues
+ * searching for a job to preempt.
+ */
 static void
-sort_preemption_queues(link_t *l)
+sort_preemptable_queues(link_t *l)
 {
     int n;
     int i;

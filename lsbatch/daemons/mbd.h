@@ -770,6 +770,18 @@ struct profileCounters {
     char *cntDescr;
 };
 
+/* MBD representation of the glb token. MBD adds
+ * to add more local scheduling information independently
+ * of the glb representation in glb.h
+ */
+struct mbd_token {
+    char *name;     /* token name */
+    int allocated;  /* allocated to the cluster */
+    int ideal;      /* ideal number based on shares */
+    int recalled;   /* recalled since borrowed by other clusters */
+    int need_more;  /* need more of this token type */
+};
+
 #undef MBD_PROF_COUNTER
 #define MBD_PROF_COUNTER(Func) PROF_CNT_ ## Func,
 
@@ -1532,7 +1544,7 @@ extern int do_glbTokenInfo(XDR *, int,
 extern int get_glb_tokens_size(int *);
 extern int encode_glb_tokens(XDR *, struct LSFHeader *);
 extern int count_stream(char *);
-struct glb_token *recover_glb_allocation_state(void);
+struct mbd_token *recover_glb_allocation_state(void);
 extern bool_t jobgroup_limit_ok(struct jData *);
 
 extern int do_resLimitInfo(XDR *, int, struct sockaddr_in *, struct LSFHeader *);

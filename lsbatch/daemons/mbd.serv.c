@@ -3230,7 +3230,7 @@ do_glbTokenInfo(XDR *xdrs,
     struct LSFHeader hdr2;
     char *buf;
     int buf_size;
-    struct glb_token *t;
+    struct mbd_token *t;
 
     /* This code is unused now.
      */
@@ -3270,6 +3270,9 @@ do_glbTokenInfo(XDR *xdrs,
         return -1;
     }
 
+    /* Encode ontly the mbd_token part the glb
+     * knows about, in C++ language the base class
+     */
     cc = encode_glb_tokens(&xdrs2, hdr);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\

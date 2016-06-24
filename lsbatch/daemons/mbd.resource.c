@@ -52,24 +52,25 @@ checkOrTakeAvailableByPreemptPRHQValue(int index,
 static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
 static int num_tokens;
-static struct glb_token *get_glb_tokens(void);
-static struct glb_token *tokens;
-static void add_tokens(struct glb_token *, int,
+static struct mbd_token *tokens;
+static void get_glb_tokens(void);
+static void add_tokens(struct mbd_token *, int,
                        struct lsSharedResourceInfo *, int);
-static float get_job_tokens(struct resVal *, struct glb_token *, struct jData *);
-static int compute_used_tokens(struct glb_token *);
+static float get_job_tokens(struct resVal *, struct mbd_token *, struct jData *);
+static int compute_used_tokens(struct mbd_token *);
 static int glb_get_more_tokens(const char *);
-static int glb_release_tokens(struct glb_token *, int);
+static int glb_release_tokens(struct mbd_token *, int);
 static struct jData **sort_sjl_by_queue_priority(link_t *);
 static struct jData **sjl;
 static int num_sjl_jobs;
-static int need_more_tokens;
 static int jcompare_by_queue(const void *, const void *);
 static int preempt_jobs_for_tokens(int);
-static struct glb_token *is_a_token(const char *);
+static struct mbd_token *is_a_token(const char *);
 static char old_path[PATH_MAX];
 static char new_path[PATH_MAX];
 static int save_glb_allocation_state(void);
+static void copy_glb_tokens(struct glb_token *, int);
+static void free_mbd_tokens(void);
 
 void
 getLsbResourceInfo(void)
@@ -87,17 +88,10 @@ getLsbResourceInfo(void)
         return;
     }
 
-    /* need_more_tokens is very important variable, the scheduler
-     * uses it to signal there is a need for tokens,
-     * so that after the scheduling in check_token_status()
-     * we can take the appropriate acctions.
-     * num_tokens is a global variable in this module
-     * which tells MBD how many tokens we got from GLB
-     * each scheduling cycle.
+    /* tokens is a global data structure
+     * manage by those routines.
      */
-    tokens = NULL;
-    num_tokens = need_more_tokens = 0;
-    tokens = get_glb_tokens();
+    get_glb_tokens();
 
     save_glb_allocation_state();
 
@@ -779,7 +773,7 @@ pryc:
 
 /* get_glb_tokens()
  */
-static struct glb_token *
+static void
 get_glb_tokens(void)
 {
     struct glb_token *t;
@@ -795,28 +789,72 @@ get_glb_tokens(void)
             ls_syslog(LOG_ERR, "\
 %s: gudness glb_init() failed cannot get even hold of GLB %d",
                       __func__, glberrno);
-            return NULL;
+            return;
         }
         first = 0;
     }
+
+    free_mbd_tokens();
 
     t = glb_gettokens(clusterName, &num_tokens);
     if (t == NULL) {
         ls_syslog(LOG_ERR, "\
 %s: Ohmygosh cannot get tokens from GLB %d", __func__, glberrno);
-        t = recover_glb_allocation_state();
-        if (t == NULL) {
+        tokens = recover_glb_allocation_state();
+        if (tokens == NULL) {
             num_tokens = 0;
-            return NULL;
+            return;
         }
-        return t;
+        return;
     }
 
-    return t;
+    /* turn the glb tokens into mbd tokens
+     */
+    copy_glb_tokens(t, num_tokens);
+
+    free_glb_tokens(t, num_tokens);
 }
 
+/* copy_glb_tokens()
+ */
 static void
-add_tokens(struct glb_token *t, int num_tokens,
+copy_glb_tokens(struct glb_token *t, int num)
+{
+    int cc;
+
+    tokens = calloc(num, sizeof(struct mbd_token));
+
+    for (cc = 0; cc < num; cc++) {
+        tokens[cc].name = strdup(t[cc].name);
+        tokens[cc].allocated = t[cc].allocated;
+        tokens[cc].ideal = t[cc].ideal;
+        tokens[cc].recalled = t[cc].recalled;
+        /* remaining mbd_token members are zero
+         */
+    }
+}
+
+/* free_mbd_tokens()
+ */
+static void
+free_mbd_tokens(void)
+{
+    int cc;
+
+    if (num_tokens == 0
+        || tokens == NULL)
+        return;
+
+    for (cc = 0; cc < num_tokens; cc++)
+        __free__(tokens[cc].name);
+
+    __free__(tokens);
+}
+
+/* add_tokens()
+ */
+static void
+add_tokens(struct mbd_token *t, int num_tokens,
            struct lsSharedResourceInfo *res, int num_res)
 {
     int cc;
@@ -850,7 +888,6 @@ check_token_status(void)
 {
     int cc;
     int used;
-    static int prev_used;
 
     ls_syslog(LOG_INFO, "%s: Entering...", __func__);
 
@@ -868,10 +905,10 @@ check_token_status(void)
         }
 
         ls_syslog(LOG_INFO, "\
-%s: token %s used %d prev_used %d alloc %d ideal %d recalled %d need_more_tokens %d",
-                  __func__, tokens[cc].name, used, prev_used,
+%s: token %s used %d alloc %d ideal %d recalled %d need_more %d",
+                  __func__, tokens[cc].name, used,
                   tokens[cc].allocated, tokens[cc].ideal,
-                  tokens[cc].recalled, need_more_tokens);
+                  tokens[cc].recalled, tokens[cc].need_more);
 
         if (tokens[cc].recalled > 0) {
             int num_preempted;
@@ -897,7 +934,6 @@ check_token_status(void)
                 glb_release_tokens(&tokens[cc], num_preempted);
                 ls_syslog(LOG_INFO, "\
 %s: 1 releasing %d tokens", __func__, num_preempted);
-                prev_used = used;
                 continue;
             }
 
@@ -906,13 +942,15 @@ check_token_status(void)
              * finished so that prev_used > used now, we can
              * release them.
              */
-
-            if (num_preempted == 0
-                && prev_used > used) {
-                glb_release_tokens(&tokens[cc], prev_used - used);
+            if (0) {
+                int prev_used;
+                if (num_preempted == 0
+                    && prev_used > used) {
+                    glb_release_tokens(&tokens[cc], prev_used - used);
                 ls_syslog(LOG_INFO, "\
 %s: 2 releasing %d tokens", __func__, prev_used - used);
                 prev_used = used;
+                }
             }
 
             if (used == 0) {
@@ -924,20 +962,20 @@ check_token_status(void)
         } /* under recall */
 
         if (used < tokens[cc].allocated
-            && need_more_tokens == 0) {
+            && tokens[cc].need_more == 0) {
 
             ls_syslog(LOG_INFO, "\
 %s: used %d allocated %d releasing %d to GLB", __func__,
-                      tokens[cc].allocated, tokens[cc].allocated - used);
+                      tokens[cc].allocated, tokens[cc].allocated,
+                      tokens[cc].allocated - used);
 
             glb_release_tokens(&tokens[cc], tokens[cc].allocated - used);
-            prev_used = used;
             continue;
         }
 
         /* Full use and not recalled ask for more tokens
          */
-       if (need_more_tokens > 0
+       if (tokens[cc].need_more > 0
            && tokens[cc].recalled <= 0) {
            if (glb_get_more_tokens(tokens[cc].name) < 0) {
                ls_syslog(LOG_ERR, "\
@@ -948,8 +986,6 @@ check_token_status(void)
 
     } /* for (cc = 0; cc < num_tokens; cc++) */
 
-    prev_used = used;
-
     /* Test if we can resume somebody
      */
     for (cc = 0; cc < num_tokens; cc++) {
@@ -959,7 +995,7 @@ check_token_status(void)
     }
 }
 
-static struct glb_token *
+static struct mbd_token *
 is_a_token(const char *name)
 {
     int cc;
@@ -975,7 +1011,7 @@ is_a_token(const char *name)
 bool_t
 is_token_under_recall(const char *name)
 {
-    struct glb_token *t;
+    struct mbd_token *t;
 
     t = is_a_token(name);
     if (!t)
@@ -990,17 +1026,17 @@ is_token_under_recall(const char *name)
 void
 need_tokens(const char *name)
 {
-    struct glb_token *t;
+    struct mbd_token *t;
 
     t = is_a_token(name);
     if (!t)
         return;
 
-    ++need_more_tokens;
+    t->need_more++;
 }
 
 static int
-compute_used_tokens(struct glb_token *t)
+compute_used_tokens(struct mbd_token *t)
 {
     struct jData *jPtr;
     float used;
@@ -1049,7 +1085,7 @@ compute_used_tokens(struct glb_token *t)
 }
 
 static float
-get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
+get_job_tokens(struct resVal *resPtr, struct mbd_token *t, struct jData *jPtr)
 {
     int cc;
     int rusage;
@@ -1102,7 +1138,7 @@ get_job_tokens(struct resVal *resPtr, struct glb_token *t, struct jData *jPtr)
             if (jPtr->jStatus & JOB_STAT_SSUSP
                 && ((jPtr->jFlags & JFLAG_PREEMPT_GLB)
                     || (jPtr->jFlags & JFLAG_JOB_PREEMPTED))) {
-                ++need_more_tokens;
+                t->need_more++;
                 return 0;
             }
 
@@ -1197,7 +1233,7 @@ glb_get_more_tokens(const char *name)
 }
 
 static int
-glb_release_tokens(struct glb_token *t, int how_many)
+glb_release_tokens(struct mbd_token *t, int how_many)
 {
     int cc;
 
@@ -1338,12 +1374,17 @@ stop_job(struct jData *jPtr, int flag)
     return 0;
 }
 
+/* get_glb_token_size()
+ */
 int
 get_glb_tokens_size(int *n)
 {
     int cc;
     int size;
 
+    /* from the mbd_token take only the part
+     * that glb understands.
+     */
     size = 0;
     for (cc = 0; cc < num_tokens; cc++) {
         size = size + ALIGNWORD_(strlen(tokens[cc].name) + 1)
@@ -1358,9 +1399,13 @@ int
 encode_glb_tokens(XDR *xdrs, struct LSFHeader *hdr)
 {
     int cc;
+    struct glb_token t;
 
     for (cc = 0; cc < num_tokens; cc++) {
-        if (! xdr_glb_token(xdrs, &tokens[cc], hdr))
+        /* Copy only what you need
+         */
+        memcpy(&t, &tokens[cc], sizeof(struct glb_token));
+        if (! xdr_glb_token(xdrs, &t, hdr))
             return -1;
     }
 
@@ -1406,11 +1451,11 @@ save_glb_allocation_state(void)
     return 0;
 }
 
-struct glb_token *
+struct mbd_token *
 recover_glb_allocation_state(void)
 {
     FILE *fp;
-    struct glb_token *t;
+    struct mbd_token *t;
     int cc;
 
     sprintf(new_path, "%s/logdir/glb.tokens",
@@ -1434,7 +1479,7 @@ recover_glb_allocation_state(void)
         return NULL;
     }
 
-    t = calloc(num_tokens, sizeof(struct glb_token));
+    t = calloc(num_tokens, sizeof(struct mbd_token));
 
     for (cc = 0; cc < num_tokens; cc++) {
 
