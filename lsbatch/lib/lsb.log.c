@@ -605,6 +605,8 @@ freeLogRec(struct eventRec *logRec)
                 free(logRec->eventLog.jobNewLog.userGroup);
             if (logRec->eventLog.jobNewLog.job_group)
                 free(logRec->eventLog.jobNewLog.job_group);
+            if (logRec->eventLog.jobNewLog.job_description)
+                free(logRec->eventLog.jobNewLog.job_description);
             return;
         case EVENT_JOB_MODIFY2:
             FREEUP(logRec->eventLog.jobModLog.userName);
