@@ -154,7 +154,7 @@ static bool_t is_fairplugin_ok(void);
 static bool_t is_preemptplugin_ok(void);
 static bool_t is_ownplugin_ok(void);
 static void make_preemption_queues(const char *, link_t *);
-static void sort_preemption_queues(link_t *);
+static void sort_preemptable_queues(link_t *);
 
 int
 minit(int mbdInitFlags)
@@ -3875,7 +3875,7 @@ init_preemption_scheduler(void)
         make_preemption_queues(qPtr->preemption, l);
     }
 
-    sort_preemption_queues(l);
+    sort_preemptable_queues(l);
     fin_link(l);
 
     return 0;
