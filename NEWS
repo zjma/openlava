@@ -18,7 +18,7 @@ Release notes for OpenLava versions
 -- The fairshare layer will log detail informations if the logclass
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 -- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
--- Fix memory leak in bsub -Jd implementation.
+-- Fix two memory leak in bsub -Jd implementation.
 
 3.3.2
 ======
