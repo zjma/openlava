@@ -639,6 +639,7 @@ freeLogRec(struct eventRec *logRec)
             FREEUP(logRec->eventLog.jobModLog.projectName);
             FREEUP(logRec->eventLog.jobModLog.loginShell);
             FREEUP(logRec->eventLog.jobModLog.schedHostType);
+            FREEUP(logRec->eventLog.jobModLog.job_description);
             return;
 
         case EVENT_JOB_START:
