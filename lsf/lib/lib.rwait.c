@@ -168,7 +168,8 @@ restartRWait(sigset_t oldMask)
     struct sigaction act, oact, usr1sigact;
     sigset_t pauseMask;
 
-    if (genParams_[NIOS_RWAIT_SELECT].paramValue) {
+    if (genParams_[NIOS_RWAIT_SELECT].paramValue &&
+        !strcasecmp(genParams_[NIOS_RWAIT_SELECT].paramValue, "y")) {
         _wait_();
         return;
     }

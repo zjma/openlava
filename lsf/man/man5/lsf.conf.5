@@ -3415,3 +3415,25 @@ more than 20,000 remote tasks.
 .PP
 20000
 
+.SH NIOS_RWAIT_SELECT
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBNIOS_RWAIT_SELECT=y\fR | \fBY\fR
+.SS Description
+.BR
+.PP
+.PP
+If defined, nios and ls_rwait() will not use SIGUSR1 to detect a
+task that has finished. ls_rwait() will select() on a connection
+with nios instead and nios will send a message when a task exits.
+.PP
+.SS Default
+.BR
+.PP
+.PP
+Undefined
+

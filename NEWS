@@ -22,6 +22,8 @@ Release notes for OpenLava versions
 -- Introduce the lsb.resources file.
 -- Implement the limit of the number of jobs per project using the
    lsb.resources file.
+-- NIOS_RWAIT_SELECT must be set to y or Y in order for nios to wait
+   on select to detect that a task has finished.
 
 3.3.2
 ======

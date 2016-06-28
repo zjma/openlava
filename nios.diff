@@ -1,0 +1,103 @@
+diff --git a/NEWS b/NEWS
+index 27c858d..831f4cb 100644
+--- a/NEWS
++++ b/NEWS
+@@ -22,6 +22,8 @@ Release notes for OpenLava versions
+ -- Introduce the lsb.resources file.
+ -- Implement the limit of the number of jobs per project using the
+    lsb.resources file.
++-- NIOS_RWAIT_SELECT must be set to y or Y in order for nios to wait
++   on select to detect that a task has finished.
+ 
+ 3.3.2
+ ======
+diff --git a/lsf/lib/lib.rwait.c b/lsf/lib/lib.rwait.c
+index 50a9892..148bd5d 100644
+--- a/lsf/lib/lib.rwait.c
++++ b/lsf/lib/lib.rwait.c
+@@ -168,7 +168,8 @@ restartRWait(sigset_t oldMask)
+     struct sigaction act, oact, usr1sigact;
+     sigset_t pauseMask;
+ 
+-    if (genParams_[NIOS_RWAIT_SELECT].paramValue) {
++    if (genParams_[NIOS_RWAIT_SELECT].paramValue &&
++        !strcasecmp(genParams_[NIOS_RWAIT_SELECT].paramValue, "y")) {
+         _wait_();
+         return;
+     }
+diff --git a/lsf/man/man5/lsf.conf.5 b/lsf/man/man5/lsf.conf.5
+index 89e30c2..409aebf 100644
+--- a/lsf/man/man5/lsf.conf.5
++++ b/lsf/man/man5/lsf.conf.5
+@@ -3415,3 +3415,25 @@ more than 20,000 remote tasks.
+ .PP
+ 20000
+ 
++.SH NIOS_RWAIT_SELECT
++.BR
++.PP
++.SS Syntax
++.BR
++.PP
++.PP
++\fBNIOS_RWAIT_SELECT=y\fR | \fBY\fR
++.SS Description
++.BR
++.PP
++.PP
++If defined, nios and ls_rwait() will not use SIGUSR1 to detect a
++task that has finished. ls_rwait() will select() on a connection
++with nios instead and nios will send a message when a task exits.
++.PP
++.SS Default
++.BR
++.PP
++.PP
++Undefined
++
+diff --git a/lsf/res/nios.c b/lsf/res/nios.c
+index 1c152be..e678c7b 100644
+--- a/lsf/res/nios.c
++++ b/lsf/res/nios.c
+@@ -1398,23 +1398,24 @@ emusig(int tid, int st)
+                           fname,  LS_WTERMSIG(status));
+             }
+ 
+-	    /* Don't send SIGUSR2 in multiple thread program,
+-	     * sigsuspend() returns only when all the other threads
+-	     * block the SIGUSR1. In a golang program, we cannot
+-	     * configure the sigmask of management threads of golang.
+-	     */
+-	    if (niosParams[NIOS_RWAIT_SELECT].paramValue) {
+-		hdr.opCode = CHILD_EXIT;
+-		hdr.len = 0;
+-		if (b_write_fix(chfd, (char *)&hdr,
+-				sizeof(struct lslibNiosHdr)) !=
+-		    sizeof(struct lslibNiosHdr)) {
+-		    PassSig(SIGKILL);
+-		    die();
+-		}
+-	    } else {
+-		kill(ppid, SIGUSR1);
+-	    }
++            /* Don't send SIGUSR1 in multiple thread program,
++             * sigsuspend() returns only when all the other threads
++             * block the SIGUSR1. In a golang program, we cannot
++             * configure the sigmask of management threads of golang.
++             */
++            if (niosParams[NIOS_RWAIT_SELECT].paramValue &&
++                !strcasecmp(niosParams[NIOS_RWAIT_SELECT].paramValue, "y")) {
++                hdr.opCode = CHILD_EXIT;
++                hdr.len = 0;
++                if (b_write_fix(chfd, (char *)&hdr,
++                                sizeof(struct lslibNiosHdr)) !=
++                    sizeof(struct lslibNiosHdr)) {
++                    PassSig(SIGKILL);
++                    die();
++                }
++            } else {
++                kill(ppid, SIGUSR1);
++            }
+         }
+     }
+ }

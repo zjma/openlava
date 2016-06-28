@@ -1398,23 +1398,24 @@ emusig(int tid, int st)
                           fname,  LS_WTERMSIG(status));
             }
 
-	    /* Don't send SIGUSR2 in multiple thread program,
-	     * sigsuspend() returns only when all the other threads
-	     * block the SIGUSR1. In a golang program, we cannot
-	     * configure the sigmask of management threads of golang.
-	     */
-	    if (niosParams[NIOS_RWAIT_SELECT].paramValue) {
-		hdr.opCode = CHILD_EXIT;
-		hdr.len = 0;
-		if (b_write_fix(chfd, (char *)&hdr,
-				sizeof(struct lslibNiosHdr)) !=
-		    sizeof(struct lslibNiosHdr)) {
-		    PassSig(SIGKILL);
-		    die();
-		}
-	    } else {
-		kill(ppid, SIGUSR1);
-	    }
+            /* Don't send SIGUSR1 in multiple thread program,
+             * sigsuspend() returns only when all the other threads
+             * block the SIGUSR1. In a golang program, we cannot
+             * configure the sigmask of management threads of golang.
+             */
+            if (niosParams[NIOS_RWAIT_SELECT].paramValue &&
+                !strcasecmp(niosParams[NIOS_RWAIT_SELECT].paramValue, "y")) {
+                hdr.opCode = CHILD_EXIT;
+                hdr.len = 0;
+                if (b_write_fix(chfd, (char *)&hdr,
+                                sizeof(struct lslibNiosHdr)) !=
+                    sizeof(struct lslibNiosHdr)) {
+                    PassSig(SIGKILL);
+                    die();
+                }
+            } else {
+                kill(ppid, SIGUSR1);
+            }
         }
     }
 }
