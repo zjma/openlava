@@ -1,7 +1,7 @@
 Release notes for OpenLava versions
 
 3.3.3
-=====
+======
 
 -- Implement bsub -Jd to support specifying job description to jobs.
 -- Implement tech preview of lsb.resources.
@@ -19,7 +19,9 @@ Release notes for OpenLava versions
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 -- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
 -- Fix two memory leak in bsub -Jd implementation.
--- Implement limit number of jobs per project in lsb.resources.
+-- Introduce the lsb.resources file.
+-- Implement the limit of the number of jobs per project using the
+   lsb.resources file.
 
 3.3.2
 ======
