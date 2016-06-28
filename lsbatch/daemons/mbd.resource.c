@@ -51,11 +51,13 @@ checkOrTakeAvailableByPreemptPRHQValue(int index,
                                        int update);
 static void compute_group_slots(int, struct lsSharedResourceInfo *);
 static int get_group_slots(struct gData *);
+/* num_tokens and the tokens array are global variable the
+ * glb functions work with.
+ */
 static int num_tokens;
 static struct mbd_token *tokens;
 static void get_glb_tokens(void);
-static void add_tokens(struct mbd_token *, int,
-                       struct lsSharedResourceInfo *, int);
+static void add_tokens(struct lsSharedResourceInfo *, int);
 static float get_job_tokens(struct resVal *, struct mbd_token *, struct jData *);
 static int compute_used_tokens(struct mbd_token *);
 static int glb_get_more_tokens(const char *);
@@ -100,7 +102,7 @@ getLsbResourceInfo(void)
 
     initHostInstances(numRes);
 
-    add_tokens(tokens, num_tokens, resourceInfo, numRes);
+    add_tokens(resourceInfo, numRes);
 
     compute_group_slots(numRes, resourceInfo);
 
@@ -854,8 +856,7 @@ free_mbd_tokens(void)
 /* add_tokens()
  */
 static void
-add_tokens(struct mbd_token *t, int num_tokens,
-           struct lsSharedResourceInfo *res, int num_res)
+add_tokens(struct lsSharedResourceInfo *res, int num_res)
 {
     int cc;
     int i;
@@ -870,12 +871,12 @@ add_tokens(struct mbd_token *t, int num_tokens,
 
         for (cc = 0; cc < num_res; cc++) {
 
-            if (strcmp(t[i].name, res[cc].resourceName) != 0)
+            if (strcmp(tokens[i].name, res[cc].resourceName) != 0)
                 continue;
 
             for (n = 0; n < res[cc].nInstances; n++) {
                 _free_(res[cc].instances[n].value);
-                sprintf(buf, "%d", t[i].allocated);
+                sprintf(buf, "%d", tokens[i].allocated);
                 res[cc].instances[n].value = strdup(buf);
             }
             break;
