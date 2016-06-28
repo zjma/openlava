@@ -1606,21 +1606,21 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
             jUnusable[numReasons] = jUsable[i];
             jReasonTb[numReasons++] = hReason;
 
-	    ls_syslog(LOG_INFO, "\
+            ls_syslog(LOG_INFO, "\
 %s: job %s host %s isn't eligible; reason = %d", fname,
-		      lsb_jobid2str(jp->jobId),
-		      jUsable[i]->host,
-		      jReasonTb[numReasons-1]);
+                      lsb_jobid2str(jp->jobId),
+                      jUsable[i]->host,
+                      jReasonTb[numReasons-1]);
 
             if (logclass & (LC_SCHED | LC_PEND))
                 ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason = %d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
             continue;
         }
 
-	ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: job %s got one eligible host %s; numSlots=%d numAvailSlots=%d", fname,
-		  lsb_jobid2str(jp->jobId), jUsable[i]->host,
-		  numSlots, numAvailSlots);
+                  lsb_jobid2str(jp->jobId), jUsable[i]->host,
+                  numSlots, numAvailSlots);
 
         if (logclass & (LC_SCHED))
             ls_syslog(LOG_DEBUG3, "%s: Got one eligible host %s; numSlots=%d numAvailSlots=%d", fname, jUsable[i]->host, numSlots, numAvailSlots);
@@ -4449,9 +4449,9 @@ scheduleAndDispatchJobs(void)
 
     if (mSchedStage == 0) {
 
-      ls_syslog(LOG_INFO, "\
+        ls_syslog(LOG_INFO, "\
 %s: begin a new schedule and dispatch session num_finish %d",
-		__func__, num_finish);
+                  __func__, num_finish);
 
         if (logclass & LC_SCHED) {
             gettimeofday(&scheduleStartTime, NULL);
@@ -4668,7 +4668,7 @@ scheduleAndDispatchJobs(void)
 
         numQUsable = 0;
         /* Unlike jobs we want the queue with the highest
-         * number.
+         * number so we walk forward.
          */
         for (qp = qDataList->forw; qp != qDataList; qp = qp->forw) {
             hEnt *ent;
@@ -7425,7 +7425,8 @@ decrease_mem_by_slots(struct jData *jPtr)
     if ((hasResSpanHosts(jPtr->shared->resValPtr)
          || hasResSpanHosts(jPtr->qPtr->resValPtr))
         && (jPtr->shared->jobBill.numProcessors > 1)
-        && (jPtr->shared->jobBill.numProcessors == jPtr->shared->jobBill.maxNumProcessors)) {
+        && (jPtr->shared->jobBill.numProcessors
+            == jPtr->shared->jobBill.maxNumProcessors)) {
         return true;
     }
 
