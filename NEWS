@@ -19,6 +19,7 @@ Release notes for OpenLava versions
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 -- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
 -- Fix two memory leak in bsub -Jd implementation.
+-- Implement limit number of jobs per project in lsb.resources.
 
 3.3.2
 ======

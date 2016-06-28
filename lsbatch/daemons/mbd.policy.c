@@ -2902,7 +2902,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
 static int
 checkResLimit(struct jData *jp, char* hostname)
 {
-    int i, j, k;
+    int i, j;
     char* queue = NULL;
     char* save_queue = NULL;
     char* project = NULL;
@@ -2916,25 +2916,23 @@ checkResLimit(struct jData *jp, char* hostname)
     char all[4] = "all ";
     int projectHasAll = FALSE;
     int neg = FALSE;
+    int numSlots;
 
     if (limitConf == NULL || limitConf->nLimit == 0)
         return TRUE;
 
     for (i = 0; i < limitConf->nLimit; i++) {
         /* no consumer defined, ignore */
-        if (limitConf->limits[i].nConsumer <= 0
-            || limitConf->limits[i].nRes <= 0)
+        if (limitConf->limits[i].nConsumer <= 0)
             continue;
 
-        /* only support resource "SLOTS" */
-        for (k = 0; k < limitConf->limits[i].nRes; k++) {
-            if (limitConf->limits[i].res[k].res == LIMIT_RESOURCE_SLOTS)
-                break;
-        }
+        /* only limit one resource: SLOTS or JOBS */
+        if (limitConf->limits[i].nRes != 1)
+            continue;
 
-        /* no SLOTS defined or SLOTS is not 0, ignore */
-        if (k == limitConf->limits[i].nRes
-            || limitConf->limits[i].res[k].value != 0)
+        /* only support SLOTS = 0 */
+        if (limitConf->limits[i].res[0].res == LIMIT_RESOURCE_SLOTS
+                && limitConf->limits[i].res[0].value != 0)
             continue;
 
         for (j = 0; j < limitConf->limits[i].nConsumer; j++) {
@@ -3022,14 +3020,27 @@ checkResLimit(struct jData *jp, char* hostname)
                 neg = FALSE;
             }
 
-            if ((!projectHasAll && hasMe)
-                || (projectHasAll && hasMe && !neg)
-                || (projectHasAll && !hasMe)) {
-                FREEUP(save_queue);
-                FREEUP(save_project);
-                FREEUP(save_host);
-                FREEUP(save_user);
-                return FALSE;
+             if ((!projectHasAll && hasMe)
+                    || (projectHasAll && hasMe && !neg)
+                    || (projectHasAll && !hasMe)) {
+                if (limitConf->limits[i].res[0].res == LIMIT_RESOURCE_SLOTS) {
+                    FREEUP(save_queue);
+                    FREEUP(save_project);
+                    FREEUP(save_host);
+                    FREEUP(save_user);
+                    return FALSE;
+                } else {  /* LIMIT_RESOURCE_JOBS */
+                    jp->pPtr->maxJobs = (int) limitConf->limits[i].res[0].value;
+                    numSlots = jp->pPtr->maxJobs - jp->pPtr->numRUN - jp->pPtr->numSSUSP
+                                    - jp->pPtr->numUSUSP - jp->pPtr->numRESERVE;
+                     if (numSlots <= 0) {
+                        FREEUP(save_queue);
+                        FREEUP(save_project);
+                        FREEUP(save_host);
+                        FREEUP(save_user);
+                        return FALSE;
+                    }
+                }
             }
         }
 

@@ -270,6 +270,7 @@ struct jData {
     int     numReasons;
     struct  qData *qPtr;
     struct  hData **hPtr;
+    struct  pqData *pPtr;
     int     numHostPtr;
     struct  askedHost *askedPtr;
     int     numAskedPtr;
@@ -634,6 +635,25 @@ struct gData {
     int max_slots;
 };
 
+/* resource usage per project per queue */
+struct pqData {
+    char      *project;
+    char      *queue;
+    int       maxJobs;
+    int       numJobs;
+    int       numPEND;
+    int       numRUN;
+    int       numSSUSP;
+    int       numUSUSP;
+    int       numRESERVE;
+};
+
+/* resource usage per project */
+struct pData {
+    char         *project;
+    struct hTab  *qAcct;
+};
+
 typedef enum {
     DPT_AND             = 0,
     DPT_OR              = 1,
@@ -929,6 +949,7 @@ extern long                    schedSeqNo;
 extern struct switch_child     *swchild;
 
 extern struct resLimitConf     *limitConf;
+extern struct hTab             pDataTab;
 
 extern void                 pollSbatchds(int);
 extern void                 hStatChange(struct hData *, int status);

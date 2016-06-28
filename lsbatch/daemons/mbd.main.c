@@ -116,6 +116,8 @@ struct lsInfo *allLsInfo;
 struct hTab calDataList;
 struct hTab condDataList;
 
+struct hTab pDataTab;
+
 char   *masterHost = NULL;
 char   *clusterName = NULL;
 char   *defaultQueues = NULL;

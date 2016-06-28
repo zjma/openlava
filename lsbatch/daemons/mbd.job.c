@@ -136,6 +136,7 @@ static void inPendJobList2(struct jData *,
                            struct jData **);
 static int jcompare(const void *, const void *);
 static struct hData *handle_float_client(struct submitReq *);
+static struct pqData *getProjectData(char *, char *);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
@@ -4673,6 +4674,7 @@ initJData(struct jShared  *shared)
     job->priority = -1.0;
     job->qPtr = NULL;
     job->hPtr = NULL;
+    job->pPtr = NULL;
     job->numHostPtr = 0;
     job->numAskedPtr = 0;
     job->askedPtr = NULL;
@@ -6151,8 +6153,61 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
             return cc;
     }
 
+    job->pPtr = getProjectData(subReq->projectName, job->qPtr->queue);
+
     return LSBE_NO_ERROR;
 
+}
+
+static struct pqData *
+getProjectData(char *project, char *queue)
+{
+    struct pData *pData = NULL;
+    struct pqData *pqData = NULL;
+    hEnt *pEnt = NULL;
+    hEnt *pqEnt = NULL;
+    int new;
+    static int first = TRUE;
+
+    if (limitConf == NULL || limitConf->nLimit == 0)
+        return NULL;
+
+    if (first) {
+        h_initTab_(&pDataTab, MAX_RES_LIMITS);
+        first = FALSE;
+    }
+
+    pEnt = h_addEnt_(&pDataTab, project, &new);
+    if (new) {
+        pData = my_calloc(1,
+                          sizeof(struct pData),
+                          "getProjectData");
+        pData->project = safeSave(project);
+        pData->qAcct = my_calloc(1,
+                                 sizeof(struct hTab),
+                                 "getProjectData");
+        h_initTab_(pData->qAcct, numofqueues);
+        pEnt->hData = pData;
+    }
+
+    pqEnt = h_addEnt_(((struct pData *)pEnt->hData)->qAcct, queue, &new);
+    if (new) {
+        pqData = my_calloc(1,
+                          sizeof(struct pqData),
+                          "getProjectData");
+        pqData->project = safeSave(project);
+        pqData->queue = safeSave(queue);
+        pqData->maxJobs = INFINIT_INT;
+        pqData->numJobs = 0;
+        pqData->numPEND = 0;
+        pqData->numRESERVE = 0;
+        pqData->numRUN = 0;
+        pqData->numSSUSP = 0;
+        pqData->numUSUSP = 0;
+        pqEnt->hData = pqData;
+    }
+
+    return (struct pqData *)pqEnt->hData;
 }
 
 struct resVal *
