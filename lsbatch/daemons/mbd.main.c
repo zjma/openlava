@@ -951,9 +951,8 @@ houseKeeping(int *hsKeeping)
             nextSchedTime = now + msleeptime;
             TIMEIT(0, schedule = scheduleAndDispatchJobs(),
                    "scheduleAndDispatchJobs");
-            check_token_status();
+            glb_token_policy();
             preempt();
-            ssusp_jobs();
             if (schedule == 0) {
                 schedule = FALSE;
             } else {
@@ -1415,7 +1414,6 @@ preempt(void)
         }
 
         while ((jPtr = pop_link(rl))) {
-            jPtr->scratch = 0;
             stop_job(jPtr, JFLAG_JOB_PREEMPTED);
         }
         fin_link(rl);

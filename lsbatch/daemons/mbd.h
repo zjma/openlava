@@ -363,7 +363,6 @@ struct jData {
     struct lsbMsg **msgs;
     char *run_rusage;   /* "rusage[x=1:y=2||z=3:w=4]" */
     int abs_run_limit;  /* absolute run limit in seconds */
-    int scratch; /* counter for when it is needed */
 };
 
 
@@ -1530,13 +1529,11 @@ extern int tree_size(int *);
 extern int encode_nodes(XDR *, int *, int, struct LSFHeader *);
 extern int can_switch_jgrp(struct jgrpLog *);
 extern int check_job_group(struct jData *, struct lsfAuth *);
-extern void check_token_status(void);
+extern void glb_token_policy(void);
 extern bool_t is_token_under_recall(const char *);
 extern void need_tokens(const char *);
 extern int requeue_job(struct jData *);
 extern int stop_job(struct jData *, int);
-extern int resume_job(struct jData *jPtr);
-extern void ssusp_jobs(void);
 extern char *str_flags(int);
 extern int do_glbTokenInfo(XDR *, int,
                            struct sockaddr_in *,

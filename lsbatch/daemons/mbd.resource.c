@@ -62,11 +62,7 @@ static float get_job_tokens(struct resVal *, struct mbd_token *, struct jData *)
 static int compute_used_tokens(struct mbd_token *);
 static int glb_get_more_tokens(const char *);
 static int glb_release_tokens(struct mbd_token *, int);
-static struct jData **sort_sjl_by_queue_priority(link_t *);
-static struct jData **sjl;
-static int num_sjl_jobs;
-static int jcompare_by_queue(const void *, const void *);
-static int preempt_jobs_for_tokens(int);
+static int preempt_jobs_for_tokens(struct mbd_token *);
 static struct mbd_token *is_a_token(const char *);
 static char old_path[PATH_MAX];
 static char new_path[PATH_MAX];
@@ -884,8 +880,10 @@ add_tokens(struct lsSharedResourceInfo *res, int num_res)
     }
 }
 
+/* glb_token_policy()
+ */
 void
-check_token_status(void)
+glb_token_policy(void)
 {
     int cc;
     int used;
@@ -894,6 +892,8 @@ check_token_status(void)
 
     for (cc = 0; cc < num_tokens; cc++) {
 
+        /* Compute the usage for each token
+         */
         used = compute_used_tokens(&tokens[cc]);
 
         if (used > 0 && tokens[cc].allocated <= 0) {
@@ -911,22 +911,19 @@ check_token_status(void)
                   tokens[cc].allocated, tokens[cc].ideal,
                   tokens[cc].recalled, tokens[cc].need_more);
 
+        /* GLB is recalling tokens.
+         */
         if (tokens[cc].recalled > 0) {
             int num_preempted;
-
-            num_preempted = 0;
-
-            ls_syslog(LOG_INFO, "\
-%s: GLB is recalling  %d tokens ", __func__, tokens[cc].recalled);
 
             /* We may need to preempt to release some
              * of the requested tokens.
              */
             ls_syslog(LOG_INFO, "\
-%s: used %d %d ideal we have to preempt %d tokens", __func__, used,
-                      tokens[cc].ideal, tokens[cc].recalled);
+%s: GLB recalling %d tokens used %d %d ideal", __func__,
+                      tokens[cc].recalled, used, tokens[cc].ideal);
 
-            num_preempted = preempt_jobs_for_tokens(tokens[cc].recalled);
+            num_preempted = preempt_jobs_for_tokens(&tokens[cc]);
 
             ls_syslog(LOG_INFO, "\
 %s: num_preempted %d", __func__, num_preempted);
@@ -938,30 +935,11 @@ check_token_status(void)
                 continue;
             }
 
-            /* prev_used, this is used when high priority jobs
-             * cannot be preempted by GLB but some of them
-             * finished so that prev_used > used now, we can
-             * release them.
-             */
-            if (0) {
-                int prev_used;
-                if (num_preempted == 0
-                    && prev_used > used) {
-                    glb_release_tokens(&tokens[cc], prev_used - used);
-                ls_syslog(LOG_INFO, "\
-%s: 2 releasing %d tokens", __func__, prev_used - used);
-                prev_used = used;
-                }
-            }
-
-            if (used == 0) {
-                glb_release_tokens(&tokens[cc], tokens[cc].recalled);
-                ls_syslog(LOG_INFO, "\
-%s: used is 0 releasing %d tokens", __func__, tokens[cc].recalled);
-            }
-
         } /* under recall */
 
+        /* mbatchd is using less tokens than allocated
+         * release the extra to glb
+         */
         if (used < tokens[cc].allocated
             && tokens[cc].need_more == 0) {
 
@@ -986,14 +964,6 @@ check_token_status(void)
        }
 
     } /* for (cc = 0; cc < num_tokens; cc++) */
-
-    /* Test if we can resume somebody
-     */
-    for (cc = 0; cc < num_tokens; cc++) {
-
-        ssusp_jobs();
-
-    }
 }
 
 static struct mbd_token *
@@ -1043,11 +1013,11 @@ compute_used_tokens(struct mbd_token *t)
     float used;
     float x;
     struct resVal *r;
-    link_t *l;
+    int num;
 
-    l = make_link();
     used = 0.0;
     x = 0.0;
+    num = 0;
 
     for (jPtr = jDataList[SJL]->back;
          jPtr != jDataList[SJL];
@@ -1067,20 +1037,13 @@ compute_used_tokens(struct mbd_token *t)
          */
         x = get_job_tokens(r, t, jPtr);
         if (x > 0) {
-            push_link(l, jPtr);
             used = used + x;
+            ++num;
         }
     }
 
     ls_syslog(LOG_INFO, "\
-%s: there are %d jobs on SJL using token %s", __func__,
-              LINK_NUM_ENTRIES(l), t->name);
-
-    /* sort the jobs on the link which should be
-     * a subset of SJL
-     */
-    sjl = sort_sjl_by_queue_priority(l);
-    fin_link(l);
+%s: there are %d jobs on SJL using token %s", __func__, num, t->name);
 
     return (int)used;
 }
@@ -1136,6 +1099,10 @@ get_job_tokens(struct resVal *resPtr, struct mbd_token *t, struct jData *jPtr)
                 return 0.0;
             }
 
+            /* We already transition the job from USUSP to
+             * SSUSP so it is waiting to be resumed, in this
+             * case set the need_more parameter for GLB.
+             */
             if (jPtr->jStatus & JOB_STAT_SSUSP
                 && ((jPtr->jFlags & JFLAG_PREEMPT_GLB)
                     || (jPtr->jFlags & JFLAG_JOB_PREEMPTED))) {
@@ -1143,74 +1110,11 @@ get_job_tokens(struct resVal *resPtr, struct mbd_token *t, struct jData *jPtr)
                 return 0;
             }
 
-            /* no harm to this bit operation
-             */
-            jPtr->jFlags &= ~JFLAG_PREEMPT_GLB;
-
             return r2.val[cc];
         }
     }
 
     return 0.0;
-}
-
-void
-ssusp_jobs(void)
-{
-    struct jData *jPtr;
-
-    ls_syslog(LOG_INFO, "%s: Entering ...", __func__);
-
-    for (jPtr = jDataList[SJL]->forw;
-         jPtr != jDataList[SJL];
-         jPtr = jPtr->forw) {
-
-        if ((jPtr->jStatus & JOB_STAT_USUSP)
-            && (jPtr->jFlags & JFLAG_PREEMPT_GLB
-                || jPtr->jFlags & JFLAG_JOB_PREEMPTED)) {
-
-            if (resume_job(jPtr) < 0) {
-                ls_syslog(LOG_INFO, "\
-%s: failed in resuming job %s jflags %s", __func__,
-                          lsb_jobid2str(jPtr->jobId),
-                          str_flags(jPtr->jFlags));
-            }
-        }
-    }
-}
-
-int
-resume_job(struct jData *jPtr)
-{
-    struct signalReq s;
-    struct lsfAuth auth;
-    int cc;
-
-    s.sigValue = SIGCONT;
-    s.jobId = jPtr->jobId;
-    s.chkPeriod = 0;
-    s.actFlags = 0;
-
-    memset(&auth, 0, sizeof(struct lsfAuth));
-    strcpy(auth.lsfUserName, lsbManager);
-    auth.gid = auth.uid = managerId;
-
-    cc = signalJob(&s, &auth);
-    if (cc != LSBE_NO_ERROR) {
-        ls_syslog(LOG_ERR, "\
-%s: error while resuming job %s state %d", __func__,
-                  lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
-        return -1;
-    }
-
-    ls_syslog(LOG_INFO, "\
-%s: jobid %s bresumed after being stopped jFlags %s",
-              __func__, lsb_jobid2str(jPtr->jobId), str_flags(jPtr->jFlags));
-
-    /* Don't clean the flags as mbatchd has to ask for more
-     * tokens.
-     */
-    return 0;
 }
 
 static int
@@ -1260,86 +1164,49 @@ glb_release_tokens(struct mbd_token *t, int how_many)
     return 0;
 }
 
-static struct jData **
-sort_sjl_by_queue_priority(link_t *l)
+static int
+preempt_jobs_for_tokens(struct mbd_token *t)
 {
-    int n;
+    int num_preempt;
+    int x;
+    int got;
+    struct resVal *r;
     struct jData *jPtr;
 
-    n = LINK_NUM_ENTRIES(l);
-    if (n == 0)
-        return NULL;
+    got = 0;
+    num_preempt = t->recalled;
 
-    sjl = calloc(n, sizeof(struct jData *));
+    for (jPtr = jDataList[SJL]->forw;
+         jPtr != jDataList[SJL];
+         jPtr = jPtr->forw) {
 
-    n = 0;
-    while ((jPtr = pop_link(l))) {
-        sjl[n] = jPtr;
-        ++n;
-    }
+        if ((jPtr->jStatus & JOB_STAT_SSUSP)
+            || (jPtr->jStatus & JOB_STAT_USUSP))
+            continue;
+        if (! (jPtr->qPtr->qAttrib & Q_ATTRIB_PREEMPTABLE))
+            continue;
 
-    if (n > 1)
-        qsort(sjl, n, sizeof(struct jData *), jcompare_by_queue);
-    /* num_sjl_jobs is global
-     */
-    num_sjl_jobs = n;
-
-    return sjl;
-}
-
-static int
-jcompare_by_queue(const void *x, const void *y)
-{
-    struct jData *j1;
-    struct jData *j2;
-
-    j1 = *(struct jData **)x;
-    j2 = *(struct jData **)y;
-
-    if (j1->qPtr->priority > j2->qPtr->priority)
-        return 1;
-    if (j1->qPtr->priority < j2->qPtr->priority)
-        return -1;
-
-    return 0;
-}
-
-static int
-preempt_jobs_for_tokens(int wanted)
-{
-    int cc;
-    int n;
-    int preempted;
-
-    /* recall that jobs are sorted by queue priority
-     * in ascending order, let's walk the preempt_queues
-     * and try to recall upto wanted slots.
-     */
-    preempted = 0;
-    for (cc = 0; cc < num_preempt_queues; cc++) {
-
-        for (n = 0; n < num_sjl_jobs; n++) {
-            /* this queue has no jobs try next one
-             */
-            if (sjl[n]->qPtr->priority != preempt_queues[cc]->priority)
-                break;
-
-            ls_syslog(LOG_INFO, "\
-%s: job %s is beeing preempted in queue %s to get token back", __func__,
-                      lsb_jobid2str(sjl[n]->jobId), preempt_queues[cc]->queue);
-
-            if (stop_job(sjl[n], JFLAG_PREEMPT_GLB) < 0) {
-                ls_syslog(LOG_ERR, "\
-%s: failed to signal job %s", __func__, lsb_jobid2str(sjl[n]->jobId));
-                continue;
-            }
-            ++preempted;
-            if (preempted >= wanted)
-                return preempted;
+        r = jPtr->shared->resValPtr;
+        if (r == NULL)
+            r = jPtr->qPtr->resValPtr;
+        if (r == NULL)
+            continue;
+        /* we use got as the jobs can return different
+         * numbers of tokens eventually greater
+         * then num_preempt
+         */
+        x = get_job_tokens(r, t, jPtr);
+        if (x >= num_preempt) {
+            stop_job(jPtr, JFLAG_PREEMPT_GLB);
+            got = got + x;
+            break;
         }
+        stop_job(jPtr, JFLAG_PREEMPT_GLB);
+        num_preempt = num_preempt - x;
+        got = got + x;
     }
 
-    return preempted;
+    return got;
 }
 
 int

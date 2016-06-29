@@ -97,6 +97,8 @@ static int    mbdRcvJobFile(int, struct lenData *);
 static void closeSbdConnect4ZombieJob(struct jData *);
 static int set_queue_last_job(LIST_T *, struct jData *);
 static void rmMessageFile(struct jData *);
+static void ssusp_job(struct jData *);
+static int resume_job(struct jData *);
 
 extern int glMigToPendFlag;
 extern int requeueToBottom;
@@ -1910,6 +1912,10 @@ jobStatusSignal(sbdReplyType reply, struct jData *jData, int sigValue,
             }
             jData->jStatus &= ~JOB_STAT_SIGNAL;
             jData->pendEvent.sig = SIG_NULL;
+            /* try to resume a job that has been preempted
+             * either by glb or by queue preemption.
+             */
+            ssusp_job(jData);
             break;
 
         case SIG_RESUME_USER:
@@ -4758,7 +4764,6 @@ initJData(struct jShared  *shared)
     job->inEligibleGroups = NULL;
     job->run_rusage = NULL;
     job->abs_run_limit = -1;
-    job->scratch = 0;
 
     return job;
 }
@@ -7322,6 +7327,8 @@ getReserveParams (struct resVal *resValPtr, int *duration, int *rusage_bit_map)
     }
 }
 
+/* tryResume()
+ */
 void
 tryResume(struct qData *qPtr)
 {
@@ -7407,12 +7414,16 @@ tryResume(struct qData *qPtr)
                  * this token to glb. Here we are racing with
                  * sbd that is resuming the job in async way.
                  */
+                ls_syslog(LOG_INFO, "\
+%s: job %s is being resumed flags %s", __func__, lsb_jobid2str(jp->jobId),
+                          str_flags(jp->jFlags));
+
                 if (jp->jFlags & JFLAG_PREEMPT_GLB)
                     jp->jFlags &= ~JFLAG_PREEMPT_GLB;
                 if (jp->jFlags & JFLAG_JOB_PREEMPTED)
                     jp->jFlags &= ~JFLAG_JOB_PREEMPTED;
 
-                adjLsbLoad (jp, TRUE, TRUE);
+                adjLsbLoad(jp, TRUE, TRUE);
                 if (logclass & (LC_EXEC))
                     ls_syslog (LOG_DEBUG2, "%s: Resume job <%s> with signal value <%d>", fname, lsb_jobid2str(jp->jobId), resumeSig);
             } else {
@@ -8930,4 +8941,73 @@ handle_float_client(struct submitReq *req)
     }
 
     return hPtr;
+}
+
+/* ssusp_job()
+ * try to resume a job that has been preempted
+ * either by glb or by queue preemption.
+ */
+static void
+ssusp_job(struct jData *jPtr)
+{
+    ls_syslog(LOG_INFO, "\
+%s: jobID %s state 0x%x flags %s", __func__, lsb_jobid2str(jPtr->jobId),
+              jPtr->jStatus, str_flags(jPtr->jFlags));
+
+    if ((jPtr->jStatus & JOB_STAT_USUSP)
+        && (jPtr->jFlags & JFLAG_PREEMPT_GLB
+            || jPtr->jFlags & JFLAG_JOB_PREEMPTED)) {
+
+        if (resume_job(jPtr) < 0) {
+            ls_syslog(LOG_INFO, "\
+%s: failed in resuming job %s jflags %s", __func__,
+                      lsb_jobid2str(jPtr->jobId),
+                      str_flags(jPtr->jFlags));
+        }
+    }
+}
+
+/* resume_job()
+ *
+ * The job will only be resumed in tryResume() here
+ * we just transition the state from USUSP to SSUSP
+ */
+static int
+resume_job(struct jData *jPtr)
+{
+    struct signalReq s;
+    struct lsfAuth auth;
+    int cc;
+
+    s.sigValue = SIGCONT;
+    s.jobId = jPtr->jobId;
+    s.chkPeriod = 0;
+    s.actFlags = 0;
+
+    memset(&auth, 0, sizeof(struct lsfAuth));
+    strcpy(auth.lsfUserName, lsbManager);
+    auth.gid = auth.uid = managerId;
+
+    /* The job will only be resumed if there
+     * are free tokens in shouldResume() function.
+     */
+    cc = signalJob(&s, &auth);
+    if (cc != LSBE_NO_ERROR) {
+        ls_syslog(LOG_ERR, "\
+%s: error while resuming job %s state %d", __func__,
+                  lsb_jobid2str(jPtr->jobId), jPtr->jStatus);
+        return -1;
+    }
+
+    ls_syslog(LOG_INFO, "\
+%s: jobid %s bresumed after being stopped jFlags %s",
+              __func__, lsb_jobid2str(jPtr->jobId), str_flags(jPtr->jFlags));
+
+    /* Do not clean the  JFLAG_PREEMPT_GLB or JFLAG_JOB_PREEMPTED
+     * as get_job_tokens() will use them to ask for more tokens
+     * to glb should it be enabled. The flags will be cleaned
+     * in tryResume() if the job really resumes to JOB_STAT_RUN.
+     */
+
+    return 0;
 }

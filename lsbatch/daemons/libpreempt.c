@@ -158,11 +158,10 @@ prm_elect_preempt(struct qData *qPtr, link_t *rl, int numjobs)
                 if (IS_SUSP(jPtr2->jStatus))
                     continue;
 
-                if (jPtr2->scratch > 0)
+                if (jPtr2->jStatus & JOB_STAT_SIGNAL)
                     continue;
 
                 push_link(rl, jPtr2);
-                jPtr2->scratch++;
                 ++num;
 
                 if (logclass & LC_PREEMPT)
