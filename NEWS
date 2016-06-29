@@ -24,6 +24,14 @@ Release notes for OpenLava versions
    lsb.resources file.
 -- NIOS_RWAIT_SELECT must be set to y or Y in order for nios to wait
    on select to detect that a task has finished.
+-- Add template lsb.resources.in.
+-- Add man5 lsb.resources.5.
+-- Add man1 bresources.1.
+-- Implement xdrsize_ResLimitInfoReply() to compute xdr size.
+-- Remove typedef of resLimitConf_t, resLimit_t, limitRes_t,
+   limitConsumer_t as types are not atomic.
+-- Change style declaration, e.g., char* x should be char *x.
+-- Replace fname[] with gcc macro __func__.
 
 3.3.2
 ======

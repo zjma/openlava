@@ -1,0 +1,233 @@
+.ds ]W %
+.ds ]L
+.nh
+.TH lsb.resources 5 "OpenLava Version 3.3 - Mar 2016"
+.br
+.SH NAME
+\fBlsb.resources\fR
+.SS \fB\fROverview
+.BR
+.PP
+.PP
+The lsb.resources file contains configuration information for 
+resource allocation limits. This file is optional. All sections are
+optional.
+.SS Contents
+.BR
+.PP
+.RS
+.HP 2
+\(bu Limit Section
+.RE
+.SH Limit Section
+.BR
+.PP
+.SH Description
+.BR
+.PP
+.PP
+Defines limits for the maximum amount of the specified resources that 
+must be available for jobs to start, and which resource consumers the limits apply to. 
+Limits are enforced during job resource allocation.
+.PP
+Consumer type:
+.RS
+.HP 2
+\(bu QUEUES
+.HP 2
+\(bu USERS
+.HP 2
+\(bu PROJECTS
+.HP 2
+\(bu HOSTS
+.RE
+.PP
+Resource type:
+.RS
+.HP 2
+\(bu SLOTS
+.HP 2
+\(bu JOBS
+.RE
+.PP
+After making any changes to lsb.resources, 
+run \fBbadmin\fR reconfig to reconfigure mbatchd.
+.SH Limit Section Structure
+.BR
+.PP
+.PP
+Each limit definition begins with the line Begin Limit and ends with
+the line End Limit. A limit section is defined in vertical format.
+Each row defines one consumer or resource. At least one consumer and 
+one resouce must be specified in a limit section.
+.SH QUEUES
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBQUEUES\fR \fB=\fR \fIall\fR [~]\fIqueue_name\fR ...
+.SS Description
+.BR
+.PP
+.PP
+A space-separated list of queue names on which limits are enforced.
+.PP
+The list must contain valid queue names defined in \fBlsb.queues\fR.
+.PP
+Use the not operator (~) to exclude queues from the all specification in the limit. 
+This is useful if you have a large number of queues but only want to exclude 
+a few queues from the limit definition.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBQUEUES\fR \fB=\fR \fBpriority idle\fR
+.SH USERS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBUSERS\fR \fB=\fR \fIall\fR [~]\fIuser_name\fR ... | [~]\fIuser_group\fR ...
+.SS Description
+.BR
+.PP
+.PP
+A space-separated list of user names or user groups 
+defined in \fBlsb.users\fR on which limits are enforced.
+.PP
+If a group contains a subgroup, the limit also applies
+to each member in the subgroup recursively.
+.PP
+Use the not operator (~) to exclude users or user groups from the all specification in the limit.
+This is useful if you have a large number of users but only want to exclude 
+a few users or groups from the limit definition.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBUSERS\fR \fB=\fR \fBall ~user1 ~user2\fR
+.SH HOSTS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBHOSTS\fR \fB=\fR \fIall\fR [~]\fIhost_name\fR ... | [~]\fIhost_group\fR ...
+.SS Description
+.BR
+.PP
+.PP
+A space-separated list of host names or host groups 
+defined in \fBlsb.hosts\fR on which limits are enforced.
+.PP
+If a group contains a subgroup, the limit also applies
+to each member in the subgroup recursively.
+.PP
+Use the not operator (~) to exclude hosts from the all specification in the limit.
+This is useful if you have a large cluster but only want to exclude 
+a few hosts from the limit definition.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBHOSTS\fR \fB=\fR \fBGroup1 ~hostA ~hostB ~hostC\fR
+.SH PROJECTS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBPROJECTS\fR \fB=\fR \fIall\fR [~]\fIproject_name\fR ...
+.SS Description
+.BR
+.PP
+.PP
+A space-separated list of project names on which limits are enforced.
+.PP
+Use the not operator (~) to exclude projects from the all specification in the limit.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBHOSTS\fR \fB=\fR \fIall ~p1 ~p2 ~p3\fR
+.SH SLOTS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBSLOTS\fR \fB=\fR \fIinteger\fR
+.SS Description
+.BR
+.PP
+.PP
+Maximum number of job slots available to resource consumers.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBSLOTS\fR \fB=\fR \fI0\fR
+.SH JOBS
+.BR
+.PP
+.SS Syntax
+.BR
+.PP
+.PP
+\fBJOBS\fR \fB=\fR \fIinteger\fR
+.SS Description
+.BR
+.PP
+.PP
+Maximum number of running or suspended (RUN, SSUSP, USUSP) jobs available to resource consumers.
+.SS Default
+.BR
+.PP
+.PP
+Undefined.
+.SS Example
+.BR
+.PP
+.PP
+\fBJOBS\fR \fB=\fR \fI20\fR
+.SH SEE ALSO
+.BR
+.PP
+.PP
+lsf.cluster(5), lsf.conf(5), lsb.params(5),
+lsb.hosts(5), lsb.users(5), lsb.queues(5)
+busers(1), bugroup(1), bchkpnt(1), nice(1), getgrnam(3),
+getrlimit(2), bmgroup(1), bqueues(1), bhosts(1),
+bsub(1), lsid(1), mbatchd(8), badmin(8)

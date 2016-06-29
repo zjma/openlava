@@ -6755,12 +6755,12 @@ error_clean_up:
  */
 static int parseHosts(char* inHosts, char** outHosts)
 {
-    struct inNames** inTable  = NULL;
-    char** outTable = NULL;
+    struct inNames **inTable  = NULL;
+    char   **outTable = NULL;
     int    size = 0;
-    char*  buffer = strdup(inHosts);
-    char*  save_buf = buffer;
-    char*  word   = NULL;
+    char   *buffer = strdup(inHosts);
+    char   *save_buf = buffer;
+    char   *word   = NULL;
     int    in_num  = 0;
     int    neg_num = 0;
     int    j, k;
@@ -7033,12 +7033,12 @@ error_clean_up:
  */
 static int parseUsers(char* inUsers, char** outUsers)
 {
-    struct inNames** inTable  = NULL;
-    char** outTable = NULL;
+    struct inNames **inTable  = NULL;
+    char   **outTable = NULL;
     int    size = 0;
-    char*  buffer = strdup(inUsers);
-    char*  save_buf = buffer;
-    char*  word   = NULL;
+    char   *buffer = strdup(inUsers);
+    char   *save_buf = buffer;
+    char   *word   = NULL;
     int    in_num  = 0;
     int    neg_num = 0;
     int    j, k;
@@ -7309,12 +7309,12 @@ error_clean_up:
  */
 static int parseQueues(char* inQueues, char** outQueues)
 {
-    struct inNames** inTable  = NULL;
-    char** outTable = NULL;
+    struct inNames **inTable  = NULL;
+    char   **outTable = NULL;
     int    size = 0;
-    char*  buffer = strdup(inQueues);
-    char*  save_buf = buffer;
-    char*  word   = NULL;
+    char   *buffer = strdup(inQueues);
+    char   *save_buf = buffer;
+    char   *word   = NULL;
     int    in_num  = 0;
     int    neg_num = 0;
     int    j, k;
@@ -7958,14 +7958,15 @@ lsb_readres(struct lsConf *conf)
 
     for (;;) {
         if ((cp = getBeginLine_conf(conf, &lineNum)) == NULL) {
-            if (limitok == FALSE) {
+            if (limitok == FALSE
+                    && numofreslimits > 0) {
                 ls_syslog(LOG_ERR, "\
 %s: File %s at line %d: No valid resource limits are read", __func__, fname, lineNum);
                 lsberrno = LSBE_CONF_WARNING;
             }
 
             if (numofreslimits) {
-                if ((rConf->limits = calloc(numofreslimits, sizeof(resLimit_t))) == NULL) {
+                if ((rConf->limits = calloc(numofreslimits, sizeof(struct resLimit))) == NULL) {
                     lsberrno = LSBE_CONF_FATAL;
                     for (i = 0; i < numofreslimits; i++) {
                         freeLimitInfo(limits[i]);
@@ -8013,7 +8014,7 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
 {
     char *linep;
     int i, j;
-    resLimit_t* limitPtr;
+    struct resLimit *limitPtr;
     int idx;
     struct keymap keylist[] = {
         {"NAME", NULL, 0},          /* 0 */
@@ -8075,7 +8076,7 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
         return FALSE;
     }
 
-    limitPtr = calloc(1, sizeof(resLimit_t));
+    limitPtr = calloc(1, sizeof(struct resLimit));
 
     /* number of consumers */
     for (i = 0; keylist[i].key != NULL; i++) {
@@ -8114,8 +8115,8 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     }
 
     limitPtr->name = putstr_(keylist[0].val);
-    limitPtr->consumers = calloc(limitPtr->nConsumer, sizeof(limitConsumer_t));
-    limitPtr->res = calloc(limitPtr->nRes, sizeof(limitRes_t));
+    limitPtr->consumers = calloc(limitPtr->nConsumer, sizeof(struct limitConsumer));
+    limitPtr->res = calloc(limitPtr->nRes, sizeof(struct limitRes));
     idx = 0;   /* index of consumer */
 
     /*QUEUES*/

@@ -2903,14 +2903,14 @@ static int
 checkResLimit(struct jData *jp, char* hostname)
 {
     int i, j;
-    char* queue = NULL;
-    char* save_queue = NULL;
-    char* project = NULL;
-    char* save_project = NULL;
-    char* user = NULL;
-    char* save_user =NULL;
-    char* host = NULL;
-    char* save_host = NULL;
+    char *queue = NULL;
+    char *save_queue = NULL;
+    char *project = NULL;
+    char *save_project = NULL;
+    char *user = NULL;
+    char *save_user =NULL;
+    char *host = NULL;
+    char *save_host = NULL;
     char *word = NULL;
     int hasMe = FALSE;
     char all[4] = "all ";

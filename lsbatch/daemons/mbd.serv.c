@@ -40,6 +40,7 @@ static void freeJobHead(struct jobInfoHead *);
 static void freeJobInfoReply(struct jobInfoReply *);
 static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
+static int xdrsize_ResLimitInfoReply (struct resLimitReply *);
 extern void closeSession(int);
 static int sendLSFHeader(int, int);
 static int get_dep_link_size(link_t *);
@@ -3263,11 +3264,7 @@ do_resLimitInfo(XDR *xdrs,
     limits.numLimits = limitConf->nLimit;
     limits.limits = limitConf->limits;
 
-    count = limits.numLimits * (sizeof(struct resLimit)
-                                   + MAXLSFNAMELEN
-                                   + LIMIT_CONSUMER_TYPE_NUM * (sizeof(struct limitConsumer) + sizeof(int) + 2 * MAX_LIMIT_LEN)
-                                   + LIMIT_RESOURCE_TYPE_NUM * (sizeof(struct limitRes) + sizeof(int) + sizeof(float)))
-                                   + 100;
+    count = xdrsize_ResLimitInfoReply(&limits);
     reply_buf = my_calloc(count, sizeof(char), __func__);
     xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
 
@@ -3303,3 +3300,30 @@ do_resLimitInfo(XDR *xdrs,
     return 0;
 }
 
+static int
+xdrsize_ResLimitInfoReply (struct resLimitReply *limits)
+{
+    int    len;
+    int    i, j;
+
+    len = ALIGNWORD_(sizeof(struct resLimitReply)
+                     + sizeof(int)
+                     + limits->numLimits * sizeof(struct resLimit));
+
+    for (i = 0; i < limits->numLimits; i++) {
+        len += getXdrStrlen(limits->limits[i].name)
+            + ALIGNWORD_(2 * sizeof(int)
+                         + limits->limits[i].nConsumer * sizeof(struct limitConsumer)
+                         + limits->limits[i].nRes * sizeof(struct limitRes));
+
+        for (j = 0 ; j < limits->limits[i].nConsumer; j++) {
+            len += getXdrStrlen(limits->limits[i].consumers[j].def)
+                + getXdrStrlen(limits->limits[i].consumers[j].value)
+                + ALIGNWORD_(sizeof(int));
+        }
+
+        len += ALIGNWORD_(limits->limits[i].nRes * (sizeof(float) + sizeof(int)));
+    }
+
+    return len;
+}

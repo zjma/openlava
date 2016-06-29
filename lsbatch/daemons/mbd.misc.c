@@ -486,7 +486,6 @@ static void
 updProjectData(struct jData *jp, int numJobs, int numPEND,
             int numRUN, int numSSUSP, int numUSUSP, int numRESERVE)
 {
-    static char fname[] = "updProjectData";
     struct pqData *qp = jp->pPtr;
 
     if (qp == NULL)
@@ -495,7 +494,7 @@ updProjectData(struct jData *jp, int numJobs, int numPEND,
     if (logclass & LC_JLIMIT)
         ls_syslog(LOG_DEBUG1,
 "%s: Entering with job=%s project=%s queue=%s numJobs=%d numPEND=%d numRUN=%d numSSUSP=%d numUSUSP=%d numRESERVE=%d",
-                            fname,
+                            __func__,
                             lsb_jobid2str(jp->jobId),
                             qp->project,
                             qp->queue,
@@ -506,17 +505,17 @@ updProjectData(struct jData *jp, int numJobs, int numPEND,
                             numUSUSP,
                             numRESERVE);
 
-    addValue (&qp->numJobs, numJobs, jp, fname, "numJobs");
-    addValue (&qp->numPEND, numPEND, jp, fname, "numPEND");
-    addValue (&qp->numRUN, numRUN, jp, fname, "numRUN");
-    addValue (&qp->numSSUSP, numSSUSP, jp, fname, "numSSUSP");
-    addValue (&qp->numUSUSP, numUSUSP, jp, fname, "numUSUSP");
-    addValue (&qp->numRESERVE, numRESERVE, jp, fname, "numRESERVE");
+    addValue (&qp->numJobs, numJobs, jp, (char *)__func__, "numJobs");
+    addValue (&qp->numPEND, numPEND, jp, (char *)__func__, "numPEND");
+    addValue (&qp->numRUN, numRUN, jp, (char *)__func__, "numRUN");
+    addValue (&qp->numSSUSP, numSSUSP, jp, (char *)__func__, "numSSUSP");
+    addValue (&qp->numUSUSP, numUSUSP, jp, (char *)__func__, "numUSUSP");
+    addValue (&qp->numRESERVE, numRESERVE, jp, (char *)__func__, "numRESERVE");
 
     if (logclass & LC_JLIMIT)
         ls_syslog(LOG_DEBUG2,
 "%s: job=%s project=%s queue=%s numJobs=%d numPEND=%d numRUN=%d numSSUSP=%d numUSUSP=%d numRESERVE=%d",
-                            fname,
+                            __func__,
                             lsb_jobid2str(jp->jobId),
                             qp->project,
                             qp->queue,

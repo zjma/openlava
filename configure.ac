@@ -155,6 +155,7 @@ AC_CONFIG_FILES([
 	config/lsb.params        \
 	config/lsb.queues        \
 	config/lsb.users         \
+	config/lsb.resources     \
 	config/lsf.cluster.${openlavacluster}:config/lsf.cluster.openlava.in \
 	config/lsf.shared        \
 	config/lsf.task          \
