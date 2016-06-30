@@ -58,7 +58,7 @@ main(int argc, char **argv)
     }
 
     jobId = jobIdList[0];
-
+    free(jobIdList);
     if ((jobId = lsb_modify(&req, &reply, jobId)) < 0) {
        if (lsberrno == LSBE_JOB_ARRAY) {
             fprintf(stderr, "Options -q and -O cannot be applied on job array");

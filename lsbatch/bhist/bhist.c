@@ -43,7 +43,7 @@ static void printEvent(struct bhistReq *, struct jobRecord *, struct jobInfoEnt 
 static void printChronicleEventLog(struct eventRec *, struct bhistReq *);
 static char * lowFirstChar(char *);
 
-static void prtModifiedJob(struct jobModLog *, struct bhistReq *, char *);
+static void prtModifiedJob(struct jobModLog *, struct bhistReq *, char *, char *);
 static int initJobIdIndexS( struct jobIdIndexS *indexS, char *fileName );
 
 static int hspecf=0;
@@ -1379,7 +1379,7 @@ initLoadIndexNames(void)
 
 
 void prtModifiedJob(struct jobModLog *jobModLog, struct bhistReq *bhistReq,
-		    char *timestamp)
+		    char *timestamp, char *tBuff)
 {
     char prline[MSGSIZE];
     int  i;
@@ -1390,9 +1390,15 @@ void prtModifiedJob(struct jobModLog *jobModLog, struct bhistReq *bhistReq,
         prtLine(i18nstr);                       \
     }
 
-    sprintf(prline,
-	    I18N(3357, "%-12.19s: Parameters of Job are changed:") /* catgets 3357 */,
-	    timestamp);
+    if (strlen(tBuff) > 0) {
+        sprintf(prline,
+            I18N(3357, "%-12.19s:%s, parameters of the job are changed:") /* catgets 3357 */,
+            timestamp, tBuff);
+    } else {
+        sprintf(prline,
+            I18N(3357, "%-12.19s: Parameters of the job are changed:") /* catgets 3357 */,
+            timestamp, tBuff);
+    }
     prtLine(prline);
 
 
@@ -1622,7 +1628,7 @@ void prtModifiedJob(struct jobModLog *jobModLog, struct bhistReq *bhistReq,
     }
 
     if (jobModLog->options2 & SUB2_JOB_DESC) {
-        sprintf(prline, "New job description is: %s", jobModLog->job_description);
+        sprintf(prline, "Job description changes to: %s", jobModLog->job_description);
         PRT_FMTSTR(prline);
     }
 
@@ -2395,8 +2401,7 @@ printEvent(struct bhistReq *bhistReq, struct jobRecord *jobRecord,
             break;
 
         case EVENT_JOB_MODIFY2: {
-            prtModifiedJob(&(event->eventRecUnion.jobModLog), bhistReq, timeStampStr);
-
+            prtModifiedJob(&(event->eventRecUnion.jobModLog), bhistReq, timeStampStr, tBuff);
         }
             break;
 
@@ -2762,7 +2767,8 @@ printChronicleEventLog(struct eventRec *log, struct bhistReq *req)
             break;
 
         case EVENT_JOB_MODIFY2:
-            prtModifiedJob(&(log->eventLog.jobModLog), req, timeStampStr);
+            sprintf (tBuff, " %s <%s>", I18N_Job, log->eventLog.jobModLog.jobIdStr);
+            prtModifiedJob(&(log->eventLog.jobModLog), req, timeStampStr, tBuff);
             prtLine(";\n");
             break;
 

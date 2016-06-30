@@ -32,6 +32,7 @@ Release notes for OpenLava versions
    limitConsumer_t as types are not atomic.
 -- Change style declaration, e.g., char* x should be char *x.
 -- Replace fname[] with gcc macro __func__.
+-- Support specifying job description to job arrays with bsub -Jd.
 
 3.3.2
 ======

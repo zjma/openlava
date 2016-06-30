@@ -6546,6 +6546,8 @@ freeSubmitReq(struct submitReq *jobBill)
     FREEUP(jobBill->loginShell);
     FREEUP(jobBill->schedHostType);
     FREEUP(jobBill->userGroup);
+    FREEUP(jobBill->job_group);
+    FREEUP(jobBill->job_description);
 
     if (jobBill->numAskedHosts > 0) {
         for (i = 0; i < jobBill->numAskedHosts; i++)
