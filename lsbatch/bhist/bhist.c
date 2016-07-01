@@ -1391,13 +1391,11 @@ void prtModifiedJob(struct jobModLog *jobModLog, struct bhistReq *bhistReq,
     }
 
     if (strlen(tBuff) > 0) {
-        sprintf(prline,
-            I18N(3357, "%-12.19s:%s, parameters of the job are changed:") /* catgets 3357 */,
-            timestamp, tBuff);
+        sprintf(prline, "\
+%-12.19s:%s, parameters of the job are changed:", timestamp, tBuff);
     } else {
-        sprintf(prline,
-            I18N(3357, "%-12.19s: Parameters of the job are changed:") /* catgets 3357 */,
-            timestamp, tBuff);
+        sprintf(prline, "\
+%-12.19s%s: Parameters of the job are changed:", timestamp, tBuff);
     }
     prtLine(prline);
 
