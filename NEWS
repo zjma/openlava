@@ -37,6 +37,8 @@ Release notes for OpenLava versions
 -- Implement bresources command to display current resource usage.
 -- Implement project account recovery after mbd restart.
 -- Add BATCH_RESLIMIT_INFO into forkOnRequest() to fork a child for this operation.
+-- Fix and XDR decode error in the 3.3 mbatchd if the client has lower versions
+   3.0 and 3.1.
 
 3.3.2
 ======

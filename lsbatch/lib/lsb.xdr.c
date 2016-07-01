@@ -224,7 +224,7 @@ xdr_submitReq(XDR *xdrs, struct submitReq *submitReq, struct LSFHeader *hdr)
     }
 
     if (xdrs->x_op == XDR_DECODE) {
-        if (hdr->version >= 30) {
+        if (hdr->version >= 33) {
             if (!xdr_var_string(xdrs, &submitReq->job_group))
                 goto Error1;
         } else {
