@@ -1177,7 +1177,8 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_PARAM_INFO
         || req == BATCH_USER_INFO
         || req == BATCH_JOB_PEEK
-        || req == BATCH_JOBDEP_INFO) {
+        || req == BATCH_JOBDEP_INFO
+        || req == BATCH_RESLIMIT_INFO) {
         return 1;
     }
 

@@ -136,7 +136,6 @@ static void inPendJobList2(struct jData *,
                            struct jData **);
 static int jcompare(const void *, const void *);
 static struct hData *handle_float_client(struct submitReq *);
-static struct pqData *getProjectData(char *, char *);
 
 int
 newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
@@ -381,6 +380,9 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
     jpbw->nextJob = NULL;
 
     jpbw->uPtr = getUserData(jpbw->userName);
+    if (!jpbw->pPtr)
+        jpbw->pPtr = getProjectData(jpbw->shared->jobBill.projectName,
+                                    jpbw->qPtr->queue);
 
     putOntoTree(jpbw, job);
 
@@ -389,6 +391,8 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updProjectData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
+                       jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
     }
 
     if (job == JOB_NEW && eventTime == LOG_IT) {
@@ -3495,10 +3499,15 @@ handleRequeueJob(struct jData *jData, time_t requeueTime)
     if (mSchedStage != M_STAGE_REPLAY) {
         if (!jData->uPtr)
             jData->uPtr = getUserData(jData->userName);
+        if (!jData->pPtr)
+            jData->pPtr = getProjectData(jData->shared->jobBill.projectName, jData->qPtr->queue);
+
         updQaccount(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updProjectData(jData, jData->shared->jobBill.maxNumProcessors,
+                       jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
     }
 
     if (jData->jFlags & JFLAG_HAS_BEEN_REQUEUED)
@@ -6159,7 +6168,7 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
 
 }
 
-static struct pqData *
+struct pqData *
 getProjectData(char *project, char *queue)
 {
     struct pData *pData = NULL;

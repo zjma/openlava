@@ -2909,12 +2909,14 @@ checkResLimit(struct jData *jp, char* hostname)
     char *save_project = NULL;
     char *user = NULL;
     char *save_user =NULL;
+    char *user_def = NULL;
+    char *save_user_def = NULL;
     char *host = NULL;
     char *save_host = NULL;
     char *word = NULL;
     int hasMe = FALSE;
     char all[4] = "all ";
-    int projectHasAll = FALSE;
+    int hasAll = FALSE;
     int neg = FALSE;
     int numSlots;
 
@@ -2948,6 +2950,7 @@ checkResLimit(struct jData *jp, char* hostname)
             } else if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_USERS) {
                 user = strdup(limitConf->limits[i].consumers[j].value);
                 save_user = user;
+                user_def = strdup(limitConf->limits[i].consumers[j].def);
             }
         }
 
@@ -2997,16 +3000,46 @@ checkResLimit(struct jData *jp, char* hostname)
                 FREEUP(save_project);
                 FREEUP(save_host);
                 FREEUP(save_user);
+                FREEUP(save_user_def);
                 return FALSE;
+            } else {
+                /* check unix user */
+                char *word2 = NULL;
+                if (strstr(user_def, all) == user_def)
+                    hasAll = TRUE;
+                while ((word2 = getNextWord_(&user_def)) != NULL) {
+                    if (word2[0] == '~') {
+                        neg = TRUE;
+                        word2++;
+                    }
+                    if (strcasecmp(word2, jp->userName) == 0) {
+                        hasMe = TRUE;
+                        break;
+                    }
+                    neg = FALSE;
+                }
+
+                if ((!hasAll && hasMe)
+                        || (hasAll && hasMe && !neg)
+                        || (hasAll && !hasMe)) {
+                    FREEUP(save_queue);
+                    FREEUP(save_project);
+                    FREEUP(save_host);
+                    FREEUP(save_user);
+                    FREEUP(save_user_def);
+                    return FALSE;
+                }
             }
         }
 
         /* check if project is allowed to use the queue/host */
         if (project) {
             hasMe = FALSE;
+            neg = FALSE;
+            hasAll = FALSE;
 
-            if (strstr(project, all) != NULL)
-                projectHasAll = TRUE;
+            if (strstr(project, all) == project)
+                hasAll = TRUE;
 
             while ((word = getNextWord_( &project)) != NULL) {
                 if (word[0] == '~') {
@@ -3020,14 +3053,15 @@ checkResLimit(struct jData *jp, char* hostname)
                 neg = FALSE;
             }
 
-             if ((!projectHasAll && hasMe)
-                    || (projectHasAll && hasMe && !neg)
-                    || (projectHasAll && !hasMe)) {
+             if ((!hasAll && hasMe)
+                    || (hasAll && hasMe && !neg)
+                    || (hasAll && !hasMe)) {
                 if (limitConf->limits[i].res[0].res == LIMIT_RESOURCE_SLOTS) {
                     FREEUP(save_queue);
                     FREEUP(save_project);
                     FREEUP(save_host);
                     FREEUP(save_user);
+                    FREEUP(save_user_def);
                     return FALSE;
                 } else {  /* LIMIT_RESOURCE_JOBS */
                     jp->pPtr->maxJobs = (int) limitConf->limits[i].res[0].value;
@@ -3038,6 +3072,7 @@ checkResLimit(struct jData *jp, char* hostname)
                         FREEUP(save_project);
                         FREEUP(save_host);
                         FREEUP(save_user);
+                        FREEUP(save_user_def);
                         return FALSE;
                     }
                 }
@@ -3049,12 +3084,14 @@ checkResLimit(struct jData *jp, char* hostname)
         FREEUP(save_project);
         FREEUP(save_host);
         FREEUP(save_user);
+        FREEUP(save_user_def);
         queue = NULL;
         project = NULL;
         host = NULL;
         user = NULL;
+        user_def = NULL;
         hasMe = FALSE;
-        projectHasAll = FALSE;
+        hasAll = FALSE;
         neg = FALSE;
     }
 

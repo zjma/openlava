@@ -168,4 +168,6 @@ extern bool_t xdr_resLimitReply(XDR *,
 extern bool_t xdr_resLimitEnt(XDR *,
                         struct resLimit *,
                         struct LSFHeader *);
-
+extern bool_t xdr_resLimitUsageEnt(XDR *,
+                        struct resLimitUsage *,
+                        struct LSFHeader *);

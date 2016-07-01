@@ -286,6 +286,15 @@ struct migReq {
 struct resLimitReply {
     int    numLimits;
     struct resLimit *limits;
+    int    numUsage;
+    struct resLimitUsage *usage;
+};
+
+struct resLimitUsage {
+    char    *limitName;
+    char    *project;
+    char    *queue;
+    float   used;
 };
 
 typedef enum {

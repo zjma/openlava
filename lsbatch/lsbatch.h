@@ -1532,7 +1532,6 @@ struct resLimitConf {
     struct resLimit* limits;
 };
 
-
 #define  IS_PEND(s)  (((s) & JOB_STAT_PEND) || ((s) & JOB_STAT_PSUSP))
 
 #define  IS_START(s)  (((s) & JOB_STAT_RUN) || ((s) & JOB_STAT_SSUSP)   \
@@ -1675,7 +1674,7 @@ extern int lsb_deljgrp(struct job_group *);
 extern int lsb_modjgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
-extern struct resLimit *lsb_getlimits(int *);
-extern void free_resLimits(int, struct resLimit *);
+extern struct resLimitReply *lsb_getlimits();
+extern void free_resLimits(struct resLimitReply *);
 
 #endif

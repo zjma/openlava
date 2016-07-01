@@ -1273,6 +1273,9 @@ extern void                 updUserData (struct jData *, int, int, int, int,
                                          int, int);
 extern void                 updQaccount(struct jData *jData, int, int, int,
                                         int, int, int);
+extern void                 updProjectData(struct jData *,
+                                        int, int, int, int, int, int);
+extern struct pqData *      getProjectData(char *, char *);
 extern struct uData *       getUserData(char *user);
 extern struct userAcct *    getUAcct(struct hTab *, struct uData *);
 extern struct hostAcct *    getHAcct(struct hTab  *, struct hData *);

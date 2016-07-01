@@ -2029,6 +2029,8 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
     if (xdrs->x_op == XDR_DECODE) {
         reply->numLimits = 0;
         reply->limits= NULL;
+        reply->numUsage = 0;
+        reply->usage = NULL;
     }
 
     if (!xdr_int(xdrs, &(reply->numLimits)))
@@ -2046,6 +2048,24 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
                               (char *)&(reply->limits[i]),
                               hdr,
                               xdr_resLimitEnt))
+            return false;
+    }
+
+    if (!xdr_int(xdrs, &(reply->numUsage)))
+        return false;
+
+    if (xdrs->x_op == XDR_DECODE && reply->numUsage != 0) {
+        reply->usage = calloc(reply->numUsage,
+                               sizeof(struct resLimitUsage));
+        if (reply->usage == NULL)
+            return false;
+    }
+
+    for (i = 0; i < reply->numUsage; i++) {
+        if (!xdr_arrayElement(xdrs,
+                              (char *)&(reply->usage[i]),
+                              hdr,
+                              xdr_resLimitUsageEnt))
             return false;
     }
 
@@ -2111,3 +2131,28 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
     return true;
 }
 
+bool_t
+xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
+                 struct LSFHeader *hdr)
+{
+    if (xdrs->x_op == XDR_DECODE) {
+        usage->limitName = NULL;
+        usage->project = NULL;
+        usage->queue = NULL;
+        usage->used = 0;
+    }
+
+    if (!xdr_var_string(xdrs, &(usage->limitName)))
+        return false;
+
+    if (!xdr_var_string(xdrs, &(usage->project)))
+        return false;
+
+    if (!xdr_var_string(xdrs, &(usage->queue)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->used)))
+        return false;
+
+    return true;
+}

@@ -65,6 +65,22 @@ If a group contains a subgroup, each member in the subgroup is displayed recursi
 If not operator (~) is used in consumer definition, all members exclude specified
 host/user/queue/project are displayed.
 .PP
+\fBCURRENT LIMIT RESOURCE USAGE\fR
+.IP
+Current resrouce usage of projects on this limit.
+.PP
+\fBPROJECT\fR
+.IP
+Project defined in this limit has started jobs.
+.PP
+\fBQUEUE\fR
+.IP
+The jobs are started on the queue.
+.PP
+\fBJOBS\fR
+.IP
+The number of started jobs and the maximum number of jobs this project can start.
+.PP
 .SH EXAMPLE
 .PP
 bresources
@@ -80,6 +96,24 @@ USERS      : all ~openlava
     expand : david wlu
 .br
 SLOTS      : 0
+.br
+.PP
+LIMIT  Limit2
+.br
+QUEUES     : bench
+.br
+    expand : bench
+.br
+PROJECTS   : RCRDPERF FEDPERF NRRD NRPV_MT IPPERF AMSPERF
+.br
+JOBS       : 10
+.br
+CURRENT LIMIT RESOURCE USAGE:
+.br
+    PROJECT     QUEUE       JOBS
+.br
+    RCRDPERF    bench       5/10
+    NRPV_MT     bench       2/10
 
 .PP
 .SH SEE ALSO

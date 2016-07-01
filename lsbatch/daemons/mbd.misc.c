@@ -47,8 +47,6 @@ static void updHostData(char, struct jData *,
                         int, int, int, int, int);
 static void updUserData1(struct jData *, struct uData *,
                          int, int, int, int, int, int);
-static void updProjectData(struct jData *,
-                        int, int, int, int, int, int);
 static void addValue(int *currentValue, int num,
                      struct jData *jp,
                      char *fname, char *counter);
@@ -241,8 +239,10 @@ updSwitchJob (struct jData *jp, struct qData *qfp, struct qData *qtp,
 
     if (jp->jStatus & JOB_STAT_RESERVE) {
         jp->qPtr = qfp;
+        jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
         updResCounters (jp, jp->jStatus & ~JOB_STAT_RESERVE);
         jp->qPtr = qtp;
+        jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
         jp->jStatus &= ~JOB_STAT_RESERVE;
         reserved = TRUE;
     }
@@ -250,67 +250,83 @@ updSwitchJob (struct jData *jp, struct qData *qfp, struct qData *qtp,
         case JOB_STAT_PEND:
         case JOB_STAT_PSUSP:
             jp->qPtr = qfp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, -oldNumReq, -oldNumReq, 0, 0, 0, 0);
                 updUserData(jp, -oldNumReq, -oldNumReq, 0, 0, 0, 0);
+                updProjectData(jp, -oldNumReq, -oldNumReq, 0, 0, 0, 0);
             }
             jp->qPtr = qtp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, numReq, numReq, 0, 0, 0, 0);
                 updUserData(jp, numReq, numReq, 0, 0, 0, 0);
+                updProjectData(jp, numReq, numReq, 0, 0, 0, 0);
             }
             break;
         case JOB_STAT_RUN:
         case (JOB_STAT_RUN | JOB_STAT_UNKWN):
             jp->qPtr = qfp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, -num, 0, -num, 0, 0, 0);
                 updHostData(TRUE, jp, -1, -1, 0, 0, 0);
                 updUserData(jp,-num, 0, -num, 0, 0, 0);
+                updProjectData(jp,-num, 0, -num, 0, 0, 0);
             }
             jp->qPtr = qtp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, num, 0, num, 0, 0, 0);
                 updHostData(TRUE, jp, 1, 1, 0, 0, 0);
                 updUserData(jp, num, 0, num, 0, 0, 0);
+                updProjectData(jp, num, 0, num, 0, 0, 0);
             }
             break;
         case JOB_STAT_SSUSP:
         case (JOB_STAT_SSUSP | JOB_STAT_UNKWN):
             jp->qPtr = qfp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, -num, 0, 0, -num, 0, 0);
                 updHostData(TRUE, jp, -1, 0, -1, 0, 0);
                 updUserData(jp,-num, 0, 0, -num, 0, 0);
+                updProjectData(jp,-num, 0, 0, -num, 0, 0);
             }
             jp->qPtr = qtp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, num, 0, 0, num, 0, 0);
                 updHostData(TRUE, jp, 1, 0, 1, 0, 0);
                 updUserData(jp, num, 0, 0, num, 0, 0);
+                updProjectData(jp, num, 0, 0, num, 0, 0);
             }
             break;
         case JOB_STAT_USUSP:
         case (JOB_STAT_USUSP | JOB_STAT_UNKWN):
             jp->qPtr = qfp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, -num, 0, 0, 0, -num, 0);
                 updHostData(TRUE, jp, -1, 0, 0, -1, 0);
                 updUserData(jp,-num, 0, 0, 0, -num, 0);
+                updProjectData(jp,-num, 0, 0, 0, -num, 0);
             }
             jp->qPtr = qtp;
+            jp->pPtr = getProjectData(jp->shared->jobBill.projectName, jp->qPtr->queue);
 
             if (mSchedStage != M_STAGE_REPLAY) {
                 updQaccount (jp, num, 0, 0, 0, num, 0);
                 updHostData(TRUE, jp, 1, 0, 0, 1, 0);
                 updUserData(jp, num, 0, 0, 0, num, 0);
+                updProjectData(jp, num, 0, 0, 0, num, 0);
             }
             break;
         default:
@@ -482,7 +498,7 @@ updUAcct (struct jData *jData,
 }
 
 /* updProjectData() */
-static void
+void
 updProjectData(struct jData *jp, int numJobs, int numPEND,
             int numRUN, int numSSUSP, int numUSUSP, int numRESERVE)
 {
@@ -1416,6 +1432,7 @@ updResCounters(struct jData *jData, int newStatus)
 
                 updQaccount (jData, 0, 0, 0, -num, 0, num);
                 updUserData(jData, 0, 0, 0, -num, 0, num);
+                updProjectData(jData, 0, 0, 0, -num, 0, num);
                 updHostData(TRUE, jData, 0, 0, -1, 0, 1);
             }  else if ((jData->jStatus & JOB_STAT_RESERVE)
                         && !(newStatus & JOB_STAT_RESERVE)
@@ -1423,11 +1440,13 @@ updResCounters(struct jData *jData, int newStatus)
                             || (newStatus & JOB_STAT_PEND))) {
                 updQaccount (jData, 0, 0, 0, num, 0, -num);
                 updUserData(jData, 0, 0, 0, num, 0, -num);
+                updProjectData(jData, 0, 0, 0, num, 0, -num);
                 updHostData(TRUE, jData, 0, 0, 1, 0, -1);
             } else if ((jData->jStatus & JOB_STAT_RESERVE)
                        && IS_FINISH(newStatus)) {
                 updQaccount (jData, -num, 0, 0, 0, 0, -num);
                 updUserData(jData, -num, 0, 0, 0, 0, -num);
+                updProjectData(jData, -num, 0, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
             } else {
             ls_syslog(LOG_ERR, "%s: Job <%s> transited from %x to %x",
@@ -1442,6 +1461,7 @@ updResCounters(struct jData *jData, int newStatus)
                 && IS_START (newStatus)) {
                 updQaccount (jData, 0, 0, 0, 0, -num, num);
                 updUserData(jData, 0, 0, 0, 0, -num,  num);
+                updProjectData(jData, 0, 0, 0, 0, -num,  num);
                 updHostData(TRUE, jData, 0, 0, 0, -1, 1);
             }  else if ((jData->jStatus & JOB_STAT_RESERVE)
                         && !(newStatus & JOB_STAT_RESERVE)
@@ -1449,11 +1469,13 @@ updResCounters(struct jData *jData, int newStatus)
 
                 updQaccount (jData, 0, 0, 0, 0, num, -num);
                 updUserData(jData, 0, 0, 0, 0, num, -num);
+                updProjectData(jData, 0, 0, 0, 0, -num,  num);
                 updHostData(TRUE, jData, 0, 0, 0, 1, -1);
             } else if ((jData->jStatus & JOB_STAT_RESERVE)
                        && IS_FINISH(newStatus)) {
                 updQaccount (jData, -num, 0, 0, 0, 0, -num);
                 updUserData(jData, -num, 0, 0, 0, 0, -num);
+                updProjectData(jData, -num, 0, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
             } else {
                 ls_syslog(LOG_ERR, "\
@@ -1471,19 +1493,21 @@ updResCounters(struct jData *jData, int newStatus)
                 updQaccount (jData, 0, num, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
                 updUserData(jData, 0, num, 0, 0, 0, -num);
-
+                updProjectData(jData, 0, num, 0, 0, 0, -num);
             }  else if (!(jData->jStatus & JOB_STAT_RESERVE)
                         && (newStatus & JOB_STAT_RESERVE)
                         && IS_PEND (newStatus)) {
                 updQaccount (jData, 0, -num, 0, 0, 0, num);
                 updHostData(TRUE, jData, 1, 0, 0, 0, 1);
                 updUserData(jData, 0, -num, 0, 0, 0, num);
+                updProjectData(jData, 0, -num, 0, 0, 0, num);
             } else if (IS_PEND (jData->jStatus)
                        && (jData->jStatus & JOB_STAT_RESERVE)
                        && IS_FINISH(newStatus)) {
                 updQaccount (jData, -numReq, -numReq+num, 0, 0, 0, -num);
                 updHostData(TRUE, jData, -1, 0, 0, 0, -1);
                 updUserData(jData, -numReq, -numReq+num, 0, 0, 0, -num);
+                updProjectData(jData, -numReq, -numReq+num, 0, 0, 0, -num);
             } else {
                 ls_syslog(LOG_ERR, "\
 %s: Job <%s> transited from %x to %x", __func__,

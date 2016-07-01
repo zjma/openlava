@@ -18,6 +18,7 @@
 
 #include "lsbatch.h"
 #include "cmd.h"
+#include "lsb.h"
 
 static void
 usage(void)
@@ -26,14 +27,13 @@ usage(void)
 }
 
 static void
-print_limits(int, struct resLimit *);
+print_limits(struct resLimitReply *);
 
 int
 main(int argc, char **argv)
 {
-    int num;
     int cc;
-    struct resLimit *limits;
+    struct resLimitReply *limits;
 
     if (lsb_init(argv[0]) < 0) {
         lsb_perror("lsb_init");
@@ -52,7 +52,7 @@ main(int argc, char **argv)
     }
 
 
-    limits = lsb_getlimits(&num);
+    limits = lsb_getlimits();
     if (limits == NULL) {
         if (lsberrno == LSBE_NO_ERROR) {
             fprintf(stderr, "\
@@ -63,9 +63,9 @@ bresources: No resource limit yet in the system.\n");
         return -1;
     }
 
-    print_limits(num, limits);
+    print_limits(limits);
 
-    free_resLimits(num, limits);
+    free_resLimits(limits);
 
     return 0;
 }
@@ -73,16 +73,17 @@ bresources: No resource limit yet in the system.\n");
 /* print_groups
  */
 static void
-print_limits(int num, struct resLimit *limits)
+print_limits(struct resLimitReply *reply)
 {
-    int i, j;
+    int i, j, k;
     char *name;
+    int  inUse;
 
-    for (i = 0; i < num; i++) {
-        printf("%s  %s\n", "LIMIT", limits[i].name);
+    for (i = 0; i < reply->numLimits; i++) {
+        printf("%s  %s\n", "LIMIT", reply->limits[i].name);
 
-        for (j = 0; j < limits[i].nConsumer; j++) {
-            switch (limits[i].consumers[j].consumer) {
+        for (j = 0; j < reply->limits[i].nConsumer; j++) {
+            switch (reply->limits[i].consumers[j].consumer) {
                 case LIMIT_CONSUMER_QUEUES:
                     name = "QUEUES";
                     break;
@@ -99,14 +100,15 @@ print_limits(int num, struct resLimit *limits)
                     usage();
                     exit(-1);
             }
-            printf("%-10s : %s\n", name, limits[i].consumers[j].def);
-            if (limits[i].consumers[j].consumer == LIMIT_CONSUMER_HOSTS
-                    || limits[i].consumers[j].consumer == LIMIT_CONSUMER_USERS
-                    || limits[i].consumers[j].consumer == LIMIT_CONSUMER_QUEUES)
-                printf("    expand : %s\n", limits[i].consumers[j].value);
+            printf("%-10s : %s\n", name, reply->limits[i].consumers[j].def);
+            if (reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_HOSTS
+                    || reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_USERS
+                    || reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_QUEUES)
+                printf("    expand : %s\n", reply->limits[i].consumers[j].value);
         }
-        for (j = 0; j < limits[i].nRes; j++) {
-             switch (limits[i].res[j].res) {
+
+        for (j = 0; j < reply->limits[i].nRes; j++) {
+             switch (reply->limits[i].res[j].res) {
                 case LIMIT_RESOURCE_SLOTS:
                     name = "SLOTS";
                     break;
@@ -117,9 +119,29 @@ print_limits(int num, struct resLimit *limits)
                     usage();
                     exit(-1);
             }
-            printf("%-10s : %d\n", name, (int)(limits[i].res[j].value));
+            printf("%-10s : %d\n", name, (int)(reply->limits[i].res[j].value));
+
+            if (reply->numUsage > 0
+                    && strcmp(name, "JOBS") == 0) {
+                printf("\n%s\n", "CURRENT LIMIT RESOURCE USAGE:");
+                printf("    %-10s  %-10s  %-10s\n", "PROJECT", "QUEUE", "JOBS");
+
+                inUse = FALSE;
+                for (k = 0; k < reply->numUsage; k++) {
+                    if (strcmp(reply->limits[i].name, reply->usage[k].limitName)
+                            || reply->usage[k].used <= 0)
+                        continue;
+                    printf("    %-10s  %-10s  %d/%d\n",
+                                reply->usage[k].project,
+                                reply->usage[k].queue,
+                                (int)reply->usage[k].used,
+                                (int)(reply->limits[i].res[j].value));
+                    inUse = TRUE;
+                }
+                if (!inUse)
+                    printf("    %-10s  %-10s  %-10s\n", "-", "-", "-");
+            }
         }
-        printf("\n");
+        printf("\n\n");
     }
 }
-

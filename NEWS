@@ -33,6 +33,10 @@ Release notes for OpenLava versions
 -- Change style declaration, e.g., char* x should be char *x.
 -- Replace fname[] with gcc macro __func__.
 -- Support specifying job description to job arrays with bsub -Jd.
+-- Fix lsb.resources to support Unix user names that are not configured in lsb.users.
+-- Implement bresources command to display current resource usage.
+-- Implement project account recovery after mbd restart.
+-- Add BATCH_RESLIMIT_INFO into forkOnRequest() to fork a child for this operation.
 
 3.3.2
 ======

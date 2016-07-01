@@ -57,8 +57,8 @@ run \fBbadmin\fR reconfig to reconfigure mbatchd.
 .PP
 .PP
 Each limit definition begins with the line Begin Limit and ends with
-the line End Limit. A limit section is defined in vertical format.
-Each row defines one consumer or resource. At least one consumer and 
+the line End Limit. A limit section is defined in horizontal format.
+Each row defines one consumer or resource. At least one consumer and
 one resouce must be specified in a limit section.
 .SH QUEUES
 .BR
@@ -101,8 +101,11 @@ Undefined.
 .BR
 .PP
 .PP
-A space-separated list of user names or user groups 
-defined in \fBlsb.users\fR on which limits are enforced.
+A space-separated list of user names or user groups on which limits are enforced.
+.PP
+User names must be valid login names.
+User group names can be OpenLava user groups or UNIX user groups.
+UNIX user groups must be configured in \fBlsb.users\fR.
 .PP
 If a group contains a subgroup, the limit also applies
 to each member in the subgroup recursively.

@@ -7044,6 +7044,7 @@ static int parseUsers(char* inUsers, char** outUsers)
     int    j, k;
     int    result = 0;
     int    inTableSize = 0;
+    struct passwd *pw = NULL;
 
     inTable  = calloc(uConf->numUsers, sizeof(struct inNames*));
     inTableSize = uConf->numUsers;
@@ -7064,6 +7065,12 @@ static int parseUsers(char* inUsers, char** outUsers)
 
             if (getUserData(word) == NULL) {
                 int num = 0;
+
+                /* ignore unix user as we cannot expand all */
+                if ((pw = getpwnam(word)) != NULL
+                          && pw->pw_name != NULL)
+                    continue;
+
                 char** grpMembers = expandGrp(word, &num, USER_GRP);
                 if (!grpMembers) {
                     goto error_clean_up;
@@ -7141,6 +7148,12 @@ static int parseUsers(char* inUsers, char** outUsers)
                     goto error_clean_up;
             } else if (getUserData(word) == NULL) {
                 int num = 0;
+
+                /* ignore unix user as we cannot expand all */
+                if ((pw = getpwnam(word)) != NULL
+                          && pw->pw_name != NULL)
+                    continue;
+
                 char** grpMembers = expandGrp(word, &num, USER_GRP);
                 if (!grpMembers) {
                     goto error_clean_up;

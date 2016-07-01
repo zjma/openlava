@@ -20,15 +20,15 @@
 
 /* lsb_getlimits()
  */
-struct resLimit *
-lsb_getlimits(int *num)
+struct resLimitReply *
+lsb_getlimits()
 {
     XDR xdrs;
     struct LSFHeader hdr;
     char *reply;
     int cc;
     char buf[sizeof(struct LSFHeader)];
-    struct resLimitReply limitReply;
+    struct resLimitReply *limitReply;
 
     initLSFHeader_(&hdr);
     hdr.opCode = BATCH_RESLIMIT_INFO;
@@ -64,40 +64,46 @@ lsb_getlimits(int *num)
     }
 
     xdrmem_create(&xdrs, reply, XDR_DECODE_SIZE_(cc), XDR_DECODE);
-
-    if(!xdr_resLimitReply(&xdrs, &limitReply, &hdr)) {
+    limitReply = calloc(1, sizeof(struct resLimitReply));
+    if(!xdr_resLimitReply(&xdrs, limitReply, &hdr)) {
         lsberrno = LSBE_XDR;
         xdr_destroy(&xdrs);
-        if (cc)
+        if (cc) {
             FREEUP(reply);
-        *num = 0;
+            FREEUP(limitReply);
+        }
         return NULL;
     }
 
     xdr_destroy(&xdrs);
     if (cc)
         FREEUP(reply);
-    *num = limitReply.numLimits;
-    return limitReply.limits;
+    return limitReply;
 }
 
 /* free_resLimits()
  */
 void
-free_resLimits(int num, struct resLimit *limits)
+free_resLimits(struct resLimitReply *limits)
 {
     int i, j;
 
-    for (i = 0; i < num; i++) {
-        for (j = 0; j < limits[i].nConsumer; j++) {
-            FREEUP(limits[i].consumers[j].def);
-            FREEUP(limits[i].consumers[j].value);
+    for (i = 0; i < limits->numLimits; i++) {
+        for (j = 0; j < limits->limits[i].nConsumer; j++) {
+            FREEUP(limits->limits[i].consumers[j].def);
+            FREEUP(limits->limits[i].consumers[j].value);
         }
 
-        FREEUP(limits[i].name);
-        FREEUP(limits[i].consumers);
-        FREEUP(limits[i].res);
+        FREEUP(limits->limits[i].name);
+        FREEUP(limits->limits[i].consumers);
+        FREEUP(limits->limits[i].res);
     }
+
+    for (i = 0; i < limits->numUsage; i++) {
+        FREEUP(limits->usage[i].limitName);
+        FREEUP(limits->usage[i].project);
+        FREEUP(limits->usage[i].queue);
+    }
+    FREEUP(limits->usage);
     FREEUP(limits);
 }
-

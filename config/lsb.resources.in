@@ -9,11 +9,11 @@
 # current usage of resource allocation limits.
 
 # Limit section enclosed by Begin Limit and End Limit.
-# A limit section is defined in vertical format.
+# A limit section is defined in horizontal format.
 # Each row defines one consumer or resource.
 
 # Consumer types:
-# USERS - A space-separated list of user names or user groups defined in lsb.users on which limits are enforced.
+# USERS - A space-separated list of user names or user groups on which limits are enforced.
 # QUEUES - A space-separated list of queue names on which limits are enforced.
 # HOSTS - A space-separated list of hosts, host groups defined in lsb.hosts on which limits are enforced.
 # PROJECTS - A space-separated list of project names on which limits are enforced.
