@@ -39,6 +39,7 @@ Release notes for OpenLava versions
 -- Add BATCH_RESLIMIT_INFO into forkOnRequest() to fork a child for this operation.
 -- Fix and XDR decode error in the 3.3 mbatchd if the client has lower versions
    3.0 and 3.1.
+-- Fix lsb.resources error when no user is configured in lsb.users.
 
 3.3.2
 ======

@@ -2915,7 +2915,7 @@ checkResLimit(struct jData *jp, char* hostname)
     char *save_host = NULL;
     char *word = NULL;
     int hasMe = FALSE;
-    char all[4] = "all ";
+    char all[5] = "all ";
     int hasAll = FALSE;
     int neg = FALSE;
     int numSlots;
@@ -2951,6 +2951,7 @@ checkResLimit(struct jData *jp, char* hostname)
                 user = strdup(limitConf->limits[i].consumers[j].value);
                 save_user = user;
                 user_def = strdup(limitConf->limits[i].consumers[j].def);
+                save_user_def = user_def;
             }
         }
 

@@ -7134,6 +7134,15 @@ static int parseUsers(char* inUsers, char** outUsers)
 
                 int miniTableSize = 0;
 
+                /* no openlava user */
+                if (numofusers == 0) {
+                    free(inTable);
+                    free(outTable);
+                    free(save_buf);
+                    outUsers[0] = strdup("");
+                    return result;
+                }
+
                 miniTableSize = in_num + numofusers;
 
                 if (miniTableSize - inTableSize >= 0) {
