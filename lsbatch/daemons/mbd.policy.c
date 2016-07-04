@@ -3067,8 +3067,9 @@ checkResLimit(struct jData *jp, char* hostname)
                 } else {  /* LIMIT_RESOURCE_JOBS */
                     jp->pPtr->maxJobs = (int) limitConf->limits[i].res[0].value;
                     numSlots = jp->pPtr->maxJobs - jp->pPtr->numRUN - jp->pPtr->numSSUSP
-                                    - jp->pPtr->numUSUSP - jp->pPtr->numRESERVE;
-                     if (numSlots <= 0) {
+                                    - jp->pPtr->numUSUSP - jp->pPtr->numRESERVE
+                                    - jp->shared->jobBill.numProcessors;
+                     if (numSlots < 0) {
                         FREEUP(save_queue);
                         FREEUP(save_project);
                         FREEUP(save_host);

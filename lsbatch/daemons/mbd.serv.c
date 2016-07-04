@@ -3411,6 +3411,12 @@ getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
     if (!limit || !pAcct)
         return NULL;
 
+    if (pAcct->numRUN == 0
+            && pAcct->numSSUSP == 0
+            && pAcct->numUSUSP == 0
+            && pAcct->numRESERVE == 0)
+        return NULL;
+
     for (i = 0; i < limit->nRes; i++) {
         if (limit->res[i].res == LIMIT_RESOURCE_JOBS)
             break;

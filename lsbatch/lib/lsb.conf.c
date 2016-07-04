@@ -6784,7 +6784,7 @@ static int parseHosts(char* inHosts, char** outHosts)
             }
             word++;
 
-            if (isHostName(word) == FALSE) {
+            if (getHostData(word) == NULL) {
                 int num = 0;
                 char** grpMembers = expandGrp(word, &num, HOST_GRP);
                 if (!grpMembers) {

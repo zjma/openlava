@@ -40,6 +40,8 @@ Release notes for OpenLava versions
 -- Fix and XDR decode error in the 3.3 mbatchd if the client has lower versions
    3.0 and 3.1.
 -- Fix lsb.resources error when no user is configured in lsb.users.
+-- Fix the host group expanding bug in lsb.resources.
+-- Fix the resource usage counting bug when enforcing limits.
 
 3.3.2
 ======
