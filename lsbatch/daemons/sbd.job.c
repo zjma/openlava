@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -171,7 +171,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
          * Replace following code with "affinity" interface.
          */
         if (daemonParams[SBD_BIND_CPU].paramValue &&
-                strstr(jobSpecsPtr->resReq, "affinity")) {
+            strstr(jobSpecsPtr->resReq, "affinity")) {
             if (strstr(jobSpecsPtr->resReq, "membind=localonly"))
                 localonly = 1;
             else
@@ -1861,7 +1861,7 @@ Exited with exit code %d", WEXITSTATUS(w_status));
         else
             if (jp->maxRusage.swap > 0)
                 fprintf(notif, "    %s   :%10d KB\n\n", "Max Swap",
-                    jp->maxRusage.swap);
+                        jp->maxRusage.swap);
         if (jp->maxRusage.npids > 0)
             fprintf(notif, "    %s  :%10d\n", "Max Processes",
                     jp->maxRusage.npids);
@@ -1900,7 +1900,7 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
         } else {
 
             if ((output == mail) && (mailSizeLimit > 0)
-                 && (outfileStat.st_size > mailSizeLimit*1024)) {
+                && (outfileStat.st_size > mailSizeLimit*1024)) {
 
                 fprintf(output, "\n");
                 fprintf(output, "Output is larger than limit of %ld KB set by administrator.\n", mailSizeLimit);
@@ -4135,8 +4135,8 @@ setup_mem_cgroup(struct jobCard *jPtr)
     lsb_constrain_mem(job_id, rlimit.rlim_cur, jPtr->jobSpecs.jobPid);
 
     if (logclass & LC_EXEC) {
-	ls_syslog(LOG_INFO, "%s: job %s cur %lu max %lu", __func__,
-		  job_id,rlimit.rlim_cur, rlimit.rlim_max);
+        ls_syslog(LOG_INFO, "%s: job %s cur %lu max %lu", __func__,
+                  job_id,rlimit.rlim_cur, rlimit.rlim_max);
     }
 }
 
@@ -4151,7 +4151,7 @@ rm_mem_cgroup(struct jobCard *jPtr)
     lsb_rmcgroup_mem(job_id, jPtr->jobSpecs.jobPid);
 
     if (logclass & LC_EXEC) {
-	ls_syslog(LOG_INFO, "%s: cleanup job %s", __func__, job_id);
+        ls_syslog(LOG_INFO, "%s: cleanup job %s", __func__, job_id);
     }
 }
 
@@ -4169,7 +4169,7 @@ select_cpu_to_bind(struct jobCard *jPtr)
     if (!selected) {
         ls_syslog(LOG_ERR, "\
 %s: failed to find free core for job %d", __func__,
-              jPtr->jobSpecs.jobId);
+                  jPtr->jobSpecs.jobId);
     }
     return selected;
 }
@@ -4198,7 +4198,7 @@ setup_cpu_bind(struct jobCard *jPtr, int* selected)
     if (logclass & LC_EXEC) {
         ls_syslog(LOG_INFO, "%\
 s: job %d pid %d bound to core %d", __func__, jPtr->jobSpecs.jobId,
-		  jPtr->jobSpecs.jobPid, selected[0]);
+                  jPtr->jobSpecs.jobPid, selected[0]);
     }
 
     jPtr->core_num = selected;

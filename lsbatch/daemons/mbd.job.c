@@ -380,6 +380,9 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
     jpbw->nextJob = NULL;
 
     jpbw->uPtr = getUserData(jpbw->userName);
+    if (!jpbw->pPtr)
+        jpbw->pPtr = getProjectData(jpbw->shared->jobBill.projectName,
+                                    jpbw->qPtr->queue);
 
     putOntoTree(jpbw, job);
 
@@ -388,6 +391,8 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updProjectData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
+                       jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
     }
 
     if (job == JOB_NEW && eventTime == LOG_IT) {
@@ -3494,10 +3499,15 @@ handleRequeueJob(struct jData *jData, time_t requeueTime)
     if (mSchedStage != M_STAGE_REPLAY) {
         if (!jData->uPtr)
             jData->uPtr = getUserData(jData->userName);
+        if (!jData->pPtr)
+            jData->pPtr = getProjectData(jData->shared->jobBill.projectName, jData->qPtr->queue);
+
         updQaccount(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updProjectData(jData, jData->shared->jobBill.maxNumProcessors,
+                       jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
     }
 
     if (jData->jFlags & JFLAG_HAS_BEEN_REQUEUED)
@@ -4673,6 +4683,7 @@ initJData(struct jShared  *shared)
     job->priority = -1.0;
     job->qPtr = NULL;
     job->hPtr = NULL;
+    job->pPtr = NULL;
     job->numHostPtr = 0;
     job->numAskedPtr = 0;
     job->askedPtr = NULL;
@@ -6151,8 +6162,61 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
             return cc;
     }
 
+    job->pPtr = getProjectData(subReq->projectName, job->qPtr->queue);
+
     return LSBE_NO_ERROR;
 
+}
+
+struct pqData *
+getProjectData(char *project, char *queue)
+{
+    struct pData *pData = NULL;
+    struct pqData *pqData = NULL;
+    hEnt *pEnt = NULL;
+    hEnt *pqEnt = NULL;
+    int new;
+    static int first = TRUE;
+
+    if (limitConf == NULL || limitConf->nLimit == 0)
+        return NULL;
+
+    if (first) {
+        h_initTab_(&pDataTab, MAX_RES_LIMITS);
+        first = FALSE;
+    }
+
+    pEnt = h_addEnt_(&pDataTab, project, &new);
+    if (new) {
+        pData = my_calloc(1,
+                          sizeof(struct pData),
+                          "getProjectData");
+        pData->project = safeSave(project);
+        pData->qAcct = my_calloc(1,
+                                 sizeof(struct hTab),
+                                 "getProjectData");
+        h_initTab_(pData->qAcct, numofqueues);
+        pEnt->hData = pData;
+    }
+
+    pqEnt = h_addEnt_(((struct pData *)pEnt->hData)->qAcct, queue, &new);
+    if (new) {
+        pqData = my_calloc(1,
+                          sizeof(struct pqData),
+                          "getProjectData");
+        pqData->project = safeSave(project);
+        pqData->queue = safeSave(queue);
+        pqData->maxJobs = INFINIT_INT;
+        pqData->numJobs = 0;
+        pqData->numPEND = 0;
+        pqData->numRESERVE = 0;
+        pqData->numRUN = 0;
+        pqData->numSSUSP = 0;
+        pqData->numUSUSP = 0;
+        pqEnt->hData = pqData;
+    }
+
+    return (struct pqData *)pqEnt->hData;
 }
 
 struct resVal *
@@ -6491,6 +6555,8 @@ freeSubmitReq(struct submitReq *jobBill)
     FREEUP(jobBill->loginShell);
     FREEUP(jobBill->schedHostType);
     FREEUP(jobBill->userGroup);
+    FREEUP(jobBill->job_group);
+    FREEUP(jobBill->job_description);
 
     if (jobBill->numAskedHosts > 0) {
         for (i = 0; i < jobBill->numAskedHosts; i++)

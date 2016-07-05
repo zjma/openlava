@@ -36,7 +36,6 @@
 #define  MAX_JOB_DESC_LEN    4096
 #define  MAX_USER_EQUIVALENT 128
 #define  MAX_RES_LIMITS      256
-#define  MAX_LIMIT_LEN       4096
 #define  DEFAULT_MSG_DESC    "no description"
 
 #define HOST_STAT_OK         0x0
@@ -1503,11 +1502,11 @@ typedef enum limitConsumerType {
     LIMIT_CONSUMER_TYPE_NUM = 4    /* how many consumer types */
 } limitConsumerType_t;
 
-typedef struct limitConsumer {
+struct limitConsumer {
     limitConsumerType_t consumer;
     char* def;
     char* value;
-} limitConsumer_t;
+};
 
 typedef enum limitResType {
     LIMIT_RESOURCE_SLOTS = 0,
@@ -1515,24 +1514,23 @@ typedef enum limitResType {
     LIMIT_RESOURCE_TYPE_NUM = 2  /* how many resource types */
 } limitResType_t;
 
-typedef struct limitRes {
+struct limitRes {
     limitResType_t res;
     float value;
-} limitRes_t;
+};
 
-typedef struct resLimit {
+struct resLimit {
     char*   name;
     int     nConsumer;
-    limitConsumer_t* consumers;
+    struct limitConsumer *consumers;
     int     nRes;
-    limitRes_t* res;
-} resLimit_t;
+    struct limitRes *res;
+};
 
-typedef struct resLimitConf {
+struct resLimitConf {
     int       nLimit;
-    resLimit_t* limits;
-} resLimitConf_t;
-
+    struct resLimit* limits;
+};
 
 #define  IS_PEND(s)  (((s) & JOB_STAT_PEND) || ((s) & JOB_STAT_PSUSP))
 
@@ -1676,7 +1674,7 @@ extern int lsb_deljgrp(struct job_group *);
 extern int lsb_modjgrp(struct job_group *);
 extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
-extern struct resLimit *lsb_getlimits(int *);
-extern void free_resLimits(int, struct resLimit *);
+extern struct resLimitReply *lsb_getlimits();
+extern void free_resLimits(struct resLimitReply *);
 
 #endif

@@ -8,7 +8,7 @@ Release notes for OpenLava versions
    of tasks nios can handle.
 
 3.3.3
-=====
+======
 
 -- Implement bsub -Jd to support specifying job description to jobs.
 -- Implement tech preview of lsb.resources.
@@ -25,7 +25,31 @@ Release notes for OpenLava versions
 -- The fairshare layer will log detail informations if the logclass
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 -- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
--- Fix memory leak in bsub -Jd implementation.
+-- Fix two memory leak in bsub -Jd implementation.
+-- Introduce the lsb.resources file.
+-- Implement the limit of the number of jobs per project using the
+   lsb.resources file.
+-- NIOS_RWAIT_SELECT must be set to y or Y in order for nios to wait
+   on select to detect that a task has finished.
+-- Add template lsb.resources.in.
+-- Add man5 lsb.resources.5.
+-- Add man1 bresources.1.
+-- Implement xdrsize_ResLimitInfoReply() to compute xdr size.
+-- Remove typedef of resLimitConf_t, resLimit_t, limitRes_t,
+   limitConsumer_t as types are not atomic.
+-- Change style declaration, e.g., char* x should be char *x.
+-- Replace fname[] with gcc macro __func__.
+-- Support specifying job description to job arrays with bsub -Jd.
+-- Fix lsb.resources to support Unix user names that are not configured in lsb.users.
+-- Implement bresources command to display current resource usage.
+-- Implement project account recovery after mbd restart.
+-- Add BATCH_RESLIMIT_INFO into forkOnRequest() to fork a child for this operation.
+-- Fix and XDR decode error in the 3.3 mbatchd if the client has lower versions
+   3.0 and 3.1.
+-- Fix lsb.resources error when no user is configured in lsb.users.
+-- Fix the host group expanding bug in lsb.resources.
+-- Fix the resource usage counting bug when enforcing limits.
+-- Release 3.3.3 the lsid command returns now 3.3.3 as OpenLava version.
 
 3.3.2
 ======

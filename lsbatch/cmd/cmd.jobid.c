@@ -237,6 +237,7 @@ getSpecIdxs (char *jobName, int **idxs0)
         }
     }
     *idxs0 = idxs;
+    freeIdxList(idxList);
     return (numIdxs);
 }
 

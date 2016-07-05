@@ -425,6 +425,7 @@ lsb_geteventrec(FILE *log_fp, int *LineNum)
      */
     strcpy(logRec->version, namebuf);
     if ((version = atoi(logRec->version)) <= 0) {
+        free(namebuf);
         lsberrno = LSBE_EVENT_FORMAT;
         return NULL;
     }
@@ -639,6 +640,7 @@ freeLogRec(struct eventRec *logRec)
             FREEUP(logRec->eventLog.jobModLog.projectName);
             FREEUP(logRec->eventLog.jobModLog.loginShell);
             FREEUP(logRec->eventLog.jobModLog.schedHostType);
+            FREEUP(logRec->eventLog.jobModLog.job_description);
             return;
 
         case EVENT_JOB_START:
@@ -3311,7 +3313,10 @@ checkJobEventAndJobId(char *line, int eventType, int numJobIds, LS_LONG_INT *job
             }
             break;
         case EVENT_JOB_MODIFY2:
-            cc = sscanf(line, "\"%d[", (int *)&eventJobId);
+            cc = sscanf(line, "\"%d", (int *)&eventJobId);
+            if (cc != 1) {
+                cc = sscanf(line, "\"%d[", (int *)&eventJobId);
+            }
             if (cc != 1) {
                 return(1);
             }

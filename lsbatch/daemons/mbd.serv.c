@@ -40,6 +40,10 @@ static void freeJobHead(struct jobInfoHead *);
 static void freeJobInfoReply(struct jobInfoReply *);
 static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
+static int xdrsize_ResLimitInfoReply (struct resLimitReply *);
+static void addResUsage(struct resLimitReply *);
+static struct resLimitUsage * getLimitUsage(struct resLimit *, struct pqData *);
+static void freeResLimitUsage(int, struct resLimitUsage *);
 extern void closeSession(int);
 static int sendLSFHeader(int, int);
 static int get_dep_link_size(link_t *);
@@ -3262,12 +3266,11 @@ do_resLimitInfo(XDR *xdrs,
 
     limits.numLimits = limitConf->nLimit;
     limits.limits = limitConf->limits;
+    limits.numUsage = 0;
+    limits.usage = NULL;
+    addResUsage(&limits);
 
-    count = limits.numLimits * (sizeof(struct resLimit)
-                                   + MAXLSFNAMELEN
-                                   + LIMIT_CONSUMER_TYPE_NUM * (sizeof(struct limitConsumer) + sizeof(int) + 2 * MAX_LIMIT_LEN)
-                                   + LIMIT_RESOURCE_TYPE_NUM * (sizeof(struct limitRes) + sizeof(int) + sizeof(float)))
-                                   + 100;
+    count = xdrsize_ResLimitInfoReply(&limits);
     reply_buf = my_calloc(count, sizeof(char), __func__);
     xdrmem_create(&xdrs2, reply_buf, count, XDR_ENCODE);
 
@@ -3284,6 +3287,7 @@ do_resLimitInfo(XDR *xdrs,
         ls_syslog(LOG_ERR, "\
 %s: failed encode %dbytes reply to %s", __func__,
                   XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        freeResLimitUsage(limits.numUsage, limits.usage);
         FREEUP(reply_buf);
         xdr_destroy(&xdrs2);
         return -1;
@@ -3293,13 +3297,201 @@ do_resLimitInfo(XDR *xdrs,
         ls_syslog(LOG_ERR, "\
 %s: failed encode %dbytes reply to %s", __func__,
                   XDR_GETPOS(&xdrs2), sockAdd2Str_(from));
+        freeResLimitUsage(limits.numUsage, limits.usage);
         xdr_destroy(&xdrs2);
         FREEUP(reply_buf);
         return -1;
     }
 
+    freeResLimitUsage(limits.numUsage, limits.usage);
     xdr_destroy(&xdrs2);
     FREEUP(reply_buf);
     return 0;
 }
 
+static int
+xdrsize_ResLimitInfoReply (struct resLimitReply *limits)
+{
+    int    len;
+    int    i, j;
+
+    len = ALIGNWORD_(sizeof(struct resLimitReply)
+                     + sizeof(int)
+                     + limits->numLimits * sizeof(struct resLimit));
+
+    for (i = 0; i < limits->numLimits; i++) {
+        len += getXdrStrlen(limits->limits[i].name)
+            + ALIGNWORD_(2 * sizeof(int)
+                         + limits->limits[i].nConsumer * sizeof(struct limitConsumer)
+                         + limits->limits[i].nRes * sizeof(struct limitRes));
+
+        for (j = 0 ; j < limits->limits[i].nConsumer; j++) {
+            len += getXdrStrlen(limits->limits[i].consumers[j].def)
+                + getXdrStrlen(limits->limits[i].consumers[j].value)
+                + ALIGNWORD_(sizeof(int));
+        }
+
+        len += ALIGNWORD_(limits->limits[i].nRes * (sizeof(float) + sizeof(int)));
+    }
+
+    len += ALIGNWORD_(limits->numUsage * sizeof(struct resLimitUsage))
+        + sizeof(int);
+
+    for (i = 0; i < limits->numUsage; i++) {
+        len += getXdrStrlen(limits->usage[i].limitName)
+            + getXdrStrlen(limits->usage[i].project)
+            + getXdrStrlen(limits->usage[i].queue)
+            + sizeof(float);
+    }
+
+    return len;
+}
+
+/* addResUsage() */
+static void
+addResUsage(struct resLimitReply *limits)
+{
+    struct sTab   sTab;
+    struct sTab   sTab2;
+    hEnt   *ent;
+    hEnt   *ent2;
+    struct pData *pData;
+    struct pqData *pqData;
+    int    i;
+    int    n = 0;
+    struct resLimitUsage *usage;
+    struct resLimitUsage *allLimitUsage[MAX_RES_LIMITS * 20];
+
+    ent = h_firstEnt_(&pDataTab, &sTab);
+    if (ent == NULL)
+        return;
+
+    while (ent) {
+        pData = ent->hData;
+        ent2 = h_firstEnt_(pData->qAcct, &sTab2);
+        while (ent2) {
+            pqData = ent2->hData;
+            for (i = 0; i < limits->numLimits; i++) {
+                usage = getLimitUsage(&limits->limits[i], pqData);
+                if (usage) {
+                    allLimitUsage[n++] = usage;
+                }
+            }
+            ent2 = h_nextEnt_(&sTab2);
+        }
+        ent = h_nextEnt_(&sTab);
+    }
+
+    limits->numUsage = n;
+    limits->usage = my_calloc(limits->numUsage, sizeof(struct resLimitUsage), __func__);
+    for (i = 0; i < limits->numUsage; i++) {
+        limits->usage[i].limitName = allLimitUsage[i]->limitName;
+        limits->usage[i].project = allLimitUsage[i]->project;
+        limits->usage[i].queue = allLimitUsage[i]->queue;
+        limits->usage[i].used = allLimitUsage[i]->used;
+        FREEUP(allLimitUsage[i]);
+    }
+}
+
+/* getLimitUsage() */
+static struct resLimitUsage *
+getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
+{
+    int    i, j;
+    char   *project = NULL;
+    char   *save_project = NULL;
+    char   *queue = NULL;
+    char   *save_queue = NULL;
+    char   *word = NULL;
+    int    hasMe = FALSE;
+    int    projectHasAll = FALSE;
+    int    neg = FALSE;
+    struct resLimitUsage *usage = NULL;
+
+    if (!limit || !pAcct)
+        return NULL;
+
+    if (pAcct->numRUN == 0
+            && pAcct->numSSUSP == 0
+            && pAcct->numUSUSP == 0
+            && pAcct->numRESERVE == 0)
+        return NULL;
+
+    for (i = 0; i < limit->nRes; i++) {
+        if (limit->res[i].res == LIMIT_RESOURCE_JOBS)
+            break;
+    }
+
+    if (i == limit->nRes)
+        return NULL;
+
+    for (j = 0; j < limit->nConsumer; j++) {
+        if (limit->consumers[j].consumer == LIMIT_CONSUMER_PROJECTS) {
+            project = strdup(limit->consumers[j].value);
+            save_project = project;
+        } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_QUEUES) {
+            queue = strdup(limit->consumers[j].value);
+            save_queue = queue;
+        }
+    }
+
+    if (!project || !queue)
+        goto clean;
+
+    while ((word = getNextWord_(&queue)) != NULL) {
+        if (strcasecmp(word, pAcct->queue) == 0)
+            break;
+    }
+    if (!word)
+        goto clean;
+
+    if (strstr(project, "all") != NULL)
+        projectHasAll = TRUE;
+
+    while ((word = getNextWord_(&project)) != NULL) {
+        if (word[0] == '~') {
+            neg = TRUE;
+            word++;
+        }
+        if (strcasecmp(word, pAcct->project) == 0) {
+            hasMe = TRUE;
+            break;
+        }
+        neg = FALSE;
+    }
+
+    if ((!projectHasAll && hasMe)
+            || (projectHasAll && hasMe && !neg)
+            || (projectHasAll && !hasMe)) {
+        usage = my_calloc(1, sizeof(struct resLimitUsage), __func__);
+        usage->limitName = strdup(limit->name);
+        usage->project = strdup(pAcct->project);
+        usage->queue = strdup(pAcct->queue);
+        usage->used = pAcct->numRUN
+                      + pAcct->numSSUSP
+                      + pAcct->numUSUSP
+                      + pAcct->numRESERVE;
+    }
+
+clean:
+    FREEUP(save_queue);
+    FREEUP(save_project);
+    return usage;
+}
+
+/* freeResLimitUsage() */
+static void
+freeResLimitUsage(int num, struct resLimitUsage *usage)
+{
+    int    i;
+
+    if (num ==0 || usage == NULL)
+        return;
+
+    for (i = 0; i < num; i++) {
+        FREEUP(usage[i].limitName);
+        FREEUP(usage[i].project);
+        FREEUP(usage[i].queue);
+    }
+    FREEUP(usage);
+}

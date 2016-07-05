@@ -250,7 +250,9 @@ read_newjob(struct eventRec *log)
     submitPtr->userPriority = jobNewLog->userPriority;
     job->jobPriority = jobNewLog->userPriority;
 
-    submitPtr->job_description = jobNewLog->job_description;
+    if (submitPtr->options2 & SUB2_JOB_DESC) {
+        submitPtr->job_description = putstr_(jobNewLog->job_description);
+    }
 
     if ((logclass & LC_TRACE))
         ls_syslog(LOG_DEBUG2, "%s: jobId=%s", fname, lsb_jobid2str(job->jobId));
@@ -345,7 +347,9 @@ copyJobModLog(struct jobModLog *des, struct jobModLog *src)
     des->loginShell = putstr_(src->loginShell);
     des->schedHostType = putstr_(src->schedHostType);
     des->userPriority   = src->userPriority;
-    des->job_description  = src->job_description;
+    if (des->options2 & SUB2_JOB_DESC) {
+        des->job_description  = putstr_(src->job_description);
+    }
 }
 
 struct jobInfoEnt *
@@ -418,6 +422,11 @@ copyJobInfoEnt(struct jobInfoEnt *jobInfo)
 
     job->jobPriority = jobInfo->jobPriority;
     submitPtr->userPriority = jobInfo->submit.userPriority;
+
+    if (submitPtr->options2 & SUB2_JOB_DESC) {
+        submitPtr->job_description = putstr_(jobInfo->submit.job_description);
+    }
+
     return (job);
 }
 
@@ -443,6 +452,7 @@ freeJobInfoEnt(struct jobInfoEnt *jobInfoEnt)
     FREEUP(jobInfoEnt->submit.projectName);
     FREEUP(jobInfoEnt->submit.loginShell);
     FREEUP(jobInfoEnt->submit.userGroup);
+    FREEUP(jobInfoEnt->submit.job_description);
 
     if (jobInfoEnt->submit.numAskedHosts > 0) {
         for (i=0;i<jobInfoEnt->submit.numAskedHosts;i++)

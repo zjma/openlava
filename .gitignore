@@ -26,6 +26,7 @@ config/lsb.hosts
 config/lsb.params
 config/lsb.queues
 config/lsb.users
+config/lsb.resources
 config/lsf.cluster.*
 !config/lsf.cluster.*.in
 config/lsf.conf

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -99,20 +99,20 @@ window_ok (struct jobCard *jobPtr)
 void
 shout_err (struct jobCard *jobPtr, char *msg)
 {
-     char buf[MSGSIZE];
+    char buf[MSGSIZE];
 
-     sprintf(buf, \
-"We are unable to run your job %s:<%s>. The error is:\n%s.",
-             lsb_jobid2str(jobPtr->jobSpecs.jobId),
-             jobPtr->jobSpecs.command, msg);
+    sprintf(buf, \
+            "We are unable to run your job %s:<%s>. The error is:\n%s.",
+            lsb_jobid2str(jobPtr->jobSpecs.jobId),
+            jobPtr->jobSpecs.command, msg);
 
-     if (jobPtr->jobSpecs.options & SUB_MAIL_USER) {
-         merr_user(jobPtr->jobSpecs.mailUser, jobPtr->jobSpecs.fromHost,
-                   buf, I18N_error);
-     } else {
-         merr_user(jobPtr->jobSpecs.userName, jobPtr->jobSpecs.fromHost,
-                   buf, I18N_error);
-     }
+    if (jobPtr->jobSpecs.options & SUB_MAIL_USER) {
+        merr_user(jobPtr->jobSpecs.mailUser, jobPtr->jobSpecs.fromHost,
+                  buf, I18N_error);
+    } else {
+        merr_user(jobPtr->jobSpecs.userName, jobPtr->jobSpecs.fromHost,
+                  buf, I18N_error);
+    }
 }
 
 void

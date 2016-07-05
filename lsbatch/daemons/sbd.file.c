@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1906,7 +1906,7 @@ jobFileExitStatus(struct jobCard *jobCard)
 %s: gethostbyname() %s failed job %s", __func__,
                   jobCard->jobSpecs.fromHost,
                   lsb_jobid2str(jobCard->jobSpecs.jobId));
-                  exit(jobCard->w_status);
+        exit(jobCard->w_status);
     }
 
     chuser(jobCard->jobSpecs.execUid);

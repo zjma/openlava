@@ -1,0 +1,65 @@
+# Resource limit profile. This file is optional.
+# This file affects the scheduling behavior of the openlava Batch system on submitted jobs.
+
+# The resource limit sets limits for the maximum amount of the specified resources
+# that must be available for jobs to start, and which resource consumers the limits apply to.
+# Limits are enforced during job resource allocation.
+
+# The bresources command displays view of limits configured in Limit section and
+# current usage of resource allocation limits.
+
+# Limit section enclosed by Begin Limit and End Limit.
+# A limit section is defined in horizontal format.
+# Each row defines one consumer or resource.
+
+# Consumer types:
+# USERS - A space-separated list of user names or user groups on which limits are enforced.
+# QUEUES - A space-separated list of queue names on which limits are enforced.
+# HOSTS - A space-separated list of hosts, host groups defined in lsb.hosts on which limits are enforced.
+# PROJECTS - A space-separated list of project names on which limits are enforced.
+
+# Resource types:
+# JOBS - Maximum number of running or suspended (RUN, SSUSP, USUSP) jobs available to resource consumers.
+# SLOTS - Maximum number of job slots available to resource consumers.
+
+# Syntax:
+# USERS=all [~]user_name ... | all [~]user_group ...
+# QUEUE=all [~]queue_name ..
+# HOSTS=all [~]host_name ... | all [~]host_group ...
+# PROJECTS=all [~]project_name ...
+# JOBS=integer
+# SLOTS=integer
+
+
+# Example 1: disallow non-member projects to use a particular queue
+#Begin Limit
+#NAME=limit1
+#PROJECTS=all ~p1 ~p2 ~p3
+#QUEUES=priority idle
+#SLOTS=0
+#End Limit
+
+# Example 2: limit number of jobs per project
+#Begin Limit
+#NAME=limit2
+#PROJECTS=p1 p2
+#QUEUES=all ~idle
+#JOBS=20
+#End Limit
+
+# Example 3: only allow certain users to use a hostgroup
+#Begin Limit
+#NAME=limit3
+#USERS=all ~david ~wlu
+#HOSTS=group0
+#SLOTS=0
+#End Limit
+
+# Example 4: specify which projects are allowed to use certain hostgroups from a certain queue 
+#Begin Limit
+#NAME=limit4
+#PROJECTS=all ~p1 ~p2
+#HOSTS=host0 host1
+#QUEUES=priority
+#SLOTS=0
+#End Limit
