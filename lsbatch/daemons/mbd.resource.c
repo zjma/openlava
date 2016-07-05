@@ -786,7 +786,7 @@ get_glb_tokens(void)
         if (glb_init() < 0) {
             ls_syslog(LOG_ERR, "\
 %s: gudness glb_init() failed cannot get even hold of GLB %d",
-                      __func__, glberrno);
+                      __func__, errno);
             return;
         }
         first = 0;
@@ -797,7 +797,7 @@ get_glb_tokens(void)
     t = glb_gettokens(clusterName, &num_tokens);
     if (t == NULL) {
         ls_syslog(LOG_ERR, "\
-%s: Ohmygosh cannot get tokens from GLB %d", __func__, glberrno);
+%s: Ohmygosh cannot get tokens from GLB %d", __func__, errno);
         tokens = recover_glb_allocation_state();
         if (tokens == NULL) {
             num_tokens = 0;
@@ -1130,7 +1130,7 @@ glb_get_more_tokens(const char *name)
     cc = glb_moretokens(clusterName, name);
     if (cc != GLBE_NOERR) {
         ls_syslog(LOG_ERR, "\
-%s: failed in glb_moretokens() %d", __func__, glberrno);
+%s: failed in glb_moretokens() %d", __func__, errno);
         return -1;
     }
 

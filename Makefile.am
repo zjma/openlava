@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2011-2012 David Bigagli
+# Copyright (C) 2011-2016 David Bigagli
 #
 
 include $(top_srcdir)/common.mk
