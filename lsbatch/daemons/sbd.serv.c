@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include "sbd.h"
 
-#define NL_SETN		11
+#define NL_SETN         11
 
 extern int urgentJob;
 extern int jRusageUpdatePeriod;
@@ -47,34 +47,34 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
     memset(&jobReply, 0, sizeof(struct jobReply));
 
     if (!xdr_jobSpecs(xdrs, &jobSpecs, reqHdr)) {
-	reply = ERR_BAD_REQ;
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSpecs");
-	goto sendReply;
+        reply = ERR_BAD_REQ;
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSpecs");
+        goto sendReply;
     }
 
 
     for (jp = jobQueHead->forw; (jp != jobQueHead); jp = jp->forw) {
         if (jp->jobSpecs.jobId == jobSpecs.jobId) {
 
-	    jobReply.jobId = jp->jobSpecs.jobId;
-	    jobReply.jobPid = jp->jobSpecs.jobPid;
-	    jobReply.jobPGid = jp->jobSpecs.jobPGid;
-	    jobReply.jStatus = jp->jobSpecs.jStatus;
-	    reply = ERR_NO_ERROR;
-	    goto sendReply;
-	}
+            jobReply.jobId = jp->jobSpecs.jobId;
+            jobReply.jobPid = jp->jobSpecs.jobPid;
+            jobReply.jobPGid = jp->jobSpecs.jobPGid;
+            jobReply.jStatus = jp->jobSpecs.jStatus;
+            reply = ERR_NO_ERROR;
+            goto sendReply;
+        }
     }
 
     jp = calloc(1, sizeof(struct jobCard));
     if (jp == NULL) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
                   lsb_jobid2str(jobSpecs.jobId), "calloc");
-	reply = ERR_MEM;
-	goto sendReply;
+        reply = ERR_MEM;
+        goto sendReply;
     }
 
     memcpy((char *) &jp->jobSpecs, (char *) &jobSpecs,
-	   sizeof(struct jobSpecs));
+           sizeof(struct jobSpecs));
 
     jp->jobSpecs.jStatus &= ~JOB_STAT_MIG;
     jp->jobSpecs.startTime = now;
@@ -85,25 +85,25 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
     jp->core_num = NULL;
 
     if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
-	if (lockHosts (jp) < 0) {
-	    ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
+        if (lockHosts (jp) < 0) {
+            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
                       lsb_jobid2str(jp->jobSpecs.jobId), "lockHosts");
             unlockHosts (jp, jp->jobSpecs.numToHosts);
-	    reply = ERR_LOCK_FAIL;
-	    freeWeek(jp->week);
-	    FREEUP(jp);
-	    goto sendReply;
+            reply = ERR_LOCK_FAIL;
+            freeWeek(jp->week);
+            FREEUP(jp);
+            goto sendReply;
         }
     }
 
     jp->runTime = 0;
     if (initJobCard(jp, &jobSpecs, (int *)&reply) < 0) {
 
-	if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
-	    unlockHosts (jp, jp->jobSpecs.numToHosts);
-	}
-	FREEUP(jp);
-	goto sendReply;
+        if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
+            unlockHosts (jp, jp->jobSpecs.numToHosts);
+        }
+        FREEUP(jp);
+        goto sendReply;
     }
 
     jp->execJobFlag = 0;
@@ -132,24 +132,24 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
                   jp->jobSpecs.jobSpoolDir);
     }
     if (jp->jobSpecs.options & SUB_PRE_EXEC)
-	SBD_SET_STATE(jp, (JOB_STAT_RUN | JOB_STAT_PRE_EXEC))
+        SBD_SET_STATE(jp, (JOB_STAT_RUN | JOB_STAT_PRE_EXEC))
         else
             SBD_SET_STATE(jp, JOB_STAT_RUN);
 
     reply = job_exec(jp, chfd);
 
     if (reply != ERR_NO_ERROR) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S, fname,
                   lsb_jobid2str(jp->jobSpecs.jobId), "job_exec");
-	if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
+        if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
             unlockHosts (jp, jp->jobSpecs.numToHosts);
-	}
-	deallocJobCard(jp);
+        }
+        deallocJobCard(jp);
     } else {
-	jobReply.jobId = jp->jobSpecs.jobId;
-	jobReply.jobPid = jp->jobSpecs.jobPid;
-	jobReply.jobPGid = jp->jobSpecs.jobPGid;
-	jobReply.jStatus = jp->jobSpecs.jStatus;
+        jobReply.jobId = jp->jobSpecs.jobId;
+        jobReply.jobPid = jp->jobSpecs.jobPid;
+        jobReply.jobPGid = jp->jobSpecs.jobPGid;
+        jobReply.jStatus = jp->jobSpecs.jStatus;
     }
 
 
@@ -160,27 +160,27 @@ sendReply:
     replyHdr.opCode = reply;
     replyStruct = (reply == ERR_NO_ERROR) ? (char *) &jobReply : (char *) NULL;
     if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_jobReply, 0, auth)) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobReply");
-	lsb_merr(_i18n_msg_get(ls_catd , NL_SETN, 5804,
-			       "Fatal error: xdr_jobReply() failed; sbatchd relifing")); /* catgets 5804 */
-	relife();
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobReply");
+        lsb_merr(_i18n_msg_get(ls_catd , NL_SETN, 5804,
+                               "Fatal error: xdr_jobReply() failed; sbatchd relifing")); /* catgets 5804 */
+        relife();
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5805,
-					 "%s: Sending jobReply (len=%d) to master failed: %m"), /* catgets 5805 */
-		  fname, XDR_GETPOS(&xdrs2));
+        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5805,
+                                         "%s: Sending jobReply (len=%d) to master failed: %m"), /* catgets 5805 */
+                  fname, XDR_GETPOS(&xdrs2));
     }
 
     xdr_destroy(&xdrs2);
 
 
     if (reply == ERR_NO_ERROR && !daemonParams[LSB_BSUBI_OLD].paramValue &&
-	PURE_INTERACTIVE(&jp->jobSpecs)) {
-  	if (status_job (BATCH_STATUS_JOB, jp, jp->jobSpecs.jStatus,
-		        ERR_NO_ERROR) < 0) {
+        PURE_INTERACTIVE(&jp->jobSpecs)) {
+        if (status_job (BATCH_STATUS_JOB, jp, jp->jobSpecs.jStatus,
+                        ERR_NO_ERROR) < 0) {
             jp->notReported++;
-	}
+        }
     }
 
 }
@@ -243,11 +243,11 @@ do_switchjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
 
     if ((jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE)
-	&& !(jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE))
-	for (i = 0; i < jp->jobSpecs.numToHosts; i++)
-	    if (unlockHost_(jp->jobSpecs.toHosts[i]) < 0
-		&& lserrno != LSE_LIM_NLOCKED)
-		ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_MM, fname,
+        && !(jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE))
+        for (i = 0; i < jp->jobSpecs.numToHosts; i++)
+            if (unlockHost_(jp->jobSpecs.toHosts[i]) < 0
+                && lserrno != LSE_LIM_NLOCKED)
+                ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_MM, fname,
                           lsb_jobid2str(jp->jobSpecs.jobId), "unlockHost_", jp->jobSpecs.toHosts[i]);
 
 
@@ -263,8 +263,8 @@ do_switchjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
 
     memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
-	   (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
-	   sizeof(struct lsfLimit));
+           (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
+           sizeof(struct lsfLimit));
 
 
     strcpy (jp->jobSpecs.requeueEValues, jobSpecs.requeueEValues);
@@ -276,8 +276,8 @@ do_switchjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
         if ((jp->resumeCondVal = checkThresholdCond (jobSpecs.resumeCond))
             == NULL)
             ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
-		      lsb_jobid2str(jp->jobSpecs.jobId),
-		      "checkThresholdCond", jobSpecs.resumeCond);
+                      lsb_jobid2str(jp->jobSpecs.jobId),
+                      "checkThresholdCond", jobSpecs.resumeCond);
     }
 
     lsbFreeResVal (&jp->stopCondVal);
@@ -285,13 +285,13 @@ do_switchjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
         if ((jp->stopCondVal = checkThresholdCond (jobSpecs.stopCond))
             == NULL)
             ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S, fname,
-		      lsb_jobid2str(jp->jobSpecs.jobId),
-		      "checkThresholdCond", jobSpecs.stopCond);
+                      lsb_jobid2str(jp->jobSpecs.jobId),
+                      "checkThresholdCond", jobSpecs.stopCond);
     }
 
     if (jobSpecs.options & SUB_LOGIN_SHELL) {
-	FREEUP (jp->jobSpecs.loginShell);
-	jp->jobSpecs.loginShell = safeSave (jobSpecs.loginShell);
+        FREEUP (jp->jobSpecs.loginShell);
+        jp->jobSpecs.loginShell = safeSave (jobSpecs.loginShell);
     }
 
     strcpy (jp->jobSpecs.suspendActCmd, jobSpecs.suspendActCmd);
@@ -303,8 +303,8 @@ do_switchjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
     inJobLink (jp);
 
     if (reniceJob(jp) < 0)
-	ls_syslog(LOG_DEBUG, "%s: renice job <%s> failed",
-		  fname, lsb_jobid2str(jp->jobSpecs.jobId));
+        ls_syslog(LOG_DEBUG, "%s: renice job <%s> failed",
+                  fname, lsb_jobid2str(jp->jobSpecs.jobId));
 
     reply = ERR_NO_ERROR;
     jobReply.jobId = jp->jobSpecs.jobId;
@@ -318,21 +318,21 @@ sendReply:
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = reply;
     if (reply == ERR_NO_ERROR)
-	replyStruct = (char *) &jobReply;
+        replyStruct = (char *) &jobReply;
     else {
-	replyStruct = (char *) 0;
+        replyStruct = (char *) 0;
     }
 
     if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_jobReply, 0, auth)) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-		  lsb_jobid2str(jp->jobSpecs.jobId),
-		  "xdr_jobReply");
-	relife();
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
+                  lsb_jobid2str(jp->jobSpecs.jobId),
+                  "xdr_jobReply");
+        relife();
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-		  lsb_jobid2str(jp->jobSpecs.jobId), "chanWrite_");
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
+                  lsb_jobid2str(jp->jobSpecs.jobId), "chanWrite_");
     }
 
     xdr_destroy(&xdrs2);
@@ -359,87 +359,87 @@ do_modifyjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
     memset(&jobReply, 0, sizeof(struct jobReply));
 
     if (!xdr_jobSpecs(xdrs, &jobSpecs, reqHdr)) {
-	reply = ERR_BAD_REQ;
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSpecs");
-	goto sendReply;
+        reply = ERR_BAD_REQ;
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSpecs");
+        goto sendReply;
     }
     for (jp = jobQueHead->back; jp != jobQueHead; jp = jp->back)
-	if (jp->jobSpecs.jobId == jobSpecs.jobId) {
-	    found = TRUE;
-	    break;
-	}
+        if (jp->jobSpecs.jobId == jobSpecs.jobId) {
+            found = TRUE;
+            break;
+        }
     if (!found) {
-	reply = ERR_NO_JOB;
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5808,
+        reply = ERR_NO_JOB;
+        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5808,
                                          "%s: mbatchd trying to modify a non-existent job <%s>"), fname, lsb_jobid2str(jobSpecs.jobId)); /* catgets 5808 */
-	goto sendReply;
+        goto sendReply;
     }
     if (jp->jobSpecs.jStatus & (JOB_STAT_DONE | JOB_STAT_EXIT)) {
-	reply = ERR_JOB_FINISH;
-	goto sendReply;
+        reply = ERR_JOB_FINISH;
+        goto sendReply;
     }
     if ((lsbJobCpuLimit != 1) &&
-	((jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxl
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxl) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxh
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxh) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curl
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curl) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curh
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curh)
-	    )) {
+        ((jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxl
+          != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxl) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxh
+          != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_maxh) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curl
+          != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curl) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curh
+          != jobSpecs.lsfLimits[LSF_RLIMIT_CPU].rlim_curh)
+            )) {
         ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 5809, "%s, LSB_JOB_CPULIMIT is not set for the host, job <%s>, CPU limit not modified"), fname, lsb_jobid2str(jobSpecs.jobId));
     } else {
-	memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU],
-	       (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_CPU],
-	       sizeof(struct lsfLimit));
+        memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_CPU],
+               (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_CPU],
+               sizeof(struct lsfLimit));
     }
     if ((lsbJobMemLimit != 1) &&
-	((jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxl
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxl) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxh
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxh) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curl
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curl) ||
-	 (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curh
-	  != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curh)
-	    )) {
-	ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 5810, "%s, LSB_JOB_MEMLIMIT is not set for the host, job <%s>, memory limit not modified"), fname, lsb_jobid2str(jobSpecs.jobId));
+        ((jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxl
+          != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxl) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxh
+          != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_maxh) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curl
+          != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curl) ||
+         (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curh
+          != jobSpecs.lsfLimits[LSF_RLIMIT_RSS].rlim_curh)
+            )) {
+        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd, NL_SETN, 5810, "%s, LSB_JOB_MEMLIMIT is not set for the host, job <%s>, memory limit not modified"), fname, lsb_jobid2str(jobSpecs.jobId));
     } else {
-	memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS],
-	       (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RSS],
-	       sizeof(struct lsfLimit));
+        memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_RSS],
+               (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RSS],
+               sizeof(struct lsfLimit));
     }
 
     memcpy((char *) &jp->jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
-	   (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
-	   sizeof(struct lsfLimit));
+           (char *) &jobSpecs.lsfLimits[LSF_RLIMIT_RUN],
+           sizeof(struct lsfLimit));
     setRunLimit(jp, FALSE);
     if (strcmp(jp->jobSpecs.outFile, jobSpecs.outFile) ||
-	!(strcmp(jobSpecs.outFile, "/dev/null")))
+        !(strcmp(jobSpecs.outFile, "/dev/null")))
     {
-	strcpy(jp->jobSpecs.outFile, jobSpecs.outFile);
-	if (strcmp(jobSpecs.outFile, "/dev/null") ||
-	    (jobSpecs.options & SUB_OUT_FILE)) {
-	    jp->jobSpecs.options |= SUB_OUT_FILE;
-	}
-	else {
-	    jp->jobSpecs.options &= ~SUB_OUT_FILE;
-	}
+        strcpy(jp->jobSpecs.outFile, jobSpecs.outFile);
+        if (strcmp(jobSpecs.outFile, "/dev/null") ||
+            (jobSpecs.options & SUB_OUT_FILE)) {
+            jp->jobSpecs.options |= SUB_OUT_FILE;
+        }
+        else {
+            jp->jobSpecs.options &= ~SUB_OUT_FILE;
+        }
     }
     if (strcmp(jp->jobSpecs.errFile, jobSpecs.errFile))
     {
-	strcpy(jp->jobSpecs.errFile, jobSpecs.errFile);
-	if (!strcmp(jp->jobSpecs.errFile, "/dev/null")
-	    && !(jobSpecs.options & SUB_ERR_FILE)) {
+        strcpy(jp->jobSpecs.errFile, jobSpecs.errFile);
+        if (!strcmp(jp->jobSpecs.errFile, "/dev/null")
+            && !(jobSpecs.options & SUB_ERR_FILE)) {
             jp->jobSpecs.options &= ~SUB_ERR_FILE;
-	}
+        }
     }
 
     if (jobSpecs.options & SUB_RERUNNABLE) {
-	jp->jobSpecs.options |= SUB_RERUNNABLE;
+        jp->jobSpecs.options |= SUB_RERUNNABLE;
     } else {
-	jp->jobSpecs.options &= ~SUB_RERUNNABLE;
+        jp->jobSpecs.options &= ~SUB_RERUNNABLE;
     }
 
 sendReply:
@@ -448,21 +448,21 @@ sendReply:
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = reply;
     if (reply == ERR_NO_ERROR)
-	replyStruct = (char *) &jobReply;
+        replyStruct = (char *) &jobReply;
     else {
-	replyStruct = (char *) 0;
+        replyStruct = (char *) 0;
     }
 
     if (!xdr_encodeMsg(&xdrs2, replyStruct, &replyHdr, xdr_jobReply, 0, auth)) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-		  lsb_jobid2str(jp->jobSpecs.jobId),
-		  "xdr_jobReply");
-	relife();
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
+                  lsb_jobid2str(jp->jobSpecs.jobId),
+                  "xdr_jobReply");
+        relife();
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-	ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
-		  lsb_jobid2str(jp->jobSpecs.jobId), "chanWrite_");
+        ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_M, fname,
+                  lsb_jobid2str(jp->jobSpecs.jobId), "chanWrite_");
     }
 
     xdr_destroy(&xdrs2);
@@ -511,30 +511,30 @@ do_probe(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
         }
     }
     if (replyHdr.opCode == ERR_NO_ERROR)
-	if (!xdr_sbdPackage1(xdrs, &sbdPackage, reqHdr)) {
-	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_sbdPackage1");
-	    relife();
-	}
+        if (!xdr_sbdPackage1(xdrs, &sbdPackage, reqHdr)) {
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_sbdPackage1");
+            relife();
+        }
     if (replyHdr.opCode == ERR_NO_ERROR) {
         if (myStatus & NO_LIM) {
-	    replyHdr.opCode = ERR_NO_LIM;
+            replyHdr.opCode = ERR_NO_LIM;
         }
     }
     xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
 
     if (!xdr_encodeMsg(&xdrs2, NULL, &replyHdr, NULL, 0, auth)) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
-	relife();
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_encodeMsg");
+        relife();
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanWrite_");
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL_M, fname, "chanWrite_");
     }
 
     xdr_destroy(&xdrs2);
 
     if (jobSpecs != NULL)
-	free(jobSpecs);
+        free(jobSpecs);
 
 
     getManagerId(&sbdPackage);
@@ -552,7 +552,7 @@ do_probe(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
 
     for (i = 0; i < sbdPackage.nAdmins; i++)
-	FREEUP(sbdPackage.admins[i]);
+        FREEUP(sbdPackage.admins[i]);
     FREEUP(sbdPackage.admins);
 
     return;
@@ -579,10 +579,10 @@ do_sigjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 
     memset(&jobReply, 0, sizeof(struct jobReply));
     if (!xdr_jobSig(xdrs, &jobSig, reqHdr)) {
-	reply = ERR_BAD_REQ;
-	ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSig");
+        reply = ERR_BAD_REQ;
+        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_jobSig");
 
-	goto Reply1;
+        goto Reply1;
     }
 
     jobSig.sigValue = sig_decode(jobSig.sigValue);
@@ -633,9 +633,9 @@ do_sigjob(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
     if (!JOB_STARTED(jp)) {
         if (isSigTerm(sigValue) == TRUE) {
             if ((cc = jobSigStart (jp, sigValue, jobSig.actFlags, jobSig.chkPeriod, NO_SIGLOG)) < 0)
-           	reply = ERR_SIG_RETRY;
-    	    else
-            	reply = ERR_NO_ERROR;
+                reply = ERR_SIG_RETRY;
+            else
+                reply = ERR_NO_ERROR;
 
             goto Reply;
         }
@@ -810,7 +810,7 @@ ctrlSbdDebug(struct debugReq  *pdebug)
         ls_strcat(logFileName, sizeof(logFileName), ".sbatchd");
     }
     else {
-  	ls_strcat(logFileName, sizeof(logFileName), "sbatchd");
+        ls_strcat(logFileName, sizeof(logFileName), "sbatchd");
         if (daemonParams[LSF_LOGDIR].paramValue
             && *(daemonParams[LSF_LOGDIR].paramValue)) {
             ls_strcat(lsfLogDir, sizeof(lsfLogDir),
@@ -830,7 +830,7 @@ ctrlSbdDebug(struct debugReq  *pdebug)
         if (initenv_(daemonParams, env_dir) < 0){
             ls_openlog("sbatchd", daemonParams[LSF_LOGDIR].paramValue,
                        (debug > 1), daemonParams[LSF_LOG_MASK].paramValue);
-  	    ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "initenv_");
+            ls_syslog(LOG_ERR, I18N_FUNC_FAIL_MM, fname, "initenv_");
             die(SLAVE_FATAL);
             return -1;
         }
@@ -880,7 +880,7 @@ ctrlSbdDebug(struct debugReq  *pdebug)
     }
     else if (opCode == SBD_TIMING) {
         if (level>=0)
- 	    timinglevel = level;
+            timinglevel = level;
         if (pdebug->logFileName[0] != '\0') {
             if (debug > 1)
                 ls_openlog(logFileName, lsfLogDir,
@@ -1029,7 +1029,7 @@ do_jobSetup(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
         if (!(jsetup.jStatus & JOB_STAT_PRE_EXEC))
             jp->jobSpecs.jStatus &= ~JOB_STAT_PRE_EXEC;
 
-	if (status_job(BATCH_STATUS_JOB, jp, jp->jobSpecs.jStatus,
+        if (status_job(BATCH_STATUS_JOB, jp, jp->jobSpecs.jStatus,
                        ERR_NO_ERROR) < 0) {
             memcpy((char *) jp, (char *) &savejp, sizeof(savejp));
             return;
@@ -1096,20 +1096,20 @@ replyHdrWithRC(int rc, int chfd, int jobId)
     replyHdr.length = 0;
 
     if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
-	ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed for job <%d>", fname,
-		  jobId);
-	xdr_destroy(&xdrs2);
-	return -1;
+        ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed for job <%d>", fname,
+                  jobId);
+        xdr_destroy(&xdrs2);
+        return -1;
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
         ls_syslog(LOG_ERR, "%s: chanWrite_(%d) failed for job <%d>: %m",
-		  fname, XDR_GETPOS(&xdrs2), jobId);
-	xdr_destroy(&xdrs2);
-	return -1;
+                  fname, XDR_GETPOS(&xdrs2), jobId);
+        xdr_destroy(&xdrs2);
+        return -1;
     }
     xdr_destroy(&xdrs2);
     return 0;
-}				/* replyHdrWithRC */
+}                               /* replyHdrWithRC */
 
 

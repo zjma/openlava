@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -404,8 +404,8 @@ znovu:
             if (!xdr_sbdPackage1 (&xdrs, sbdPackage, &hdr)) {
                 sprintf(ebuf, "\
 %s: Ohmygosh failed to decode sbdPackage from %s", __func__, masterHost);
-                    ls_syslog(LOG_ERR, "%s", ebuf);
-                    lsb_merr(ebuf);
+                ls_syslog(LOG_ERR, "%s", ebuf);
+                lsb_merr(ebuf);
             }
             xdr_destroy(&xdrs);
             if (cc)
@@ -426,7 +426,7 @@ znovu:
         case LSBE_PORT:
             ls_syslog(LOG_ERR, "\
 %s: mbatchd reports that it is using a bad port",
-                __func__);
+                      __func__);
             free(reply_buf);
             die(SLAVE_FATAL);
         default:

@@ -396,7 +396,7 @@ main(int argc, char **argv)
         if (!client) {
             ls_syslog(LOG_ERR, "\
 %s: malloc failed. Unable to accept connection", __func__);
-                chanClose_(s);
+            chanClose_(s);
             continue;
         }
 
