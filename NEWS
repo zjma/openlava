@@ -1,7 +1,7 @@
 Release notes for OpenLava versions
 
-3.4.pre0
-========
+4.0.0
+======
 
 -- Fix res/nios hang blocking ol make.
 -- Create a new parameter NIOS_MAX_TASKS specifying the maximum number
