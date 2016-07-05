@@ -42,6 +42,7 @@ Release notes for OpenLava versions
 -- Fix lsb.resources error when no user is configured in lsb.users.
 -- Fix the host group expanding bug in lsb.resources.
 -- Fix the resource usage counting bug when enforcing limits.
+-- Release 3.3.3 the lsid command returns now 3.3.3 as OpenLava version.
 
 3.3.2
 ======
