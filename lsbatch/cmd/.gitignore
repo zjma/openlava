@@ -26,3 +26,6 @@ bgadd
 bgdel
 bjdep
 bjgroups
+bgmod
+bjgroup
+bresources
