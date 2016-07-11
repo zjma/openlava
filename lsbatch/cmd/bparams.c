@@ -143,7 +143,7 @@ The maximum number of finished jobs that can be stored in current events file:\n
     if ( reply->maxUserPriority > 0 ) {
         printf("Maximal job priority defined for all users:\n");
         printf("    MAX_USER_PRIORITY = %d\n", reply->maxUserPriority);
-        printf("    DEFAULT_USER_PRIORITY = %d", reply->maxUserPriority/2);
+        printf("    DEFAULT_USER_PRIORITY = %d\n\n", reply->maxUserPriority/2);
     }
 
     if (reply->jobPriorityValue > 0) {
