@@ -36,6 +36,7 @@ config/openlava
 config/openlava.csh
 config/openlava.setup
 config/openlava.sh
+config/lsb.resources
 config.guess
 config.sub
 ltmain.sh

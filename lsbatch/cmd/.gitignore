@@ -25,7 +25,8 @@ bread
 bjdep
 bgadd
 bgdel
-bjgroup
+bjdep
+bjgroups
 bgmod
+bjgroup
 bresources
-

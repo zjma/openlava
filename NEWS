@@ -139,6 +139,7 @@ Release notes for OpenLava versions
 ======
 -- Fix the parsing algorithm for compact host name.
 -- Fix a bug in bmgroup where by mistake the -s and -r options were dropped.
+-- Update bmgrop and bugroup man pages.
 
 3.2.0
 ======
