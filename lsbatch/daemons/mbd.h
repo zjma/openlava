@@ -259,7 +259,7 @@ struct jData {
     char    *userName;
     struct  uData *uPtr;
     LS_LONG_INT jobId;
-    float   priority;
+    int64_t   priority; /* fairshare in 2.2 used for btop/bbot now */
     int     jStatus;
     time_t  updStateTime;
     int     jFlags;
@@ -1311,7 +1311,7 @@ extern void                 mbdReConf(int);
 extern int                  log_newjob(struct jData *);
 extern void                 log_switchjob(struct jobSwitchReq *,
                                           int, char *);
-extern void                 log_movejob(struct jobMoveReq *, int , char *);
+extern void                 log_movejob(struct jobMoveReq *, struct lsfAuth *);
 extern void                 log_startjob(struct jData *, int);
 extern void                 log_startjobaccept(struct jData *);
 extern void                 log_newstatus(struct jData *);

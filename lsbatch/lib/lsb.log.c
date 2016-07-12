@@ -914,6 +914,15 @@ readJobNew(char *line, struct jobNewLog *jobNewLog)
         jobNewLog->job_description = strdup("");
     }
 
+    if (version >= OPENLAVA_XDR_VERSION) {
+        cc = sscanf(line, "%ld%n", &jobNewLog->priority, &ccount);
+        if (cc != 1)
+            return LSBE_EVENT_FORMAT;
+        line += ccount + 1;
+    } else {
+        jobNewLog->priority = -1;
+    }
+
     return LSBE_NO_ERROR;
 }
 
@@ -2103,6 +2112,9 @@ writeJobNew(FILE *log_fp, struct jobNewLog *jobNewLog)
         if (addQStr(log_fp, jobNewLog->job_description) < 0)
             return LSBE_SYS_CALL;
     }
+
+    if (fprintf(log_fp, " %ld", jobNewLog->priority) < 0)
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
         return LSBE_SYS_CALL;

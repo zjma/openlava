@@ -1606,6 +1606,7 @@ log_jobdata(struct jData *job, const char *fname1, int type)
     jobNewLog->userPriority = jobBill->userPriority;
     jobNewLog->userGroup = jobBill->userGroup;
     jobNewLog->abs_run_limit = job->abs_run_limit;
+    jobNewLog->priority = job->priority;
 
     if (job->shared->jobBill.options2 & SUB2_JOB_GROUP)
         jobNewLog->job_group = jobBill->job_group;
@@ -1656,7 +1657,7 @@ log_switchjob(struct jobSwitchReq * switchReq, int uid, char *userName)
 }
 
 void
-log_movejob(struct jobMoveReq *moveReq, int uid, char *userName)
+log_movejob(struct jobMoveReq *moveReq, struct lsfAuth *auth)
 {
     if (openEventFile(__func__) < 0) {
         ls_syslog(LOG_ERR, "\
@@ -1665,8 +1666,8 @@ log_movejob(struct jobMoveReq *moveReq, int uid, char *userName)
     }
 
     logPtr->type = EVENT_JOB_MOVE;
-    logPtr->eventLog.jobMoveLog.userId = uid;
-    strcpy(logPtr->eventLog.jobMoveLog.userName, userName);
+    logPtr->eventLog.jobMoveLog.userId = auth->uid;
+    strcpy(logPtr->eventLog.jobMoveLog.userName, auth->lsfUserName);
     logPtr->eventLog.jobMoveLog.jobId = LSB_ARRAY_JOBID(moveReq->jobId);
     logPtr->eventLog.jobMoveLog.idx = LSB_ARRAY_IDX(moveReq->jobId);
     logPtr->eventLog.jobMoveLog.position = moveReq->position;
@@ -4113,6 +4114,11 @@ replay_jobdata(char *filename, int lineNum, char *fname)
     jobBill->job_group = strdup(jobNewLog->job_group);
 
     jobBill->job_description = strdup(jobNewLog->job_description);
+
+    /* Save the new job priority in case a previous job
+     * was bbot
+     */
+    job->priority = jobNewLog->priority;
 
     return job;
 }

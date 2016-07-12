@@ -31,6 +31,17 @@
 
 struct listSet  *voidJobList = NULL;
 
+/* Save the pririty of the bbot job
+ * in the queue which it is in.
+ */
+struct last_bbot_queue {
+    int64_t last_bbot;
+    struct qData *qPtr;
+};
+static link_t *bbot_queue;
+
+static void set_job_last_bbot_priority(struct jData *);
+
 void                 freeNewJob(struct jData *);
 extern void          initResVal(struct resVal* );
 extern int           userJobLimitOk (struct jData *, int, int *);
@@ -42,7 +53,6 @@ static int           queueOk(char *, struct jData *, int *, struct submitReq *,
 static int           acceptJob(struct qData *, struct jData *,
                                int *, struct lsfAuth *);
 static int           getCpuLimit(struct jData *, struct submitReq *);
-static void          insertAndShift(struct jData *, struct jData *, int, int);
 static int           resigJobs1(struct jData *, int *);
 static sbdReplyType  sigStartedJob(struct jData *, int, time_t, int);
 static void          reorderSJL1(struct jData *);
@@ -135,6 +145,7 @@ static void inPendJobList2(struct jData *,
                            struct jData *,
                            struct jData **);
 static int jcompare(const void *, const void *);
+
 static struct hData *handle_float_client(struct submitReq *);
 
 int
@@ -256,7 +267,7 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         return (returnErr);
     }
 
-    copyJobBill (subReq, &newjob->shared->jobBill, newjob->jobId);
+    copyJobBill(subReq, &newjob->shared->jobBill, newjob->jobId);
     newjob->restartPid = newjob->shared->jobBill.restartPid;
     newjob->chkpntPeriod = newjob->shared->jobBill.chkpntPeriod;
 
@@ -269,7 +280,7 @@ newJob(struct submitReq *subReq, struct submitMbdReply *Reply, int chan,
         (idxList = parseJobArrayIndex(newjob->shared->jobBill.jobName,
                                       &returnErr, &maxJLimit)) == NULL) {
         if (returnErr == LSBE_NO_ERROR) {
-            handleNewJob (newjob, JOB_NEW, LOG_IT);
+            handleNewJob(newjob, JOB_NEW, LOG_IT);
         }
         else {
             FREEUP (jf.data);
@@ -394,6 +405,10 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
         updProjectData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
                        jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
     }
+
+    /* set_job_bbot_last_priority()
+     */
+    set_job_last_bbot_priority(jpbw);
 
     if (job == JOB_NEW && eventTime == LOG_IT) {
         log_newjob(jpbw);
@@ -675,7 +690,8 @@ queueOk (char *queuename, struct jData *job, int *errReqIndx,
     if (qp->maxJobs <= 0)
         return (LSBE_QJOB_LIMIT);
 
-
+    /* Set the queue pointer in the job pointer.
+     */
     job->qPtr = qp;
 
     job->slotHoldTime = qp->slotHoldTime;
@@ -4171,17 +4187,11 @@ moveJobArray(struct jobMoveReq *moveReq,
 
 
         jgTreePtr = jArrayPtr->jgrpNode;
-
-
         jArray    = ARRAY_DATA(jgTreePtr);
-
-
         if (jArray->counts[JGRP_COUNT_NJOBS]
             ==  jArray->counts[JGRP_COUNT_NDONE]
             + jArray->counts[JGRP_COUNT_NEXIT]) {
-
-
-            return(LSBE_JOB_FINISH);
+            return LSBE_JOB_FINISH;
         }
 
 
@@ -4191,8 +4201,7 @@ moveJobArray(struct jobMoveReq *moveReq,
              jPtr != NULL;
              jPtr = jPtr->nextJob) {
 
-
-            if ( ! IS_PEND(jPtr->jStatus)) {
+            if (! IS_PEND(jPtr->jStatus)) {
                 continue;
             }
 
@@ -4227,184 +4236,99 @@ moveJobArray(struct jobMoveReq *moveReq,
 
 }
 
+/* moveAJob()
+ *
+ * While moving a job find the highest or the lowest priority one,
+ * then add or substract one the qsort() when ordering the PJl will
+ * do the rest.
+ */
 static int
-moveAJob (struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
+moveAJob(struct jobMoveReq *moveReq, int log, struct lsfAuth *auth)
 {
-    struct jData *jp, *next, *job, *froJob = NULL, *toJob = NULL;
-    int nowpos, list;
-    int moveJobNum = 0, backword = FALSE;
+    struct jData *jPtr;
+    struct jData *job;
+    struct jData **jarray;
+    struct last_bbot_queue *lqueue;
+    link_t *l;
+    int num;
+    int cc;
 
-    if ((job = getJobData (moveReq->jobId)) == NULL)
-        return (LSBE_NO_JOB);
+    if (bbot_queue == NULL)
+        bbot_queue = make_link();
 
-    if (job->nodeType != JGRP_NODE_JOB)
+    if ((jPtr = getJobData(moveReq->jobId)) == NULL)
+        return LSBE_NO_JOB;
+
+    if (jPtr->nodeType != JGRP_NODE_JOB)
         return(LSBE_JOB_ARRAY);
 
-
-    if (!IS_PEND (job->jStatus)) {
-        if (IS_FINISH (job->jStatus))
-            return (LSBE_JOB_FINISH);
-        else
-            return (LSBE_JOB_STARTED);
+    if (!IS_PEND(jPtr->jStatus)) {
+        if (IS_FINISH(jPtr->jStatus))
+            return LSBE_JOB_FINISH;
+        return LSBE_JOB_STARTED;
     }
 
-    job->jFlags |= JFLAG_BTOP;
+    l = make_link();
+    for (job = jDataList[PJL]->back; job != jDataList[PJL]; job = job->back) {
 
-    nowpos = 0;
+        /* Different queues skip the job
+         */
+        if (job->qPtr != jPtr->qPtr)
+            continue;
+
+        /* The mover does not own the job so it has to
+         * be an admin
+         */
+        if (auth->uid != 0
+            && !isAuthManager(auth)
+            && !isAuthQueAd (job->qPtr, auth)) {
+            if (jPtr->uPtr != job->uPtr) {
+                continue;
+            }
+        }
+        push_link(l, job);
+    }
+
+    num = LINK_NUM_ENTRIES(l);
+    jarray = calloc(num, sizeof(struct jData *));
+
+    cc = 0;
+    while ((job = pop_link(l))) {
+        jarray[cc] = job;
+        ++cc;
+    }
+
+    /* sort either by priority or jobid
+     */
+    qsort(jarray, num, sizeof(struct jData *), jcompare);
+
+    jPtr->jFlags |= JFLAG_BTOP;
+
     if (moveReq->opCode == TO_TOP) {
-
-        list = PJLorMJL(job);
-        for (jp = jDataList[list]->back; jp != jDataList[list]; jp = next) {
-            next = jp->back;
-            if (nowpos && jp->qPtr->priority != job->qPtr->priority) {
-                break;
-            }
-
-            if (jp->qPtr != job->qPtr)
-                continue;
-            if ( maxUserPriority > 0 ) {
-
-                if ( jp->jobPriority != job->jobPriority) {
-                    continue;
-                }
-            }
-            if (auth->uid != 0 && !isAuthManager(auth) &&
-                !isAuthQueAd (job->qPtr, auth)) {
-                if (jp->uPtr != job->uPtr) {
-
-                    continue;
-                }
-            }
-            nowpos++;
-            if (jp->jobId == moveReq->jobId) {
-                froJob = jp;
-                moveJobNum = nowpos;
-            }
-            if (nowpos ==  moveReq->position)
-                toJob = jp;
-        }
-        if (moveReq->position > nowpos) {
-
-            moveReq->position = nowpos;
-            return(moveAJob(moveReq, log, auth));
-        }
-        if (moveReq->position != moveJobNum) {
-            if (froJob == NULL || toJob == NULL)
-                return (LSBE_MBATCHD);
-            if (moveReq->position < moveJobNum)
-                backword = TRUE;
-            if (auth->uid == 0 || isAuthManager(auth) ||
-                isAuthQueAd (job->qPtr, auth))
-                insertAndShift(froJob, toJob, backword, FALSE);
-            else
-                insertAndShift(froJob, toJob, backword, TRUE);
-        }
+        jPtr->priority = jarray[num - 1]->priority + 1;
     } else {
-        list = PJLorMJL(job);
-        for (jp = jDataList[list]->forw; jp != jDataList[list]; jp = next) {
-            next = jp->forw;
-            if (nowpos && jp->qPtr->priority != job->qPtr->priority) {
-                break;
-            }
-
-            if (jp->qPtr != job->qPtr)
-                continue;
-            if ( maxUserPriority > 0 ) {
-
-                if ( jp->jobPriority != job->jobPriority) {
-                    continue;
-                }
-            }
-            if (auth->uid != 0 && !isAuthManager(auth) &&
-                !isAuthQueAd (job->qPtr, auth))
-                if (jp->uPtr != job->uPtr)
-                    continue;
-            nowpos++;
-            if (jp->jobId == moveReq->jobId) {
-                froJob = jp;
-                moveJobNum = nowpos;
-            }
-            if (nowpos ==  moveReq->position)
-                toJob = jp;
-        }
-
-        if (moveReq->position > nowpos) {
-
-            moveReq->position = nowpos;
-            return(moveAJob(moveReq, log, auth));
-        }
-        if (moveReq->position != moveJobNum) {
-            if (froJob == NULL || toJob == NULL)
-                return (LSBE_MBATCHD);
-            if (moveReq->position > moveJobNum)
-                backword = TRUE;
-            if (auth->uid == 0 || isAuthManager(auth) ||
-                isAuthQueAd (job->qPtr, auth))
-                insertAndShift(froJob, toJob, backword, FALSE);
-            else
-                insertAndShift(froJob, toJob, backword, TRUE);
-        }
+        jPtr->priority =  jarray[0]->priority - 1;
+        /* Save the lowest priority value for
+         * this queue. This is for a new job that
+         * will come the queue whose priority by default
+         * is -1 so it could be higher that a bbot job
+         * in the queue previously. If have to then make
+         * his priority lower so qsort() will put it
+         * in the right place.
+         */
+        lqueue = calloc(1, sizeof(struct last_bbot_queue));
+        lqueue->last_bbot = jPtr->priority;
+        lqueue->qPtr = jPtr->qPtr;
+        push_link(bbot_queue, lqueue);
     }
 
-    if (log ) {
-        log_movejob (moveReq, auth->uid, auth->lsfUserName);
-    }
-    return (LSBE_NO_ERROR);
+    if (log)
+        log_movejob(moveReq, auth);
 
-}
+    fin_link(l);
+    _free_(jarray);
 
-static void
-insertAndShift (struct jData *froJob, struct jData *toJob,
-                int backward, int ordUser)
-{
-    struct jData *tmpJobP, *oldJobP, *jobP;
-    int listno;
-
-    listno = PJLorMJL(froJob);
-    if (backward) {
-        oldJobP = toJob->forw;
-        tmpJobP = toJob;
-        for (jobP = toJob->back; jobP != froJob->back; jobP = jobP->back) {
-            if (jobP->qPtr != toJob->qPtr)
-                continue;
-            if ((ordUser == TRUE) && (jobP->uPtr != toJob->uPtr)) {
-
-                continue;
-            }
-            offJobList (tmpJobP, listno);
-
-            listInsertEntryAfter((LIST_T *)jDataList[listno],
-                                 (LIST_ENTRY_T *)jobP,
-                                 (LIST_ENTRY_T *)tmpJobP);
-            tmpJobP = jobP;
-        }
-        offJobList(froJob, listno);
-        listInsertEntryBefore((LIST_T *)jDataList[listno],
-                              (LIST_ENTRY_T *)oldJobP,
-                              (LIST_ENTRY_T *)froJob);
-    }
-    else {
-        oldJobP = toJob->back;
-        tmpJobP = toJob;
-        for (jobP = toJob->forw; (jobP != froJob->forw); jobP = jobP->forw) {
-            if (jobP->qPtr != toJob->qPtr)
-                continue;
-            if ((ordUser == TRUE) && (jobP->uPtr != toJob->uPtr))
-                continue;
-            offJobList (tmpJobP, listno);
-
-            listInsertEntryBefore((LIST_T *)jDataList[listno],
-                                  (LIST_ENTRY_T *)jobP,
-                                  (LIST_ENTRY_T *)tmpJobP);
-            tmpJobP = jobP;
-        }
-        offJobList(froJob, listno);
-        listInsertEntryAfter((LIST_T *)jDataList[listno],
-                             (LIST_ENTRY_T *)oldJobP,
-                             (LIST_ENTRY_T *)froJob);
-    }
-    return;
-
+    return 0;
 }
 
 void
@@ -4680,7 +4604,7 @@ initJData(struct jShared  *shared)
     job->subreasons = 0;
     job->reasonTb = NULL;
     job->numReasons = 0;
-    job->priority = -1.0;
+    job->priority = -1;
     job->qPtr = NULL;
     job->hPtr = NULL;
     job->pPtr = NULL;
@@ -5400,8 +5324,6 @@ normalCpuLimit (struct jData *job, struct submitReq subReq, int *retLimit)
     *retLimit = cpuLimit;
     return LSBE_NO_ERROR;
 }
-
-
 
 static int
 modifyAJob (struct modifyReq *req, struct submitMbdReply *reply,
@@ -6141,7 +6063,7 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
 
     if (subReq->options2 & SUB2_JOB_PRIORITY)  {
         int error;
-        if ( checkUserPriority(job, subReq->userPriority, &error)) {
+        if (checkUserPriority(job, subReq->userPriority, &error)) {
 
             job->jobPriority = subReq->userPriority;
         }
@@ -6165,7 +6087,6 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
     job->pPtr = getProjectData(subReq->projectName, job->qPtr->queue);
 
     return LSBE_NO_ERROR;
-
 }
 
 struct pqData *
@@ -8930,7 +8851,8 @@ jcompare(const void *j1, const void *j2)
     if (jPtr1->qPtr->priority < jPtr2->qPtr->priority)
         return -1;
 
-    /* Same queue compare job priority
+    /* Same queue compare job priority as set by btop
+     * or bbot.
      */
     if (jPtr1->priority > jPtr2->priority)
         return 1;
@@ -8980,4 +8902,29 @@ handle_float_client(struct submitReq *req)
     }
 
     return hPtr;
+}
+
+/* set_job_bbot_last_priority()
+ *
+ * If the job last in the queue was bbot then we have
+ * to decrese our sorting priority by one to make sure
+ * qsort() puts up after it.
+ */
+static void
+set_job_last_bbot_priority(struct jData *jPtr)
+{
+    linkiter_t iter;
+    struct last_bbot_queue *lqueue;
+
+    traverse_init(bbot_queue, &iter);
+    while ((lqueue = traverse_link(&iter))) {
+
+        if (jPtr->qPtr != lqueue->qPtr)
+            continue;
+        if (lqueue->last_bbot == -1)
+            break;
+
+        lqueue->last_bbot = lqueue->last_bbot - 1;
+        jPtr->priority = lqueue->last_bbot;
+    }
 }

@@ -1020,6 +1020,7 @@ struct jobNewLog {
     int abs_run_limit;
     char *job_group;
     char *job_description;
+    int64_t priority;
 };
 
 struct jobModLog {
