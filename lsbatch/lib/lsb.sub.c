@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1019,11 +1019,7 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
         ls_syslog(LOG_DEBUG1, "%s: Parent got the job log from child",
                   __func__);
 
-
-
     lsberrno = LSBE_BAD_CHKLOG;
-
-
 
     if (strlen(jobLog->jobName) >= MAX_CMD_DESC_LEN)
         goto parentErr;
@@ -1101,7 +1097,6 @@ subRestart(struct submit  *jobSubReq, struct submitReq *submitReq,
     submitReq->commandSpool = jobLog->commandSpool;
     if (jobLog->options2 & SUB2_JOB_CMD_SPOOL)
         submitReq->options2 |= SUB2_JOB_CMD_SPOOL;
-
 
     if (strlen(jobLog->command) >= MAX_CMD_DESC_LEN)
         goto parentErr;
@@ -1557,11 +1552,12 @@ chUserRemoveSpoolFile( const char * hostName, const char * spoolFile)
     return 0;
 }
 
-
+/* getOtherParams()
+ */
 int
-getOtherParams (struct submit  *jobSubReq, struct submitReq *submitReq,
-                struct submitReply *submitRep, struct lsfAuth *auth,
-                LSB_SUB_SPOOL_FILE_T* subSpoolFiles)
+getOtherParams(struct submit  *jobSubReq, struct submitReq *submitReq,
+               struct submitReply *submitRep, struct lsfAuth *auth,
+               LSB_SUB_SPOOL_FILE_T* subSpoolFiles)
 {
     char *jobdesp, *sp, jobdespBuf[MAX_CMD_DESC_LEN];
     char lineStrBuf[MAXLINELEN], lastNonSpaceChar;
@@ -1575,7 +1571,6 @@ getOtherParams (struct submit  *jobSubReq, struct submitReq *submitReq,
             lsberrno = LSBE_BAD_JOB;
             return -1;
         }
-
 
         if (strlen(jobSubReq->jobName) >= MAX_CMD_DESC_LEN - 1) {
             lsberrno = LSBE_BAD_JOB;

@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014-2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -100,9 +100,9 @@ static int lsb_readeventrecord(char *, struct eventRec *);
 
 static inline int
 copyQStr(char **line,
-	 int maxLen,
-	 int nonNil,
-	 char *dbuf)
+         int maxLen,
+         int nonNil,
+         char *dbuf)
 {
     static char buf[BUFSIZ];
     int cc;
@@ -112,14 +112,14 @@ copyQStr(char **line,
 
     cc = stripQStr(*line, buf);
     if (cc < 0)
-	return LSBE_EVENT_FORMAT;
+        return LSBE_EVENT_FORMAT;
 
     *line += cc + 1;
     cc = strlen(buf);
 
     if (cc >= maxLen
-	|| (nonNil && cc == 0)) {
-	return LSBE_EVENT_FORMAT;
+        || (nonNil && cc == 0)) {
+        return LSBE_EVENT_FORMAT;
     }
 
     strcpy(dbuf, buf);
@@ -131,15 +131,15 @@ copyQStr(char **line,
         char *tmpLine;                                          \
         int ccount;                                             \
         if ((tmpLine = (char *) malloc (strlen(line))) == NULL) \
-            return LSBE_NO_MEM;                               \
+            return LSBE_NO_MEM;                                 \
         if ((ccount = stripQStr(line, tmpLine)) < 0)  {         \
             FREEUP (tmpLine);                                   \
-            return LSBE_EVENT_FORMAT;                         \
+            return LSBE_EVENT_FORMAT;                           \
         }                                                       \
         line += ccount + 1;                                     \
         if ((destStr = putstr_(tmpLine)) == NULL)     {         \
             FREEUP (tmpLine);                                   \
-            return LSBE_NO_MEM;                               \
+            return LSBE_NO_MEM;                                 \
         }                                                       \
         FREEUP (tmpLine);                                       \
     }
@@ -2207,7 +2207,7 @@ writeJobStart(FILE *log_fp, struct jobStartLog *jobStartLog)
         return LSBE_SYS_CALL;
 
     if (addQStr(log_fp, jobStartLog->userGroup) < 0)
-	return LSBE_SYS_CALL;
+        return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
         return LSBE_SYS_CALL;
@@ -3741,7 +3741,7 @@ updateJobIdIndexFile (char *indexFile, char *eventFile, int totalEventFile)
 
 int
 getNextFileNumFromIndexS(struct jobIdIndexS *indexS, int numJobIds,
-                          LS_LONG_INT *jobIds)
+                         LS_LONG_INT *jobIds)
 {
     int                     position;
     int                     i,j;

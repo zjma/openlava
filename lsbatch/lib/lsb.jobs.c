@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2014 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -49,11 +49,12 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
     int cc, aa;
     struct LSFHeader hdr;
     char lsfUserName[MAXLINELEN];
+
     if (first) {
-        if (   !(jobInfoReq.jobName  = (char *) malloc(MAX_CMD_DESC_LEN))
-               || !(jobInfoReq.queue    = (char *) malloc(MAX_LSB_NAME_LEN))
-               || !(jobInfoReq.userName = (char *) malloc(MAX_LSB_NAME_LEN))
-               || !(jobInfoReq.host     = (char *) malloc(MAXHOSTNAMELEN))) {
+        if (!(jobInfoReq.jobName  = calloc(MAX_CMD_DESC_LEN, sizeof(char)))
+            || !(jobInfoReq.queue = calloc(MAX_LSB_NAME_LEN, sizeof(char)))
+            || !(jobInfoReq.userName = calloc(MAX_LSB_NAME_LEN, sizeof(char)))
+            || !(jobInfoReq.host = calloc(MAXHOSTNAMELEN, sizeof(char)))) {
             lsberrno = LSBE_SYS_CALL;
             return NULL;
         }
@@ -97,7 +98,7 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
                     strcpy(jobInfoReq.host, officialNameBuf);
                 }
             } else {
-                if (strlen (hostName) >= MAXHOSTNAMELEN - 1) {
+                if (strlen(hostName) >= MAXHOSTNAMELEN - 1) {
                     lsberrno = LSBE_BAD_HOST;
                     return NULL;
                 }
@@ -110,7 +111,7 @@ lsb_openjobinfo_a (LS_LONG_INT jobId, char *jobName, char *userName,
     if (jobName == NULL)
         jobInfoReq.jobName[0] = '\0';
     else {
-        if (strlen (jobName) >= MAX_CMD_DESC_LEN - 1) {
+        if (strlen(jobName) >= MAX_CMD_DESC_LEN - 1) {
             lsberrno = LSBE_BAD_JOB;
             return NULL;
         }

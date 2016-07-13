@@ -1,6 +1,6 @@
 /*
+ * Copyright (C) 2015 - 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
- * Copyright (C) 2015 David Bigagli
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -1098,7 +1098,7 @@ addJob(struct jobRecord *newjobRecord)
 }
 
 struct jobInfoEnt *
-initJobInfo (void)
+initJobInfo(void)
 {
     struct jobInfoEnt *job;
     struct submit *submitPtr;
@@ -1121,48 +1121,27 @@ initJobInfo (void)
 
     submitPtr = &job->submit;
 
-    submitPtr->queue       = malloc(MAX_LSB_NAME_LEN);
-    submitPtr->jobName     = malloc(MAX_CMD_DESC_LEN);
-    submitPtr->command     = malloc(MAX_CMD_DESC_LEN);
-    submitPtr->resReq      = malloc(MAXLINELEN);
-    submitPtr->inFile      = malloc(MAXFILENAMELEN);
-    submitPtr->outFile     = malloc(MAXFILENAMELEN);
-    submitPtr->errFile     = malloc(MAXFILENAMELEN);
-    submitPtr->hostSpec    = malloc(MAXFILENAMELEN);
-    submitPtr->chkpntDir   = malloc(MAXFILENAMELEN);
-    submitPtr->dependCond  = malloc(6 * MAXLINELEN);
-    submitPtr->preExecCmd  = malloc(MAXLINELEN);
-    submitPtr->mailUser    = malloc(MAXHOSTNAMELEN);
-    submitPtr->projectName = malloc(MAX_LSB_NAME_LEN);
-    submitPtr->loginShell  = malloc(MAX_LSB_NAME_LEN);
-    job->user              = malloc(MAX_LSB_NAME_LEN);
-    job->fromHost          = malloc(MAXHOSTNAMELEN);
-    job->cwd               = malloc(MAXFILENAMELEN);
-    job->execCwd           = malloc(MAXFILENAMELEN);
-    job->execHome          = malloc(MAXFILENAMELEN);
-    job->execUsername      = malloc(MAX_LSB_NAME_LEN);
+    submitPtr->queue       = calloc(MAX_LSB_NAME_LEN, sizeof(char));
+    submitPtr->jobName     = calloc(MAX_CMD_DESC_LEN, sizeof(char));
+    submitPtr->command     = calloc(MAX_CMD_DESC_LEN, sizeof(char));
+    submitPtr->resReq      = calloc(MAXLINELEN, sizeof(char));
+    submitPtr->inFile      = calloc(MAXFILENAMELEN, sizeof(char));
+    submitPtr->outFile     = calloc(MAXFILENAMELEN, sizeof(char));
+    submitPtr->errFile     = calloc(MAXFILENAMELEN, sizeof(char));
+    submitPtr->hostSpec    = calloc(MAXFILENAMELEN, sizeof(char));
+    submitPtr->chkpntDir   = calloc(MAXFILENAMELEN, sizeof(char));
+    submitPtr->dependCond  = calloc(6 * MAXLINELEN, sizeof(char));
+    submitPtr->preExecCmd  = calloc(MAXLINELEN, sizeof(char));
+    submitPtr->mailUser    = calloc(MAXHOSTNAMELEN, sizeof(char));
+    submitPtr->projectName = calloc(MAX_LSB_NAME_LEN, sizeof(char));
+    submitPtr->loginShell  = calloc(MAX_LSB_NAME_LEN, sizeof(char));
+    job->user              = calloc(MAX_LSB_NAME_LEN, sizeof(char));
+    job->fromHost          = calloc(MAXHOSTNAMELEN, sizeof(char));
+    job->cwd               = calloc(MAXFILENAMELEN, sizeof(char));
+    job->execCwd           = calloc(MAXFILENAMELEN, sizeof(char));
+    job->execHome          = calloc(MAXFILENAMELEN, sizeof(char));
+    job->execUsername      = calloc(MAX_LSB_NAME_LEN, sizeof(char));
     submitPtr->userGroup   = calloc(MAX_LSB_NAME_LEN, sizeof(char));
-
-    submitPtr->queue[0]       = '\0';
-    submitPtr->jobName[0]     = '\0';
-    submitPtr->command[0]     = '\0';
-    submitPtr->resReq[0]      = '\0';
-    submitPtr->inFile[0]      = '\0';
-    submitPtr->outFile[0]     = '\0';
-    submitPtr->errFile[0]     = '\0';
-    submitPtr->hostSpec[0]    = '\0';
-    submitPtr->chkpntDir[0]   = '\0';
-    submitPtr->dependCond[0]  = '\0';
-    submitPtr->preExecCmd[0]  = '\0';
-    submitPtr->mailUser[0]  = '\0';
-    submitPtr->projectName[0] = '\0';
-    submitPtr->loginShell[0] = '\0';
-    job->user[0]     =  '\0';
-    job->fromHost[0] =  '\0';
-    job->cwd[0]      = '\0';
-    job->execCwd[0] = '\0';
-    job->execHome[0] = '\0';
-    job->execUsername[0] = '\0';
 
     submitPtr->options = 0;
     submitPtr->options2 = 0;
@@ -1179,8 +1158,8 @@ initJobInfo (void)
 
     for (i = 0; i < LSF_RLIM_NLIMITS; i++)
         submitPtr->rLimits[i] = -1;
-    return (job);
 
+    return job;
 }
 
 void
