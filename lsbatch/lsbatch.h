@@ -32,7 +32,7 @@
 #define  MAX_GROUPS          150
 #define  MAX_CHARLEN         20
 #define  MAX_LSB_NAME_LEN    60
-#define  MAX_CMD_DESC_LEN    256
+#define  MAX_CMD_DESC_LEN    1024
 #define  MAX_USER_EQUIVALENT 128
 #define  DEFAULT_MSG_DESC    "no description"
 
