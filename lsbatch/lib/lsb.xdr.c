@@ -998,16 +998,25 @@ xdr_queueInfoEnt(XDR *xdrs,
         return false;
     }
 
-    /* Handle fairshare data. Default starting from 3.0.
-     * Compatibility with previous OL versions starts in 3.0
+    /* Handle fairshare data
      */
     if (! xdr_numShareAccts(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
         return false;
 
-    if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
-        return false;
+    if (hdr->version >= 3) {
+        if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
+            return false;
+    }
 
-    xdr_var_string(xdrs, &qInfo->preemption);
+    if (xdrs->x_op == XDR_ENCODE
+        && hdr->version >= 3) {
+        xdr_var_string(xdrs, &qInfo->preemption);
+    }
+
+    if (xdrs->x_op == XDR_DECODE
+        && hdr->version >= 3) {
+        xdr_var_string(xdrs, &qInfo->preemption);
+    }
 
     return true;
 }
@@ -1028,7 +1037,14 @@ xdr_numShareAccts(XDR *xdrs,
     if (!xdr_int(xdrs, num))
         return false;
 
-    if (xdrs->x_op == XDR_ENCODE) {
+    /* Encode fairshare data. If we are
+     * encoding to < 3 don't care as
+     * the library is not expecting
+     * any fairshare data.
+     */
+    if (xdrs->x_op == XDR_ENCODE
+        && hdr->version >= 3) {
+
         s2 = *s;
         for (i = 0; i < *num; i++) {
             if (! xdr_shareAcct(xdrs, s2[i], hdr))
@@ -1038,19 +1054,19 @@ xdr_numShareAccts(XDR *xdrs,
         return true;
     }
 
-    /* Decoding
-     */
-    if (*num == 0) {
-        s2 = NULL;
-        return true;
-    }
+    if (xdrs->x_op == XDR_DECODE
+        && hdr->version >= 3) {
 
-    s2 = calloc(*num, sizeof(struct share_acct *));
+        if (*num == 0)
+            s2 = NULL;
+        else
+            s2 = calloc(*num, sizeof(struct share_acct *));
 
-    for (i = 0; i < *num; i++) {
-        s2[i] = calloc(1, sizeof(struct share_acct));
-        if (! xdr_shareAcct(xdrs, s2[i], hdr))
-            return false;
+        for (i = 0; i < *num; i++) {
+            s2[i] = calloc(1, sizeof(struct share_acct));
+            if (! xdr_shareAcct(xdrs, s2[i], hdr))
+                return false;
+        }
     }
 
     *s = s2;
@@ -1694,10 +1710,10 @@ allocLoadIdx(float **loadSched, float **loadStop, int *outSize, int size)
     *outSize = 0;
 
     if ((*loadSched = (float *) calloc(size, sizeof(float))) == NULL)
-        return -1;
+        return (-1);
 
     if ((*loadStop = (float *) calloc(size, sizeof(float))) == NULL)
-        return -1;
+        return (-1);
 
     *outSize = size;
 
