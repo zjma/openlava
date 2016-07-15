@@ -305,7 +305,9 @@ displayEvent(struct eventRec *log, struct histReq *req)
 	    prtLine(prline);
             if (log->eventLog.hostCtrlLog.userName
 	        && log->eventLog.hostCtrlLog.userName[0])
-                sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,1077, " by administrator <%s>.\n")), log->eventLog.hostCtrlLog.userName); /* catgets  1077  */
+                sprintf(prline, (_i18n_msg_get(ls_catd,NL_SETN,1077, " by administrator <%s> %s.\n")),
+                    log->eventLog.hostCtrlLog.userName,
+                    log->eventLog.hostCtrlLog.message); /* catgets  1077  */
              else
                 sprintf(prline, ".\n");
             prtLine(prline);

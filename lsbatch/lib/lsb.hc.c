@@ -20,7 +20,7 @@
 #include "lsb.h"
 
 int
-lsb_hostcontrol(char *host, int opCode)
+lsb_hostcontrol(char *host, int opCode, char *message)
 {
     XDR xdrs;
     char request_buf[MSGSIZE];
@@ -34,6 +34,13 @@ lsb_hostcontrol(char *host, int opCode)
     if (hostControlReq.name == NULL) {
         hostControlReq.name = (char *) malloc (MAXHOSTNAMELEN);
         if (hostControlReq.name == NULL) {
+            lsberrno = LSBE_NO_MEM;
+            return -1;
+        }
+    }
+    if (hostControlReq.message == NULL) {
+        hostControlReq.message = (char *)malloc(MAXLINELEN);
+        if (hostControlReq.message == NULL) {
             lsberrno = LSBE_NO_MEM;
             return -1;
         }
@@ -61,6 +68,7 @@ lsb_hostcontrol(char *host, int opCode)
         strcpy(hostControlReq.name, h);
     }
 
+    strcpy(hostControlReq.message, message);
     switch (opCode) {
         case HOST_REBOOT:
             hdr.opCode = CMD_SBD_REBOOT;

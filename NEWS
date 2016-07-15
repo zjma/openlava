@@ -11,6 +11,7 @@ Release notes for OpenLava versions
 -- Fix the mbatchd variable MBD_NO_QSORT_JOBS, which was incorrectly
    set to MBD_QSORT_JOBS in daemons.c
 -- Fix formatting bug in bparams.
+-- Add badmin hclose/hopen -C "message", and fix parsing error of "badmin subcommand <command_options>".
 
 
 3.3.3

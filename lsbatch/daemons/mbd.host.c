@@ -262,6 +262,7 @@ copyHostInfo(struct hData *hData, struct hostInfoEnt *hInfo)
     hInfo->busyStop = hData->busyStop;
     hInfo->realLoad = hData->lsfLoad;
     hInfo->load = hData->lsbLoad;
+    hInfo->hCtrlMsg = hData->message;
 
     hInfo->mig = (hData->mig != INFINIT_INT) ? hData->mig/60 : INFINIT_INT;
     switch (hData->chkSig) {
@@ -843,25 +844,18 @@ ctrlHost(struct controlReq *hcReq,
             if (hData->hStatus & HOST_STAT_UNAVAIL)
                 return LSBE_SBATCHD;
 
-            if (hData->hStatus & HOST_STAT_DISABLED) {
-                hData->hStatus &= ~HOST_STAT_DISABLED;
-                log_hoststatus(hData, hcReq->opCode,
-                               auth->uid, auth->lsfUserName);
-                return LSBE_NO_ERROR;
-            }
-            else
-                return LSBE_NO_ERROR;
+            hData->hStatus &= ~HOST_STAT_DISABLED;
+            strcpy (hData->message, hcReq->message);
+            log_hoststatus(hData, hcReq->opCode,
+                           auth->uid, auth->lsfUserName, hcReq->message);
+            return LSBE_NO_ERROR;
 
         case HOST_CLOSE :
-            if (hData->hStatus & HOST_STAT_DISABLED) {
-                return LSBE_NO_ERROR;
-            }
-            else {
-                hData->hStatus |= HOST_STAT_DISABLED;
-                log_hoststatus(hData, hcReq->opCode,
-                               auth->uid, auth->lsfUserName);
-                return LSBE_NO_ERROR;
-            }
+            hData->hStatus |= HOST_STAT_DISABLED;
+            strcpy (hData->message, hcReq->message);
+            log_hoststatus(hData, hcReq->opCode,
+                           auth->uid, auth->lsfUserName, hcReq->message);
+            return LSBE_NO_ERROR;
         default :
             return LSBE_LSBLIB;
     }

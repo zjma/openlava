@@ -273,6 +273,7 @@ struct jobSwitchReq {
 struct controlReq {
     int         opCode;
     char        *name;
+    char        *message;
 };
 
 

@@ -33,7 +33,7 @@ static int badminDebug (int nargc, char *nargv[], int opCode);
 int
 main(int argc, char **argv)
 {
-    int cc,  myIndex;
+    int myIndex;
     char *prompt = "badmin>";
     static char line[MAXLINELEN];
 
@@ -44,19 +44,21 @@ main(int argc, char **argv)
 
     setbuf(stdout, NULL);
 
-    while ((cc = getopt(argc, argv, "Vh")) != EOF) {
-        switch (cc) {
-            case 'V':
-                fputs(_LS_VERSION_, stderr);
-                exit(0);
-            case 'h':
-            default:
-
-                cmdsUsage("badmin",
-                          cmdList,
-                          cmdInfo);
+    if (argc>1 && argv[1][0] == '-') {
+        switch (argv[1][1]) {
+        case 'V':
+            fputs(_LS_VERSION_, stderr);
+            exit(0);
+        case 'h':
+           cmdsUsage("badmin",cmdList,cmdInfo);
+        default:
+           fprintf (stderr, "badmin: illegal option -- %c\n", argv[1][1]);
+           cmdsUsage("badmin",cmdList,cmdInfo);
         }
     }
+
+    optind = 1;
+
     if (argc > optind) {
         int rc;
 

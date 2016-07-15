@@ -1328,7 +1328,7 @@ do_hostInfoReq(XDR *xdrs,
     reply = checkHosts(&hostsReq, &hostsReply);
 
     count = hostsReply.numHosts * (sizeof(struct hostInfoEnt)
-                                   + MAXLINELEN + MAXHOSTNAMELEN
+                                   + 2*MAXLINELEN + MAXHOSTNAMELEN
                                    + hostsReply.nIdx * 4 * sizeof(float)) + 100;
 
     reply_buf = my_calloc(count, sizeof(char), __func__);

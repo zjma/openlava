@@ -357,6 +357,8 @@ prtHostsLong (int numReply, struct hostInfoEnt  *hInfo)
 	    printf(( _i18n_msg_get(ls_catd, NL_SETN, 1616, "Migration threshold is %d min \n")), hPtr->mig);  /* catgets  1616  */
 
         printf("\n");
+        if (strlen(hPtr->hCtrlMsg) > 0)
+            printf(( _i18n_msg_get(ls_card, NL_SETN, 1617, "ADMIN ACTION MESSAGE: \"%s\"\n")), hPtr->hCtrlMsg);
     }
 }
 

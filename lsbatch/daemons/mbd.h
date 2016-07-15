@@ -608,6 +608,7 @@ struct hData {
     LIST_T    *pxySJL;
     LIST_T    *pxyRsvJL;
     float     leftRusageMem;
+    char      message[MAXLINELEN];
 };
 
 
@@ -1320,7 +1321,7 @@ extern void                 log_mig(struct jData *, int, char *);
 extern void                 log_route(struct jData *);
 extern int                  log_modifyjob(struct modifyReq *, struct lsfAuth *);
 extern void                 log_queuestatus(struct qData *, int, int, char*);
-extern void                 log_hoststatus(struct hData *, int, int, char*);
+extern void                 log_hoststatus(struct hData *, int, int, char*, char*);
 extern void                 log_mbdStart(void);
 extern void                 log_mbdDie(int);
 extern void                 log_unfulfill(struct jData *);

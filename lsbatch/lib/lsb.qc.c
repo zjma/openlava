@@ -41,7 +41,7 @@ lsb_queuecontrol (char *queue, int opCode)
             return -1;
         }
     }
-    
+
 
     if (authTicketTokens_(&auth, NULL) == -1)
 	return -1;

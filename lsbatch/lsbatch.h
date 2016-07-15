@@ -836,6 +836,7 @@ struct hostInfoEnt {
     float *realLoad;
     int   numRESERVE;
     int   chkSig;
+    char  *hCtrlMsg;
 };
 
 #define DEF_MAX_JOBID   999999
@@ -1234,6 +1235,7 @@ struct hostCtrlLog {
     char   host[MAXHOSTNAMELEN];
     int    userId;
     char   userName[MAX_LSB_NAME_LEN];
+    char   message[MAXLINELEN];
 };
 
 struct mbdStartLog {
@@ -1593,7 +1595,7 @@ extern LS_LONG_INT lsb_submit(struct submit  *, struct submitReply *);
 
 extern void lsb_closejobinfo(void);
 
-extern int  lsb_hostcontrol(char *, int);
+extern int  lsb_hostcontrol(char *, int, char *);
 extern struct queueInfoEnt *lsb_queueinfo(char **,
                                           int *,
                                           char *,

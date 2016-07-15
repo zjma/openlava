@@ -951,6 +951,7 @@ replay_hostcontrol(char *filename, int lineNum)
         hp->hStatus &= ~HOST_STAT_DISABLED;
     if (opCode == HOST_CLOSE)
         hp->hStatus |= HOST_STAT_DISABLED;
+    strcpy(hp->message,logPtr->eventLog.hostCtrlLog.message);
     return true;
 
 }
@@ -2048,7 +2049,7 @@ log_queuestatus(struct qData * qp, int opCode, int userId, char *userName)
 
 
 void
-log_hoststatus(struct hData * hp, int opCode, int userId, char *userName)
+log_hoststatus(struct hData * hp, int opCode, int userId, char *userName, char *message)
 {
     static char             fname[] = "log_hoststatus";
 
@@ -2064,6 +2065,7 @@ log_hoststatus(struct hData * hp, int opCode, int userId, char *userName)
     strcpy(logPtr->eventLog.hostCtrlLog.host, hp->host);
     logPtr->eventLog.hostCtrlLog.userId = userId;
     strcpy(logPtr->eventLog.hostCtrlLog.userName, userName);
+    strcpy(logPtr->eventLog.hostCtrlLog.message, message);
     if (putEventRec(fname) < 0)
         ls_syslog(LOG_ERR, I18N_HOST_FAIL,
                   fname,
@@ -4787,6 +4789,8 @@ log_hostStatusAtSwitch(const struct hostCtrlEvent *ctrlPtr)
 
     strcpy(logPtr->eventLog.hostCtrlLog.userName,
            ctrlPtr->hostCtrlLog->userName);
+
+    strcpy(logPtr->eventLog.hostCtrlLog.message, ctrlPtr->hostCtrlLog->message);
 
     if (putEventRecTime(fname, ctrlPtr->time) < 0) {
         ls_syslog(LOG_ERR, I18N_HOST_FAIL,

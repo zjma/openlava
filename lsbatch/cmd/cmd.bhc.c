@@ -26,7 +26,7 @@
 extern char *myGetOpt (int nargc, char **nargv, char *ostr);
 extern int getConfirm(char *);
 
-static void ctrlHost (char *, int, int);
+static void ctrlHost (char *, int, int, char *);
 static int  doConfirm (int, char *);
 static int exitrc;
 static char *opStr;
@@ -39,16 +39,25 @@ bhc (int argc, char *argv[], int opCode)
     char **hostPoint ;
     char **hosts=NULL;
     char *optName;
+    char message[MAXLINELEN];
     int i;
     int fFlag = FALSE;
     int  all = FALSE, numHosts = 0;
     int  inquerFlag = FALSE;
 
-    while ((optName = myGetOpt(argc, argv, "f|")) != NULL) {
+    while ((optName = myGetOpt(argc, argv, "C:f|")) != NULL) {
         switch (optName[0]) {
         case 'f':
             fFlag = TRUE;
             break;
+        case 'C':
+            if (strlen(optarg) > MAXLINELEN-1) {
+                printf ("Message too long, truncated to %d char.\n", MAXLINELEN-1);
+                strncpy(message, optarg, MAXLINELEN-1);
+                message[MAXLINELEN-1]='\0';
+            } else
+	        strcpy(message, optarg);
+	    break;
         default:
             return -2;
         }
@@ -108,17 +117,17 @@ bhc (int argc, char *argv[], int opCode)
         fprintf(stderr, "%s <%s> ...... ", opStr, hostInfo[i].host);
         fflush(stderr);
 
-        ctrlHost (hostInfo[i].host, hostInfo[i].hStatus, opCode);
+        ctrlHost (hostInfo[i].host, hostInfo[i].hStatus, opCode, message);
     }
     return exitrc;
 
 }
 
 static void
-ctrlHost (char *host, int hStatus, int opCode)
+ctrlHost (char *host, int hStatus, int opCode, char *message)
 {
 
-    if (lsb_hostcontrol(host, opCode) < 0) {
+    if (lsb_hostcontrol(host, opCode, message) < 0) {
         char i18nBuf[100];
 	sprintf(i18nBuf,I18N_FUNC_FAILED,"Host control");
         lsb_perror (i18nBuf );

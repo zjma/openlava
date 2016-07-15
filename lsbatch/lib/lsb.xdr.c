@@ -1228,7 +1228,7 @@ xdr_hostDataReply(XDR *xdrs,
                 return false;
             }
             if (!(sp = malloc(hostCount
-                              * (MAXHOSTNAMELEN + MAXLINELEN)))) {
+                              * (MAXHOSTNAMELEN + 2*MAXLINELEN)))) {
                 FREEUP(hInfoTmp);
                 lsberrno = LSBE_NO_MEM;
                 return false;
@@ -1244,6 +1244,8 @@ xdr_hostDataReply(XDR *xdrs,
                 hInfo[i].host = sp;
                 sp += MAXHOSTNAMELEN;
                 hInfo[i].windows = sp;
+                sp += MAXLINELEN;
+                hInfo[i].hCtrlMsg = sp;
                 sp += MAXLINELEN;
             }
         }
@@ -1322,11 +1324,13 @@ xdr_hostInfoEnt(XDR *xdrs, struct hostInfoEnt *hostInfoEnt,
 {
     char *sp = hostInfoEnt->host;
     char *wp = hostInfoEnt->windows;
+    char *mp = hostInfoEnt->hCtrlMsg;
     int i;
 
     if (xdrs->x_op == XDR_DECODE) {
         sp[0] = '\0';
         wp[0] = '\0';
+        mp[0] = '\0';
     }
 
     if (!(xdr_string(xdrs, &sp, MAXHOSTNAMELEN) &&
@@ -1340,7 +1344,8 @@ xdr_hostInfoEnt(XDR *xdrs, struct hostInfoEnt *hostInfoEnt,
           xdr_int(xdrs, &hostInfoEnt->numUSUSP) &&
           xdr_int(xdrs, &hostInfoEnt->hStatus) &&
           xdr_int(xdrs, &hostInfoEnt->attr) &&
-          xdr_int(xdrs, &hostInfoEnt->mig)))
+          xdr_int(xdrs, &hostInfoEnt->mig) &&
+          xdr_string(xdrs, &mp, MAXLINELEN)))
         return false;
 
     hostInfoEnt->nIdx = *nIdx;
@@ -1589,9 +1594,8 @@ bool_t
 xdr_controlReq(XDR *xdrs, struct controlReq *controlReq,
                struct LSFHeader *hdr)
 {
-    static char *sp = NULL;
+    static char *sp = NULL, *message;
     static int first = true;
-
 
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -1599,15 +1603,22 @@ xdr_controlReq(XDR *xdrs, struct controlReq *controlReq,
             sp = (char *) malloc (MAXHOSTNAMELEN);
             if (sp == NULL)
                 return false;
+            message = (char *) malloc(MAXLINELEN);
+            if (message == NULL)
+                return false;
             first = false;
         }
         controlReq->name = sp;
         sp[0] = '\0';
+        controlReq->message = message;
+        message[0] = '\0';
     } else {
         sp = controlReq->name;
+        message = controlReq->message;
     }
     if (!(xdr_int(xdrs, &controlReq->opCode) &&
-          xdr_string(xdrs, &sp, MAXHOSTNAMELEN)))
+          xdr_string(xdrs, &sp, MAXHOSTNAMELEN) &&
+          xdr_string(xdrs, &message, MAXLINELEN)))
         return false;
 
     return true;
