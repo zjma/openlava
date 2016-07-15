@@ -1641,7 +1641,7 @@ log_switchjob(struct jobSwitchReq * switchReq, int uid, char *userName)
                   fname,
                   lsb_jobid2str(switchReq->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_SWITCH;
     logPtr->eventLog.jobSwitchLog.userId = uid;
@@ -1884,7 +1884,7 @@ log_mig(struct jData * jData, int uid, char *userName)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_MIG;
     logPtr->eventLog.migLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1911,7 +1911,7 @@ log_jobrequeue(struct jData * jData)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openeventfile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_REQUEUE;
     logPtr->eventLog.jobRequeueLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1934,7 +1934,7 @@ log_jobclean(struct jData * jData)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_CLEAN;
     logPtr->eventLog.jobCleanLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1958,7 +1958,7 @@ log_chkpnt(struct jData * jData, int ok, int flags)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_CHKPNT;
     logPtr->eventLog.chkpntLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1986,7 +1986,7 @@ log_jobsigact (struct jData *jData, struct statusReq *statusReq, int sigFlags)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_SIGACT;
     logPtr->eventLog.sigactLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -2032,7 +2032,7 @@ log_queuestatus(struct qData * qp, int opCode, int userId, char *userName)
                   fname,
                   qp->queue,
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_QUEUE_CTRL;
     logPtr->eventLog.queueCtrlLog.opCode = opCode;
@@ -2104,7 +2104,7 @@ log_unfulfill(struct jData * jp)
                   fname,
                   lsb_jobid2str(jp->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_MBD_UNFULFILL;
 
@@ -3323,7 +3323,7 @@ rmLogJobInfo(struct jData *jp, int check)
 
     } else if (errno != ENOENT) {
         if (check == FALSE)
-                ls_syslog(LOG_ERR, "\
+            ls_syslog(LOG_ERR, "\
 %s: job %s stat() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
         return -1;
     }
@@ -4101,7 +4101,7 @@ replay_jobdata(char *filename, int lineNum, char *fname)
                                 sizeof(struct xFile), fname);
         memcpy(jobBill->xf, jobNewLog->xf, jobBill->nxf * sizeof(struct xFile));
     } else {
-       jobBill->xf = NULL;
+        jobBill->xf = NULL;
     }
 
     jobBill->niosPort = jobNewLog->niosPort;

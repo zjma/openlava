@@ -190,7 +190,7 @@ lsb_sysmsg(void)
 }
 
 void
-lsb_perror(char *usrMsg)
+lsb_perror(const char *usrMsg)
 {
     if (usrMsg) {
         fputs(usrMsg, stderr);

@@ -1381,10 +1381,10 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                 if (logclass & LC_SCHED) {
                     ls_syslog(LOG_DEBUG1, "\
 %s: Updating reserved memory of job <%s> to <%f> as all <%d> processors are on the same host.",
-                     __func__,
-                     lsb_jobid2str(jpbw->jobId),
-                     jackValue,
-                     jpbw->shared->jobBill.numProcessors);
+                              __func__,
+                              lsb_jobid2str(jpbw->jobId),
+                              jackValue,
+                              jpbw->shared->jobBill.numProcessors);
                 }
             }
 
@@ -1399,7 +1399,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
 
                     TEST_BIT (ldx, rusage_bit_map, isSet)
                         if ((isSet == TRUE) && !slotResourceReserve) {
-                           continue;
+                            continue;
                         }
                     SET_BIT(ldx, rusage_bit_map);
                 }

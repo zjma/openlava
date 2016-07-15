@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -1610,7 +1610,7 @@ extern int  lsb_deletejob(LS_LONG_INT, int, int);
 extern int  lsb_forcekilljob(LS_LONG_INT);
 extern int  lsb_requeuejob(struct jobrequeue *);
 extern char *lsb_sysmsg(void);
-extern void lsb_perror(char *);
+extern void lsb_perror(const char *);
 extern char *lsb_sperror(char *);
 extern char *lsb_peekjob(LS_LONG_INT);
 

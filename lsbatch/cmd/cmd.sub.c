@@ -406,7 +406,7 @@ CopyCommand(char **from, int len)
 
     size += 1 + 1;
 
-    if ((commandline = (char *) malloc(size)) == NULL) {
+    if ((commandline = malloc(size)) == NULL) {
         fprintf(stderr, I18N_FUNC_FAIL,__func__,"malloc" );
         return false;
     }
@@ -583,8 +583,7 @@ parseLine(char *line, int *embedArgc, char ***embedArgv, int option)
     char *sp, *sQuote, *dQuote, quoteMark;
 
     if (argBuf == NULL) {
-        if ((argBuf = (char **) malloc(INCREASE * sizeof(char *)))
-            == NULL) {
+        if ((argBuf = malloc(INCREASE * sizeof(char *))) == NULL) {
             fprintf(stderr, I18N_FUNC_FAIL,__func__,"malloc" );
             return -1;
         }

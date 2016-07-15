@@ -286,9 +286,9 @@ do_jobInfoReq(XDR *xdrs,
             return -1;
         }
         if (!jgrplist[i].isJData &&
-             ((len = packJgrpInfo((struct jgTreeNode *)jgrplist[i].info,
-                                  listSize - 1 - i,
-                                  &buf, schedule, reqHdr->version)) < 0)) {
+            ((len = packJgrpInfo((struct jgTreeNode *)jgrplist[i].info,
+                                 listSize - 1 - i,
+                                 &buf, schedule, reqHdr->version)) < 0)) {
             ls_syslog(LOG_ERR, "%s: packJgrpInfo() failed: %m", __func__);
             FREEUP(jgrplist);
             return -1;
@@ -1495,7 +1495,7 @@ xdrsize_QueueInfoReply(struct queueInfoReply * qInfoReply)
                       * (sizeof(struct queueInfoEnt)
                          + MAX_LSB_NAME_LEN
                          +
-                        qInfoReply->nIdx * 2 * sizeof(float))
+                         qInfoReply->nIdx * 2 * sizeof(float))
                       + qInfoReply->numQueues * NET_INTSIZE_);
 
     return len;
@@ -3412,9 +3412,9 @@ getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
         return NULL;
 
     if (pAcct->numRUN == 0
-            && pAcct->numSSUSP == 0
-            && pAcct->numUSUSP == 0
-            && pAcct->numRESERVE == 0)
+        && pAcct->numSSUSP == 0
+        && pAcct->numUSUSP == 0
+        && pAcct->numRESERVE == 0)
         return NULL;
 
     for (i = 0; i < limit->nRes; i++) {
@@ -3461,16 +3461,16 @@ getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
     }
 
     if ((!projectHasAll && hasMe)
-            || (projectHasAll && hasMe && !neg)
-            || (projectHasAll && !hasMe)) {
+        || (projectHasAll && hasMe && !neg)
+        || (projectHasAll && !hasMe)) {
         usage = my_calloc(1, sizeof(struct resLimitUsage), __func__);
         usage->limitName = strdup(limit->name);
         usage->project = strdup(pAcct->project);
         usage->queue = strdup(pAcct->queue);
         usage->used = pAcct->numRUN
-                      + pAcct->numSSUSP
-                      + pAcct->numUSUSP
-                      + pAcct->numRESERVE;
+            + pAcct->numSSUSP
+            + pAcct->numUSUSP
+            + pAcct->numRESERVE;
     }
 
 clean:

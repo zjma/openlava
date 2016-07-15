@@ -421,7 +421,7 @@ xdr_parameterInfo(XDR *xdrs,
           xdr_int(xdrs, &paramInfo->maxSbdRetries) &&
           xdr_int(xdrs, &paramInfo->cleanPeriod) &&
           xdr_int(xdrs, &paramInfo->maxNumJobs)) &&
-          xdr_int(xdrs, &paramInfo->pgSuspendIt))
+        xdr_int(xdrs, &paramInfo->pgSuspendIt))
         return false;
 
     if (!(xdr_var_string(xdrs, &paramInfo->defaultProject)))
@@ -1012,7 +1012,7 @@ xdr_queueInfoEnt(XDR *xdrs,
     }
 
     if (!(xdr_var_string(xdrs, &qInfo->chkpntDir) &&
-            xdr_int (xdrs, &qInfo->chkpntPeriod)))
+          xdr_int (xdrs, &qInfo->chkpntPeriod)))
         return false;
 
     for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
@@ -2067,7 +2067,7 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
 
     if (xdrs->x_op == XDR_DECODE && reply->numUsage != 0) {
         reply->usage = calloc(reply->numUsage,
-                               sizeof(struct resLimitUsage));
+                              sizeof(struct resLimitUsage));
         if (reply->usage == NULL)
             return false;
     }
@@ -2085,7 +2085,7 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
 
 bool_t
 xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
-                 struct LSFHeader *hdr)
+                struct LSFHeader *hdr)
 {
     int i;
 
@@ -2105,7 +2105,7 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
     if (xdrs->x_op == XDR_DECODE && limit->nConsumer != 0) {
         limit->consumers= calloc(limit->nConsumer,
-                               sizeof(struct limitConsumer));
+                                 sizeof(struct limitConsumer));
         if (limit->consumers == NULL)
             return false;
     }
@@ -2126,7 +2126,7 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
     if (xdrs->x_op == XDR_DECODE && limit->nRes != 0) {
         limit->res= calloc(limit->nRes,
-                               sizeof(struct limitRes));
+                           sizeof(struct limitRes));
         if (limit->res== NULL)
             return false;
     }
@@ -2144,7 +2144,7 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
 bool_t
 xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
-                 struct LSFHeader *hdr)
+                     struct LSFHeader *hdr)
 {
     if (xdrs->x_op == XDR_DECODE) {
         usage->limitName = NULL;

@@ -20,14 +20,14 @@
 #include "badmin.h"
 #include <unistd.h>
 
-extern char *myGetOpt (int nargc, char **nargv, char *ostr);
-extern int checkConf (int, int);
-extern int getConfirm (char *msg);
+extern char *myGetOpt(int nargc, char **nargv, char *ostr);
+extern int checkConf(int, int);
+extern int getConfirm(char *msg);
 extern int lsb_debugReq(struct debugReq *pdebug , char *host);
 extern int linux_optind;
 extern int linux_opterr;
-static int doBatchCmd (int argc, char *argv[]);
-static int badminDebug (int nargc, char *nargv[], int opCode);
+static int doBatchCmd(int argc, char *argv[]);
+static int badminDebug(int nargc, char *nargv[], int opCode);
 
 
 int
@@ -68,9 +68,9 @@ main(int argc, char **argv)
             cmdsUsage("badmin", cmdList, cmdInfo);
         }
         optind++;
-        rc = doBatchCmd (argc, argv);
-        _i18n_end ( ls_catd );
-        exit ( rc );
+        rc = doBatchCmd(argc, argv);
+        _i18n_end (ls_catd);
+        exit (rc);
     }
 
     for (;;) {
@@ -80,7 +80,7 @@ main(int argc, char **argv)
             exit(-1);
         }
 
-        parseAndDo (line, doBatchCmd);
+        parseAndDo(line, doBatchCmd);
     }
     return 0;
 }
@@ -90,7 +90,7 @@ doBatchCmd(int argc, char *argv[])
 {
     int cmdRet = 0, myIndex;
 
-    if ((myIndex=adminCmdIndex(argv[optind-1], cmdList)) == -1) {
+    if ((myIndex = adminCmdIndex(argv[optind-1], cmdList)) == -1) {
         fprintf(stderr,
                 _i18n_msg_get(ls_catd,NL_SETN,2554, "Invalid command <%s>. Try help\n"),/* catgets  2554  */
                 argv[optind-1]);
@@ -218,7 +218,7 @@ breconfig(int argc, char **argv, int configFlag)
                 fflush(stderr);
             }
             fclose(fp);
-	    unlink(filename);
+            unlink(filename);
         }
         else
             checkReply = checkConf(0, 2);
