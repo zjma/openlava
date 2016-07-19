@@ -11,7 +11,8 @@ Release notes for OpenLava versions
 -- Fix the mbatchd variable MBD_NO_QSORT_JOBS, which was incorrectly
    set to MBD_QSORT_JOBS in daemons.c
 -- Fix formatting bug in bparams.
--- Add badmin hclose/hopen -C "message", and fix parsing error of "badmin subcommand <command_options>".
+-- Add badmin hclose/hopen -C "message", and fix parsing error of "badmin
+   subcommand <command_options>".
 -- Fix backward compatibility bug in which earlier version of OL cannot
    get information from higher version if mbatchd, specifically 3.0/3.1
    bqueues cannot get information from 3.3 bqueues.
