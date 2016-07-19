@@ -380,9 +380,14 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
     jpbw->nextJob = NULL;
 
     jpbw->uPtr = getUserData(jpbw->userName);
-    if (!jpbw->pPtr)
-        jpbw->pPtr = getProjectData(jpbw->shared->jobBill.projectName,
-                                    jpbw->qPtr->queue);
+    if (!jpbw->pqPtr)
+        jpbw->pqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_PROJECT,
+                                        jpbw->shared->jobBill.projectName,
+                                        jpbw->qPtr->queue);
+    if (!jpbw->uqPtr)
+        jpbw->uqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_USER,
+                                        jpbw->userName,
+                                        jpbw->qPtr->queue);
 
     putOntoTree(jpbw, job);
 
@@ -391,8 +396,9 @@ handleNewJob(struct jData *jpbw, int job, int eventTime)
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
                     jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
-        updProjectData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
-                       jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updLimitSlotData(jpbw, jpbw->shared->jobBill.maxNumProcessors,
+                         jpbw->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updLimitJobData(jpbw, 1, 1, 0, 0, 0, 0);
     }
 
     if (job == JOB_NEW && eventTime == LOG_IT) {
@@ -3499,15 +3505,23 @@ handleRequeueJob(struct jData *jData, time_t requeueTime)
     if (mSchedStage != M_STAGE_REPLAY) {
         if (!jData->uPtr)
             jData->uPtr = getUserData(jData->userName);
-        if (!jData->pPtr)
-            jData->pPtr = getProjectData(jData->shared->jobBill.projectName, jData->qPtr->queue);
+
+        if (!jData->pqPtr)
+            jData->pqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_PROJECT,
+                                             jData->shared->jobBill.projectName,
+                                             jData->qPtr->queue);
+        if (!jData->uqPtr)
+            jData->uqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_USER,
+                                             jData->userName,
+                                             jData->qPtr->queue);
 
         updQaccount(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
         updUserData(jData, jData->shared->jobBill.maxNumProcessors,
                     jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
-        updProjectData(jData, jData->shared->jobBill.maxNumProcessors,
-                       jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updLimitSlotData(jData, jData->shared->jobBill.maxNumProcessors,
+                         jData->shared->jobBill.maxNumProcessors, 0, 0, 0, 0);
+        updLimitJobData(jData, 1, 1, 0, 0, 0, 0);
     }
 
     if (jData->jFlags & JFLAG_HAS_BEEN_REQUEUED)
@@ -4683,7 +4697,8 @@ initJData(struct jShared  *shared)
     job->priority = -1.0;
     job->qPtr = NULL;
     job->hPtr = NULL;
-    job->pPtr = NULL;
+    job->pqPtr = NULL;
+    job->uqPtr = NULL;
     job->numHostPtr = 0;
     job->numAskedPtr = 0;
     job->askedPtr = NULL;
@@ -6162,61 +6177,92 @@ checkJobParams (struct jData *job, struct submitReq *subReq,
             return cc;
     }
 
-    job->pPtr = getProjectData(subReq->projectName, job->qPtr->queue);
+    job->pqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_PROJECT,
+                                   subReq->projectName,
+                                   job->qPtr->queue);
+    job->uqPtr = getLimitUsageData(LIMIT_CONSUMER_PER_USER,
+                                   job->userName,
+                                   job->qPtr->queue);
 
     return LSBE_NO_ERROR;
-
 }
 
-struct pqData *
-getProjectData(char *project, char *queue)
+/*
+ * Limit usage per user/host/project on queue.
+ */
+struct resData *
+getLimitUsageData(limitConsumerType_t type, char *consumer, char *queue)
 {
-    struct pData *pData = NULL;
-    struct pqData *pqData = NULL;
-    hEnt *pEnt = NULL;
-    hEnt *pqEnt = NULL;
+    struct hTab *hash;
+    int num;
+    struct consumerData *cData = NULL;
+    struct resData *rData = NULL;
+    hEnt *cEnt = NULL;
+    hEnt *rEnt = NULL;
     int new;
-    static int first = TRUE;
 
     if (limitConf == NULL || limitConf->nLimit == 0)
         return NULL;
 
-    if (first) {
-        h_initTab_(&pDataTab, MAX_RES_LIMITS);
-        first = FALSE;
+    if (type == LIMIT_CONSUMER_PER_PROJECT) {
+        hash = &pDataTab;
+        num = MAX_RES_LIMITS;
+    } else if (type == LIMIT_CONSUMER_PER_HOST) {
+        hash = &hDataTab;
+        num = numofhosts();
+    } else if (type == LIMIT_CONSUMER_PER_USER) {
+        hash = &uDataTab;
+        num = numofusers;
     }
 
-    pEnt = h_addEnt_(&pDataTab, project, &new);
+    if (hash->numEnts == 0)
+        h_initTab_(hash, num);
+
+    cEnt = h_addEnt_(hash, consumer, &new);
     if (new) {
-        pData = my_calloc(1,
-                          sizeof(struct pData),
-                          "getProjectData");
-        pData->project = safeSave(project);
-        pData->qAcct = my_calloc(1,
+        cData = my_calloc(1,
+                          sizeof(struct consumerData),
+                          "getLimitUsageData");
+        cData->type = type;
+        cData->consumer = safeSave(consumer);
+        cData->rAcct = my_calloc(1,
                                  sizeof(struct hTab),
-                                 "getProjectData");
-        h_initTab_(pData->qAcct, numofqueues);
-        pEnt->hData = pData;
+                                 "getLimitUsageData");
+        h_initTab_(cData->rAcct, numofqueues);
+        cEnt->hData = cData;
     }
 
-    pqEnt = h_addEnt_(((struct pData *)pEnt->hData)->qAcct, queue, &new);
+    rEnt = h_addEnt_(((struct consumerData *)cEnt->hData)->rAcct, queue, &new);
     if (new) {
-        pqData = my_calloc(1,
-                          sizeof(struct pqData),
-                          "getProjectData");
-        pqData->project = safeSave(project);
-        pqData->queue = safeSave(queue);
-        pqData->maxJobs = INFINIT_INT;
-        pqData->numJobs = 0;
-        pqData->numPEND = 0;
-        pqData->numRESERVE = 0;
-        pqData->numRUN = 0;
-        pqData->numSSUSP = 0;
-        pqData->numUSUSP = 0;
-        pqEnt->hData = pqData;
+        rData = my_calloc(1,
+                          sizeof(struct resData),
+                          "getLimitUsageData");
+        if (type == LIMIT_CONSUMER_PER_PROJECT) {
+            rData->project = safeSave(consumer);
+        } else if (type == LIMIT_CONSUMER_PER_HOST) {
+            rData->host = safeSave(consumer);
+        } else if (type == LIMIT_CONSUMER_PER_USER) {
+            rData->user = safeSave(consumer);
+        }
+        rData->queue = safeSave(queue);
+        rData->maxJobs = INFINIT_INT;
+        rData->numJobs = 0;
+        rData->numPENDJobs = 0;
+        rData->numRESERVEJobs = 0;
+        rData->numRUNJobs = 0;
+        rData->numSSUSPJobs = 0;
+        rData->numUSUSPJobs = 0;
+        rData->maxSlots = INFINIT_INT;
+        rData->numSlots = 0;
+        rData->numPENDSlots = 0;
+        rData->numRESERVESlots = 0;
+        rData->numRUNSlots = 0;
+        rData->numSSUSPSlots = 0;
+        rData->numUSUSPSlots = 0;
+        rEnt->hData = rData;
     }
 
-    return (struct pqData *)pqEnt->hData;
+    return (struct resData *)rEnt->hData;
 }
 
 struct resVal *

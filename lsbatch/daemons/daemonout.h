@@ -293,8 +293,11 @@ struct resLimitReply {
 struct resLimitUsage {
     char    *limitName;
     char    *project;
+    char    *user;
     char    *queue;
-    float   used;
+    char    *host;
+    float   slots;
+    float   jobs;
 };
 
 typedef enum {

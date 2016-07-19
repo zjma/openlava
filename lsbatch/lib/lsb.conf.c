@@ -8038,21 +8038,30 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     int i, j;
     struct resLimit *limitPtr;
     int idx;
+    char **valPtr;
     struct keymap keylist[] = {
         {"NAME", NULL, 0},          /* 0 */
         {"QUEUES", NULL, 0},        /* 1 */
-        {"PROJECTS", NULL, 0},      /* 2 */
-        {"HOSTS", NULL, 0},         /* 3 */
-        {"USERS", NULL, 0},         /* 4 */
-        {"SLOTS", NULL, 0},         /* 5 */
-        {"JOBS", NULL, 0},          /* 6 */
+        {"PER_QUEUE", NULL, 0},     /* 2 */
+        {"PROJECTS", NULL, 0},      /* 3 */
+        {"PER_PROJECT", NULL, 0},   /* 4 */
+        {"HOSTS", NULL, 0},         /* 5 */
+        {"PER_HOST", NULL, 0},      /* 6 */
+        {"USERS", NULL, 0},         /* 7 */
+        {"PER_USER", NULL, 0},      /* 8 */
+        {"SLOTS", NULL, 0},         /* 9 */
+        {"JOBS", NULL, 0},          /* 10 */
         {NULL, NULL, 0}
     };
     char* mapConsumerType2Name[] = {
         "QUEUES",
+        "PER_QUEUE",
         "PROJECTS",
+        "PER_PROJECT",
         "HOSTS",
-        "USERS"
+        "PER_HOST",
+        "USERS",
+        "PER_USER"
     };
     static char* mapResType2Name[] = {
         "SLOTS",
@@ -8143,16 +8152,33 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
 
     /*QUEUES*/
     if (keylist[1].val != NULL
-        && strcmp(keylist[1].val, "")) {
+            && keylist[2].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure QUEUES and PER_QUEUE in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[1].val != NULL
+         || keylist[2].val != NULL) {
         char* outQueues = NULL;
         int   numQueues = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_QUEUES;
-        limitPtr->consumers[idx].def = putstr_(keylist[1].val);
+        if (keylist[1].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_QUEUES;
+            valPtr = &keylist[1].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_QUEUE;
+            valPtr = &keylist[2].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
-                  "the string is \'%s\'", keylist[1].val);
-        numQueues = parseQueues(keylist[1].val, &outQueues);
+                  "the string is \'%s\'", *valPtr);
+        numQueues = parseQueues(*valPtr, &outQueues);
         if (numQueues > 0) {
             ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
                       "the string is replaced with \'%s\'", outQueues);
@@ -8164,33 +8190,67 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[1].val);
-        keylist[1].val = outQueues;
-        limitPtr->consumers[idx].value = putstr_(keylist[1].val);
+        FREEUP(*valPtr);
+        *valPtr = outQueues;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*PROJECTS*/
-    if (keylist[2].val != NULL
-        && strcmp(keylist[2].val, "")) {
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PROJECTS;
-        limitPtr->consumers[idx].def = putstr_(keylist[2].val);
-        limitPtr->consumers[idx].value = putstr_(keylist[2].val);
+    if (keylist[3].val != NULL
+            && keylist[4].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure PROJECTS and PER_PROJECT in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[3].val != NULL
+         || keylist[4].val != NULL) {
+        if (keylist[3].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PROJECTS;
+            valPtr = &keylist[3].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_PROJECT;
+            valPtr = &keylist[4].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*HOSTS*/
-    if (keylist[3].val != NULL
-        && strcmp(keylist[3].val, "")) {
+    if (keylist[5].val != NULL
+            && keylist[6].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure HOSTS and PER_HOST in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[5].val != NULL
+         || keylist[6].val != NULL) {
         char* outHosts = NULL;
         int   numHosts = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_HOSTS;
-        limitPtr->consumers[idx].def = putstr_(keylist[3].val);
+        if (keylist[5].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_HOSTS;
+            valPtr = &keylist[5].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_HOST;
+            valPtr = &keylist[6].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
-                  "the string is \'%s\'", keylist[3].val);
-        numHosts = parseHosts(keylist[3].val, &outHosts);
+                  "the string is \'%s\'", *valPtr);
+        numHosts = parseHosts(*valPtr, &outHosts);
         if (numHosts > 0) {
             ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
                       "the string is replaced with \'%s\'", outHosts);
@@ -8202,24 +8262,41 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[3].val);
-        keylist[3].val = outHosts;
-        limitPtr->consumers[idx].value = putstr_(keylist[3].val);
+        FREEUP(*valPtr);
+        *valPtr = outHosts;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*USERS*/
-    if (keylist[4].val != NULL
-        && strcmp(keylist[4].val, "")) {
+    if (keylist[7].val != NULL
+            && keylist[8].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure USERS and PER_USER in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[7].val != NULL
+         || keylist[8].val != NULL) {
         char* outUsers = NULL;
         int   numUsers = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_USERS;
-        limitPtr->consumers[idx].def = putstr_(keylist[4].val);
+        if (keylist[7].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_USERS;
+            valPtr = &keylist[7].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_USER;
+            valPtr = &keylist[8].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
-                  "the string is \'%s\'", keylist[4].val);
-        numUsers = parseUsers(keylist[4].val, &outUsers);
+                  "the string is \'%s\'", *valPtr);
+        numUsers = parseUsers(*valPtr, &outUsers);
         if (numUsers > 0) {
             ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
                       "the string is replaced with \'%s\'", outUsers);
@@ -8231,25 +8308,25 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[4].val);
-        keylist[4].val = outUsers;
-        limitPtr->consumers[idx].value = putstr_(keylist[4].val);
+        FREEUP(*valPtr);
+        *valPtr= outUsers;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     idx = 0;    /* index of resource */
 
     /*SLOTS*/
-    if (keylist[5].val != NULL
-        && strcmp(keylist[5].val, "")) {
+    if (keylist[9].val != NULL
+        && strcmp(keylist[9].val, "")) {
         limitPtr->res[idx].res = LIMIT_RESOURCE_SLOTS;
         if ((limitPtr->res[idx].value =
-             my_atoi(keylist[5].val,
+             my_atoi(keylist[9].val,
                      INFINIT_INT, -1)) == INFINIT_INT) {
             ls_syslog(LOG_ERR, "\
 %s: File %s in section Limit ending at line %d: SLOTS value <%s> isn't a non-negative integer between -1 and %d; ignored",
                       __func__, fname, *lineNum,
-                      keylist[5].val, INFINIT_INT);
+                      keylist[9].val, INFINIT_INT);
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
@@ -8257,16 +8334,16 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     }
 
     /*JOBS*/
-    if (keylist[6].val != NULL
-        && strcmp(keylist[6].val, "")) {
+    if (keylist[10].val != NULL
+        && strcmp(keylist[10].val, "")) {
         limitPtr->res[idx].res = LIMIT_RESOURCE_JOBS;
         if ((limitPtr->res[idx].value =
-             my_atoi(keylist[6].val,
+             my_atoi(keylist[10].val,
                      INFINIT_INT, -1)) == INFINIT_INT) {
             ls_syslog(LOG_ERR, "\
 %s: File %s in section Limit ending at line %d: JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
                       __func__, fname, *lineNum,
-                      keylist[6].val, INFINIT_INT);
+                      keylist[10].val, INFINIT_INT);
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;

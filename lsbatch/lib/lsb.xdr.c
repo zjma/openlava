@@ -2142,8 +2142,11 @@ xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
     if (xdrs->x_op == XDR_DECODE) {
         usage->limitName = NULL;
         usage->project = NULL;
+        usage->user = NULL;
         usage->queue = NULL;
-        usage->used = 0;
+        usage->host = NULL;
+        usage->slots = 0;
+        usage->jobs = 0;
     }
 
     if (!xdr_var_string(xdrs, &(usage->limitName)))
@@ -2152,10 +2155,19 @@ xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
     if (!xdr_var_string(xdrs, &(usage->project)))
         return false;
 
+    if (!xdr_var_string(xdrs, &(usage->user)))
+        return false;
+
     if (!xdr_var_string(xdrs, &(usage->queue)))
         return false;
 
-    if (!xdr_float(xdrs, &(usage->used)))
+    if (!xdr_var_string(xdrs, &(usage->host)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->slots)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->jobs)))
         return false;
 
     return true;

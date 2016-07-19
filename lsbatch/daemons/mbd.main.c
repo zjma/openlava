@@ -116,7 +116,20 @@ struct lsInfo *allLsInfo;
 struct hTab calDataList;
 struct hTab condDataList;
 
+/* Hash table to resource account
+ * per project on queues.
+ */
 struct hTab pDataTab;
+
+/* Hash table to resource account
+ * per user on queues.
+ */
+struct hTab uDataTab;
+
+/* Hash table to resource account
+ * per host on queues.
+ */
+struct hTab hDataTab;
 
 char   *masterHost = NULL;
 char   *clusterName = NULL;
@@ -1177,8 +1190,7 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_PARAM_INFO
         || req == BATCH_USER_INFO
         || req == BATCH_JOB_PEEK
-        || req == BATCH_JOBDEP_INFO
-        || req == BATCH_RESLIMIT_INFO) {
+        || req == BATCH_JOBDEP_INFO) {
         return 1;
     }
 

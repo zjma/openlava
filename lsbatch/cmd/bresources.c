@@ -76,6 +76,7 @@ static void
 print_limits(struct resLimitReply *reply)
 {
     int i, j, k;
+    int slimit, jlimit;
     char *name;
     int  inUse;
 
@@ -87,60 +88,90 @@ print_limits(struct resLimitReply *reply)
                 case LIMIT_CONSUMER_QUEUES:
                     name = "QUEUES";
                     break;
+                case LIMIT_CONSUMER_PER_QUEUE:
+                    name = "PER_QUEUE";
+                    break;
                 case LIMIT_CONSUMER_PROJECTS:
                     name = "PROJECTS";
+                    break;
+                case LIMIT_CONSUMER_PER_PROJECT:
+                    name = "PER_PROJECT";
                     break;
                 case LIMIT_CONSUMER_HOSTS:
                     name = "HOSTS";
                     break;
+                case LIMIT_CONSUMER_PER_HOST:
+                    name = "PER_HOST";
+                    break;
                 case LIMIT_CONSUMER_USERS:
                     name = "USERS";
+                    break;
+                case LIMIT_CONSUMER_PER_USER:
+                    name = "PER_USER";
                     break;
                 default:
                     usage();
                     exit(-1);
             }
             printf("%-10s : %s\n", name, reply->limits[i].consumers[j].def);
-            if (reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_HOSTS
-                    || reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_USERS
-                    || reply->limits[i].consumers[j].consumer == LIMIT_CONSUMER_QUEUES)
+            if (reply->limits[i].consumers[j].consumer != LIMIT_CONSUMER_PROJECTS
+                    && reply->limits[i].consumers[j].consumer != LIMIT_CONSUMER_PER_PROJECT)
                 printf("    expand : %s\n", reply->limits[i].consumers[j].value);
         }
 
+        slimit = jlimit = 0;
         for (j = 0; j < reply->limits[i].nRes; j++) {
              switch (reply->limits[i].res[j].res) {
                 case LIMIT_RESOURCE_SLOTS:
                     name = "SLOTS";
+                    slimit = (int)reply->limits[i].res[j].value;
                     break;
                 case LIMIT_RESOURCE_JOBS:
                     name = "JOBS";
+                    jlimit = (int)reply->limits[i].res[j].value;
                     break;
                 default:
                     usage();
                     exit(-1);
             }
             printf("%-10s : %d\n", name, (int)(reply->limits[i].res[j].value));
+        }
 
-            if (reply->numUsage > 0
-                    && strcmp(name, "JOBS") == 0) {
-                printf("\n%s\n", "CURRENT LIMIT RESOURCE USAGE:");
-                printf("    %-10s  %-10s  %-10s\n", "PROJECT", "QUEUE", "JOBS");
+        if (reply->numUsage > 0
+                && (slimit > 0 || jlimit > 0)) {
+            printf("\n%s\n", "CURRENT LIMIT RESOURCE USAGE:");
+            printf("    %-10s  %-10s  %-10s  %-10s  %-10s  %-10s\n",
+                   "PROJECT", "QUEUE", "USER", "HOST", "SLOTS", "JOBS");
 
-                inUse = FALSE;
-                for (k = 0; k < reply->numUsage; k++) {
-                    if (strcmp(reply->limits[i].name, reply->usage[k].limitName)
-                            || reply->usage[k].used <= 0)
-                        continue;
-                    printf("    %-10s  %-10s  %d/%d\n",
-                                reply->usage[k].project,
-                                reply->usage[k].queue,
-                                (int)reply->usage[k].used,
-                                (int)(reply->limits[i].res[j].value));
-                    inUse = TRUE;
-                }
-                if (!inUse)
-                    printf("    %-10s  %-10s  %-10s\n", "-", "-", "-");
+            inUse = FALSE;
+            for (k = 0; k < reply->numUsage; k++) {
+                char buf1[64];
+                char buf2[64];
+                if (strcmp(reply->limits[i].name, reply->usage[k].limitName)
+                        || (reply->usage[k].slots <= 0 && reply->usage[k].jobs <= 0))
+                    continue;
+
+                if (slimit > 0)
+                    sprintf(buf1, "%d/%d", (int)reply->usage[k].slots, slimit);
+                else
+                    sprintf(buf1, "%s", "-");
+
+                if (jlimit > 0)
+                    sprintf(buf2, "%d/%d", (int)reply->usage[k].jobs, jlimit);
+                else
+                    sprintf(buf2, "%s", "-");
+
+                printf("    %-10s  %-10s  %-10s  %-10s  %-10s  %-10s\n",
+                            !strcmp(reply->usage[k].project, "") ? "-" : reply->usage[k].project,
+                            !strcmp(reply->usage[k].queue, "") ? "-" : reply->usage[k].queue,
+                            !strcmp(reply->usage[k].user, "") ? "-" : reply->usage[k].user,
+                            !strcmp(reply->usage[k].host, "") ? "-" : reply->usage[k].host,
+                            buf1,
+                            buf2);
+                inUse = TRUE;
             }
+            if (!inUse)
+                printf("    %-10s  %-10s  %-10s  %-10s  %-10s  %-10s\n", "-", "-", "-", "-", "-", "-");
         }
         printf("\n\n");
     }
