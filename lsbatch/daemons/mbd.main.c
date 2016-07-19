@@ -321,8 +321,8 @@ mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
     qsort_jobs = 1;
     if (daemonParams[MBD_NO_QSORT_JOBS].paramValue) {
         qsort_jobs = 0;
-        ls_syslog(LOG_INFO, "\
-mbd:%s qsort() of jobs is disabled", __func__);
+        ls_syslog(LOG_WARNING, "\
+%s: mbatchd qsort() of jobs is disabled", __func__);
     }
 
     daemon_doinit();

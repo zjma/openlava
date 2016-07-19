@@ -36,6 +36,12 @@ static bool_t xdr_lsbSharedResourceInfo(XDR *,
 static bool_t xdr_lsbShareResourceInstance(XDR *,
                                            struct lsbSharedResourceInstance *,
                                            struct LSFHeader *);
+static bool_t
+xdr_shareAcctOwn(XDR *xdrs,
+                 int *num,
+                 struct share_acct ***s,
+                 struct LSFHeader *hdr);
+
 int  lsbSharedResConfigured_ = false;
 
 bool_t
@@ -1025,30 +1031,23 @@ xdr_queueInfoEnt(XDR *xdrs,
         return false;
     }
 
-    /* Handle fairshare data
+    /* Handle fairshare data. Default starting from 3.0.
+     * Compatibility with previous OL versions starts in 3.0
      */
     if (! xdr_numShareAccts(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
         return false;
 
-    if (hdr->version >= 3) {
-        if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
-            return false;
-    }
+    if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
+        return false;
 
-    if (xdrs->x_op == XDR_ENCODE
-        && hdr->version >= 3) {
-        xdr_var_string(xdrs, &qInfo->preemption);
-    }
+    if (! xdr_var_string(xdrs, &qInfo->preemption))
+        return false;
 
-    if (xdrs->x_op == XDR_DECODE
-        && hdr->version >= 3) {
-        xdr_var_string(xdrs, &qInfo->preemption);
-    }
+    if (! xdr_uint32_t(xdrs, &qInfo->num_owned_slots))
+        return false;
 
-    if (hdr->version >= 32) {
-        if (! xdr_uint32_t(xdrs, &qInfo->num_owned_slots))
-            return false;
-    }
+    if (! xdr_shareAcctOwn(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
+        return false;
 
     return true;
 }
@@ -1069,14 +1068,7 @@ xdr_numShareAccts(XDR *xdrs,
     if (!xdr_int(xdrs, num))
         return false;
 
-    /* Encode fairshare data. If we are
-     * encoding to < 3 don't care as
-     * the library is not expecting
-     * any fairshare data.
-     */
-    if (xdrs->x_op == XDR_ENCODE
-        && hdr->version >= 3) {
-
+    if (xdrs->x_op == XDR_ENCODE) {
         s2 = *s;
         for (i = 0; i < *num; i++) {
             if (! xdr_shareAcct(xdrs, s2[i], hdr))
@@ -1086,19 +1078,18 @@ xdr_numShareAccts(XDR *xdrs,
         return true;
     }
 
-    if (xdrs->x_op == XDR_DECODE
-        && hdr->version >= 3) {
+    /* I am decoding
+     */
+    if (*num == 0) {
+        s2 = NULL;
+        return true;
+    }
+    s2 = calloc(*num, sizeof(struct share_acct *));
 
-        if (*num == 0)
-            s2 = NULL;
-        else
-            s2 = calloc(*num, sizeof(struct share_acct *));
-
-        for (i = 0; i < *num; i++) {
-            s2[i] = calloc(1, sizeof(struct share_acct));
-            if (! xdr_shareAcct(xdrs, s2[i], hdr))
+    for (i = 0; i < *num; i++) {
+        s2[i] = calloc(1, sizeof(struct share_acct));
+        if (! xdr_shareAcct(xdrs, s2[i], hdr))
                 return false;
-        }
     }
 
     *s = s2;
@@ -1118,13 +1109,26 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
         || ! xdr_uint32_t(xdrs, &s->options))
         return false;
 
-    if (hdr->version >= 32) {
-        if (! xdr_int(xdrs, &s->numBORROWED))
-            return false;
-    }
+    return true;
+}
 
-    if (hdr->version >= 33) {
-        if (! xdr_int(xdrs, &s->numRAN))
+/* xdr_shareAcctOwn()
+ */
+static bool_t
+xdr_shareAcctOwn(XDR *xdrs,
+                 int *num,
+                 struct share_acct ***s,
+                 struct LSFHeader *hdr)
+{
+    int i;
+    struct share_acct **s2;
+
+    s2 = *s;
+    for (i = 0; i < *num; i++) {
+        if (! xdr_int(xdrs, &s2[i]->numBORROWED))
+            return false;
+
+        if (! xdr_int(xdrs, &s2[i]->numRAN))
             return false;
     }
 

@@ -8835,6 +8835,11 @@ sort_job_list(int listno)
     free(jArray);
 }
 
+/* jcompare()
+ *
+ * Sort jobs in ascending order as we typically access then via
+ * the back pointer which is from the higher priority direction.
+ */
 static int
 jcompare(const void *j1, const void *j2)
 {
@@ -8854,9 +8859,9 @@ jcompare(const void *j1, const void *j2)
     /* Same queue compare job priority as set by btop
      * or bbot.
      */
-    if (jPtr1->priority > jPtr2->priority)
+    if (jPtr1->jobPriority > jPtr2->jobPriority)
         return 1;
-    if (jPtr1->priority < jPtr2->priority)
+    if (jPtr1->jobPriority < jPtr2->jobPriority)
         return -1;
 
     /* Same priority compare jobids. A job with higher jobid is
