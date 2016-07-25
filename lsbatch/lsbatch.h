@@ -1499,10 +1499,14 @@ struct queueConf {
 
 typedef enum limitConsumerType {
     LIMIT_CONSUMER_QUEUES = 0,
-    LIMIT_CONSUMER_PROJECTS = 1,
-    LIMIT_CONSUMER_HOSTS = 2,
-    LIMIT_CONSUMER_USERS = 3,
-    LIMIT_CONSUMER_TYPE_NUM = 4    /* how many consumer types */
+    LIMIT_CONSUMER_PER_QUEUE = 1,
+    LIMIT_CONSUMER_PROJECTS = 2,
+    LIMIT_CONSUMER_PER_PROJECT = 3,
+    LIMIT_CONSUMER_HOSTS = 4,
+    LIMIT_CONSUMER_PER_HOST = 5,
+    LIMIT_CONSUMER_USERS = 6,
+    LIMIT_CONSUMER_PER_USER = 7,
+    LIMIT_CONSUMER_TYPE_NUM = 8    /* how many consumer types */
 } limitConsumerType_t;
 
 struct limitConsumer {

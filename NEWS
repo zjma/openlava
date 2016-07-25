@@ -16,6 +16,7 @@ Release notes for OpenLava versions
 -- Fix backward compatibility bug in which earlier version of OL cannot
    get information from higher version if mbatchd, specifically 3.0/3.1
    bqueues cannot get information from 3.3 bqueues.
+-- Impelement lsb.resources of job slot limit for each user/project.
 
 3.3.3
 ======

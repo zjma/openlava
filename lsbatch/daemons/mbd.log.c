@@ -340,7 +340,8 @@ init_log(void)
 
             updQaccount(jp, num, num, 0, 0, 0, 0);
             updUserData(jp, num, num, 0, 0, 0, 0);
-            updProjectData(jp, num, num, 0, 0, 0, 0);
+            updLimitSlotData(jp, num, num, 0, 0, 0, 0);
+            updLimitJobData(jp, 1, 1, 0, 0, 0, 0);
 
             jp->jStatus = svJStatus;
             if (jp->jStatus & JOB_STAT_PEND)

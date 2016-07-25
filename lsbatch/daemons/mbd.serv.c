@@ -42,7 +42,7 @@ static void freeShareResourceInfoReply(struct  lsbShareResourceInfoReply *);
 static int xdrsize_QueueInfoReply(struct queueInfoReply * );
 static int xdrsize_ResLimitInfoReply (struct resLimitReply *);
 static void addResUsage(struct resLimitReply *);
-static struct resLimitUsage * getLimitUsage(struct resLimit *, struct pqData *);
+static struct resLimitUsage * getLimitUsage(struct resLimit *, struct resData *);
 static void freeResLimitUsage(int, struct resLimitUsage *);
 extern void closeSession(int);
 static int sendLSFHeader(int, int);
@@ -3340,8 +3340,10 @@ xdrsize_ResLimitInfoReply (struct resLimitReply *limits)
     for (i = 0; i < limits->numUsage; i++) {
         len += getXdrStrlen(limits->usage[i].limitName)
             + getXdrStrlen(limits->usage[i].project)
+            + getXdrStrlen(limits->usage[i].user)
             + getXdrStrlen(limits->usage[i].queue)
-            + sizeof(float);
+            + getXdrStrlen(limits->usage[i].host)
+            + 2 * sizeof(float);
     }
 
     return len;
@@ -3355,20 +3357,17 @@ addResUsage(struct resLimitReply *limits)
     struct sTab   sTab2;
     hEnt   *ent;
     hEnt   *ent2;
-    struct pData *pData;
-    struct pqData *pqData;
+    struct consumerData *pData;
+    struct resData *pqData;
     int    i;
     int    n = 0;
     struct resLimitUsage *usage;
     struct resLimitUsage *allLimitUsage[MAX_RES_LIMITS * 20];
 
     ent = h_firstEnt_(&pDataTab, &sTab);
-    if (ent == NULL)
-        return;
-
     while (ent) {
         pData = ent->hData;
-        ent2 = h_firstEnt_(pData->qAcct, &sTab2);
+        ent2 = h_firstEnt_(pData->rAcct, &sTab2);
         while (ent2) {
             pqData = ent2->hData;
             for (i = 0; i < limits->numLimits; i++) {
@@ -3382,43 +3381,71 @@ addResUsage(struct resLimitReply *limits)
         ent = h_nextEnt_(&sTab);
     }
 
+    ent = h_firstEnt_(&uDataTab, &sTab);
+    while (ent) {
+        pData = ent->hData;
+        ent2 = h_firstEnt_(pData->rAcct, &sTab2);
+        while (ent2) {
+            pqData = ent2->hData;
+            for (i = 0; i < limits->numLimits; i++) {
+                usage = getLimitUsage(&limits->limits[i], pqData);
+                if (usage) {
+                    allLimitUsage[n++] = usage;
+                }
+            }
+            ent2 = h_nextEnt_(&sTab2);
+        }
+        ent = h_nextEnt_(&sTab);
+    }
+
+
     limits->numUsage = n;
     limits->usage = my_calloc(limits->numUsage, sizeof(struct resLimitUsage), __func__);
     for (i = 0; i < limits->numUsage; i++) {
         limits->usage[i].limitName = allLimitUsage[i]->limitName;
-        limits->usage[i].project = allLimitUsage[i]->project;
-        limits->usage[i].queue = allLimitUsage[i]->queue;
-        limits->usage[i].used = allLimitUsage[i]->used;
+        limits->usage[i].project = allLimitUsage[i]->project == NULL ? strdup("") : allLimitUsage[i]->project;
+        limits->usage[i].user = allLimitUsage[i]->user == NULL ? strdup("") : allLimitUsage[i]->user;
+        limits->usage[i].queue = allLimitUsage[i]->queue == NULL ? strdup("") : allLimitUsage[i]->queue;
+        limits->usage[i].host = allLimitUsage[i]->host == NULL ? strdup("") : allLimitUsage[i]->host;
+        limits->usage[i].slots = allLimitUsage[i]->slots;
+        limits->usage[i].jobs = allLimitUsage[i]->jobs;
         FREEUP(allLimitUsage[i]);
     }
 }
 
 /* getLimitUsage() */
 static struct resLimitUsage *
-getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
+getLimitUsage(struct resLimit *limit, struct resData *pAcct)
 {
     int    i, j;
     char   *project = NULL;
     char   *save_project = NULL;
     char   *queue = NULL;
     char   *save_queue = NULL;
+    char   *user = NULL;
+    char   *save_user = NULL;
+    char   *user_def = NULL;
+    char   *save_user_def = NULL;
+    char   *host = NULL;
+    char   *save_host = NULL;
     char   *word = NULL;
     int    hasMe = FALSE;
-    int    projectHasAll = FALSE;
+    int    hasAll = FALSE;
     int    neg = FALSE;
+    int    match = FALSE;
     struct resLimitUsage *usage = NULL;
 
     if (!limit || !pAcct)
         return NULL;
 
-    if (pAcct->numRUN == 0
-        && pAcct->numSSUSP == 0
-        && pAcct->numUSUSP == 0
-        && pAcct->numRESERVE == 0)
+    if (pAcct->numRUNSlots == 0
+        && pAcct->numSSUSPSlots == 0
+        && pAcct->numUSUSPSlots == 0
+        && pAcct->numRESERVESlots == 0)
         return NULL;
 
     for (i = 0; i < limit->nRes; i++) {
-        if (limit->res[i].res == LIMIT_RESOURCE_JOBS)
+        if (limit->res[i].value != 0)
             break;
     }
 
@@ -3426,56 +3453,128 @@ getLimitUsage(struct resLimit *limit, struct pqData *pAcct)
         return NULL;
 
     for (j = 0; j < limit->nConsumer; j++) {
-        if (limit->consumers[j].consumer == LIMIT_CONSUMER_PROJECTS) {
+        if (limit->consumers[j].consumer == LIMIT_CONSUMER_PROJECTS
+            || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_PROJECT) {
             project = strdup(limit->consumers[j].value);
             save_project = project;
-        } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_QUEUES) {
+        } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_QUEUES
+                   || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_QUEUE) {
             queue = strdup(limit->consumers[j].value);
             save_queue = queue;
+        } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_USERS
+                   || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_USER) {
+            user = strdup(limit->consumers[j].value);
+            save_user = user;
+            user_def = strdup(limit->consumers[j].def);
+            save_user_def = user_def;
+        } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_HOSTS
+                   || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_HOST) {
+            host = strdup(limit->consumers[j].value);
+            save_host = host;
         }
     }
 
-    if (!project || !queue)
-        goto clean;
-
-    while ((word = getNextWord_(&queue)) != NULL) {
-        if (strcasecmp(word, pAcct->queue) == 0)
-            break;
+    if (queue && pAcct->queue) {
+        while ((word = getNextWord_(&queue)) != NULL) {
+            if (strcasecmp(word, pAcct->queue) == 0)
+                break;
+        }
+        if (!word)
+            goto clean;
     }
-    if (!word)
-        goto clean;
 
-    if (strstr(project, "all") != NULL)
-        projectHasAll = TRUE;
+    if (host && pAcct->host) {
+        while ((word = getNextWord_(&host)) != NULL) {
+            if (strcasecmp(word, pAcct->host) == 0)
+                break;
+        }
+        if (!word)
+            goto clean;
+    }
 
-    while ((word = getNextWord_(&project)) != NULL) {
-        if (word[0] == '~') {
-            neg = TRUE;
-            word++;
+    if (user && pAcct->user) {
+        while ((word = getNextWord_(&user)) != NULL) {
+            if (strcasecmp(word, pAcct->user) == 0)
+                break;
         }
-        if (strcasecmp(word, pAcct->project) == 0) {
-            hasMe = TRUE;
-            break;
+        if (!word) {
+            /* check unix user */
+            char *word2 = NULL;
+            if (strstr(user_def, "all") == user_def)
+                hasAll = TRUE;
+
+            while ((word2 = getNextWord_(&user_def)) != NULL) {
+                if (word2[0] == '~') {
+                    neg = TRUE;
+                    word2++;
+                }
+                if (strcasecmp(word2, pAcct->user) == 0) {
+                    hasMe = TRUE;
+                    break;
+                }
+                neg = FALSE;
+            }
+            if((!hasAll && !hasMe)
+               || (hasAll && hasMe && neg))
+                goto clean;
         }
+        match = TRUE;
+    }
+
+    if (project && pAcct->project) {
+        hasMe = FALSE;
         neg = FALSE;
+        hasAll = FALSE;
+
+        if (strstr(project, "all") != NULL)
+            hasAll = TRUE;
+
+        while ((word = getNextWord_(&project)) != NULL) {
+            if (word[0] == '~') {
+                neg = TRUE;
+                word++;
+            }
+            if (strcasecmp(word, pAcct->project) == 0) {
+                hasMe = TRUE;
+                break;
+            }
+            neg = FALSE;
+        }
+        if((!hasAll && !hasMe)
+           || (hasAll && hasMe && neg))
+            goto clean;
+        match = TRUE;
     }
 
-    if ((!projectHasAll && hasMe)
-        || (projectHasAll && hasMe && !neg)
-        || (projectHasAll && !hasMe)) {
-        usage = my_calloc(1, sizeof(struct resLimitUsage), __func__);
-        usage->limitName = strdup(limit->name);
-        usage->project = strdup(pAcct->project);
+    if (!match)
+        goto clean;
+
+    usage = my_calloc(1, sizeof(struct resLimitUsage), __func__);
+    usage->limitName = strdup(limit->name);
+    if (pAcct->project)
+        usage->project= strdup(pAcct->project);
+    if (pAcct->user)
+        usage->user = strdup(pAcct->user);
+    if (pAcct->queue)
         usage->queue = strdup(pAcct->queue);
-        usage->used = pAcct->numRUN
-            + pAcct->numSSUSP
-            + pAcct->numUSUSP
-            + pAcct->numRESERVE;
-    }
+    if (pAcct->host)
+        usage->host = strdup(pAcct->host);
 
+    usage->slots= pAcct->numRUNSlots
+        + pAcct->numSSUSPSlots
+        + pAcct->numUSUSPSlots
+        + pAcct->numRESERVESlots;
+
+    usage->jobs= pAcct->numRUNJobs
+        + pAcct->numSSUSPJobs
+        + pAcct->numUSUSPJobs
+        + pAcct->numRESERVEJobs;
 clean:
     FREEUP(save_queue);
     FREEUP(save_project);
+    FREEUP(save_user);
+    FREEUP(save_user_def);
+    FREEUP(save_host);
     return usage;
 }
 
@@ -3491,7 +3590,9 @@ freeResLimitUsage(int num, struct resLimitUsage *usage)
     for (i = 0; i < num; i++) {
         FREEUP(usage[i].limitName);
         FREEUP(usage[i].project);
+        FREEUP(usage[i].user);
         FREEUP(usage[i].queue);
+        FREEUP(usage[i].host);
     }
     FREEUP(usage);
 }

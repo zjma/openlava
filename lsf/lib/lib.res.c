@@ -42,7 +42,7 @@ unsigned int requestSN = 0;
 
 unsigned int requestHighWaterMark = 0;
 
-#define REQUESTSN	((requestSN < USHRT_MAX) ? requestSN++ : (requestSN=11 , 10))
+#define REQUESTSN       ((requestSN < USHRT_MAX) ? requestSN++ : (requestSN=11 , 10))
 
 unsigned int currentSN;
 
@@ -67,9 +67,9 @@ ls_connect(char *host)
 
 
     if (genParams_[LSF_RES_TIMEOUT].paramValue)
-	resTimeout = atoi(genParams_[LSF_RES_TIMEOUT].paramValue);
+        resTimeout = atoi(genParams_[LSF_RES_TIMEOUT].paramValue);
     else
-	resTimeout = RES_TIMEOUT;
+        resTimeout = RES_TIMEOUT;
 
     if (_isconnected_(host, descriptor))
         return(descriptor[0]);
@@ -103,35 +103,35 @@ ls_connect(char *host)
 
 
     if (getAuth_(&auth, official) == -1) {
-	closesocket(s);
-	return -1;
+        closesocket(s);
+        return -1;
     }
 
     runEsub_(&connReq.eexec, NULL);
 
     size = sizeof(struct LSFHeader) + sizeof(connReq) +
-	   sizeof(struct lsfAuth) +
-	   ALIGNWORD_(connReq.eexec.len) +
-	   sizeof(int) * 5 ;
+        sizeof(struct lsfAuth) +
+        ALIGNWORD_(connReq.eexec.len) +
+        sizeof(int) * 5 ;
 
     if ((reqBuf = malloc(size)) == NULL) {
-	lserrno = LSE_MALLOC;
-	goto Fail;
+        lserrno = LSE_MALLOC;
+        goto Fail;
     }
 
     if (b_connect_(s, (struct sockaddr *)&res_addr_,
-				 sizeof(res_addr_), resTimeout) < 0) {
-	lserrno = LSE_CONN_SYS;
-	goto Fail;
+                   sizeof(res_addr_), resTimeout) < 0) {
+        lserrno = LSE_CONN_SYS;
+        goto Fail;
     }
 
     if (callRes_(s, RES_CONNECT, (char *) &connReq, reqBuf,
-		 size, xdr_resConnect, 0, 0, &auth) == -1) {
-	goto Fail;
+                 size, xdr_resConnect, 0, 0, &auth) == -1) {
+        goto Fail;
     }
 
     if (connReq.eexec.len > 0)
-	free(connReq.eexec.data);
+        free(connReq.eexec.data);
 
     free(reqBuf);
 
@@ -139,11 +139,11 @@ ls_connect(char *host)
 
     return(s);
 
-  Fail:
+Fail:
     CLOSESOCKET(s);
 
     if (connReq.eexec.len > 0)
-	free(connReq.eexec.data);
+        free(connReq.eexec.data);
 
     free(reqBuf);
     return -1;
@@ -161,12 +161,12 @@ lsConnWait_(char *host)
         return -1;
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0){
-	    closesocket(s);
-	    _lostconnection_(host);
-	    return -1;
-	}
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0){
+            closesocket(s);
+            _lostconnection_(host);
+            return -1;
+        }
     }
 
     return 0;
@@ -174,7 +174,7 @@ lsConnWait_(char *host)
 
 int
 sendCmdBill_ (int s, resCmd cmd, struct resCmdBill *cmdmsg, int *retsock,
-	     struct timeval *timeout)
+              struct timeval *timeout)
 
 {
     char *buf;
@@ -192,12 +192,12 @@ sendCmdBill_ (int s, resCmd cmd, struct resCmdBill *cmdmsg, int *retsock,
     umask(cmdmsg->filemask = (int)umask(0));
     cmdmsg->priority = 0;
     if (getLimits(cmdmsg->lsfLimits) < 0) {
-	lserrno = LSE_LIMIT_SYS;
+        lserrno = LSE_LIMIT_SYS;
         free(buf);
-	return -1;
+        return -1;
     }
     cc=callRes_(s, cmd, (char *) cmdmsg, buf, bufsize, xdr_resCmdBill,
-		retsock, timeout, NULL);
+                retsock, timeout, NULL);
     free(buf);
     return cc;
 
@@ -264,7 +264,7 @@ ls_pclose(FILE *fp)
     return 0;
 }
 
-#define RSETENV_SYNCH	1
+#define RSETENV_SYNCH   1
 #define RSETENV_ASYNC   2
 int
 rsetenv_ (char *host, char **envp, int option)
@@ -279,7 +279,7 @@ rsetenv_ (char *host, char **envp, int option)
     bufferSize = 512;
 
     if (logclass & (LC_TRACE))
-	ls_syslog(LOG_DEBUG, "rsetenv_: Entering this routine...");
+        ls_syslog(LOG_DEBUG, "rsetenv_: Entering this routine...");
 
     if (!envp)
         return 0;
@@ -294,19 +294,19 @@ rsetenv_ (char *host, char **envp, int option)
     }
 
     if (_isconnected_(host, descriptor))
-	s = descriptor[0];
+        s = descriptor[0];
     else if ((s = ls_connect(host)) < 0) {
         free(sendBuf);
-	goto err;
+        goto err;
     }
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	   closesocket(s);
-	   _lostconnection_(host);
-           free(sendBuf);
-	   goto err;
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            free(sendBuf);
+            goto err;
         }
     }
 
@@ -316,9 +316,9 @@ rsetenv_ (char *host, char **envp, int option)
     else if (option == RSETENV_ASYNC)
         resCmdOption = RES_SETENV_ASYNC;
     if (callRes_(s, resCmdOption, (char *) &envMsg, sendBuf, bufferSize,
-		 xdr_resSetenv, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
+                 xdr_resSetenv, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
         free(sendBuf);
         goto err;
     }
@@ -326,8 +326,8 @@ rsetenv_ (char *host, char **envp, int option)
 
     if (option == RSETENV_SYNCH){
         if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
+            closesocket(s);
+            _lostconnection_(host);
             goto err;
         }
     }
@@ -356,22 +356,22 @@ ls_chdir(char *host, char *dir)
 {
     int s, descriptor[2];
     struct {
-	struct LSFHeader hdr;
-	struct resChdir ch;
+        struct LSFHeader hdr;
+        struct resChdir ch;
     } buf;
     struct resChdir chReq;
 
     if (_isconnected_(host, descriptor))
-	s = descriptor[0];
+        s = descriptor[0];
     else if ((s = ls_connect(host)) < 0)
-	return -1;
+        return -1;
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	   closesocket(s);
-	   _lostconnection_(host);
-	   return -1;
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return -1;
         }
     }
 
@@ -383,9 +383,9 @@ ls_chdir(char *host, char *dir)
     strcpy(chReq.dir, dir);
 
     if (callRes_(s, RES_CHDIR, (char *) &chReq, (char *) &buf,
-		 sizeof(buf), xdr_resChdir, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
+                 sizeof(buf), xdr_resChdir, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
         return -1;
     }
 
@@ -401,20 +401,20 @@ ls_chdir(char *host, char *dir)
 
 struct lsRequest *
 lsReqHandCreate_(int tid,
-		 int seqno,
-		 int connfd,
-		 void *extra,
-		 requestCompletionHandler replyHandler,
-		 appCompletionHandler appHandler,
-		 void *appExtra)
+                 int seqno,
+                 int connfd,
+                 void *extra,
+                 requestCompletionHandler replyHandler,
+                 appCompletionHandler appHandler,
+                 void *appExtra)
 {
     struct lsRequest *request;
 
-    request = (struct lsRequest *)malloc(sizeof(struct lsRequest));
+    request = calloc(1, sizeof(struct lsRequest));
 
     if (! request) {
-	lserrno = LSE_MALLOC;
-	return NULL;
+        lserrno = LSE_MALLOC;
+        return NULL;
     }
 
     request->tid = tid;
@@ -426,7 +426,7 @@ lsReqHandCreate_(int tid,
     request->appHandler = appHandler;
     request->appExtra = appExtra;
 
-    return(request);
+    return request;
 }
 
 int
@@ -443,8 +443,8 @@ ackAsyncReturnCode_(int s, struct LSFHeader *replyHdr)
     cseqno = seqno;
     reqEntry = lsQueueSearch_(0, &cseqno, requestQ);
     if (reqEntry == NULL) {
-	lserrno = LSE_PROTOC_RES;
-	return -1;
+        lserrno = LSE_PROTOC_RES;
+        return -1;
     }
 
     lsQueueEntryRemove_(reqEntry);
@@ -455,36 +455,36 @@ ackAsyncReturnCode_(int s, struct LSFHeader *replyHdr)
     reqHandle->rc = replyHdr->opCode;
     reqHandle->completed = TRUE;
     if (replyHdr->length > 0) {
-	reqHandle->replyBuf = malloc(replyHdr->length);
-	if (reqHandle->replyBuf == NULL) {
-	    lserrno = LSE_MALLOC;
+        reqHandle->replyBuf = malloc(replyHdr->length);
+        if (reqHandle->replyBuf == NULL) {
+            lserrno = LSE_MALLOC;
             return -1;
-	}
+        }
 
-	len = b_read_fix(s, reqHandle->replyBuf, replyHdr->length);
-	if (len != replyHdr->length) {
-	    free(reqHandle->replyBuf);
-	    lserrno = LSE_MSG_SYS;
-	    return -1;
-	}
-	reqHandle->replyBufLen = len;
+        len = b_read_fix(s, reqHandle->replyBuf, replyHdr->length);
+        if (len != replyHdr->length) {
+            free(reqHandle->replyBuf);
+            lserrno = LSE_MSG_SYS;
+            return -1;
+        }
+        reqHandle->replyBufLen = len;
     }
 
     if (reqHandle->replyHandler) {
-	rc = (*(reqHandle->replyHandler))(reqHandle);
-	if (replyHdr->length > 0)
-	    free(reqHandle->replyBuf);
-	if (rc < 0) {
-	    if (reqHandle->appHandler)
-		rc=(*(reqHandle->appHandler))(reqHandle, reqHandle->appExtra);
+        rc = (*(reqHandle->replyHandler))(reqHandle);
+        if (replyHdr->length > 0)
+            free(reqHandle->replyBuf);
+        if (rc < 0) {
+            if (reqHandle->appHandler)
+                rc=(*(reqHandle->appHandler))(reqHandle, reqHandle->appExtra);
 
-	    lsQueueEntryDestroy_(reqEntry, requestQ);
-	    return rc;
-	}
+            lsQueueEntryDestroy_(reqEntry, requestQ);
+            return rc;
+        }
     }
 
     if (reqHandle->appHandler)
-	rc = (*(reqHandle->appHandler))(reqHandle, reqHandle->appExtra);
+        rc = (*(reqHandle->appHandler))(reqHandle, reqHandle->appExtra);
 
     lsQueueEntryDestroy_(reqEntry, requestQ);
     return rc;
@@ -500,31 +500,31 @@ enqueueTaskMsg_(int s, int taskID, struct LSFHeader *msgHdr)
 
     tEnt = tid_find(taskID);
     if (tEnt == NULL) {
-	return -1;
+        return -1;
     }
 
     header = (struct lsTMsgHdr *)malloc(sizeof(struct lsTMsgHdr));
     if (! header) {
-	lserrno = LSE_MALLOC;
-	return -1;
+        lserrno = LSE_MALLOC;
+        return -1;
     }
 
     header->len = 0;
     header->msgPtr = NULL;
     if (s < 0) {
-	header->type = LSTMSG_IOERR;
-	lsQueueDataAppend_((char *)header, tEnt->tMsgQ);
-	return 0;
+        header->type = LSTMSG_IOERR;
+        lsQueueDataAppend_((char *)header, tEnt->tMsgQ);
+        return 0;
     }
 
     /* or 0xffff ?
      */
     if (msgHdr->reserved == 0
-	&& msgHdr->length == 0)
+        && msgHdr->length == 0)
     {
-	header->type = LSTMSG_EOF;
-	lsQueueDataAppend_((char *)header, tEnt->tMsgQ);
-	return 0;
+        header->type = LSTMSG_EOF;
+        lsQueueDataAppend_((char *)header, tEnt->tMsgQ);
+        return 0;
     }
 
 
@@ -533,14 +533,14 @@ enqueueTaskMsg_(int s, int taskID, struct LSFHeader *msgHdr)
     else
         msgBuf = malloc(msgHdr->length);
     if (msgBuf == NULL) {
-	lserrno = LSE_MALLOC;
-	return -1;
+        lserrno = LSE_MALLOC;
+        return -1;
     }
 
     if (b_read_fix(s, (char *)msgBuf, msgHdr->length) != msgHdr->length) {
-	free(msgBuf);
-	lserrno = LSE_MSG_SYS;
-	return -1;
+        free(msgBuf);
+        lserrno = LSE_MSG_SYS;
+        return -1;
     }
 
     header->type = LSTMSG_DATA;
@@ -562,30 +562,30 @@ expectReturnCode_(int s, int seqno, struct LSFHeader *repHdr)
 
     xdrmem_create(&xdrs, (char *) &buf, sizeof(struct LSFHeader), XDR_DECODE);
     for (;;) {
-	if (logclass & LC_TRACE)
-	    ls_syslog(LOG_DEBUG, "%s: calling readDecodeHdr_...", fname);
-	xdr_setpos(&xdrs, 0);
-	if (readDecodeHdr_(s, (char *) &buf, b_read_fix, &xdrs, repHdr) < 0) {
-	    xdr_destroy(&xdrs);
-	    return -1;
-	}
+        if (logclass & LC_TRACE)
+            ls_syslog(LOG_DEBUG, "%s: calling readDecodeHdr_...", fname);
+        xdr_setpos(&xdrs, 0);
+        if (readDecodeHdr_(s, (char *) &buf, b_read_fix, &xdrs, repHdr) < 0) {
+            xdr_destroy(&xdrs);
+            return -1;
+        }
 
-	if (repHdr->opCode == RES_NONRES)  {
-	    rc = enqueueTaskMsg_(s, repHdr->refCode, repHdr);
-	    if (rc < 0) {
-		xdr_destroy(&xdrs);
-	        return rc;
-	    }
-	} else {
-	    if (repHdr->refCode == seqno)
-	        break;
+        if (repHdr->opCode == RES_NONRES)  {
+            rc = enqueueTaskMsg_(s, repHdr->refCode, repHdr);
+            if (rc < 0) {
+                xdr_destroy(&xdrs);
+                return rc;
+            }
+        } else {
+            if (repHdr->refCode == seqno)
+                break;
 
-	    rc = ackAsyncReturnCode_(s, repHdr);
-	    if (rc < 0) {
-		xdr_destroy(&xdrs);
-		return rc;
-	    }
-	}
+            rc = ackAsyncReturnCode_(s, repHdr);
+            if (rc < 0) {
+                xdr_destroy(&xdrs);
+                return rc;
+            }
+        }
     }
     xdr_destroy(&xdrs);
     return 0;
@@ -596,70 +596,70 @@ int
 resRC2LSErr_(int resRC)
 {
     switch (resRC) {
-      case RESE_OK:
-	 lserrno = 0;
-	 break;
-      case RESE_NOMORECONN:
-	 lserrno = LSE_RES_NOMORECONN;
-	 break;
-      case RESE_BADUSER:
-	 lserrno = LSE_BADUSER;
-	 break;
-      case RESE_ROOTSECURE:
-	 lserrno = LSE_RES_ROOTSECURE;
-	 break;
-      case RESE_DENIED:
-	 lserrno = LSE_RES_DENIED;
-	 break;
-      case RESE_REQUEST:
-	 lserrno = LSE_PROTOC_RES;
-	 break;
-      case RESE_CALLBACK:
-	 lserrno = LSE_RES_CALLBACK;
-	 break;
-      case RESE_NOMEM:
-	 lserrno = LSE_RES_NOMEM;
-	 break;
-      case RESE_FATAL:
-	 lserrno = LSE_RES_FATAL;
-	 break;
-      case RESE_CWD:
-         lserrno = LSE_RES_DIR;
-         break;
-      case RESE_PTYMASTER:
-      case RESE_PTYSLAVE:
-	 lserrno = LSE_RES_PTY;
-	 break;
-      case RESE_SOCKETPAIR:
-	 lserrno = LSE_RES_SOCK;
-	 break;
-      case RESE_FORK:
-	 lserrno = LSE_RES_FORK;
-	 break;
-      case RESE_INVCHILD:
-	 lserrno = LSE_RES_INVCHILD;
-	 break;
-      case RESE_KILLFAIL:
-	 lserrno = LSE_RES_KILL;
-	 break;
-      case RESE_VERSION:
-	 lserrno = LSE_RES_VERSION;
-	 break;
-      case RESE_DIRW:
-         lserrno = LSE_RES_DIRW;
-         break;
-      case RESE_NOLSF_HOST:
-	 lserrno = LSE_NLSF_HOST;
-	 break;
-      case RESE_RUSAGEFAIL:
-	 lserrno = LSE_RES_RUSAGE;
-	 break;
-      case RESE_RES_PARENT:
-	 lserrno = LSE_RES_PARENT;
-	 break;
-      default:
-	 lserrno = NOCODE + resRC;
-     }
+        case RESE_OK:
+            lserrno = 0;
+            break;
+        case RESE_NOMORECONN:
+            lserrno = LSE_RES_NOMORECONN;
+            break;
+        case RESE_BADUSER:
+            lserrno = LSE_BADUSER;
+            break;
+        case RESE_ROOTSECURE:
+            lserrno = LSE_RES_ROOTSECURE;
+            break;
+        case RESE_DENIED:
+            lserrno = LSE_RES_DENIED;
+            break;
+        case RESE_REQUEST:
+            lserrno = LSE_PROTOC_RES;
+            break;
+        case RESE_CALLBACK:
+            lserrno = LSE_RES_CALLBACK;
+            break;
+        case RESE_NOMEM:
+            lserrno = LSE_RES_NOMEM;
+            break;
+        case RESE_FATAL:
+            lserrno = LSE_RES_FATAL;
+            break;
+        case RESE_CWD:
+            lserrno = LSE_RES_DIR;
+            break;
+        case RESE_PTYMASTER:
+        case RESE_PTYSLAVE:
+            lserrno = LSE_RES_PTY;
+            break;
+        case RESE_SOCKETPAIR:
+            lserrno = LSE_RES_SOCK;
+            break;
+        case RESE_FORK:
+            lserrno = LSE_RES_FORK;
+            break;
+        case RESE_INVCHILD:
+            lserrno = LSE_RES_INVCHILD;
+            break;
+        case RESE_KILLFAIL:
+            lserrno = LSE_RES_KILL;
+            break;
+        case RESE_VERSION:
+            lserrno = LSE_RES_VERSION;
+            break;
+        case RESE_DIRW:
+            lserrno = LSE_RES_DIRW;
+            break;
+        case RESE_NOLSF_HOST:
+            lserrno = LSE_NLSF_HOST;
+            break;
+        case RESE_RUSAGEFAIL:
+            lserrno = LSE_RES_RUSAGE;
+            break;
+        case RESE_RES_PARENT:
+            lserrno = LSE_RES_PARENT;
+            break;
+        default:
+            lserrno = NOCODE + resRC;
+    }
 
     return lserrno;
 }
@@ -673,7 +673,7 @@ ackReturnCode_(int s)
     static char fname[] = "ackReturnCode_";
 
     if (logclass & (LC_TRACE))
-	ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine...", fname);
 
     gethostbysock_(s, hostname);
     currentSN = _getcurseqno_(hostname);
@@ -688,7 +688,7 @@ ackReturnCode_(int s)
     if (rc == 0)
         return 0;
     else
-	return -1;
+        return -1;
 
 }
 
@@ -704,62 +704,62 @@ mygetLimits(struct lsfLimit *limits)
     struct rlimit rlimit;
 
     for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
-	rlimit.rlim_cur = RLIM_INFINITY;
-	rlimit.rlim_max = RLIM_INFINITY;
-	rlimitEncode_(&limits[i], &rlimit, i);
+        rlimit.rlim_cur = RLIM_INFINITY;
+        rlimit.rlim_max = RLIM_INFINITY;
+        rlimitEncode_(&limits[i], &rlimit, i);
     }
 
 #ifdef  RLIMIT_CPU
     if (getrlimit(RLIMIT_CPU, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_CPU], &rlimit, LSF_RLIMIT_CPU);
 #endif
 
 #ifdef  RLIMIT_FSIZE
     if (getrlimit(RLIMIT_FSIZE, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_FSIZE], &rlimit, LSF_RLIMIT_FSIZE);
 #endif
 
 #ifdef RLIMIT_DATA
     if (getrlimit(RLIMIT_DATA, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_DATA], &rlimit, LSF_RLIMIT_DATA);
 #endif
 
 #ifdef RLIMIT_STACK
     if (getrlimit(RLIMIT_STACK, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_STACK], &rlimit, LSF_RLIMIT_STACK);
 #endif
 
 #ifdef RLIMIT_CORE
     if (getrlimit(RLIMIT_CORE, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_CORE], &rlimit, LSF_RLIMIT_CORE);
 #endif
 
 #ifdef RLIMIT_NOFILE
     if (getrlimit(RLIMIT_NOFILE, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_NOFILE], &rlimit, LSF_RLIMIT_NOFILE);
 #endif
 
 #ifdef RLIMIT_OPEN_MAX
     if (getrlimit(RLIMIT_OPEN_MAX, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_OPEN_MAX], &rlimit, LSF_RLIMIT_OPEN_MAX);
 #endif
 
 #ifdef RLIMIT_VMEM
     if (getrlimit(RLIMIT_VMEM, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_VMEM], &rlimit, LSF_RLIMIT_VMEM);
 #endif
 
 #ifdef RLIMIT_RSS
     if (getrlimit(RLIMIT_RSS, &rlimit) < 0)
-	return -1;
+        return -1;
     rlimitEncode_(&limits[LSF_RLIMIT_RSS], &rlimit, LSF_RLIMIT_RSS);
 #endif
 
@@ -771,10 +771,10 @@ int callRes_(int s,
              char *data,
              char *reqBuf,
              int reqLen,
-	     bool_t (*xdrFunc)(),
+             bool_t (*xdrFunc)(),
              int *rd,
              struct timeval *timeout,
-	     struct lsfAuth *auth)
+             struct lsfAuth *auth)
 {
     int                  cc;
     int                  t;
@@ -793,7 +793,7 @@ int callRes_(int s,
 
     gethostbysock_(s, hostname);
     if (strcmp(hostname, "LSF_HOST_NULL"))
-	_setcurseqno_(hostname, currentSN);
+        _setcurseqno_(hostname, currentSN);
 
     if ((cc = lsSendMsg_(s,
                          cmd,
@@ -802,7 +802,7 @@ int callRes_(int s,
                          reqBuf,
                          reqLen,
                          xdrFunc,
-			 b_write_fix,
+                         b_write_fix,
                          auth)) < 0) {
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
         return -1;
@@ -867,39 +867,39 @@ do_rstty1_(char *host, int async)
 
     redirect = 0;
     if (isatty(0)) {
-	if (!isatty(1))
-	    redirect = 1;
-	io_fd = 0;
+        if (!isatty(1))
+            redirect = 1;
+        io_fd = 0;
     } else if (isatty(1)) {
-	redirect = 1;
-	io_fd = 1;
+        redirect = 1;
+        io_fd = 1;
     } else
-	return 0;
+        return 0;
 
     if (_isconnected_(host, descriptor))
-	s = descriptor[0];
+        s = descriptor[0];
     else if ((s = ls_connect(host)) < 0)
-	return -1;
+        return -1;
 
     if (! FD_ISSET(s,&connection_ok_) ) {
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
-	    return -1;
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return -1;
         }
     }
 
     if (do_rstty2_(s, io_fd, redirect, async) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
+        closesocket(s);
+        _lostconnection_(host);
         return -1;
     }
 
     if (!async){
         if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
+            closesocket(s);
+            _lostconnection_(host);
             return -1;
         }
     }
@@ -925,34 +925,34 @@ do_rstty2_(int s, int io_fd, int redirect, int async)
 
     if (!termFlag) {
         termFlag = TRUE;
-	tcgetattr(io_fd, &tty.termattr);
+        tcgetattr(io_fd, &tty.termattr);
 
-	if (getpgrp(0) != tcgetpgrp(io_fd)) {
-	    tty.termattr.c_cc[VEOF] = 04;
-	    tty.termattr.c_lflag |= ICANON;
-	    tty.termattr.c_lflag |= ECHO;
-	}
-	if (redirect)
-	    tty.termattr.c_lflag &= ~ECHO;
+        if (getpgrp(0) != tcgetpgrp(io_fd)) {
+            tty.termattr.c_cc[VEOF] = 04;
+            tty.termattr.c_lflag |= ICANON;
+            tty.termattr.c_lflag |= ECHO;
+        }
+        if (redirect)
+            tty.termattr.c_lflag &= ~ECHO;
 
-	if ((cp = getenv("LINES")) != NULL)
-	    tty.ws.ws_row = atoi(cp);
-	else
-	    tty.ws.ws_row = 24;
-	if ((cp = getenv("COLUMNS")) != NULL)
-	    tty.ws.ws_col = atoi(cp);
-	else
-	    tty.ws.ws_col = 80;
-	tty.ws.ws_xpixel = tty.ws.ws_ypixel = 0;
+        if ((cp = getenv("LINES")) != NULL)
+            tty.ws.ws_row = atoi(cp);
+        else
+            tty.ws.ws_row = 24;
+        if ((cp = getenv("COLUMNS")) != NULL)
+            tty.ws.ws_col = atoi(cp);
+        else
+            tty.ws.ws_col = 80;
+        tty.ws.ws_xpixel = tty.ws.ws_ypixel = 0;
     }
 
     if (!async) {
         if (callRes_(s, RES_INITTTY, (char *) &tty, buf, MSGSIZE,
-		  xdr_resStty, 0, 0, NULL) == -1)
-	    return -1;
+                     xdr_resStty, 0, 0, NULL) == -1)
+            return -1;
     } else {
         if (callRes_(s, RES_INITTTY_ASYNC, (char *) &tty, buf, MSGSIZE,
-                  xdr_resStty, 0, 0, NULL) == -1)
+                     xdr_resStty, 0, 0, NULL) == -1)
             return -1;
     }
 
@@ -967,12 +967,12 @@ rgetRusageCompletionHandler_(struct lsRequest *request)
 
     rc = resRC2LSErr_(request->rc);
     if (rc != 0)
-	return -1;
+        return -1;
     xdrmem_create(&xdrs, request->replyBuf, request->replyBufLen, XDR_DECODE);
     if (! xdr_jRusage(&xdrs, (struct jRusage *)request->extra, NULL)) {
-	lserrno = LSE_BAD_XDR;
-	xdr_destroy(&xdrs);
-	return -1;
+        lserrno = LSE_BAD_XDR;
+        xdr_destroy(&xdrs);
+        return -1;
     }
 
     xdr_destroy(&xdrs);
@@ -982,14 +982,14 @@ rgetRusageCompletionHandler_(struct lsRequest *request)
 
 LS_REQUEST_T *
 lsIRGetRusage_(int rpid,
-	       struct jRusage *ru,
-	       appCompletionHandler appHandler,
-	       void *appExtra,
-	       int options)
+               struct jRusage *ru,
+               appCompletionHandler appHandler,
+               void *appExtra,
+               int options)
 {
     struct {
-	struct LSFHeader hdr;
-	struct resRusage rusageReq;
+        struct LSFHeader hdr;
+        struct resRusage rusageReq;
     } requestBuf;
 
     struct lsRequest *request;
@@ -1009,9 +1009,9 @@ lsIRGetRusage_(int rpid,
     if (!FD_ISSET(s,&connection_ok_)){
         FD_SET(s,&connection_ok_);
         if (ackReturnCode_(s) < 0) {
-           closesocket(s);
-           _lostconnection_(host);
-           return NULL;
+            closesocket(s);
+            _lostconnection_(host);
+            return NULL;
         }
     }
 
@@ -1022,19 +1022,19 @@ lsIRGetRusage_(int rpid,
         rusageReq.whatid = RES_RID_ISPID;
 
     if (callRes_(s, RES_RUSAGE, (char *)&rusageReq, (char *)&requestBuf,
-		 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
-	return NULL;
+                 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
+        return NULL;
     }
 
     request = lsReqHandCreate_(rpid,
-			       currentSN,
-			       s,
-			       (void *)ru,
-			       rgetRusageCompletionHandler_,
-			       appHandler,
-			       appExtra);
+                               currentSN,
+                               s,
+                               (void *)ru,
+                               rgetRusageCompletionHandler_,
+                               appHandler,
+                               appExtra);
 
     if (request == NULL)
         return NULL;
@@ -1051,8 +1051,8 @@ int
 lsGetRProcRusage(char *host, int pid, struct jRusage *ru, int options)
 {
     struct {
-	struct LSFHeader hdr;
-	struct resRusage rusageReq;
+        struct LSFHeader hdr;
+        struct resRusage rusageReq;
     } requestBuf;
 
     struct lsRequest *request;
@@ -1061,44 +1061,44 @@ lsGetRProcRusage(char *host, int pid, struct jRusage *ru, int options)
     int descriptor[2];
 
     if (_isconnected_(host, descriptor))
-      s = descriptor[0];
+        s = descriptor[0];
     else {
-	lserrno = LSE_LOSTCON;
-	return -1;
+        lserrno = LSE_LOSTCON;
+        return -1;
     }
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
-	    return -1;
-	}
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return -1;
+        }
     }
 
     rusageReq.rid = pid;
     rusageReq.whatid = RES_RID_ISPID;
 
     if (options & RES_RPID_KEEPPID) {
-	rusageReq.options |= RES_RPID_KEEPPID;
+        rusageReq.options |= RES_RPID_KEEPPID;
     } else {
-	rusageReq.options = 0;
+        rusageReq.options = 0;
     }
 
     if (callRes_(s, RES_RUSAGE, (char *)&rusageReq, (char *)&requestBuf,
-		 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
-	return -1;
+                 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
+        return -1;
     }
 
     request = lsReqHandCreate_(pid,
-			       currentSN,
-			       s,
-			       (void *)ru,
-			       rgetRusageCompletionHandler_,
-			       NULL,
-			       NULL);
+                               currentSN,
+                               s,
+                               (void *)ru,
+                               rgetRusageCompletionHandler_,
+                               NULL,
+                               NULL);
 
     if (request == NULL)
         return -1;
@@ -1108,7 +1108,7 @@ lsGetRProcRusage(char *host, int pid, struct jRusage *ru, int options)
 
 
     if (! request)
-	return -1;
+        return -1;
 
     if (lsReqWait_(request, 0) < 0)
         return -1;
@@ -1121,12 +1121,12 @@ lsGetRProcRusage(char *host, int pid, struct jRusage *ru, int options)
 
 LS_REQUEST_T *
 lsGetIRProcRusage_(char *host, int tid, int pid, struct jRusage *ru,
-		 appCompletionHandler appHandler,
-		 void *appExtra)
+                   appCompletionHandler appHandler,
+                   void *appExtra)
 {
     struct {
-	struct LSFHeader hdr;
-	struct resRusage rusageReq;
+        struct LSFHeader hdr;
+        struct resRusage rusageReq;
     } requestBuf;
 
     struct lsRequest *request;
@@ -1135,38 +1135,38 @@ lsGetIRProcRusage_(char *host, int tid, int pid, struct jRusage *ru,
     int descriptor[2];
 
     if (_isconnected_(host, descriptor))
-      s = descriptor[0];
+        s = descriptor[0];
     else {
-	lserrno = LSE_LOSTCON;
-	return NULL;
+        lserrno = LSE_LOSTCON;
+        return NULL;
     }
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
-	    return NULL;
-	}
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return NULL;
+        }
     }
 
     rusageReq.rid = pid;
     rusageReq.whatid = RES_RID_ISPID;
 
     if (callRes_(s, RES_RUSAGE, (char *)&rusageReq, (char *)&requestBuf,
-		 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
-	return NULL;
+                 sizeof(requestBuf), xdr_resGetRusage, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
+        return NULL;
     }
 
     request = lsReqHandCreate_(tid,
-			       currentSN,
-			       s,
-			       (void *)ru,
-			       rgetRusageCompletionHandler_,
-			       appHandler,
-			       appExtra);
+                               currentSN,
+                               s,
+                               (void *)ru,
+                               rgetRusageCompletionHandler_,
+                               appHandler,
+                               appExtra);
 
     if (request == NULL)
         return NULL;
@@ -1186,13 +1186,13 @@ lsRGetRusage(int rpid, struct jRusage *ru, int options)
     LS_REQUEST_T *request;
 
     request = lsIRGetRusage_(rpid,
-			     ru,
-			     (appCompletionHandler) NULL,
-			     NULL,
-			     options);
+                             ru,
+                             (appCompletionHandler) NULL,
+                             NULL,
+                             options);
 
     if (! request)
-	return -1;
+        return -1;
 
     if (lsReqWait_(request, 0) < 0)
         return -1;
@@ -1214,52 +1214,52 @@ sendSig_(char *host, int rid, int sig, int options)
     int s;
 
     if (_isconnected_(host, descriptor))
-      s = descriptor[0];
+        s = descriptor[0];
     else {
-	lserrno = LSE_LOSTCON;
-	return -1;
+        lserrno = LSE_LOSTCON;
+        return -1;
     }
 
     if (!FD_ISSET(s,&connection_ok_)){
-	FD_SET(s,&connection_ok_);
-	if (ackReturnCode_(s) < 0) {
-	    closesocket(s);
-	    _lostconnection_(host);
-	    return -1;
-	}
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return -1;
+        }
     }
     if ( sig >= NSIG || sig < 0 ){
-	lserrno = LSE_BAD_ARGS;
-	return( -1 );
+        lserrno = LSE_BAD_ARGS;
+        return( -1 );
     }
 
     killReq.rid = rid;
 
     if (options & RSIG_ID_ISTID) {
-	killReq.whatid = RES_RID_ISTID;
+        killReq.whatid = RES_RID_ISTID;
     } else if (options & RSIG_ID_ISPID) {
-	killReq.whatid = RES_RID_ISPID;
+        killReq.whatid = RES_RID_ISPID;
     } else {
-	lserrno = LSE_BAD_ARGS;
-	return -1;
+        lserrno = LSE_BAD_ARGS;
+        return -1;
     }
 
     killReq.signal = sig_encode(sig);
 
     if (callRes_(s, RES_RKILL, (char *) &killReq, (char *) &buf,
-		 sizeof(buf), xdr_resRKill, 0, 0, NULL) == -1) {
-	closesocket(s);
-	_lostconnection_(host);
-	return -1;
+                 sizeof(buf), xdr_resRKill, 0, 0, NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
+        return -1;
     }
 
     if (ackReturnCode_(s) < 0) {
-	if (options & RSIG_KEEP_CONN)
-	    return -1;
+        if (options & RSIG_KEEP_CONN)
+            return -1;
 
-	closesocket(s);
-	_lostconnection_(host);
-	return( -1 );
+        closesocket(s);
+        _lostconnection_(host);
+        return( -1 );
     }
     return 0;
 }
@@ -1273,30 +1273,30 @@ lsRSig_(char *host, int rid, int sig, int options)
     int i;
 
     if (!options)
-	options = RSIG_ID_ISTID;
+        options = RSIG_ID_ISTID;
 
     if ((! (options & (RSIG_ID_ISTID | RSIG_ID_ISPID))) ||
-	 rid < 0)  {
+        rid < 0)  {
 
-	lserrno = LSE_BAD_ARGS;
-	return -1;
+        lserrno = LSE_BAD_ARGS;
+        return -1;
     }
 
     if (host == NULL) {
-	nconns = _findmyconnections_(&conns);
+        nconns = _findmyconnections_(&conns);
 
-	if (nconns == 0) {
-	    return 0;
-	}
+        if (nconns == 0) {
+            return 0;
+        }
 
-	for (i = 0; i < nconns; i++) {
-	    host = conns[i].hostname;
-	    rc = sendSig_(host, 0, sig, options);
-	    if (rc < 0)
-	        return rc;
-	}
+        for (i = 0; i < nconns; i++) {
+            host = conns[i].hostname;
+            rc = sendSig_(host, 0, sig, options);
+            if (rc < 0)
+                return rc;
+        }
     } else {
-	return(sendSig_(host, rid, sig, options));
+        return(sendSig_(host, rid, sig, options));
     }
     return 0;
 
@@ -1311,13 +1311,13 @@ ls_rkill(int rtid, int sig)
     int rc;
 
     if (rtid < 0) {
-	lserrno = LSE_BAD_ARGS;
-	return -1;
+        lserrno = LSE_BAD_ARGS;
+        return -1;
     }
 
     if (rtid == 0) {
-      	rc = lsRSig_(NULL, rtid, sig, RSIG_ID_ISTID);
-	return rc;
+        rc = lsRSig_(NULL, rtid, sig, RSIG_ID_ISTID);
+        return rc;
     }
 
     if ((tid = tid_find(rtid)) == NULL) {
@@ -1346,11 +1346,11 @@ lsMsgRdy_(int taskid, int *msgLen)
         return -1;
 
     if (! LS_QUEUE_EMPTY(tEnt->tMsgQ)) {
-	qEnt = tEnt->tMsgQ->start->forw;
-	header = (struct lsTMsgHdr *)qEnt->data;
-	if (msgLen != NULL)
-	    *msgLen = header->len;
-	return (1);
+        qEnt = tEnt->tMsgQ->start->forw;
+        header = (struct lsTMsgHdr *)qEnt->data;
+        if (msgLen != NULL)
+            *msgLen = header->len;
+        return (1);
     } else
         return 0;
 
@@ -1384,61 +1384,61 @@ lsMsgRcv_(int taskid, char *buffer, int len, int options)
     if (tEnt == NULL)
         return -1;
 
-  Again:
+Again:
     if (tEnt->isEOF) {
-	lserrno = LSE_RES_INVCHILD;
-	return -1;
+        lserrno = LSE_RES_INVCHILD;
+        return -1;
     }
 
     if (lsMsgRdy_(taskid, NULL)) {
-	struct lsTMsgHdr *header;
+        struct lsTMsgHdr *header;
 
-	qEnt = lsQueueDequeue_(tEnt->tMsgQ);
+        qEnt = lsQueueDequeue_(tEnt->tMsgQ);
 
-	if (qEnt == NULL) {
-	    lserrno = LSE_MSG_SYS;
-	    return -1;
-	}
+        if (qEnt == NULL) {
+            lserrno = LSE_MSG_SYS;
+            return -1;
+        }
 
-	header = (struct lsTMsgHdr *)qEnt->data;
-	if (header->len > len) {
-	    lserrno = LSE_MSG_SYS;
+        header = (struct lsTMsgHdr *)qEnt->data;
+        if (header->len > len) {
+            lserrno = LSE_MSG_SYS;
 
-	    lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
-	    return -1;
-	}
+            lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
+            return -1;
+        }
 
-	if (header->type == LSTMSG_IOERR) {
-	    lserrno = LSE_LOSTCON;
-	    lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
-	    return -1;
-	} else if (header->type == LSTMSG_EOF) {
-	    tEnt->isEOF = TRUE;
-	    lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
-	    return 0;
-	}
+        if (header->type == LSTMSG_IOERR) {
+            lserrno = LSE_LOSTCON;
+            lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
+            return -1;
+        } else if (header->type == LSTMSG_EOF) {
+            tEnt->isEOF = TRUE;
+            lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
+            return 0;
+        }
 
-	memcpy((char *)buffer, (char *)header->msgPtr, header->len);
+        memcpy((char *)buffer, (char *)header->msgPtr, header->len);
 
-	rc = header->len;
-	lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
-	return rc;
+        rc = header->len;
+        lsQueueEntryDestroy_(qEnt, tEnt->tMsgQ);
+        return rc;
     } else {
-	int nrdy = 0;
+        int nrdy = 0;
 
-	if (tEnt->sock < 0) {
-	    lserrno = LSE_LOSTCON;
-	    tid_remove(taskid);
-	    return -1;
-	}
-	rc = lsMsgWait_(1, &taskid, &nrdy, 0, NULL, NULL, NULL, NULL, 0);
-	if (rc < 0)
-	    return rc;
+        if (tEnt->sock < 0) {
+            lserrno = LSE_LOSTCON;
+            tid_remove(taskid);
+            return -1;
+        }
+        rc = lsMsgWait_(1, &taskid, &nrdy, 0, NULL, NULL, NULL, NULL, 0);
+        if (rc < 0)
+            return rc;
 
-	if (nrdy > 0)
-	    goto Again;
-	else
-	    return -1;
+        if (nrdy > 0)
+            goto Again;
+        else
+            return -1;
     }
 }
 
@@ -1505,7 +1505,7 @@ lsMsgSnd2_(int *sock, int opcode, char *buffer, int len, int options)
         goto AbortSnd2;
     }
 
-  AbortSnd2:
+AbortSnd2:
 #ifdef OS_HAS_PTHREAD
     pthread_mutex_unlock(&fdLSLIBWriteMutex);
 #endif
@@ -1527,11 +1527,11 @@ lsMsgSnd_(int taskid, char *buffer, int len, int options)
 
     tEnt = tid_find(taskid);
     if (! tEnt)
-	return -1;
+        return -1;
 
     if (tEnt->sock < 0) {
-	lserrno = LSE_LOSTCON;
-	return -1;
+        lserrno = LSE_LOSTCON;
+        return -1;
     }
 
 #ifdef OS_HAS_PTHREAD
@@ -1545,38 +1545,38 @@ lsMsgSnd_(int taskid, char *buffer, int len, int options)
 
     gethostbysock_(tEnt->sock, hostname);
     if (strcmp(hostname, "LSF_HOST_NULL"))
-	_setcurseqno_(hostname, currentSN);
+        _setcurseqno_(hostname, currentSN);
 
     xdrmem_create(&xdrs, headerBuf, LSF_HEADER_LEN, XDR_ENCODE);
     if (!xdr_LSFHeader(&xdrs, &header)) {
-	lserrno = LSE_BAD_XDR;
-	xdr_destroy(&xdrs);
-	rc = -1;
+        lserrno = LSE_BAD_XDR;
+        xdr_destroy(&xdrs);
+        rc = -1;
         goto AbortSnd;
     }
     xdr_destroy(&xdrs);
 
     rc = b_write_fix(tEnt->sock, headerBuf, LSF_HEADER_LEN);
     if (rc < 0) {
-	if (errno == EPIPE) {
+        if (errno == EPIPE) {
 
-	    close(tEnt->sock);
-	    tEnt->sock = -1;
-	    _lostconnection_(hostname);
-	    lserrno = LSE_LOSTCON;
-	}
+            close(tEnt->sock);
+            tEnt->sock = -1;
+            _lostconnection_(hostname);
+            lserrno = LSE_LOSTCON;
+        }
         rc = -1;
         goto AbortSnd;
     }
 
     rc = b_write_fix(tEnt->sock, buffer, len);
     if (rc < 0) {
-	if (errno == EPIPE) {
-	    close(tEnt->sock);
-	    tEnt->sock = -1;
-	    _lostconnection_(hostname);
-	    lserrno = LSE_LOSTCON;
-	}
+        if (errno == EPIPE) {
+            close(tEnt->sock);
+            tEnt->sock = -1;
+            _lostconnection_(hostname);
+            lserrno = LSE_LOSTCON;
+        }
         rc = -1;
         goto AbortSnd;
     }
@@ -1585,7 +1585,7 @@ lsMsgSnd_(int taskid, char *buffer, int len, int options)
         goto AbortSnd;
     }
 
-  AbortSnd:
+AbortSnd:
 
 #ifdef OS_HAS_PTHREAD
     pthread_mutex_unlock(&fdLSLIBWriteMutex);
@@ -1597,8 +1597,8 @@ lsMsgSnd_(int taskid, char *buffer, int len, int options)
 
 int
 lsMsgWait_(int inTidCnt, int *tidArray, int *rdyTidCnt,
-	   int inFdCnt, int *fdArray, int *rdyFdCnt, int *outFdArray,
-	   struct timeval *timeout, int options)
+           int inFdCnt, int *fdArray, int *rdyFdCnt, int *outFdArray,
+           struct timeval *timeout, int options)
 {
     int i;
     fd_set rm;
@@ -1615,14 +1615,14 @@ lsMsgWait_(int inTidCnt, int *tidArray, int *rdyTidCnt,
     bool_t anythingRdy;
 
     if ((! rdyTidCnt && ! rdyFdCnt) ||
-	(! tidArray && !fdArray) ||
-	(! inTidCnt && ! inFdCnt))
+        (! tidArray && !fdArray) ||
+        (! inTidCnt && ! inFdCnt))
         return 0;
 
     for (i = 0; i < inFdCnt; i++)
         outFdArray[i] = -1;
 
-  Again:
+Again:
     tMsgQNonEmpty = FALSE;
 
     FD_ZERO(&rm);
@@ -1632,50 +1632,50 @@ lsMsgWait_(int inTidCnt, int *tidArray, int *rdyTidCnt,
 
     if (inFdCnt > 0 && fdArray)
         for (i = 0; i < inFdCnt; i++) {
-	    if (FD_NOT_VALID(fdArray[i])) {
-		lserrno = LSE_BAD_ARGS;
-		rc = -1;
-		goto Fail;
-	    }
-	    FD_SET(fdArray[i], &rm);
-	    nBitsSet++;
-	}
+            if (FD_NOT_VALID(fdArray[i])) {
+                lserrno = LSE_BAD_ARGS;
+                rc = -1;
+                goto Fail;
+            }
+            FD_SET(fdArray[i], &rm);
+            nBitsSet++;
+        }
 
     rdycnt = 0;
     if (inTidCnt && tidArray) {
         for (i = 0; i < inTidCnt; i++) {
-	    rc = lsMsgRdy_(tidArray[i], NULL);
-	    if (rc > 0) {
+            rc = lsMsgRdy_(tidArray[i], NULL);
+            if (rc > 0) {
 
-		tMsgQNonEmpty = TRUE;
-		rdycnt++;
-		continue;
-	    }
+                tMsgQNonEmpty = TRUE;
+                rdycnt++;
+                continue;
+            }
 
-	    taskEnt = tid_find(tidArray[i]);
+            taskEnt = tid_find(tidArray[i]);
 
-	    if (taskEnt == NULL) {
-		rc = -1;
-		goto Fail;
-	    }
+            if (taskEnt == NULL) {
+                rc = -1;
+                goto Fail;
+            }
 
-	    if (FD_NOT_VALID(taskEnt->sock)) {
-		lserrno = LSE_BAD_ARGS;
-		rc = -1;
-		goto Fail;
-	    }
+            if (FD_NOT_VALID(taskEnt->sock)) {
+                lserrno = LSE_BAD_ARGS;
+                rc = -1;
+                goto Fail;
+            }
 
-	    nBitsSet++;
-	    FD_SET(taskEnt->sock, &rm);
-	}
-	if (tMsgQNonEmpty) {
-	    *rdyTidCnt = rdycnt;
-	    return 0;
-	}
+            nBitsSet++;
+            FD_SET(taskEnt->sock, &rm);
+        }
+        if (tMsgQNonEmpty) {
+            *rdyTidCnt = rdycnt;
+            return 0;
+        }
     }
 
     if (nBitsSet == 0)
-	return 0;
+        return 0;
 
     maxfd = sysconf(_SC_OPEN_MAX);
     if (maxfd > 1024) maxfd = 1024-1;
@@ -1683,99 +1683,99 @@ lsMsgWait_(int inTidCnt, int *tidArray, int *rdyTidCnt,
 
     if (nready < 0)
     {
-	if (errno == EINTR) {
-	    goto Again;
-	} else {
-	   lserrno = LSE_SELECT_SYS;
-	   rc = -1;
-	   goto Fail;
-       }
+        if (errno == EINTR) {
+            goto Again;
+        } else {
+            lserrno = LSE_SELECT_SYS;
+            rc = -1;
+            goto Fail;
+        }
     }
 
     if (rdyFdCnt) {
-	rdycnt = 0;
-	for (i = 0; i < inFdCnt; i++) {
-	    if (FD_ISSET(fdArray[i], &rm)) {
-	        rdycnt++;
-		outFdArray[i] = fdArray[i];
+        rdycnt = 0;
+        for (i = 0; i < inFdCnt; i++) {
+            if (FD_ISSET(fdArray[i], &rm)) {
+                rdycnt++;
+                outFdArray[i] = fdArray[i];
             }
             else
-		outFdArray[i] = -1;
-	}
+                outFdArray[i] = -1;
+        }
         *rdyFdCnt = rdycnt;
     }
 
     if (nready == 0) {
-	if (rdyTidCnt)
-	    *rdyTidCnt = 0;
-	return 0;
+        if (rdyTidCnt)
+            *rdyTidCnt = 0;
+        return 0;
     }
 
     if (rdyTidCnt) {
-	rdycnt = 0;
-	xdrmem_create(&xdrs, hdrBuf, sizeof(struct LSFHeader), XDR_DECODE);
-	for (i = 0; i < inTidCnt; i++) {
-	    taskEnt = tidFindIgnoreConn_(tidArray[i]);
-	    if (taskEnt == NULL) {
-	        rc = -1;
-		xdr_destroy(&xdrs);
-		goto Fail;
-	    }
+        rdycnt = 0;
+        xdrmem_create(&xdrs, hdrBuf, sizeof(struct LSFHeader), XDR_DECODE);
+        for (i = 0; i < inTidCnt; i++) {
+            taskEnt = tidFindIgnoreConn_(tidArray[i]);
+            if (taskEnt == NULL) {
+                rc = -1;
+                xdr_destroy(&xdrs);
+                goto Fail;
+            }
 
-	    if (FD_NOT_VALID(taskEnt->sock))
-		continue;
+            if (FD_NOT_VALID(taskEnt->sock))
+                continue;
 
-	    if (! FD_ISSET(taskEnt->sock, &rm))
-	        continue;
+            if (! FD_ISSET(taskEnt->sock, &rm))
+                continue;
 
-	    xdr_setpos(&xdrs, 0);
-	    rc = readDecodeHdr_(taskEnt->sock, hdrBuf, b_read_fix, &xdrs, &msgHdr);
-	    if (rc < 0) {
-		int nTids;
-		int *tidSameConns;
-		int tidIDx;
+            xdr_setpos(&xdrs, 0);
+            rc = readDecodeHdr_(taskEnt->sock, hdrBuf, b_read_fix, &xdrs, &msgHdr);
+            if (rc < 0) {
+                int nTids;
+                int *tidSameConns;
+                int tidIDx;
 
-		rc = tidSameConnection_(taskEnt->sock, &nTids, &tidSameConns);
-		for (tidIDx = 0; tidIDx < nTids; tidIDx++) {
-		    rc = enqueueTaskMsg_(-1, tidSameConns[tidIDx], NULL);
-		    if (rc < 0) {
-			free(tidSameConns);
-			xdr_destroy(&xdrs);
-		        goto Fail;
-		    }
-		}
-		rdycnt += nTids;
-		free(tidSameConns);
-		_lostconnection_(taskEnt->host);
-	    } else if (msgHdr.opCode != RES_NONRES) {
-		rc = ackAsyncReturnCode_(taskEnt->sock, &msgHdr);
-		if (rc < 0) {
-		    xdr_destroy(&xdrs);
-		    goto Fail;
-		}
-	    } else {
-		rc = enqueueTaskMsg_(taskEnt->sock, msgHdr.refCode, &msgHdr);
-		if (rc < 0) {
-		    xdr_destroy(&xdrs);
-		    goto Fail;
-		}
+                rc = tidSameConnection_(taskEnt->sock, &nTids, &tidSameConns);
+                for (tidIDx = 0; tidIDx < nTids; tidIDx++) {
+                    rc = enqueueTaskMsg_(-1, tidSameConns[tidIDx], NULL);
+                    if (rc < 0) {
+                        free(tidSameConns);
+                        xdr_destroy(&xdrs);
+                        goto Fail;
+                    }
+                }
+                rdycnt += nTids;
+                free(tidSameConns);
+                _lostconnection_(taskEnt->host);
+            } else if (msgHdr.opCode != RES_NONRES) {
+                rc = ackAsyncReturnCode_(taskEnt->sock, &msgHdr);
+                if (rc < 0) {
+                    xdr_destroy(&xdrs);
+                    goto Fail;
+                }
+            } else {
+                rc = enqueueTaskMsg_(taskEnt->sock, msgHdr.refCode, &msgHdr);
+                if (rc < 0) {
+                    xdr_destroy(&xdrs);
+                    goto Fail;
+                }
 
-		FD_CLR(taskEnt->sock, &rm);
-		rdycnt++;
-	    }
-	}
-	xdr_destroy(&xdrs);
-	*rdyTidCnt = rdycnt;
+                FD_CLR(taskEnt->sock, &rm);
+                rdycnt++;
+            }
+        }
+        xdr_destroy(&xdrs);
+        *rdyTidCnt = rdycnt;
     }
 
     anythingRdy = FALSE;
     if (rdyTidCnt)
         if (*rdyTidCnt > 0)
-	    anythingRdy = TRUE;
+            anythingRdy = TRUE;
 
     if (rdyFdCnt)
         if (*rdyFdCnt > 0)
-	    anythingRdy = TRUE;
+            anythingRdy = TRUE;
 
 
     if (! anythingRdy)
@@ -1783,7 +1783,7 @@ lsMsgWait_(int inTidCnt, int *tidArray, int *rdyTidCnt,
 
     rc = 0;
 
-  Fail:
+Fail:
     return rc;
 
 }
