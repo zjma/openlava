@@ -88,6 +88,8 @@ static char do_Queues(struct lsConf *, char *, int *, struct lsInfo *, int);
 static char do_Groups(struct groupInfoEnt **, struct lsConf *, char *,
                       int *, int *, int);
 static char do_ResLimits(struct lsConf *, char *, int *);
+static struct limitRes *parseTimeWindowRes(char *, char *, int *, limitResType_t, int *);
+static void freeResLimit(int, struct limitRes *);
 static int isHostName(char *);
 static int addHost(struct hostInfoEnt *, struct hostInfo *, int);
 static char addQueue(struct queueInfoEnt *, char *, int);
@@ -4911,6 +4913,12 @@ freeLimitInfo(struct resLimit *rl)
         FREEUP(rl->consumers[i].def);
         FREEUP(rl->consumers[i].value);
     }
+
+    for (i = 0; i < rl->nRes; i++) {
+        FREEUP(rl->res[i].windows);
+        freeWeek(rl->res[i].week);
+    }
+
     FREEUP(rl->consumers);
     FREEUP(rl->res);
     FREEUP(rl->name);
@@ -8147,7 +8155,6 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
 
     limitPtr->name = putstr_(keylist[0].val);
     limitPtr->consumers = calloc(limitPtr->nConsumer, sizeof(struct limitConsumer));
-    limitPtr->res = calloc(limitPtr->nRes, sizeof(struct limitRes));
     idx = 0;   /* index of consumer */
 
     /*QUEUES*/
@@ -8319,14 +8326,9 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     /*SLOTS*/
     if (keylist[9].val != NULL
         && strcmp(keylist[9].val, "")) {
-        limitPtr->res[idx].res = LIMIT_RESOURCE_SLOTS;
-        if ((limitPtr->res[idx].value =
-             my_atoi(keylist[9].val,
-                     INFINIT_INT, -1)) == INFINIT_INT) {
-            ls_syslog(LOG_ERR, "\
-%s: File %s in section Limit ending at line %d: SLOTS value <%s> isn't a non-negative integer between -1 and %d; ignored",
-                      __func__, fname, *lineNum,
-                      keylist[9].val, INFINIT_INT);
+        if ((limitPtr->res = parseTimeWindowRes(keylist[9].val,
+                             fname, lineNum, LIMIT_RESOURCE_SLOTS,
+                             &limitPtr->nRes)) == NULL) {
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
@@ -8336,14 +8338,9 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     /*JOBS*/
     if (keylist[10].val != NULL
         && strcmp(keylist[10].val, "")) {
-        limitPtr->res[idx].res = LIMIT_RESOURCE_JOBS;
-        if ((limitPtr->res[idx].value =
-             my_atoi(keylist[10].val,
-                     INFINIT_INT, -1)) == INFINIT_INT) {
-            ls_syslog(LOG_ERR, "\
-%s: File %s in section Limit ending at line %d: JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
-                      __func__, fname, *lineNum,
-                      keylist[10].val, INFINIT_INT);
+        if ((limitPtr->res = parseTimeWindowRes(keylist[10].val,
+                             fname, lineNum, LIMIT_RESOURCE_JOBS,
+                             &limitPtr->nRes)) == NULL) {
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
@@ -8356,3 +8353,112 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     return TRUE;
 }
 
+/*
+ * SLOTS = [200 09:00-17:00] [100 17:00-09:00]
+ * JOBS = 100
+ */
+static struct limitRes *
+parseTimeWindowRes(char *linep, char *fname, int *lineNum, limitResType_t type, int *nres)
+{
+    int   idx = 0;
+    char  *ptr, *sp, *ep, *word;
+    char  buf[1024];
+    char  bufWin[1024];
+    struct limitRes *resLimits = NULL;
+
+    *nres = 0;
+    sprintf(buf, "%s", linep);
+    ptr = buf;
+
+    sp = ptr;
+    while ((sp = strchr(sp, '[')) != NULL) {
+        (*nres)++;
+        sp++;
+    }
+
+    if (*nres == 0)
+        (*nres)++;
+
+    resLimits = calloc(*nres, sizeof(struct limitRes));
+
+    while (ptr && strcmp(ptr, "")) {
+        sp = strchr(ptr, '[');
+        if (sp) {
+            sp++;
+            ep = strchr(sp, ']');
+
+            if (!ep) {
+                ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: number of '[' is not match that of ']'; ignored",
+                          __func__, fname, *lineNum);
+                goto clean;
+            }
+
+            ptr = ep + 1;
+            while(isspace(*ptr))
+                ptr++;
+            *ep = '\0';
+        } else {
+            sp = ptr;
+            ptr = NULL;
+        }
+
+        resLimits[idx].res = type;
+
+        word = getNextWord_(&sp);
+        if ((resLimits[idx].value = my_atoi(word, INFINIT_INT, -1)) == INFINIT_INT) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: SLOTS or JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
+                     __func__, fname, *lineNum,
+                     word, INFINIT_INT);
+            goto clean;
+        }
+
+        word = getNextWord_(&sp);
+        if (!word) {
+            resLimits[idx].windows = strdup("");
+            continue;
+        }
+        resLimits[idx].windows = parsewindow(word, fname, lineNum, "Limit");
+        if (!resLimits[idx].windows) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: invalid time window <%s>; ignored",
+                      __func__, fname, *lineNum, word);
+            goto clean;
+        }
+
+        sprintf(bufWin, "%s", resLimits[idx].windows);
+        if (addWindow(bufWin, resLimits[idx].week, "resLimit") < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: invalid time expression <%s>; ignored",
+                      __func__, fname, *lineNum, resLimits[idx].windows);
+            goto clean;
+        }
+        resLimits[idx].windEdge = time(0);
+        idx++;
+    }
+    return resLimits;
+
+clean:
+    freeResLimit(*nres, resLimits);
+    *nres = 0;
+    return NULL;
+}
+
+/* freeResLimit()
+ */
+static void
+freeResLimit(int num, struct limitRes *rl)
+{
+    int     i;
+
+    if (!rl)
+        return;
+
+    for (i = 0; i < num; i++) {
+        FREEUP(rl[i].windows);
+        if (rl[i].week)
+            freeWeek(rl[i].week);
+    }
+    FREEUP(rl);
+}

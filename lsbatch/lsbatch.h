@@ -24,6 +24,8 @@
 /* Include all Unix and openlava base definition.
  */
 #include <lsf.h>
+#include "../lsf/intlib/intlibout.h"
+
 
 #define _PATH_NULL      "/dev/null"
 
@@ -1524,6 +1526,9 @@ typedef enum limitResType {
 struct limitRes {
     limitResType_t res;
     float value;
+    char  *windows;
+    windows_t *week[8];
+    time_t    windEdge;
 };
 
 struct resLimit {
@@ -1683,5 +1688,6 @@ extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
 extern struct resLimitReply *lsb_getlimits();
 extern void free_resLimits(struct resLimitReply *);
+extern void freeWeek (windows_t **);
 
 #endif

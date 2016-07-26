@@ -234,6 +234,7 @@ static int checkIfLimitIsOk(struct limitRes *,
                         limitConsumerType_t,
                         char *,
                         struct jData *);
+static struct limitRes *getActiveLimit(struct limitRes *, int);
 static int cntConsumerSlots(limitConsumerType_t, char*, char*, int);
 static int cntQSlots(limitConsumerType_t, char*, char*, int);
 static int allocHosts(struct jData *jp);
@@ -2928,6 +2929,7 @@ checkResLimit(struct jData *jp, char* hostname)
     int hasAll = FALSE;
     int neg = FALSE;
     int ret;
+    static struct limitRes *lr;
 
     if (limitConf == NULL || limitConf->nLimit == 0)
         return TRUE;
@@ -2935,10 +2937,6 @@ checkResLimit(struct jData *jp, char* hostname)
     for (i = 0; i < limitConf->nLimit; i++) {
         /* no consumer defined, ignore */
         if (limitConf->limits[i].nConsumer <= 0)
-            continue;
-
-        /* only limit one resource: SLOTS or JOBS */
-        if (limitConf->limits[i].nRes != 1)
             continue;
 
         for (j = 0; j < limitConf->limits[i].nConsumer; j++) {
@@ -3006,20 +3004,23 @@ checkResLimit(struct jData *jp, char* hostname)
             }
 
             if (hasMe) {
-                jp->uqPtr->maxSlots = (int) limitConf->limits[i].res[0].value;
-                ret = checkIfLimitIsOk(&limitConf->limits[i].res[0],
+                lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
+                if (lr) {
+                    jp->uqPtr->maxSlots = (int) lr->value;
+                    ret = checkIfLimitIsOk(&limitConf->limits[i].res[0],
                                        LIMIT_CONSUMER_PER_USER,
                                        jp->userName,
                                        per_queue,
                                        save_queue,
                                        jp);
-                if (!ret) {
-                    FREEUP(save_queue);
-                    FREEUP(save_project);
-                    FREEUP(save_host);
-                    FREEUP(save_user);
-                    FREEUP(save_user_def);
-                    return FALSE;
+                    if (!ret) {
+                        FREEUP(save_queue);
+                        FREEUP(save_project);
+                        FREEUP(save_host);
+                        FREEUP(save_user);
+                        FREEUP(save_user_def);
+                        return FALSE;
+                    }
                 }
             } else {
                 /* check unix user */
@@ -3041,20 +3042,23 @@ checkResLimit(struct jData *jp, char* hostname)
                 if ((!hasAll && hasMe)
                         || (hasAll && hasMe && !neg)
                         || (hasAll && !hasMe)) {
-                    jp->uqPtr->maxSlots = (int) limitConf->limits[i].res[0].value;
-                    ret = checkIfLimitIsOk(&limitConf->limits[i].res[0],
+                    lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
+                    if (lr) {
+                        jp->uqPtr->maxSlots = (int) lr->value;
+                        ret = checkIfLimitIsOk(lr,
                                            LIMIT_CONSUMER_PER_USER,
                                            jp->userName,
                                            per_queue,
                                            save_queue,
                                            jp);
-                    if (!ret) {
-                        FREEUP(save_queue);
-                        FREEUP(save_project);
-                        FREEUP(save_host);
-                        FREEUP(save_user);
-                        FREEUP(save_user_def);
-                        return FALSE;
+                        if (!ret) {
+                            FREEUP(save_queue);
+                            FREEUP(save_project);
+                            FREEUP(save_host);
+                            FREEUP(save_user);
+                            FREEUP(save_user_def);
+                            return FALSE;
+                        }
                     }
                 }
             }
@@ -3084,20 +3088,23 @@ checkResLimit(struct jData *jp, char* hostname)
              if ((!hasAll && hasMe)
                     || (hasAll && hasMe && !neg)
                     || (hasAll && !hasMe)) {
-                jp->pqPtr->maxSlots = (int) limitConf->limits[i].res[0].value;
-                ret = checkIfLimitIsOk(&limitConf->limits[i].res[0],
+                lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
+                if (lr) {
+                    jp->pqPtr->maxSlots = (int) lr->value;
+                    ret = checkIfLimitIsOk(lr,
                                        LIMIT_CONSUMER_PER_PROJECT,
                                        jp->shared->jobBill.projectName,
                                        per_queue,
                                        save_queue,
                                        jp);
-                if (!ret) {
-                    FREEUP(save_queue);
-                    FREEUP(save_project);
-                    FREEUP(save_host);
-                    FREEUP(save_user);
-                    FREEUP(save_user_def);
-                    return FALSE;
+                    if (!ret) {
+                        FREEUP(save_queue);
+                        FREEUP(save_project);
+                        FREEUP(save_host);
+                        FREEUP(save_user);
+                        FREEUP(save_user_def);
+                        return FALSE;
+                    }
                 }
             }
         }
@@ -3181,6 +3188,35 @@ checkIfLimitIsOk(struct limitRes *limit,
         return FALSE;
     else
         return TRUE;
+}
+
+static struct limitRes *
+getActiveLimit(struct limitRes *limits, int num)
+{
+    struct dayhour dayhour;
+    windows_t *wp;
+    char windOpen;
+    int i;
+
+    for (i = 0; i < num; i++) {
+        if (limits[i].windows == NULL || !strcmp(limits[i].windows, ""))
+            return &limits[i];
+
+        getDayHour(&dayhour, now);
+        if (limits[i].week[dayhour.day] == NULL)
+            continue;
+
+        limits[i].windEdge = now + (24.0 - dayhour.hour) * 3600.0;
+        windOpen = FALSE;
+
+        for (wp = limits[i].week[dayhour.day]; wp != NULL; wp = wp->nextwind) {
+            checkWindow(&dayhour, &windOpen, &limits[i].windEdge, wp, now);
+            if (windOpen)
+                return &limits[i];
+        }
+    }
+
+    return NULL;
 }
 
 /*

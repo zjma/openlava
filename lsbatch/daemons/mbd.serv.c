@@ -3331,7 +3331,11 @@ xdrsize_ResLimitInfoReply (struct resLimitReply *limits)
                 + ALIGNWORD_(sizeof(int));
         }
 
-        len += ALIGNWORD_(limits->limits[i].nRes * (sizeof(float) + sizeof(int)));
+        for (j = 0; j < limits->limits[i].nRes; j++) {
+            len += getXdrStrlen(limits->limits[i].res[j].windows)
+                + sizeof(float)
+                + sizeof(int);
+        }
     }
 
     len += ALIGNWORD_(limits->numUsage * sizeof(struct resLimitUsage))
@@ -3343,7 +3347,7 @@ xdrsize_ResLimitInfoReply (struct resLimitReply *limits)
             + getXdrStrlen(limits->usage[i].user)
             + getXdrStrlen(limits->usage[i].queue)
             + getXdrStrlen(limits->usage[i].host)
-            + 2 * sizeof(float);
+            + 4 * sizeof(float);
     }
 
     return len;
@@ -3408,7 +3412,9 @@ addResUsage(struct resLimitReply *limits)
         limits->usage[i].queue = allLimitUsage[i]->queue == NULL ? strdup("") : allLimitUsage[i]->queue;
         limits->usage[i].host = allLimitUsage[i]->host == NULL ? strdup("") : allLimitUsage[i]->host;
         limits->usage[i].slots = allLimitUsage[i]->slots;
+        limits->usage[i].maxSlots = allLimitUsage[i]->maxSlots;
         limits->usage[i].jobs = allLimitUsage[i]->jobs;
+        limits->usage[i].maxJobs = allLimitUsage[i]->maxJobs;
         FREEUP(allLimitUsage[i]);
     }
 }
@@ -3564,11 +3570,14 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
         + pAcct->numSSUSPSlots
         + pAcct->numUSUSPSlots
         + pAcct->numRESERVESlots;
+    usage->maxSlots = pAcct->maxSlots;
 
     usage->jobs= pAcct->numRUNJobs
         + pAcct->numSSUSPJobs
         + pAcct->numUSUSPJobs
         + pAcct->numRESERVEJobs;
+    usage->maxJobs = pAcct->maxJobs;
+
 clean:
     FREEUP(save_queue);
     FREEUP(save_project);

@@ -2139,6 +2139,9 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
         if (!xdr_int(xdrs, (int *)(&(limit->res[i].res))))
             return false;
 
+        if (!xdr_var_string(xdrs, &(limit->res[i].windows)))
+            return false;
+
         if (!xdr_float(xdrs, &limit->res[i].value))
             return false;
     }
@@ -2178,7 +2181,14 @@ xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
     if (!xdr_float(xdrs, &(usage->slots)))
         return false;
 
+    if (!xdr_float(xdrs, &(usage->maxSlots)))
+        return false;
+
+
     if (!xdr_float(xdrs, &(usage->jobs)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->maxJobs)))
         return false;
 
     return true;

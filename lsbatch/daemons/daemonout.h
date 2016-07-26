@@ -298,7 +298,9 @@ struct resLimitUsage {
     char    *queue;
     char    *host;
     float   slots;
+    float   maxSlots;
     float   jobs;
+    float   maxJobs;
 };
 
 typedef enum {

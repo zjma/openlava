@@ -761,3 +761,19 @@ supportJobNamePattern(char * jobname)
    return 0;
 }
 
+void
+freeWeek (windows_t *week[])
+{
+    windows_t *wp, *wpp;
+    int j;
+
+    for (j = 0; j < 8; j++) {
+        for (wp = week[j]; wp; wp = wpp) {
+            wpp =  wp->nextwind;
+            if (wp)
+                free (wp);
+        }
+        week[j] = NULL;
+    }
+
+}

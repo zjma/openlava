@@ -134,7 +134,7 @@ print_limits(struct resLimitReply *reply)
                     usage();
                     exit(-1);
             }
-            printf("%-10s : %d\n", name, (int)(reply->limits[i].res[j].value));
+            printf("%-10s : %d %s\n", name, (int)(reply->limits[i].res[j].value), reply->limits[i].res[j].windows);
         }
 
         if (reply->numUsage > 0
@@ -152,12 +152,12 @@ print_limits(struct resLimitReply *reply)
                     continue;
 
                 if (slimit > 0)
-                    sprintf(buf1, "%d/%d", (int)reply->usage[k].slots, slimit);
+                    sprintf(buf1, "%d/%d", (int)reply->usage[k].slots, (int)reply->usage[k].maxSlots);
                 else
                     sprintf(buf1, "%s", "-");
 
                 if (jlimit > 0)
-                    sprintf(buf2, "%d/%d", (int)reply->usage[k].jobs, jlimit);
+                    sprintf(buf2, "%d/%d", (int)reply->usage[k].jobs, (int)reply->usage[k].maxJobs);
                 else
                     sprintf(buf2, "%s", "-");
 

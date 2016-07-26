@@ -433,23 +433,6 @@ fileExist (char *file, int uid, struct hostent *hp)
 }
 
 void
-freeWeek (windows_t *week[])
-{
-    windows_t *wp, *wpp;
-    int j;
-
-    for (j = 0; j < 8; j++) {
-        for (wp = week[j]; wp; wp = wpp) {
-            wpp =  wp->nextwind;
-            if (wp)
-                free (wp);
-        }
-        week[j] = NULL;
-    }
-
-}
-
-void
 errorBack(int chan, int replyCode, struct sockaddr_in *from)
 {
     static char fname[] = "errorBack";
