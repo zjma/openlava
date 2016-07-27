@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -627,8 +627,6 @@ setClUid(struct client *cli_ptr)
     char **saveEnv = environ;
     char val[MAXLINELEN];
 
-
-
     if (setCliEnv(cli_ptr, "LSF_FROM_HOST", cli_ptr->hostent.h_name) < 0) {
         ls_syslog(LOG_ERR, I18N_FUNC_S_S_FAIL_M, fname, "setenv",
                   "LSF_FROM_HOST",
@@ -650,8 +648,6 @@ setClUid(struct client *cli_ptr)
     }
 
     environ = cli_ptr->env;
-
-
 
     runEexec_("", cli_ptr->ruid, &cli_ptr->eexec, NULL);
 
@@ -1040,26 +1036,22 @@ resChdir(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
     return;
 }
 
-
 static void
 resSetenv(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
 {
-    static char fname[] = "resSetenv";
     struct resSetenv envReq;
     char bufHome[MAXLINELEN];
-    char bufWinDir[MAXLINELEN];
     int cnt;
 
     if (logclass & LC_TRACE) {
         ls_syslog(LOG_DEBUG,"\
-%s: Setting the environment for the remote client=<%x>",
-                  fname, cli_ptr);
+%s: Setting the environment for the remote client %x", __func__, cli_ptr);
     }
 
-    bufHome[0] = '\0';
-    bufWinDir[0] = '\0';
-    if (!xdr_resSetenv(xdrs, &envReq, msgHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resSetenv");
+    bufHome[0] = 0;
+
+    if (! xdr_resSetenv(xdrs, &envReq, msgHdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_resSetenv() failed", __func__);
         if (msgHdr->opCode == RES_SETENV)
             sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
         return;
@@ -1071,36 +1063,31 @@ resSetenv(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
         }
     }
 
-
-    for (cnt = 0; envReq.env[cnt]; cnt++) {
-        if (strncasecmp (envReq.env[cnt], "WINDIR=", strlen("WINDIR=")) == 0) {
-            strcpy (bufWinDir, envReq.env[cnt]);
-        }
-    }
-
+    /* Free the old env set in setClUid()
+     */
     freeblk(cli_ptr->env);
+
+    /* This is the environment coming from the
+     * client. We will sent it into the process environ
+     * before exec che client app.
+     */
     cli_ptr->env = envReq.env;
 
-
-    if (bufWinDir[0] != '\0' && bufHome[0] != '\0') {
+    if (bufHome[0] != 0) {
         setCliEnv(cli_ptr, "HOME", bufHome + strlen("HOME") +1);
     }
 
     if (msgHdr->opCode == RES_SETENV)
         sendReturnCode(cli_ptr->client_sock, RESE_OK);
-
-    return;
 }
 
-
 static void
 resStty(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs, int async)
 {
-    static char fname[] = "resStty";
     struct resStty tty;
 
     if (!xdr_resStty(xdrs, &tty, msgHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resStty");
+        ls_syslog(LOG_ERR, "%s: xdr_resStty() failed", __func__);
         sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
         return;
     }
@@ -1110,17 +1097,15 @@ resStty(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs, int async)
 
     if (!async)
         sendReturnCode(cli_ptr->client_sock, RESE_OK);
-
-    return;
 }
 
 
 static void
 resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
 {
-    static char fname[] = "resRKill";
     int rempid, sig;
-    int i, cc;
+    int i;
+    int cc;
     struct resRKill rkill;
     int pid;
 
@@ -1129,7 +1114,7 @@ resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
     }
 
     if (!xdr_resRKill(xdrs, &rkill, msgHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resRKill");
+        ls_syslog(LOG_ERR, "%s: xdr_resRKill() failed", __func__);
         sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
         return;
     }
@@ -1138,9 +1123,8 @@ resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
     sig = sig_decode(rkill.signal);
 
     if (! (rkill.whatid & (RES_RID_ISTID | RES_RID_ISPID))) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5149,
-                                         "%s: unexpeced id class for rkill: %x"),  /* catgets 5149 */
-                  fname, rkill.whatid);
+        ls_syslog(LOG_ERR, "\
+%s: unexpeced id class for rkill: %x", __func__, rkill.whatid);
         sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
         return;
     }
@@ -1152,7 +1136,7 @@ resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
                     && children[cc]->rpid == rempid     )
                     break;
             if (cc == child_cnt) {
-                ls_syslog(LOG_DEBUG, "%s: no task with tid = <%d>", fname, rkill.rid);
+                ls_syslog(LOG_DEBUG, "%s: no task with tid %d", __func__, rkill.rid);
                 sendReturnCode(cli_ptr->client_sock, RESE_INVCHILD);
                 return;
             }
@@ -1161,51 +1145,47 @@ resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
             pid = rkill.rid;
         }
 
-        if ( ! sig ) {
-
+        if (! sig ) {
             sendReturnCode(cli_ptr->client_sock, RESE_OK);
-
         } else if (kill(-pid, sig) == 0) {
-            ls_syslog(LOG_DEBUG3, "%s: send signal <%d> to process <%d> tid <%d> ok", fname, sig, pid, rkill.rid);
+            ls_syslog(LOG_DEBUG, "\
+%s: send signal <%d> to process <%d> tid <%d> ok", __func__, sig, pid, rkill.rid);
             sendReturnCode(cli_ptr->client_sock, RESE_OK);
         } else {
-            if ( logclass & LC_EXEC ) {
-                ls_syslog(LOG_DEBUG, _i18n_msg_get(ls_catd , NL_SETN, 5150,
-                                                   "%s: unable to send signal <%d> to process <%d> rid <%d>: %m"), fname, sig, pid, rkill.rid); /* catgets 5150 */
+            if (logclass & LC_EXEC) {
+                ls_syslog(LOG_DEBUG,  "\
+%s: unable to send signal <%d> to process %d rid %d: %m", __func__, sig, pid, rkill.rid);
             }
             sendReturnCode(cli_ptr->client_sock, RESE_KILLFAIL);
-        }
-
-        return;
-    } else {
-        i = 0;
-        for (cc = 0; cc < child_cnt; cc++) {
-            if (children[cc]->backClnPtr == cli_ptr){
-                if (!children[cc]->running
-                    && !WIFSTOPPED(children[cc]->wait))
-                    continue;
-
-                if (! sig) {
-                    sendReturnCode(cli_ptr->client_sock, RESE_OK);
-                    return;
-                } else {
-                    if (kill(-children[cc]->pid, sig) < 0) {
-                        sendReturnCode(cli_ptr->client_sock, RESE_KILLFAIL);
-                        return;
-                    }
-                    i++;
-                }
-            }
-        }
-        if (i == 0) {
-            sendReturnCode(cli_ptr->client_sock, RESE_INVCHILD);
-            ls_syslog(LOG_DEBUG, "%s: no valid task to be killed", fname);
-        } else {
-            sendReturnCode(cli_ptr->client_sock, RESE_OK);
         }
         return;
     }
 
+    i = 0;
+    for (cc = 0; cc < child_cnt; cc++) {
+
+        if (children[cc]->backClnPtr == cli_ptr){
+            if (!children[cc]->running
+                && !WIFSTOPPED(children[cc]->wait))
+                continue;
+            if (! sig) {
+                sendReturnCode(cli_ptr->client_sock, RESE_OK);
+                return;
+            }
+            if (kill(-children[cc]->pid, sig) < 0) {
+                sendReturnCode(cli_ptr->client_sock, RESE_KILLFAIL);
+                return;
+            }
+            i++;
+        }
+    }
+
+    if (i == 0) {
+        sendReturnCode(cli_ptr->client_sock, RESE_INVCHILD);
+        ls_syslog(LOG_DEBUG, "%s: no valid task to be killed", __func__);
+    } else {
+        sendReturnCode(cli_ptr->client_sock, RESE_OK);
+    }
 }
 
 static void
