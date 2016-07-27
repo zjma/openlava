@@ -18,6 +18,7 @@
 
 
 #include "cmd.h"
+#include <unistd.h>
 
 static void
 usage(void)
@@ -28,7 +29,9 @@ usage(void)
 static int arg_count;
 static char **arg_char;
 static char **host_list;
-
+static char **command;
+static int verbose;
+extern char **environ;
 static int redirect_stdin(void);
 static int get_host_list(const char *);
 static int get_host_list_from_file(const char *);
@@ -36,8 +39,10 @@ static int count_lines(FILE *);
 static int get_hosts_from_env(void);
 static int get_hosts_from_arg(void);
 static void print_hosts(void);
-static void print_args(void);
+static void build_command(void);
+static int run_job(void);
 static void free_hosts(void);
+static void free_command(void);
 
 int
 main(int argc, char **argv)
@@ -45,6 +50,11 @@ main(int argc, char **argv)
     int cc;
     char z;
     char u;
+
+    /* If this is set, then option processing stops as soon as a
+     * non-option argument is encountered.
+     */
+    setenv("POSIXLY_CORRECT", "Y", 1);
 
     arg_count = argc;
     arg_char = argv;
@@ -55,8 +65,11 @@ main(int argc, char **argv)
     }
 
     u = z = 0;
-    while ((cc = getopt(argc, argv, "hVnz:u:")) != EOF) {
+    while ((cc = getopt(argc, argv, "hVvnz:u:")) != EOF) {
         switch (cc) {
+            case 'v':
+                ++verbose;
+                break;
             case 'n':
                 redirect_stdin();
                 break;
@@ -100,10 +113,17 @@ main(int argc, char **argv)
     }
 
     print_hosts();
+    build_command();
+    if (! command) {
+        fprintf(stderr, "blaunch: no command to run?\n");
+        usage();
+        return -1;
+    }
 
-    print_args();
+    run_job();
 
     free_hosts();
+    free_command();
 
     return 0;
 }
@@ -204,7 +224,7 @@ get_hosts_from_env(void)
     return 0;
 }
 
-/* get_host_from_args()
+/* get_hosts_from_args()
  */
 static int
 get_hosts_from_arg(void)
@@ -219,6 +239,11 @@ get_hosts_from_arg(void)
 
     host = arg_char[optind];
     hp = gethostbyname(host);
+    if (hp == NULL) {
+        fprintf(stderr, "\
+%s: gethostbyname(%s) failed %s\n", __func__, host, hstrerror(h_errno));
+        return -1;
+    }
 
     host_list = calloc(2, sizeof(char *));
     host_list[0] = strdup(host);
@@ -234,23 +259,45 @@ get_hosts_from_arg(void)
 static void
 print_hosts(void)
 {
-    int cc;
     char *h;
+    int cc;
 
+    printf("host(s): ");
     cc = 0;
     while ((h = host_list[cc])) {
-        printf("%s\n", h);
+        printf("%s ", h);
         ++cc;
     }
+    printf("\n");
 }
 
 static void
-print_args(void)
+build_command(void)
 {
     int cc;
+    int n;
 
-    for (cc = optind; cc < arg_count; cc++)
-        printf(" %s \n", arg_char[cc]);
+    /* no command to build, optind now points
+     * to the first non option argument of blaunch
+     */
+    if (arg_count - optind <= 0)
+        return;
+
+    command = calloc((arg_count - optind) + 1, sizeof(char *));
+
+    n = 0;
+    for (cc = optind; cc < arg_count; cc++) {
+        command[n] = strdup(arg_char[cc]);
+        ++n;
+    }
+
+    printf("command: ");
+    cc = 0;
+    while (command[cc]){
+        printf(" %s ", command[cc]);
+        ++cc;
+    }
+    printf("\n");
 }
 
 static void
@@ -268,4 +315,70 @@ free_hosts(void)
     }
 
     _free_(host_list);
+}
+
+static void
+free_command(void)
+{
+    int cc;
+
+    if (! command)
+        return;
+
+    cc = 0;
+    while (command[cc]) {
+        _free_(command[cc]);
+        ++cc;
+    }
+
+    _free_(command);
+}
+
+/* run_job()
+ */
+static int
+run_job(void)
+{
+    int cc;
+    int  tid;
+    int num;
+
+    Signal_(SIGUSR1, SIG_IGN);
+    /* initialize the remote execution
+     * library
+     */
+    cc = ls_initrex(1, 0);
+    if (cc < 0) {
+        ls_perror("ls_initrex()");
+        return -1;
+    }
+
+    cc = 0;
+    while (host_list[cc]) {
+        tid = ls_rtask(host_list[cc],
+                       command,
+                       0);
+        if (tid < 0) {
+            fprintf(stderr, "\
+%s: task %d on host %s failed %s", __func__,
+                    tid, host_list[cc], ls_sysmsg());
+            return -1;
+        }
+        ++cc;
+    }
+
+    num = cc;
+    while (num) {
+        LS_WAIT_T stat;
+        struct rusage ru;
+        int tid;
+
+        tid = ls_rwait(&stat, 0, &ru);
+        if (tid < 0) {
+            ls_perror("ls_rwait()");
+            break;
+        }
+        --num;
+    }
+    return 0;
 }
