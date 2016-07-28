@@ -6,7 +6,7 @@ Release notes for OpenLava versions
 -- Fix res/nios hang blocking ol make.
 -- Create a new parameter NIOS_MAX_TASKS specifying the maximum number
    of tasks nios can handle.
--- Fix/reimplement btop/bbot. Since the job queue managment has undergone
+-- Fix/reimplement btop/bbot. Since the job queue management has undergone
    performance improvements these function had to be coded as well.
 -- Fix the mbatchd variable MBD_NO_QSORT_JOBS, which was incorrectly
    set to MBD_QSORT_JOBS in daemons.c
@@ -18,7 +18,7 @@ Release notes for OpenLava versions
    bqueues cannot get information from 3.3 bqueues.
 -- Implement lsb.resources of job slot limit for each user/project.
 -- Implement the time window in which resource limits are performed.
--- FIx a broken btop/bbot.
+-- Fix a broken btop/bbot.
 -- Introduce a new rule in config/Makefile.am which creates a file named
    commit in the LSF_ENVDIR, this file contains the git commit number
    of the current build.
@@ -38,7 +38,7 @@ Release notes for OpenLava versions
    the time at which the decay of used slots is performed.
 -- Modify the bparams command to display the HIST_MINUTES in its
    long output format.
--- The fairshare layer will log detail informations if the logclass
+-- The fairshare layer will log detail information if the logclass
    in lsf.conf is either define as LC_FAIRSHARE or LC_FAIR.
 -- Fix the Makefile.am to install bgmod.1 and bjdep.1 man pages.
 -- Fix two memory leak in bsub -Jd implementation.
@@ -58,7 +58,7 @@ Release notes for OpenLava versions
 -- Support specifying job description to job arrays with bsub -Jd.
 -- Fix lsb.resources to support Unix user names that are not configured in lsb.users.
 -- Implement bresources command to display current resource usage.
--- Implement project account recovery after mbd restart.
+-- Implement project account recovery after mbatchd restart.
 -- Add BATCH_RESLIMIT_INFO into forkOnRequest() to fork a child for this operation.
 -- Fix and XDR decode error in the 3.3 mbatchd if the client has lower versions
    3.0 and 3.1.
@@ -89,7 +89,7 @@ Release notes for OpenLava versions
    and user run bjgroup command.
 -- Implemented the job group limit 'bgadd -L n /x/y/z'. This allows
    the users to set running job limits at different level of the job group
-   hierachy. If the limit is reached jobs attached to the group will be
+   hierarchy. If the limit is reached jobs attached to the group will be
    pending with reason "The job group limit has been reached"
 -- Renamed the bjgroups command in bjgroup.
 -- Implemented bgmod to change the limits of a job group.
@@ -163,7 +163,7 @@ Release notes for OpenLava versions
 
 3.2.beta1
 =========
--- Hosts member od a host group can now be specified in a compact format
+-- Hosts member of a host group can now be specified in a compact format
    for example: (ol[1-3]).
 -- Implement configure option --enable-debug. If set the compilation will
    have the -Werror option enabled. By default this option is not set.
@@ -268,14 +268,14 @@ Release notes for OpenLava versions
    management.
 -- No longer run mbatchd as root. The uid of the daemon is the one
    of the primary lsb manager.
--- Support memory contraining using cgroup for batch jobs.
+-- Support memory constraining using cgroup for batch jobs.
 -- Developed a built in resource names 'slots' used by mbatchd only.
    This resource allows to pack or stripe jobs on hosts.
 -- Developed the rusage or functionality. -R "rusage[x=1||y=2]".
 -- Introduced LSB_PROJECT_NAME variable in job and preexec environment.
 -- Developed the host group based slot resources. A host group can have
    a resource which represents the number of available slots in that
-   group. An oridnary shared resource is configured in the base
+   group. An ordinary shared resource is configured in the base
    files but also in lsb.hosts in the group section. No elim is needed
    to collect this resource as mbatchd computes the slots automatically.
 -- Introduce a mutex to protect critical section in the syslog library.
@@ -377,7 +377,7 @@ Major release which includes hierarchical slot fairshare and preemption.
 -- RPM files are no longer distributed, however they can still be built
    from the tarball.
 -- When migrant hosts are added or removed, we must increment or
-   decrement the numHosts field in the struct clusterNode (myClusterPtr)
+   decrease the numHosts field in the struct clusterNode (myClusterPtr)
    to allow the periodic master announcement to be sent to dynamic
    nodes in the cluster on master lim restart.
 -- Don't call select in rd_select_() when the input file descriptor
@@ -391,7 +391,7 @@ Major release which includes hierarchical slot fairshare and preemption.
    overwriting production configuration files.
 -- Added -fPIC option to configure.ac - needed when compiling the object
    code into a library for use in third party tools.
--- Fixed bsub -I, now the the job data are correcty sent to the
+-- Fixed bsub -I, now the the job data are correctly sent to the
    user terminal and viceversa.
 -- Accept `DESTDIR` environment variable, allowing staged installs.
 -- Avoid announcing all LIMs at the same time.
