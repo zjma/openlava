@@ -8906,9 +8906,9 @@ jcompare(const void *j1, const void *j2)
     /* Same queue compare job priority as set by btop
      * or bbot.
      */
-    if (jPtr1->jobPriority > jPtr2->jobPriority)
+    if (jPtr1->priority > jPtr2->priority)
         return 1;
-    if (jPtr1->jobPriority < jPtr2->jobPriority)
+    if (jPtr1->priority < jPtr2->priority)
         return -1;
 
     /* Same priority compare jobids. A job with higher jobid is

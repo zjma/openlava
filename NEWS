@@ -18,6 +18,7 @@ Release notes for OpenLava versions
    bqueues cannot get information from 3.3 bqueues.
 -- Implement lsb.resources of job slot limit for each user/project.
 -- Implement the time window in which resource limits are performed.
+-- FIx a broken btop/bbot.
 
 3.3.3
 ======
