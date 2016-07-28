@@ -19,6 +19,9 @@ Release notes for OpenLava versions
 -- Implement lsb.resources of job slot limit for each user/project.
 -- Implement the time window in which resource limits are performed.
 -- FIx a broken btop/bbot.
+-- Introduce a new rule in config/Makefile.am which creates a file named
+   commit in the LSF_ENVDIR, this file contains the git commit number
+   of the current build.
 
 3.3.3
 ======
