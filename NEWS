@@ -17,6 +17,8 @@ Release notes for OpenLava versions
    get information from higher version if mbatchd, specifically 3.0/3.1
    bqueues cannot get information from 3.3 bqueues.
 -- Started blaunch development.
+-- Developed new API ls_getrpid() to get a remote process id of a task
+   started by RES knowing the local taskid.
 
 3.3.3
 ======
