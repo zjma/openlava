@@ -835,6 +835,8 @@ int callRes_(int s,
         return -1;
     }
 
+    /* Used when res call back to nios in sendCmdBill()
+     */
     if (!rd) {
         sigprocmask(SIG_SETMASK, &oldMask, NULL);
         return 0;
@@ -1886,3 +1888,109 @@ _lostconnection_(char *hostName)
     FD_CLR(connSockNum, &connection_ok_);
 
 }
+
+/* ackReturnCode2_()
+ *
+ * Get the return code from res and the header that
+ * may be followed by additional data.
+ */
+int
+ackReturnCode2_(int s, struct LSFHeader *hdr, char **reply)
+{
+    char buf[sizeof(struct LSFHeader)];
+    XDR xdrs;
+
+    xdrmem_create(&xdrs, buf, sizeof(struct LSFHeader), XDR_DECODE);
+
+    if (readDecodeHdr_(s, (char *)&buf, b_read_fix, &xdrs, hdr) < 0) {
+        xdr_destroy(&xdrs);
+        return -1;
+    }
+
+    if (hdr->length > 0
+        && reply) {
+        int cc;
+
+        *reply = calloc(hdr->length, sizeof(char));
+        if (*reply == NULL) {
+            lserrno = LSE_NO_MEM;
+            xdr_destroy(&xdrs);
+            return -1;
+        }
+
+        cc = b_read_fix(s, *reply, hdr->length);
+        if (cc != hdr->length) {
+            lserrno = LSE_SOCK_SYS;
+            free(*reply);
+            xdr_destroy(&xdrs);
+            return -1;
+        }
+    }
+
+    xdr_destroy(&xdrs);
+
+    /* Translate the RES code, perhaps we could use the LSE
+     * code in the entire system.
+     */
+    switch (hdr->opCode) {
+        case RESE_OK:
+            return LSE_NO_ERR;
+        case RESE_NOMORECONN:
+            lserrno = LSE_RES_NOMORECONN;
+            break;
+        case RESE_BADUSER:
+            lserrno = LSE_BADUSER;
+            break;
+        case RESE_ROOTSECURE:
+            lserrno = LSE_RES_ROOTSECURE;
+            break;
+        case RESE_DENIED:
+            lserrno = LSE_RES_DENIED;
+            break;
+        case RESE_REQUEST:
+            lserrno = LSE_PROTOC_RES;
+            break;
+        case RESE_CALLBACK:
+            lserrno = LSE_RES_CALLBACK;
+            break;
+        case RESE_NOMEM:
+            lserrno = LSE_RES_NOMEM;
+            break;
+        case RESE_FATAL:
+            lserrno = LSE_RES_FATAL;
+            break;
+        case RESE_CWD:
+            lserrno = LSE_RES_DIR;
+            break;
+        case RESE_PTYMASTER:
+        case RESE_PTYSLAVE:
+            lserrno = LSE_RES_PTY;
+            break;
+        case RESE_SOCKETPAIR:
+            lserrno = LSE_RES_SOCK;
+            break;
+        case RESE_FORK:
+            lserrno = LSE_RES_FORK;
+            break;
+        case RESE_INVCHILD:
+            lserrno = LSE_RES_INVCHILD;
+            break;
+        case RESE_KILLFAIL:
+            lserrno = LSE_RES_KILL;
+            break;
+        case RESE_VERSION:
+            lserrno = LSE_RES_VERSION;
+            break;
+        case RESE_DIRW:
+            lserrno = LSE_RES_DIRW;
+            break;
+        case RESE_NOLSF_HOST:
+            lserrno = LSE_NLSF_HOST;
+            break;
+        default:
+            lserrno = NOCODE + hdr->opCode;
+    }
+
+    return -1;
+}
+
