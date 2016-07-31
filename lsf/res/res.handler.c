@@ -39,9 +39,6 @@
 #include "res.h"
 #include "resout.h"
 #include "../lib/lproto.h"
-#ifdef __sun__
-#include <sys/ptyvar.h>
-#endif
 
 #define NL_SETN         29
 #define CHILD_DELETED     2
@@ -589,17 +586,13 @@ childAcceptConn(int s, struct passwd *pw, struct lsfAuth *auth,
 
     cli_ptr->gid = pw->pw_gid;
 
-    if (auth->gid != pw->pw_gid)
-    {
+    if (auth->gid != pw->pw_gid) {
 
         for (i = 0; i < cli_ptr->ngroups; i++)
-            if (auth->gid == cli_ptr->groups[i])
-            {
-
+            if (auth->gid == cli_ptr->groups[i])  {
                 cli_ptr->gid = auth->gid;
                 goto doac_done;
             }
-
     }
 
 doac_done:
@@ -777,20 +770,6 @@ doclient(struct client *cli_ptr)
         return;
     }
 
-    if ((msgHdr.opCode != RES_CONTROL)  && cli_ptr->ruid == 0 && ( (resParams[LSF_ROOT_REX].paramValue == NULL) ||
-                                                                   ( (strcasecmp(resParams[LSF_ROOT_REX].paramValue, "all") != 0) &&
-                                                                     (hostIsLocal(cli_ptr->hostent.h_name) == FALSE) ) ) ) {
-        ls_syslog(LOG_INFO, (_i18n_msg_get(ls_catd , NL_SETN, 5285, "%s: root remote execution from host %s permission denied")), /*
-                                                                                                                                    catgets 5285 */
-                  fname, cli_ptr->hostent.h_name);
-        sendReturnCode(cli_ptr->client_sock,RESE_ROOTSECURE);
-        delete_client(cli_ptr);
-        xdr_destroy(&xdrs);
-        if (msgHdr.length)
-            free(buf);
-        return;
-    }
-
     if (logclass & LC_TRACE) {
         ls_syslog(LOG_DEBUG,"%s: Res got request=<%d>",
                   fname, msgHdr.opCode);
@@ -833,9 +812,8 @@ doclient(struct client *cli_ptr)
             resTaskMsg(cli_ptr, &msgHdr, hdrbuf, buf, &xdrs);
             break;
         default:
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5139,
-                                             "%s: Unrecognized service request(%d)"), fname, /* catgets 5139 */
-                      msgHdr.opCode);
+            ls_syslog(LOG_ERR, "\
+%s: Unrecognized service request %d", __func__, msgHdr.opCode);
             sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
             break;
     }
@@ -1191,57 +1169,62 @@ resRKill(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
 static void
 resGetpid(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
 {
-    static char fname[] = "resGetpid";
     int rempid;
-    struct _buf_ {
-        struct LSFHeader hdrbuf;
-        struct resPid pidbuf;
-    } buf;
-
     int cc;
     int rc;
     struct LSFHeader replyHdr;
     struct resPid pidreq;
+    char buf[RES_PID_BUF];
 
-
-    if (!xdr_resGetpid(xdrs, &pidreq, msgHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_resGetpid");
+    if (! xdr_resGetpid(xdrs, &pidreq, msgHdr)) {
+        ls_syslog(LOG_ERR, "%s: xdr_resGetpid() failed", __func__);
         sendReturnCode(cli_ptr->client_sock, RESE_REQUEST);
         return;
     }
 
+    /* rpid id taskid.... change name
+     */
     rempid = pidreq.rpid;
 
-
-    {
-        for (cc = 0; cc < child_cnt; cc++)
-            if (children[cc]->backClnPtr == cli_ptr
-                && children[cc]->rpid == rempid     )
-                break;
-
-        if (cc == child_cnt) {
-
-            pidreq.pid = -1;
-        } else
-            if (!children[cc]->running && ! WIFSTOPPED(children[cc]->wait)) {
-
-
-                pidreq.pid = -1;
-            } else
-                pidreq.pid = children[cc]->pid;
+    for (cc = 0; cc < child_cnt; cc++) {
+        if (children[cc]->backClnPtr == cli_ptr
+          && children[cc]->rpid == rempid)
+          break;
     }
+
+    /* No such child
+     */
+    if (cc == child_cnt) {
+        sendReturnCode(cli_ptr->client_sock, RESE_INVCHILD);
+        return;
+    }
+
+    if (! children[cc]->running
+        && !WIFSTOPPED(children[cc]->wait)) {
+        /* The process had exited or been signaled
+         */
+        sendReturnCode(cli_ptr->client_sock, RESE_INVCHILD);
+        return;
+    }
+
+    pidreq.pid = children[cc]->pid;
 
     initLSFHeader_(&replyHdr);
     replyHdr.opCode = RESE_OK;
-    replyHdr.refCode = currentRESSN;
 
-    rc = writeEncodeMsg_(cli_ptr->client_sock, (char *)&buf, sizeof(buf),
-                         &replyHdr, (char *)&pidreq, SOCK_WRITE_FIX,
-                         xdr_resGetpid, 0);
-    if (rc < 0)
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5152,
-                                         "%s: failed to reply to a getpid req for uid = <%d> rpid = <%d>"), /* catgets 5152 */
-                  fname, cli_ptr->ruid, pidreq.rpid);
+    rc = writeEncodeMsg_(cli_ptr->client_sock,
+                         (char *)&buf,
+                         sizeof(buf),
+                         &replyHdr,
+                         (char *)&pidreq,
+                         SOCK_WRITE_FIX,
+                         xdr_resGetpid,
+                         0);
+    if (rc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to reply to a getpid req for uid = <%d> rpid = <%d>",
+                  __func__, cli_ptr->ruid, pidreq.rpid);
+    }
 
     return;
 }
@@ -1882,8 +1865,12 @@ resFindPamJobStarter(void)
 }
 
 static struct child *
-doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
-        int taskSock, int server, resAck *ack)
+doRexec(struct client *cli_ptr,
+        struct resCmdBill *cmdmsg,
+        int retsock,
+        int taskSock,
+        int server,
+        resAck *ack)
 {
     int pty[2], sv[2], info[2], errSock[2];
     int pid = -1;
@@ -1994,6 +1981,8 @@ doRexec(struct client *cli_ptr, struct resCmdBill *cmdmsg, int retsock,
     children[child_cnt] = child_ptr;
     child_cnt++;
     child_ptr->rpid = cmdmsg->rpid;
+    /* Process ID of the child we are running
+     */
     child_ptr->pid = pid;
     child_ptr->backClnPtr = cli_ptr;
     strcpy(child_ptr->username, child_ptr->backClnPtr->username);
@@ -2330,9 +2319,7 @@ parentPty(int *pty, int *sv, char *pty_name)
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "io_nonblock_",
                   pty[0]);
 
-#ifndef __sun__
     if (ioctl(pty[0], TIOCPKT, &on) < 0)
-#endif
         ls_syslog(LOG_ERR, I18N_FUNC_D_FAIL_M, fname, "ioctl",
                   pty[0]);
 

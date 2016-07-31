@@ -26,23 +26,30 @@ usage(void)
     fprintf(stderr, "blaunch: [-h] [-V] [-n] [-z hosts...]\n");
 }
 
+/* Global variables we revolve around
+ */
 static int arg_count;
 static char **arg_char;
 static char **host_list;
 static char **command;
+static int *tasks;
 static int verbose;
 extern char **environ;
+
+/* Functions using global variables
+ */
 static int redirect_stdin(void);
 static int get_host_list(const char *);
 static int get_host_list_from_file(const char *);
 static int count_lines(FILE *);
 static int get_hosts_from_env(void);
 static int get_hosts_from_arg(void);
-static void print_hosts(void);
+static void make_tasks(void);
 static void build_command(void);
 static int run_job(void);
 static void free_hosts(void);
 static void free_command(void);
+static void rusage_task(int);
 
 int
 main(int argc, char **argv)
@@ -112,7 +119,7 @@ main(int argc, char **argv)
         return -1;
     }
 
-    print_hosts();
+    make_tasks();
     build_command();
     if (! command) {
         fprintf(stderr, "blaunch: no command to run?\n");
@@ -257,7 +264,7 @@ get_hosts_from_arg(void)
 }
 
 static void
-print_hosts(void)
+make_tasks(void)
 {
     char *h;
     int cc;
@@ -269,6 +276,8 @@ print_hosts(void)
         ++cc;
     }
     printf("\n");
+
+    tasks = calloc(cc + 1, sizeof(int));
 }
 
 static void
@@ -340,8 +349,9 @@ static int
 run_job(void)
 {
     int cc;
-    int  tid;
-    int num;
+    int tid;
+    int num_tasks;
+    int task_active;
 
     Signal_(SIGUSR1, SIG_IGN);
     /* initialize the remote execution
@@ -353,7 +363,7 @@ run_job(void)
         return -1;
     }
 
-    cc = 0;
+    num_tasks = cc = 0;
     while (host_list[cc]) {
         tid = ls_rtask(host_list[cc],
                        command,
@@ -364,21 +374,63 @@ run_job(void)
                     tid, host_list[cc], ls_sysmsg());
             return -1;
         }
+        tasks[cc] = tid;
+        printf("%s: task %d started\n", __func__, tid);
         ++cc;
+        ++num_tasks;
     }
 
-    num = cc;
-    while (num) {
+znovu:
+    task_active = cc = 0;
+    while (tasks[cc]) {
         LS_WAIT_T stat;
         struct rusage ru;
         int tid;
 
-        tid = ls_rwait(&stat, 0, &ru);
-        if (tid < 0) {
-            ls_perror("ls_rwait()");
-            break;
+        if (tasks[cc] < 0) {
+            ++cc;
+            continue;
         }
-        --num;
+
+        tid = ls_rwaittid(tasks[cc], &stat, WNOHANG, &ru);
+        if (tid == 0) {
+            /* good not done yet go and collect
+             * its rusage
+             */
+            rusage_task(tasks[cc]);
+            ++task_active;
+        } else if (tid > 0) {
+            printf("%s: task %d done\n", __func__, tid);
+            tasks[cc] = -1;
+        }
+        ++cc;
     }
+
+    for (cc = 0; tasks[cc]; cc++) {
+        if (tasks[cc] > 0) {
+            printf("%s: task %d still active\n", __func__, tasks[cc]);
+            ++task_active;
+        }
+    }
+
+    if (task_active > 0) {
+        sleep(1);
+        goto znovu;
+    }
+
+    printf("%s: all %d tasks gone\n", __func__, num_tasks);
+
     return 0;
+}
+
+static void
+rusage_task(int tid)
+{
+    pid_t pid;
+
+    if (ls_getrpid(tid, &pid) < 0) {
+        printf("%s: failed to get remote pid for tid %d\n", __func__, tid);
+    }
+
+    printf("%s: got remote pid %d for tid %d\n", __func__, pid, tid);
 }
