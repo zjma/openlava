@@ -302,7 +302,8 @@ ls_getrpid(int taskid, pid_t *pid)
     struct LSFHeader hdr;
 
     if ((tid = tid_find(taskid)) == NULL) {
-        return LSE_BAD_TASKF;
+        lserrno = LSE_BAD_TASKF;
+        return -1;
     }
 
     s = tid->sock;
@@ -313,7 +314,8 @@ ls_getrpid(int taskid, pid_t *pid)
         if (ackReturnCode_(s) < 0) {
             closesocket(s);
             _lostconnection_(host);
-            return LSE_SOCK_SYS;
+            lserrno = LSE_SOCK_SYS;
+            return -1;
         }
     }
 
@@ -331,7 +333,8 @@ ls_getrpid(int taskid, pid_t *pid)
                  NULL) == -1) {
         closesocket(s);
         _lostconnection_(host);
-        return LSE_SOCK_SYS;
+        lserrno = LSE_SOCK_SYS;
+        return -1;
     }
 
     /* Translate res code and return the
@@ -340,7 +343,8 @@ ls_getrpid(int taskid, pid_t *pid)
     if (ackReturnCode2_(s, &hdr, &rep_buf) < 0) {
         close(s);
         _lostconnection_(host);
-        return lserrno;
+        lserrno = LSE_SOCK_SYS;
+        return -1;
     }
 
     xdrmem_create(&xdrs, rep_buf, hdr.length, XDR_DECODE);
@@ -348,7 +352,8 @@ ls_getrpid(int taskid, pid_t *pid)
     if (! xdr_resGetpid(&xdrs, &pidReply, NULL)) {
         lserrno = LSE_BAD_XDR;
         xdr_destroy(&xdrs);
-        return LSE_BAD_XDR;
+        lserrno = LSE_BAD_XDR;
+        return -1;
     }
 
     *pid = pidReply.pid;

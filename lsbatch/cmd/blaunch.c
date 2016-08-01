@@ -34,7 +34,9 @@ static char **host_list;
 static char **command;
 static int *tasks;
 static int verbose;
+static int rest;
 extern char **environ;
+static char buf[BUFSIZ];
 
 /* Functions using global variables
  */
@@ -49,7 +51,8 @@ static void build_command(void);
 static int run_job(void);
 static void free_hosts(void);
 static void free_command(void);
-static void rusage_task(int);
+static int rusage_task(int);
+static void print_hosts(void);
 
 int
 main(int argc, char **argv)
@@ -71,8 +74,9 @@ main(int argc, char **argv)
         return -1;
     }
 
+    rest = 60;
     u = z = 0;
-    while ((cc = getopt(argc, argv, "hVvnz:u:")) != EOF) {
+    while ((cc = getopt(argc, argv, "hVvnz:u:t:")) != EOF) {
         switch (cc) {
             case 'v':
                 ++verbose;
@@ -90,6 +94,9 @@ main(int argc, char **argv)
                     get_host_list_from_file(optarg);
                 ++u;
                 break;
+            case 't':
+                rest = atoi(optarg);
+                break;
             case 'h':
             case '?':
                 usage();
@@ -97,9 +104,22 @@ main(int argc, char **argv)
         };
     }
 
+    Signal_(SIGUSR1, SIG_IGN);
+    /* initialize the remote execution
+     * library
+     */
+    cc = ls_initrex(1, 0);
+    if (cc < 0) {
+        ls_perror("ls_initrex()");
+        return -1;
+    }
+    /* Open log to tell user what's going on
+     */
+    ls_openlog("blaunch", NULL, true, "LOG_INFO");
+
     if (z > 0
         && u > 0) {
-        fprintf(stderr, "-u and -z are mutually exclusive\n");
+        ls_syslog(LOG_ERR, "blaunch: -u and -z are mutually exclusive");
         usage();
         return -1;
     }
@@ -119,10 +139,13 @@ main(int argc, char **argv)
         return -1;
     }
 
+    print_hosts();
+
     make_tasks();
+
     build_command();
     if (! command) {
-        fprintf(stderr, "blaunch: no command to run?\n");
+        ls_syslog(LOG_ERR, "blaunch: no command to run?");
         usage();
         return -1;
     }
@@ -131,6 +154,83 @@ main(int argc, char **argv)
 
     free_hosts();
     free_command();
+
+    return 0;
+}
+
+/* run_job()
+ */
+static int
+run_job(void)
+{
+    int cc;
+    int tid;
+    int num_tasks;
+    int task_active;
+
+    /* Start all jobs first
+     */
+    num_tasks = cc = 0;
+    while (host_list[cc]) {
+        tid = ls_rtask(host_list[cc],
+                       command,
+                       0);
+        if (tid < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: task %d on host %s failed %s", __func__,
+                    tid, host_list[cc], ls_sysmsg());
+            return -1;
+        }
+        tasks[cc] = tid;
+        ls_syslog(LOG_INFO, "%s: task %d started", __func__, tid);
+        ++cc;
+        ++num_tasks;
+    }
+
+znovu:
+    /* Check if they are still alive
+     */
+    task_active = cc = 0;
+    for (cc = 0; tasks[cc]; cc++) {
+        LS_WAIT_T stat;
+        struct rusage ru;
+        int tid;
+
+        if (tasks[cc] < 0)
+            continue;
+
+        tid = ls_rwaittid(tasks[cc], &stat, WNOHANG, &ru);
+        if (tid == 0) {
+            if (rusage_task(tasks[cc]) < 0) {
+                tasks[cc] = -1;
+                continue;
+            }
+        }
+        if (tid < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: ls_rwaittid() failed task %d %s", __func__, tid, ls_sysmsg());
+            return -1;
+        }
+        if (tid > 0) {
+            ls_syslog(LOG_INFO, "%s: task %d done", __func__, tid);
+            tasks[cc] = -1;
+        }
+    }
+
+    for (cc = 0; tasks[cc]; cc++) {
+        if (tasks[cc] > 0) {
+            ls_syslog(LOG_INFO, "\
+%s: task %d still active", __func__, tasks[cc]);
+            ++task_active;
+        }
+    }
+
+    if (task_active > 0) {
+        sleep(rest);
+        goto znovu;
+    }
+
+    ls_syslog(LOG_INFO, "%s: all %d tasks gone", __func__, num_tasks);
 
     return 0;
 }
@@ -149,6 +249,10 @@ redirect_stdin(void)
     return 0;
 }
 
+/* get_host_list()
+ *
+ * Get host list from -z option
+ */
 static int
 get_host_list(const char *hosts)
 {
@@ -177,6 +281,10 @@ get_host_list(const char *hosts)
     return 0;
 }
 
+/* get_host_list_from_file()
+ *
+ * Get host list from the host file
+ */
 static int
 get_host_list_from_file(const char *file)
 {
@@ -218,6 +326,10 @@ count_lines(FILE *fp)
     return n;
 }
 
+/* get_host_from_env()
+ *
+ * Get host list from the process env
+ */
 static int
 get_hosts_from_env(void)
 {
@@ -232,6 +344,8 @@ get_hosts_from_env(void)
 }
 
 /* get_hosts_from_args()
+ *
+ * Get host list from commmand line arguments
  */
 static int
 get_hosts_from_arg(void)
@@ -247,8 +361,8 @@ get_hosts_from_arg(void)
     host = arg_char[optind];
     hp = gethostbyname(host);
     if (hp == NULL) {
-        fprintf(stderr, "\
-%s: gethostbyname(%s) failed %s\n", __func__, host, hstrerror(h_errno));
+        ls_syslog(LOG_ERR, "\
+%s: gethostbyname(%s) failed %s", __func__, host, hstrerror(h_errno));
         return -1;
     }
 
@@ -264,18 +378,32 @@ get_hosts_from_arg(void)
 }
 
 static void
-make_tasks(void)
+print_hosts(void)
 {
     char *h;
     int cc;
 
-    printf("host(s): ");
+    sprintf(buf, "host(s): ");
     cc = 0;
     while ((h = host_list[cc])) {
-        printf("%s ", h);
+        sprintf(buf + strlen(buf), "%s ", h);
         ++cc;
     }
-    printf("\n");
+
+    ls_syslog(LOG_INFO, "%s: host list: %s", __func__, buf);
+
+}
+
+/* make_tasks()
+ */
+static void
+make_tasks(void)
+{
+    int cc;
+
+    cc = 0;
+    while (host_list[cc])
+        ++cc;
 
     tasks = calloc(cc + 1, sizeof(int));
 }
@@ -300,13 +428,14 @@ build_command(void)
         ++n;
     }
 
-    printf("command: ");
+    sprintf(buf, "command: ");
     cc = 0;
     while (command[cc]){
-        printf(" %s ", command[cc]);
+        sprintf(buf + strlen(buf), " %s ", command[cc]);
         ++cc;
     }
-    printf("\n");
+    ls_syslog(LOG_INFO, "%s: user command: %s", __func__, buf);
+
 }
 
 static void
@@ -343,94 +472,20 @@ free_command(void)
     _free_(command);
 }
 
-/* run_job()
- */
 static int
-run_job(void)
-{
-    int cc;
-    int tid;
-    int num_tasks;
-    int task_active;
-
-    Signal_(SIGUSR1, SIG_IGN);
-    /* initialize the remote execution
-     * library
-     */
-    cc = ls_initrex(1, 0);
-    if (cc < 0) {
-        ls_perror("ls_initrex()");
-        return -1;
-    }
-
-    num_tasks = cc = 0;
-    while (host_list[cc]) {
-        tid = ls_rtask(host_list[cc],
-                       command,
-                       0);
-        if (tid < 0) {
-            fprintf(stderr, "\
-%s: task %d on host %s failed %s", __func__,
-                    tid, host_list[cc], ls_sysmsg());
-            return -1;
-        }
-        tasks[cc] = tid;
-        printf("%s: task %d started\n", __func__, tid);
-        ++cc;
-        ++num_tasks;
-    }
-
-znovu:
-    task_active = cc = 0;
-    while (tasks[cc]) {
-        LS_WAIT_T stat;
-        struct rusage ru;
-        int tid;
-
-        if (tasks[cc] < 0) {
-            ++cc;
-            continue;
-        }
-
-        tid = ls_rwaittid(tasks[cc], &stat, WNOHANG, &ru);
-        if (tid == 0) {
-            /* good not done yet go and collect
-             * its rusage
-             */
-            rusage_task(tasks[cc]);
-            ++task_active;
-        } else if (tid > 0) {
-            printf("%s: task %d done\n", __func__, tid);
-            tasks[cc] = -1;
-        }
-        ++cc;
-    }
-
-    for (cc = 0; tasks[cc]; cc++) {
-        if (tasks[cc] > 0) {
-            printf("%s: task %d still active\n", __func__, tasks[cc]);
-            ++task_active;
-        }
-    }
-
-    if (task_active > 0) {
-        sleep(1);
-        goto znovu;
-    }
-
-    printf("%s: all %d tasks gone\n", __func__, num_tasks);
-
-    return 0;
-}
-
-static void
 rusage_task(int tid)
 {
     pid_t pid;
 
+    pid = 0;
     if (ls_getrpid(tid, &pid) < 0) {
-        printf("%s: failed to get remote pid for tid %d\n", __func__, tid);
+        ls_syslog(LOG_INFO, "\
+%s: failed rpid tid %d (task finished?)", __func__, tid);
+        return -1;
     }
 
-    printf("%s: got remote pid %d for tid %d\n", __func__, pid, tid);
+    ls_syslog(LOG_INFO, "\
+%s: got remote pid %d for tid %d", __func__, pid, tid);
+
+    return 0;
 }
