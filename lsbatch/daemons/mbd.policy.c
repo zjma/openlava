@@ -234,7 +234,6 @@ static int checkIfLimitIsOk(struct limitRes *,
                         limitConsumerType_t,
                         char *,
                         struct jData *);
-static struct limitRes *getActiveLimit(struct limitRes *, int);
 static int cntConsumerSlots(limitConsumerType_t, char*, char*, int);
 static int cntQSlots(limitConsumerType_t, char*, char*, int);
 static int allocHosts(struct jData *jp);
@@ -3006,8 +3005,13 @@ checkResLimit(struct jData *jp, char* hostname)
             if (hasMe) {
                 lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
                 if (lr) {
-                    jp->uqPtr->maxSlots = (int) lr->value;
-                    ret = checkIfLimitIsOk(&limitConf->limits[i].res[0],
+                    jp->uqPtr->maxSlots = jp->uqPtr->maxJobs = (int) lr->value;
+                    if (lr->res == LIMIT_RESOURCE_SLOTS)
+                        jp->uqPtr->maxSlots = (int) lr->value;
+                    else
+                        jp->uqPtr->maxJobs = (int) lr->value;
+
+                    ret = checkIfLimitIsOk(lr,
                                        LIMIT_CONSUMER_PER_USER,
                                        jp->userName,
                                        per_queue,
@@ -3035,6 +3039,27 @@ checkResLimit(struct jData *jp, char* hostname)
                     if (strcasecmp(word2, jp->userName) == 0) {
                         hasMe = TRUE;
                         break;
+                    } else {
+                        /* check LSF or UNIX user group */
+                        struct gData *gp = NULL;
+
+                        gp = getUGrpData(word2);
+                        if (gp) {
+                            char  **gUsers = NULL;
+                            int   numUsers = 0;
+                            int   i;
+
+                            gUsers = expandGrp(gp, word2, &numUsers);
+                            for (i = 0; i < numUsers; i++) {
+                                if (strcasecmp(gUsers[i], jp->userName) == 0) {
+                                    hasMe = TRUE;
+                                    break;
+                                }
+                            }
+                            FREEUP(gUsers);
+                            if (hasMe)
+                                break;
+                        }
                     }
                     neg = FALSE;
                 }
@@ -3044,7 +3069,11 @@ checkResLimit(struct jData *jp, char* hostname)
                         || (hasAll && !hasMe)) {
                     lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
                     if (lr) {
-                        jp->uqPtr->maxSlots = (int) lr->value;
+                        if (lr->res == LIMIT_RESOURCE_SLOTS)
+                            jp->uqPtr->maxSlots = (int) lr->value;
+                        else
+                            jp->uqPtr->maxJobs = (int) lr->value;
+
                         ret = checkIfLimitIsOk(lr,
                                            LIMIT_CONSUMER_PER_USER,
                                            jp->userName,
@@ -3090,7 +3119,11 @@ checkResLimit(struct jData *jp, char* hostname)
                     || (hasAll && !hasMe)) {
                 lr = getActiveLimit(limitConf->limits[i].res, limitConf->limits[i].nRes);
                 if (lr) {
-                    jp->pqPtr->maxSlots = (int) lr->value;
+                    if (lr->res == LIMIT_RESOURCE_SLOTS)
+                        jp->pqPtr->maxSlots = (int) lr->value;
+                    else
+                        jp->pqPtr->maxJobs = (int) lr->value;
+
                     ret = checkIfLimitIsOk(lr,
                                        LIMIT_CONSUMER_PER_PROJECT,
                                        jp->shared->jobBill.projectName,
@@ -3190,7 +3223,7 @@ checkIfLimitIsOk(struct limitRes *limit,
         return TRUE;
 }
 
-static struct limitRes *
+struct limitRes *
 getActiveLimit(struct limitRes *limits, int num)
 {
     struct dayhour dayhour;

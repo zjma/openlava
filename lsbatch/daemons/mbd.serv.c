@@ -3440,6 +3440,7 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
     int    neg = FALSE;
     int    match = FALSE;
     struct resLimitUsage *usage = NULL;
+    static struct limitRes *lr;
 
     if (!limit || !pAcct)
         return NULL;
@@ -3517,6 +3518,27 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
                 if (strcasecmp(word2, pAcct->user) == 0) {
                     hasMe = TRUE;
                     break;
+                } else {
+                    /* check LSF or UNIX user group */
+                    struct gData *gp = NULL;
+
+                    gp = getUGrpData(word2);
+                    if (gp) {
+                        char  **gUsers = NULL;
+                        int   numUsers = 0;
+                        int   i;
+
+                        gUsers = expandGrp(gp, word2, &numUsers);
+                        for (i = 0; i < numUsers; i++) {
+                            if (strcasecmp(gUsers[i], pAcct->user) == 0) {
+                                hasMe = TRUE;
+                                break;
+                            }
+                        }
+                        FREEUP(gUsers);
+                        if (hasMe)
+                            break;
+                    }
                 }
                 neg = FALSE;
             }
@@ -3570,13 +3592,14 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
         + pAcct->numSSUSPSlots
         + pAcct->numUSUSPSlots
         + pAcct->numRESERVESlots;
-    usage->maxSlots = pAcct->maxSlots;
 
     usage->jobs= pAcct->numRUNJobs
         + pAcct->numSSUSPJobs
         + pAcct->numUSUSPJobs
         + pAcct->numRESERVEJobs;
-    usage->maxJobs = pAcct->maxJobs;
+
+    lr = getActiveLimit(limit->res, limit->nRes);
+    usage->maxSlots = usage->maxJobs = lr->value;
 
 clean:
     FREEUP(save_queue);

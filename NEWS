@@ -22,6 +22,9 @@ Release notes for OpenLava versions
 -- Introduce a new rule in config/Makefile.am which creates a file named
    commit in the LSF_ENVDIR, this file contains the git commit number
    of the current build.
+-- Fix user group bug in lsb.resources.
+-- Fix bresource display invalid max slot/job after mbatchd restart.
+-- Refine man5 lsb.resources.5 and man1 bresources.1.
 
 3.3.3
 ======

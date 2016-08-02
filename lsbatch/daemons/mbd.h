@@ -1292,6 +1292,7 @@ extern void                 updLimitSlotData(struct jData *,
 extern void                 updLimitJobData(struct jData *, int, int,
                                         int, int, int, int);
 extern struct resData *     getLimitUsageData(limitConsumerType_t, char *, char *);
+extern struct limitRes     *getActiveLimit(struct limitRes *, int);
 extern struct uData *       getUserData(char *user);
 extern struct userAcct *    getUAcct(struct hTab *, struct uData *);
 extern struct hostAcct *    getHAcct(struct hTab  *, struct hData *);
