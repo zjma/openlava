@@ -1,7 +1,7 @@
 Release notes for OpenLava versions
 
-4.0.0
-======
+4.0pre1
+========
 
 -- Fix res/nios hang blocking ol make.
 -- Create a new parameter NIOS_MAX_TASKS specifying the maximum number
@@ -26,6 +26,7 @@ Release notes for OpenLava versions
 -- Fix bresource display invalid max slot/job after mbatchd restart.
 -- Refine man5 lsb.resources.5 and man1 bresources.1.
 -- Rename example queue/user group/project of lsb.resources.
+-- Create 4.0pre1 tag.
 
 3.3.3
 ======
