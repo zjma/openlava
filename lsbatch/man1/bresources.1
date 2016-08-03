@@ -112,11 +112,11 @@ SLOTS      : 0
 .PP
 LIMIT  Limit2
 .br
-QUEUES     : bench
+QUEUES     : normal
 .br
-    expand : bench
+    expand : normal
 .br
-PROJECTS   : RCRDPERF FEDPERF NRRD NRPV_MT IPPERF AMSPERF
+PROJECTS   : Proj1 Proj2 Proj3
 .br
 JOBS       : 10
 .br
@@ -124,19 +124,19 @@ CURRENT LIMIT RESOURCE USAGE:
 .br
     PROJECT     QUEUE       JOBS
 .br
-    RCRDPERF    bench       5/10
-    NRPV_MT     bench       2/10
+    Proj1       normal      5/10
+    Proj2       nornal      2/10
 .br
 .PP
 LIMIT  jenkinslimits
 .br
-QUEUES     : regression low
+QUEUES     : normal owner
 .br
-    expand : regression low
+    expand : normal owner
 .br
-PER_USER   : JENKINS_USERS
+PER_USER   : G1
 .br
-    expand : pvsqa jmlee rkong
+    expand : david wlu james john
 .br
 SLOTS      : 20 09:00-17:00
 .br
@@ -146,9 +146,9 @@ CURRENT LIMIT RESOURCE USAGE:
 .br
     PROJECT     QUEUE       USER        HOST        SLOTS       JOBS
 .br
-    -           regression  rkong       -           5/10        -
+    -           owner       john       -           5/10        -
 .br
-    -           low         rkong       -           5/10        -
+    -           normal      john       -           5/10        -
 .PP
 .SH SEE ALSO
 .BR

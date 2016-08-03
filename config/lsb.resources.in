@@ -66,23 +66,23 @@
 #End Limit
 
 # Example 5: slot limit for each project
-Begin Limit
-NAME = Projectlimit
-PER_PROJECTS = all
-SLOTS = 300
-End Limit
+#Begin Limit
+#NAME = Projectlimit
+#PER_PROJECTS = all
+#SLOTS = 300
+#End Limit
 
 # Example 6: slot limit for each user
-Begin Limit
-NAME = nonjenkinslimits
-SLOTS = 100
-PER_USER = all ~JENKINS_USER
-End Limit
+#Begin Limit
+#NAME = nonG1usersLimit
+#SLOTS = 100
+#PER_USER = all ~G1
+#End Limit
 
 # Example 7: time-window based slot limit for each user
-Begin Limit
-NAME = jenkinslimits
-SLOTS = [200 09:00-17:00] [100 17:00-09:00]
-QUEUES = regression low
-PER_USER = JENKINS_USER
-End Limit
+#Begin Limit
+#NAME = G1userslimits
+#SLOTS = [200 09:00-17:00] [100 17:00-09:00]
+#QUEUES = regression low
+#PER_USER = G1
+#End Limit

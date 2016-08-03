@@ -25,6 +25,7 @@ Release notes for OpenLava versions
 -- Fix user group bug in lsb.resources.
 -- Fix bresource display invalid max slot/job after mbatchd restart.
 -- Refine man5 lsb.resources.5 and man1 bresources.1.
+-- Rename example queue/user group/project of lsb.resources.
 
 3.3.3
 ======
