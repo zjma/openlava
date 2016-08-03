@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 David Bigagli
+ * Copyright (C) 2015 -2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -268,11 +268,10 @@ extern void do_probe(XDR *xdrs, int s, struct LSFHeader *);
 extern void do_reboot(XDR *xdrs, int s, struct LSFHeader *);
 extern void do_shutdown(XDR *xdrs, int s, struct LSFHeader *);
 extern void do_jobSetup(XDR *xdrs, int s, struct LSFHeader *);
-extern void do_jobSyslog(XDR *xdrs, int s, struct LSFHeader *);
-extern void do_jobMsg(struct bucket *, XDR *, int s, struct LSFHeader *);
-extern void do_rmConn(XDR *, int, struct LSFHeader *, struct clientNode *);
-extern void do_lsbMsg(XDR *, int s, struct LSFHeader *);
+extern void do_jobSyslog(XDR *xdrs, int , struct LSFHeader *);
+extern void do_blaunch_rusage(XDR *, int, struct LSFHeader *);
 extern void deliverMsg(struct bucket *);
+extern void do_jobSetup(XDR *xdrs, int s, struct LSFHeader *);
 
 extern void getJobsState(struct sbdPackage *sbdPackage);
 extern int status_job(mbdReqType, struct jobCard *, int, sbdReplyType);

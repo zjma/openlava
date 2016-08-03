@@ -26,7 +26,7 @@
 #include "lib.rf.h"
 
 bool_t
-xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
+xdr_resCmdBill(XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
 {
     char *sp;
     int i, argc, nlimits;
@@ -56,7 +56,7 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
             return false;
     }
 
-    for (i=0; i<argc; i++) {
+    for (i = 0; i < argc; i++) {
         if (!xdr_var_string(xdrs, &(cmd->argv[i]))) {
             if (xdrs->x_op == XDR_DECODE) {
                 while (i--)
@@ -84,7 +84,7 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
     if (xdrs->x_op == XDR_DECODE)
         nlimits = (nlimits < LSF_RLIM_NLIMITS) ? nlimits : LSF_RLIM_NLIMITS;
 
-    for (i=0; i<nlimits; i++) {
+    for (i = 0; i < nlimits; i++) {
         if (!xdr_arrayElement(xdrs, (char *) &(cmd->lsfLimits[i]), hdr,
                               xdr_lsfLimit)) {
             if (xdrs->x_op == XDR_DECODE)
@@ -97,7 +97,7 @@ xdr_resCmdBill (XDR *xdrs, struct resCmdBill *cmd, struct LSFHeader *hdr)
     return true;
 
 DecodeQuit:
-    for (i=0; i<argc; i++)
+    for (i = 0; i < argc; i++)
         free(cmd->argv[i]);
     free(cmd->argv);
     return false;
@@ -105,7 +105,7 @@ DecodeQuit:
 
 
 bool_t
-xdr_resSetenv (XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
+xdr_resSetenv(XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
 {
     char *sp;
     int i, nenv;
@@ -149,7 +149,7 @@ xdr_resSetenv (XDR *xdrs, struct resSetenv *envp, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_resRKill (XDR *xdrs, struct resRKill *rkill, struct LSFHeader *hdr)
+xdr_resRKill(XDR *xdrs, struct resRKill *rkill, struct LSFHeader *hdr)
 {
     if (! (xdr_int(xdrs, &rkill->rid) &&
            xdr_int(xdrs, &rkill->whatid) &&
@@ -160,7 +160,7 @@ xdr_resRKill (XDR *xdrs, struct resRKill *rkill, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_resGetpid (XDR *xdrs, struct resPid *pidreq, struct LSFHeader *hdr)
+xdr_resGetpid(XDR *xdrs, struct resPid *pidreq, struct LSFHeader *hdr)
 {
     if (! xdr_int(xdrs, &pidreq->rpid)
         || ! xdr_int(xdrs, &pidreq->pid))
@@ -170,11 +170,11 @@ xdr_resGetpid (XDR *xdrs, struct resPid *pidreq, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_resGetRusage (XDR *xdrs, struct resRusage *rusageReq,struct LSFHeader *hdr)
+xdr_resGetRusage(XDR *xdrs, struct resRusage *rusageReq,struct LSFHeader *hdr)
 {
-    if (! (xdr_int(xdrs, &rusageReq->rid)
-           && xdr_int(xdrs, &rusageReq->whatid)
-           && xdr_int(xdrs, &rusageReq->options))) {
+    if (! xdr_int(xdrs, &rusageReq->rid)
+        || ! xdr_int(xdrs, &rusageReq->whatid)
+        || ! xdr_int(xdrs, &rusageReq->options)) {
         return false;
     }
 
@@ -183,7 +183,7 @@ xdr_resGetRusage (XDR *xdrs, struct resRusage *rusageReq,struct LSFHeader *hdr)
 
 
 bool_t
-xdr_resChdir (XDR *xdrs, struct resChdir *ch, struct LSFHeader *hdr)
+xdr_resChdir(XDR *xdrs, struct resChdir *ch, struct LSFHeader *hdr)
 {
     char *sp = ch->dir;
 
@@ -199,17 +199,17 @@ xdr_resChdir (XDR *xdrs, struct resChdir *ch, struct LSFHeader *hdr)
 
 
 bool_t
-xdr_resControl (XDR *xdrs, struct resControl *ctrl, struct LSFHeader *hdr)
+xdr_resControl(XDR *xdrs, struct resControl *ctrl, struct LSFHeader *hdr)
 {
-    if (! (xdr_int(xdrs, &ctrl->opCode)
-           && xdr_int(xdrs, &ctrl->data)))
+    if (! xdr_int(xdrs, &ctrl->opCode)
+        || ! xdr_int(xdrs, &ctrl->data))
         return false;
     return true;
 }
 
 
 bool_t
-xdr_resStty (XDR *xdrs, struct resStty *tty, struct LSFHeader *hdr)
+xdr_resStty(XDR *xdrs, struct resStty *tty, struct LSFHeader *hdr)
 {
     if (xdrs->x_op == XDR_ENCODE) {
         if (!encodeTermios_(xdrs, &tty->termattr))
@@ -230,7 +230,7 @@ xdr_resStty (XDR *xdrs, struct resStty *tty, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_ropenReq (XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
+xdr_ropenReq(XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
 {
     char *sp = req->fn;
     int len, flags;
@@ -317,13 +317,13 @@ xdr_ropenReq (XDR *xdrs, struct ropenReq *req, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_rrdwrReq (XDR *xdrs, struct rrdwrReq *req, struct LSFHeader *hdr)
+xdr_rrdwrReq(XDR *xdrs, struct rrdwrReq *req, struct LSFHeader *hdr)
 {
     return (xdr_int(xdrs, &req->fd) && xdr_int(xdrs, &req->len));
 }
 
 bool_t
-xdr_rlseekReq (XDR *xdrs, struct rlseekReq *req, struct LSFHeader *hdr)
+xdr_rlseekReq(XDR *xdrs, struct rlseekReq *req, struct LSFHeader *hdr)
 {
     int whence = 0;
 #define LSF_SEEK_SET 0x1

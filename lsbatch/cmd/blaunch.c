@@ -18,7 +18,7 @@
 
 
 #include "cmd.h"
-#include <unistd.h>
+#include "../lib/lsb.h"
 
 static void
 usage(void)
@@ -33,10 +33,14 @@ static char **arg_char;
 static char **host_list;
 static char **command;
 static int *tasks;
+struct jRusage **jrus;
 static int verbose;
 static int rest;
 extern char **environ;
 static char buf[BUFSIZ];
+static int jobID;
+static int job_step;
+static char *hostname;
 
 /* Functions using global variables
  */
@@ -53,6 +57,10 @@ static void free_hosts(void);
 static void free_command(void);
 static int rusage_task(int);
 static void print_hosts(void);
+static int size_rusage(struct jRusage *);
+static int get_job_id(void);
+static int send2sbd(struct jRusage *);
+static void free_rusage(struct jRusage *);
 
 int
 main(int argc, char **argv)
@@ -105,17 +113,30 @@ main(int argc, char **argv)
     }
 
     Signal_(SIGUSR1, SIG_IGN);
+
     /* initialize the remote execution
      * library
      */
-    cc = ls_initrex(1, 0);
-    if (cc < 0) {
-        ls_perror("ls_initrex()");
+    if (ls_initrex(1, 0) < 0) {
+        fprintf(stderr, "blaunch: ls_initrex() failed %s", ls_sysmsg());
         return -1;
     }
+
+    /* Since we call SBD initialize the batch library as well.
+     */
+    if (lsb_init("blaunch") < 0) {
+        fprintf(stderr, "blaunch: lsb_init() failed %s", lsb_sysmsg());
+        return -1;
+    }
+
     /* Open log to tell user what's going on
      */
     ls_openlog("blaunch", NULL, true, "LOG_INFO");
+
+    if (get_job_id()) {
+        ls_syslog(LOG_ERR, "%s: cannot run without jobid", __func__);
+        return -1;
+    }
 
     if (z > 0
         && u > 0) {
@@ -123,6 +144,8 @@ main(int argc, char **argv)
         usage();
         return -1;
     }
+
+    hostname = ls_getmyhostname();
 
     /* Neither -z nor -u were specified on
      * the command line, so the host is the
@@ -202,6 +225,8 @@ znovu:
         tid = ls_rwaittid(tasks[cc], &stat, WNOHANG, &ru);
         if (tid == 0) {
             if (rusage_task(tasks[cc]) < 0) {
+                ls_syslog(LOG_ERR, "\
+%s: failed to get rusage from task %d %s", __func__, cc, ls_sysmsg());
                 tasks[cc] = -1;
                 continue;
             }
@@ -406,6 +431,7 @@ make_tasks(void)
         ++cc;
 
     tasks = calloc(cc + 1, sizeof(int));
+    jrus = calloc(cc + 1, sizeof(struct jRusage *));
 }
 
 static void
@@ -475,17 +501,158 @@ free_command(void)
 static int
 rusage_task(int tid)
 {
-    pid_t pid;
+    struct jRusage *jru;
 
-    pid = 0;
-    if (ls_getrpid(tid, &pid) < 0) {
-        ls_syslog(LOG_INFO, "\
-%s: failed rpid tid %d (task finished?)", __func__, tid);
+    jru = ls_getrusage(tid);
+    if (! jru)
+        return -1;
+
+    ls_syslog(LOG_DEBUG, "%s: got rusage for task %d", __func__, tid);
+
+    if (send2sbd(jru) < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed to send jRusage data to SBD on %s", __func__, hostname);
+        free_rusage(jru);
         return -1;
     }
 
-    ls_syslog(LOG_INFO, "\
-%s: got remote pid %d for tid %d", __func__, pid, tid);
+    free_rusage(jru);
 
     return 0;
+}
+
+/* send2sbd()
+ */
+static int
+send2sbd(struct jRusage *jru)
+{
+    XDR xdrs;
+    int len;
+    int len2;
+    int cc;
+    struct LSFHeader hdr;
+    char *req_buf;
+    char *reply_buf;
+
+    len = sizeof(LS_LONG_INT) + sizeof(struct LSFHeader);
+    len = len + size_rusage(jru);
+    len = len * sizeof(int);
+
+    initLSFHeader_(&hdr);
+    hdr.opCode = SBD_BLAUNCH_RUSAGE;
+
+    req_buf = calloc(len, sizeof(char));
+    xdrmem_create(&xdrs, req_buf, len, XDR_ENCODE);
+
+    XDR_SETPOS(&xdrs, sizeof(struct LSFHeader));
+
+    /* encode the jobID
+     */
+    if (! xdr_int(&xdrs, &jobID)
+        || ! xdr_int(&xdrs, &job_step)) {
+        ls_syslog(LOG_ERR, "\
+%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+        _free_(req_buf);
+        xdr_destroy(&xdrs);
+        return -1;
+    }
+
+    /* encode the rusage
+     */
+    if (! xdr_jRusage(&xdrs, jru, &hdr)) {
+        ls_syslog(LOG_ERR, "\
+%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+        _free_(req_buf);
+        xdr_destroy(&xdrs);
+        return -1;
+
+    }
+
+    len2 = XDR_GETPOS(&xdrs);
+    hdr.length =  len2 - sizeof(struct LSFHeader);
+    XDR_SETPOS(&xdrs, 0);
+
+    if (!xdr_LSFHeader(&xdrs, &hdr)) {
+        ls_syslog(LOG_ERR, "\
+%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+        _free_(req_buf);
+        xdr_destroy(&xdrs);
+        return -1;
+    }
+
+    XDR_SETPOS(&xdrs, len2);
+
+    /* send 2 sbatchd
+     */
+    reply_buf = NULL;
+    cc = cmdCallSBD_(hostname, req_buf, len, &reply_buf, &hdr, NULL);
+    if (cc < 0) {
+        ls_syslog(LOG_ERR, "\
+%s: failed calling SBD on %s %s", __func__, hostname, lsb_sysmsg());
+        _free_(req_buf);
+        xdr_destroy(&xdrs);
+        return -1;
+    }
+
+    if (hdr.opCode != LSBE_NO_ERROR) {
+        ls_syslog(LOG_ERR, "\
+%s: SBD on %s returned %s", __func__, hostname, lsb_sysmsg());
+        _free_(req_buf);
+        xdr_destroy(&xdrs);
+        return -1;
+    }
+
+    _free_(req_buf);
+    xdr_destroy(&xdrs);
+
+    return 0;
+}
+
+/* size_rusage()
+ */
+static int
+size_rusage(struct jRusage *jru)
+{
+    int cc;
+
+    cc = 0;
+    cc = 5 * sizeof(int);
+    cc = cc + jru->npids * sizeof(struct pidInfo);
+    cc = cc + jru->npgids * sizeof(int *);
+
+    return cc;
+}
+
+/* get_job_id()
+ */
+static int
+get_job_id(void)
+{
+    char *j;
+    char *s;
+
+    if (! (j = getenv("LSB_JOBID")))
+        return -1;
+
+    jobID = atoi(j);
+
+    if (! (s = getenv("LSB_JOBINDEX_STEP"))) {
+        job_step  = 0;
+        return 0;
+    }
+
+    job_step = atoi(s);
+
+    return 0;
+}
+
+static void
+free_rusage(struct jRusage *jru)
+{
+    if (!jru)
+        return;
+
+    _free_(jru->pidInfo);
+    _free_(jru->pgid);
+    _free_(jru);
 }

@@ -1068,48 +1068,62 @@ do_jobSetup(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 void
 do_jobSyslog(XDR * xdrs, int chfd, struct LSFHeader * reqHdr)
 {
-    static char        fname[] = "do_jobSyslog()";
-    struct jobSyslog   sysMsg;
+    struct jobSyslog sysMsg;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering ...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering ...", __func__);
 
     if (!xdr_jobSyslog(xdrs, &sysMsg, reqHdr)) {
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "xdr_syslog");
+        ls_syslog(LOG_ERR, "%s: failed in xdr_jobSyslog()", __func__);
         return;
     }
+
     if (replyHdrWithRC(LSBE_NO_ERROR, chfd, -1) < 0)
-        ls_syslog(LOG_ERR, I18N_FUNC_FAIL, fname, "replyHdrWithRC");
+        ls_syslog(LOG_ERR, "%s: replyHdrWithRC()", __func__);
+
     ls_syslog(sysMsg.logLevel, sysMsg.msg);
 }
 
 static int
 replyHdrWithRC(int rc, int chfd, int jobId)
 {
-    XDR                     xdrs2;
-    char                    reply_buf[MSGSIZE];
-    static char             fname[] = "replyHdrWithRC";
-    struct LSFHeader        replyHdr;
+    XDR xdrs2;
+    char reply_buf[sizeof(struct LSFHeader)];
+    struct LSFHeader replyHdr;
 
-    xdrmem_create(&xdrs2, reply_buf, MSGSIZE, XDR_ENCODE);
+    xdrmem_create(&xdrs2, reply_buf, sizeof(reply_buf), XDR_ENCODE);
+
     replyHdr.opCode = rc;
     replyHdr.length = 0;
 
     if (!xdr_LSFHeader(&xdrs2, &replyHdr)) {
-        ls_syslog(LOG_ERR, "%s: xdr_LSFHeader() failed for job <%d>", fname,
-                  jobId);
+        ls_syslog(LOG_ERR, "\
+%s: xdr_LSFHeader() failed for job <%d>", __func__, jobId);
         xdr_destroy(&xdrs2);
         return -1;
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, "%s: chanWrite_(%d) failed for job <%d>: %m",
-                  fname, XDR_GETPOS(&xdrs2), jobId);
+        ls_syslog(LOG_ERR, "\
+%s: chanWrite_(%d) failed for job <%d>: %m", __func__,
+                  XDR_GETPOS(&xdrs2), jobId);
         xdr_destroy(&xdrs2);
         return -1;
     }
+
     xdr_destroy(&xdrs2);
+
     return 0;
-}                               /* replyHdrWithRC */
+}
 
 
+/* do_blaunch_rusage()
+ *
+ * Process the rusage update from blaunch job
+ */
+void
+do_blaunch_rusage(XDR *xdrs, int chfd, struct LSFHeader *hdr)
+{
+    if (replyHdrWithRC(LSBE_NO_ERROR, chfd, -1) < 0)
+        ls_syslog(LOG_ERR, "%s: replyHdrWithRC()", __func__);
+}

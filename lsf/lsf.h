@@ -1002,6 +1002,7 @@ extern int lsb_rmcgroup_mem(const char *,  pid_t);
  * taskid which is set locally by the library.
  */
 extern int ls_getrpid(int, pid_t *);
+extern struct jRusage *ls_getrusage(int);
 
 #ifndef __CYGWIN__
 extern int optind;

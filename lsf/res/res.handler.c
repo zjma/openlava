@@ -17,25 +17,6 @@
  *
  */
 
-#include <stdio.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/signal.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <grp.h>
-#include <stdlib.h>
 #include "res.h"
 #include "resout.h"
 #include "../lib/lproto.h"
@@ -1311,7 +1292,7 @@ resRusage(struct client *cli_ptr, struct LSFHeader *msgHdr, XDR *xdrs)
 
     if (logclass & LC_TRACE) {
 
-        ls_syslog(LOG_DEBUG, "\
+        ls_syslog(LOG_INFO, "\
 %s: Res child=<%x> whatId=<%x> rpid=<%d> mem(%d) swap(%d) utime(%d) stime(%d) npids(%d)",
                   fname,
                   children[cc],

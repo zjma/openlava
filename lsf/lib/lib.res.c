@@ -1889,6 +1889,89 @@ _lostconnection_(char *hostName)
 
 }
 
+/* ls_getrusage()
+ */
+struct jRusage *
+ls_getrusage(int taskid)
+{
+    int s;
+    int cc;
+    struct tid *tid;
+    struct resRusage rusageReq;
+    char *reqbuf;
+    char *rep_buf;
+    char host[MAXHOSTNAMELEN];
+    XDR xdrs;
+    struct LSFHeader hdr;
+    struct jRusage *jru;
+
+    memset(&rusageReq, 0, sizeof(struct resRusage));
+
+    if ((tid = tid_find(taskid)) == NULL) {
+        return NULL;
+    }
+
+    s = tid->sock;
+    gethostbysock_(s, host);
+
+    if (!FD_ISSET(s,&connection_ok_)){
+        FD_SET(s,&connection_ok_);
+        if (ackReturnCode_(s) < 0) {
+            closesocket(s);
+            _lostconnection_(host);
+            return NULL;
+        }
+    }
+
+    rusageReq.rid = taskid;
+    rusageReq.whatid = RES_RID_ISTID;
+
+    cc = sizeof(struct resRusage) + sizeof(struct LSFHeader);
+    cc = cc * sizeof(int);
+    reqbuf = calloc(cc, sizeof(char));
+
+    if (callRes_(s,
+                 RES_RUSAGE,
+                 (char *)&rusageReq,
+                 (char *)reqbuf,
+                 cc,
+                 xdr_resGetRusage,
+                 0,
+                 0,
+                 NULL) == -1) {
+        closesocket(s);
+        _lostconnection_(host);
+        _free_(reqbuf);
+        return NULL;
+    }
+
+    if (ackReturnCode2_(s, &hdr, &rep_buf) < 0) {
+        close(s);
+        _lostconnection_(host);
+        lserrno = LSE_SOCK_SYS;
+        _free_(reqbuf);
+        return NULL;
+    }
+
+
+    xdrmem_create(&xdrs, rep_buf, hdr.length, XDR_DECODE);
+
+    jru = calloc(1, sizeof(struct jRusage));
+
+    if (! xdr_jRusage(&xdrs, jru, &hdr)) {
+        lserrno = LSE_BAD_XDR;
+        xdr_destroy(&xdrs);
+        lserrno = LSE_BAD_XDR;
+        _free_(reqbuf);
+        return NULL;
+    }
+
+    xdr_destroy(&xdrs);
+    _free_(reqbuf);
+    _free_(rep_buf);
+
+    return jru;
+}
 /* ackReturnCode2_()
  *
  * Get the return code from res and the header that
