@@ -54,6 +54,7 @@ set to MBD_QSORT_JOBS in daemons.c
 -- Fix the host group expanding bug in lsb.resources.
 -- Fix the resource usage counting bug when enforcing limits.
 -- Release 3.3.3 the lsid command returns now 3.3.3 as OpenLava version.
+-- Improve bjobs performance ~50 times avoiding sort the SJL by hostname.
 
 3.3.2
 ======
