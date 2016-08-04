@@ -1,4 +1,5 @@
-/* $Id: cmd.prt.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,8 +24,8 @@
 #include <netdb.h>
 #include <ctype.h>
 
-#define NL_SETN 8 	 
-#define MINFIELDWIDE  7 	
+#define NL_SETN 8
+#define MINFIELDWIDE  7
 
 
 typedef char loadCharType[MAXLSFNAMELEN];
@@ -43,7 +44,7 @@ getDispEnd(struct resItem* resTable, int start, int last)
         while (endItem < last) {
             feildWidth = strlen(resTable[endItem].name);
             feildWidth = (feildWidth > MINFIELDWIDE)? feildWidth : MINFIELDWIDE;
-            dispWidth += (feildWidth + 1);  
+            dispWidth += (feildWidth + 1);
             if (dispWidth > 80)
                 break;
             else
@@ -51,9 +52,9 @@ getDispEnd(struct resItem* resTable, int start, int last)
         }
     }
     return endItem;
-} 
+}
 
-char* 
+char*
 getPrtFmt(char* name)
 {
     static char frmtStr[128];
@@ -65,11 +66,11 @@ getPrtFmt(char* name)
         strcpy(frmtStr, "%s ");
 
     return frmtStr;
-} 
+}
 
 int
 printThresholds (float *loadSched, float *loadStop, int *busySched,
-		 int *busyStop, int nIdx, struct lsInfo *lsInfo)
+                 int *busyStop, int nIdx, struct lsInfo *lsInfo)
 {
     static loadCharType *loadSchedVal = NULL, *loadStopVal = NULL;
     static int nLoad = 0;
@@ -77,45 +78,45 @@ printThresholds (float *loadSched, float *loadStop, int *busySched,
     static char fName[] = "printThresholds";
 
     if (nIdx > nLoad) {
-	if (loadSchedVal) {
-	    FREEUP(loadSchedVal);
-	    loadSchedVal = NULL;
-	}
-	
-	if (loadStopVal) {
-	    FREEUP(loadStopVal);
-	    loadStopVal = NULL;
-	}
-	
-	nLoad = 0;
+        if (loadSchedVal) {
+            FREEUP(loadSchedVal);
+            loadSchedVal = NULL;
+        }
 
-	if ((loadSchedVal = (loadCharType *) calloc(nIdx, sizeof(loadCharType)))
-	     == NULL) {
-	    fprintf(stderr, I18N_FUNC_FAIL, fName, "calloc"); 
-	    return -1;
-	}
+        if (loadStopVal) {
+            FREEUP(loadStopVal);
+            loadStopVal = NULL;
+        }
 
-	if ((loadStopVal = (loadCharType *) calloc(nIdx,
-						   sizeof(loadCharType)))
-	    == NULL) {
-	    fprintf(stderr, I18N_FUNC_FAIL, fName, "calloc");
-	    return -1;
-	}
-	
-	nLoad = nIdx;
+        nLoad = 0;
+
+        if ((loadSchedVal = (loadCharType *) calloc(nIdx, sizeof(loadCharType)))
+            == NULL) {
+            fprintf(stderr, I18N_FUNC_FAIL, fName, "calloc");
+            return -1;
+        }
+
+        if ((loadStopVal = (loadCharType *) calloc(nIdx,
+                                                   sizeof(loadCharType)))
+            == NULL) {
+            fprintf(stderr, I18N_FUNC_FAIL, fName, "calloc");
+            return -1;
+        }
+
+        nLoad = nIdx;
     }
 
     printf("           r15s   r1m  r15m   ut      pg    io   ls    it    tmp    swp    mem\n");
     fill_load(loadSched, loadSchedVal, busySched, nIdx);
     printf(" loadSched");
     for (i = 0; i <= MEM; i++)
-	 printf("%s", loadSchedVal[i]);
+        printf("%s", loadSchedVal[i]);
 
     if (loadStop != NULL) {
         printf("\n loadStop ");
-	fill_load(loadStop, loadStopVal, busyStop, nIdx);
-	for (i = 0; i <= MEM; i++)
-	    printf("%s", loadStopVal[i]);
+        fill_load(loadStop, loadStopVal, busyStop, nIdx);
+        for (i = 0; i <= MEM; i++)
+            printf("%s", loadStopVal[i]);
     }
     printf("\n");
 
@@ -123,7 +124,7 @@ printThresholds (float *loadSched, float *loadStop, int *busySched,
         int start = MEM + 1;
         int end = 0;
         char* frmt = NULL;
-        
+
         while ((end = getDispEnd(lsInfo->resTable, start, nIdx)) > start && start < nIdx) {
             printf("\n          ");
             for (i = start; i < end; i++) {
@@ -146,10 +147,10 @@ printThresholds (float *loadSched, float *loadStop, int *busySched,
                 start = end;
             else
                 break;
-		}
+        }
     }
     return 0;
-} 
+}
 
 static void
 fill_load(float *load, loadCharType *loadval, int *busyBit, int nIdx)
@@ -157,13 +158,13 @@ fill_load(float *load, loadCharType *loadval, int *busyBit, int nIdx)
     int j;
     int i=1;
 
-    for (j=0;j<UT;j++) {         
+    for (j=0;j<UT;j++) {
         if (busyBit && (busyBit[0] & i))
             sprintf(loadval[j], "*%4.1f ", load[j]);
         else
             fillDefal (loadval[j], "%5.1f ", j, load[j]);
         i = i << 1;
-     }
+    }
     if (busyBit && (busyBit[0] & HOST_BUSY_UT))
         sprintf(loadval[UT], "*%2.1f ", load[UT]);
     else
@@ -204,7 +205,7 @@ fill_load(float *load, loadCharType *loadval, int *busyBit, int nIdx)
             fillDefal(loadval[j], "%6.1f", j, load[j]);
     }
 
-    
+
     for (j=0;j<nIdx;j++) {
         char *sp;
         if (loadval[j][0] != '*')
@@ -215,7 +216,7 @@ fill_load(float *load, loadCharType *loadval, int *busyBit, int nIdx)
             *sp = '*';
         }
     }
-} 
+}
 
 
 static void
@@ -225,145 +226,145 @@ fillDefal (char *loadval, char *string, int num, float load)
         sprintf(loadval, string, load);
     else {
         switch (num) {
-          case UT:
-          case LS:
-            sprintf(loadval, "   - ");
-            break;
-          case R15S:
-          case R1M:
-          case R15M:
-            sprintf(loadval, "   -  ");
-            break;
-          case IT:
-          case IO:
-            sprintf(loadval, "    - ");
-            break;
-          case SWP:
-          case MEM:
-          case TMP:
-            sprintf(loadval, "    -  ");
-            break;
-          case PG:
-            sprintf(loadval, "      - ");
-            break;
-          default:
-	    sprintf(loadval, "     - ");
-            break;
+            case UT:
+            case LS:
+                sprintf(loadval, "   - ");
+                break;
+            case R15S:
+            case R1M:
+            case R15M:
+                sprintf(loadval, "   -  ");
+                break;
+            case IT:
+            case IO:
+                sprintf(loadval, "    - ");
+                break;
+            case SWP:
+            case MEM:
+            case TMP:
+                sprintf(loadval, "    -  ");
+                break;
+            case PG:
+                sprintf(loadval, "      - ");
+                break;
+            default:
+                sprintf(loadval, "     - ");
+                break;
         }
     }
-} 
+}
 
 void
 prtResourceLimit (int *rLimits, char *hostSpec, float hostFactor, int *procLimits)
 {
     int limit, i;
 
-    
+
     limit = FALSE;
     if (rLimits[LSF_RLIMIT_CPU] >= 0) {
         if (!limit)
             printf("\n");
-        printf(" %-24s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1402, "CPULIMIT"))); /* catgets  1402  */
+        printf(" %-24s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1402, "CPULIMIT"))); /* catgets  1402  */
         limit = TRUE;
     }
     if (rLimits[LSF_RLIMIT_RUN] >= 0) {
         if (!limit)
             printf("\n");
-        printf(" %-24s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1403, "RUNLIMIT"))); /* catgets  1403  */
+        printf(" %-24s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1403, "RUNLIMIT"))); /* catgets  1403  */
         limit = TRUE;
     }
     if (procLimits != NULL) {
-	if (procLimits[2] > 0 && procLimits[2] != INFINIT_INT) { 
-	    
+        if (procLimits[2] > 0 && procLimits[2] != INFINIT_INT) {
+
             if (!limit)
                 printf("\n");
-            printf(" %-24s", 
-	        (_i18n_msg_get(ls_catd,NL_SETN,1404, "PROCLIMIT"))); /* catgets  1404  */
+            printf(" %-24s",
+                   (_i18n_msg_get(ls_catd,NL_SETN,1404, "PROCLIMIT"))); /* catgets  1404  */
             limit = TRUE;
-	}
+        }
     }
     if (limit)
-        printf ("\n");                       
+        printf ("\n");
 
-    if (rLimits[LSF_RLIMIT_CPU] >= 0) 
-         prtLimit (rLimits[LSF_RLIMIT_CPU], hostSpec, hostFactor);
+    if (rLimits[LSF_RLIMIT_CPU] >= 0)
+        prtLimit (rLimits[LSF_RLIMIT_CPU], hostSpec, hostFactor);
     if (rLimits[LSF_RLIMIT_RUN] >= 0) {
-	
+
         prtLimit (rLimits[LSF_RLIMIT_RUN], hostSpec, hostFactor);
     }
     if (procLimits != NULL) {
-	if (procLimits[0] == 1 && procLimits[1] == 1 && procLimits[2] != INFINIT_INT) { 
-	    
-	    printf (" %-d", procLimits[2]);
-	} else {
-	    for (i=0; i<3; i++) {
-	        if ((procLimits[i] >0) && (procLimits[i] != INFINIT_INT)) 
-	            printf (" %-d", procLimits[i]);
-	    }
-	}
+        if (procLimits[0] == 1 && procLimits[1] == 1 && procLimits[2] != INFINIT_INT) {
+
+            printf (" %-d", procLimits[2]);
+        } else {
+            for (i=0; i<3; i++) {
+                if ((procLimits[i] >0) && (procLimits[i] != INFINIT_INT))
+                    printf (" %-d", procLimits[i]);
+            }
+        }
     }
     if (limit)
-        printf ("\n");                       
+        printf ("\n");
 
-    
+
     limit = FALSE;
     if (rLimits[LSF_RLIMIT_FSIZE] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1405, "FILELIMIT"))); /* catgets  1405  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1405, "FILELIMIT"))); /* catgets  1405  */
         limit = TRUE;
     }
     if (rLimits[LSF_RLIMIT_DATA] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1406, "DATALIMIT"))); /* catgets  1406  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1406, "DATALIMIT"))); /* catgets  1406  */
         limit = TRUE;
     }
     if (rLimits[LSF_RLIMIT_STACK] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1407, "STACKLIMIT"))); /* catgets  1407  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1407, "STACKLIMIT"))); /* catgets  1407  */
         limit = TRUE;
     }
     if (rLimits[LSF_RLIMIT_CORE] >= 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1408, "CORELIMIT"))); /* catgets  1408  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1408, "CORELIMIT"))); /* catgets  1408  */
         limit = TRUE;
     }
     if (rLimits[LSF_RLIMIT_RSS] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1409, "MEMLIMIT"))); /* catgets  1409  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1409, "MEMLIMIT"))); /* catgets  1409  */
         limit = TRUE;
     }
 
     if (rLimits[LSF_RLIMIT_SWAP] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1410, "SWAPLIMIT"))); /* catgets  1410  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1410, "SWAPLIMIT"))); /* catgets  1410  */
         limit = TRUE;
     }
 
     if (rLimits[LSF_RLIMIT_PROCESS] > 0) {
         if (!limit)
             printf("\n");
-        printf(" %s", 
-	    (_i18n_msg_get(ls_catd,NL_SETN,1411, "PROCESSLIMIT"))); /* catgets  1411  */
+        printf(" %s",
+               (_i18n_msg_get(ls_catd,NL_SETN,1411, "PROCESSLIMIT"))); /* catgets  1411  */
         limit = TRUE;
     }
 
 
     if (limit)
-        printf ("\n");                        
+        printf ("\n");
 
     if (rLimits[LSF_RLIMIT_FSIZE] > 0)
         printf(" %6d K ", rLimits[LSF_RLIMIT_FSIZE]);
@@ -380,32 +381,31 @@ prtResourceLimit (int *rLimits, char *hostSpec, float hostFactor, int *procLimit
     if (rLimits[LSF_RLIMIT_PROCESS] > 0)
         printf(" %6d      ", rLimits[LSF_RLIMIT_PROCESS]);
     if (limit)
-        printf ("\n");                         
+        printf ("\n");
 
-} 
+}
 
 static void
 prtLimit (int rLimit, char *hostSpec, float hostFactor)
 {
     float norCpuLimit;
     char str[50];
-    
+
     memset(str,' ',50);
     if (hostFactor != 0.0) {
         norCpuLimit =  rLimit/(hostFactor * 60.0);
-	if (hostSpec != NULL)
+        if (hostSpec != NULL)
         {
             sprintf(str," %-.1f min of %s", norCpuLimit, hostSpec);
-	    str[strlen(str)]=' ';
+            str[strlen(str)]=' ';
             str[25]='\0';
         }
         else
-	{
-	    sprintf(str," %-.1f min", norCpuLimit);
-	    str[strlen(str)]=' ';
+        {
+            sprintf(str," %-.1f min", norCpuLimit);
+            str[strlen(str)]=' ';
             str[25]='\0';
-	}
-	printf("%s",str);
+        }
+        printf("%s",str);
     }
-} 
-
+}
