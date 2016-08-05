@@ -170,7 +170,7 @@ job_exec(struct jobCard *jobCardPtr, int chfd)
         /* Hard code for Cadence case!!!
          * Replace following code with "affinity" interface.
          */
-        if (daemonParams[SBD_BIND_CPU].paramValue &&
+        if ((daemonParams[SBD_BIND_CPU].paramValue || hostAffinity) &&
             strstr(jobSpecsPtr->resReq, "affinity")) {
             if (strstr(jobSpecsPtr->resReq, "membind=localonly"))
                 localonly = 1;
@@ -2179,7 +2179,8 @@ addJob (struct jobSpecs *jobSpecs, int mbdVersion)
         die(SLAVE_FATAL);
     }
 
-    if (daemonParams[SBD_BIND_CPU].paramValue) {
+    if (daemonParams[SBD_BIND_CPU].paramValue
+            || hostAffinity) {
         int *num;
 
         num = find_bound_core(jobSpecs->jobPid);
@@ -4162,7 +4163,8 @@ select_cpu_to_bind(struct jobCard *jPtr)
 {
     int *selected;
 
-    if (! daemonParams[SBD_BIND_CPU].paramValue)
+    if (! daemonParams[SBD_BIND_CPU].paramValue
+        && !hostAffinity)
         return NULL;
 
     selected = find_free_core(jPtr->jobSpecs.numToHosts);

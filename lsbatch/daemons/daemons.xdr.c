@@ -643,7 +643,8 @@ xdr_sbdPackage (XDR *xdrs, struct sbdPackage *sbdPackage, struct LSFHeader *hdr)
          xdr_int(xdrs, &sbdPackage->sbdSleepTime) &&
 	 xdr_int(xdrs, &sbdPackage->managerId) &&
          xdr_int(xdrs, &sbdPackage->numJobs) &&
-         xdr_string (xdrs, &sp, MAX_LSB_NAME_LEN))) {
+         xdr_string (xdrs, &sp, MAX_LSB_NAME_LEN) &&
+         xdr_int(xdrs, &sbdPackage->affinity))) {
 	ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL, fname, "xdr_int", "lsbManager");
 	return false;
     }

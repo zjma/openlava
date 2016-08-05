@@ -839,6 +839,7 @@ struct hostInfoEnt {
     int   numRESERVE;
     int   chkSig;
     char  *hCtrlMsg;
+    int   affinity;
 };
 
 #define DEF_MAX_JOBID   999999

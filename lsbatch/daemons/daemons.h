@@ -343,6 +343,7 @@ struct sbdPackage {
     int    jobTerminateInterval;
     int    nAdmins;
     char   **admins;
+    int    affinity;
 };
 
 struct jobSig {

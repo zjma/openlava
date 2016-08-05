@@ -2098,6 +2098,7 @@ sbatchdJobs(struct sbdPackage *sbdPackage, struct hData *hData)
     sbdPackage->rusageUpdateRate = rusageUpdateRate;
     sbdPackage->rusageUpdatePercent = rusageUpdatePercent;
     sbdPackage->jobTerminateInterval = jobTerminateInterval;
+    sbdPackage->affinity = hData->affinity;
     sbdPackage->nAdmins = nManagers;
 
     if ((sbdPackage->admins = my_calloc(nManagers,

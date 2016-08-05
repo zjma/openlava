@@ -2544,6 +2544,7 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
 #define HKEY_MIG info->numIndx+3
 #define HKEY_UJOB_LIMIT info->numIndx+4
 #define HKEY_DISPATCH_WINDOW info->numIndx+5
+#define HKEY_AFFINITY info->numIndx+6
 
     struct hostInfoEnt  host;
     char *linep;
@@ -2575,7 +2576,8 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
     keylist[HKEY_MIG].key="MIG";
     keylist[HKEY_UJOB_LIMIT].key="JL/U";
     keylist[HKEY_DISPATCH_WINDOW].key="DISPATCH_WINDOW";
-    keylist[HKEY_DISPATCH_WINDOW+1].key=NULL;
+    keylist[HKEY_AFFINITY].key="AFFINITY";
+    keylist[HKEY_AFFINITY+1].key=NULL;
 
     initHostInfo ( &host );
 
@@ -2801,6 +2803,22 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
         }
 
+        if (keylist[HKEY_AFFINITY].position >= 0
+            && keylist[HKEY_AFFINITY].val != NULL
+            && strcmp (keylist[HKEY_AFFINITY].val, "")) {
+            if (!strcasecmp(keylist[HKEY_AFFINITY].val, "Y")
+                || !strcasecmp(keylist[HKEY_AFFINITY].val, "(Y)")) {
+                host.affinity = TRUE;
+            } else if (!strcasecmp(keylist[HKEY_AFFINITY].val, "N")
+                        || !strcasecmp(keylist[HKEY_AFFINITY].val, "(N)")) {
+                host.affinity = FALSE;
+            } else {
+                ls_syslog(LOG_ERR,
+"%s: File %s at line %d: Invalid value <%s> for key <%s>; %s is assumed", __func__, fname, *lineNum, keylist[HKEY_AFFINITY].val, keylist[HKEY_AFFINITY].key, "(Y) or (N)");
+                lsberrno = LSBE_CONF_WARNING;
+            }
+        }
+
         /* If we are dealing with the compact notation we reuse
          * the hostInfo data structure so make sure we don't
          * leak memory
@@ -2964,6 +2982,7 @@ initHostInfo (struct hostInfoEnt *hp)
         hp->mig = INFINIT_INT;
         hp->attr = INFINIT_INT;
         hp->chkSig = INFINIT_INT;
+        hp->affinity = FALSE;
     }
 }
 

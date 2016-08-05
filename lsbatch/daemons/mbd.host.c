@@ -263,6 +263,7 @@ copyHostInfo(struct hData *hData, struct hostInfoEnt *hInfo)
     hInfo->realLoad = hData->lsfLoad;
     hInfo->load = hData->lsbLoad;
     hInfo->hCtrlMsg = hData->message;
+    hInfo->affinity = hData->affinity;
 
     hInfo->mig = (hData->mig != INFINIT_INT) ? hData->mig/60 : INFINIT_INT;
     switch (hData->chkSig) {

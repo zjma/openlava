@@ -42,6 +42,8 @@ Each host, host model or host type can be configured to:
 \(bu Run jobs only under specific load conditions
 .HP 2
 \(bu Run jobs only under specific time windows
+.HP 2
+\(bu Enable or disable affinity/cpu binding on the host
 .RE
 .PP
 The entries in a line for a host override the entries in a line for its model
@@ -256,13 +258,31 @@ and a loadStop condition of
 
 .PP
 mem < 10 || swp < 30
-
-
 .SS Default
 .BR
 .PP
 .PP
 Undefined
+
+
+.SH AFFINITY
+.BR
+.PP
+.SS Description
+.BR
+.PP
+.PP
+Enable or disable affinity/cpu binding on the host.
+.PP
+Use "(Y)" to enable affinity/cpu binding on the host.
+.PP
+Use "(N)" to disable affinity/cpu binding on the host.
+.SS Default
+.BR
+.PP
+.PP
+(N)
+
 .SH Example of a Host Section
 .BR
 .PP
@@ -270,13 +290,13 @@ Undefined
 .PP
 Begin Host
 .br
-HOST_NAME MXJ JL/U r1m     pg    DISPATCH_WINDOW
+HOST_NAME MXJ JL/U r1m     pg    DISPATCH_WINDOW              AFFINITY
 .br
-hostA     1   -    0.6/1.6 10/20 (5:19:00-1:8:30 20:00-8:30)
+hostA     1   -    0.6/1.6 10/20 (5:19:00-1:8:30 20:00-8:30)  (N)
 .br
-SUNSOL    1   -    0.5/2.5 -     23:00-8:00
+SUNSOL    1   -    0.5/2.5 -     23:00-8:00                   (N)
 .br
-default   2   1    0.6/1.6 20/40 ()
+default   2   1    0.6/1.6 20/40 ()                           (Y)
 .br
 End Host
 
@@ -302,7 +322,8 @@ the openlava cluster. Each host can run up to two jobs at the same time, with
 at most one job from each user. These hosts are available to run jobs
 at all times. Jobs may be started if the r1m index is below 0.6 and the
 pg index is below 20, and a job from the lowest priority queue is
-suspended if r1m goes above 1.6 or pg goes above 40.
+suspended if r1m goes above 1.6 or pg goes above 40. Affinity/cpu binding
+is enabled on these hosts.
 .SH HostGroup Section
 .BR
 .PP

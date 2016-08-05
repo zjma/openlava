@@ -476,6 +476,7 @@ initHData(struct hData *hData)
     hData->pxySJL = NULL;
     hData->pxyRsvJL = NULL;
     hData->leftRusageMem = INFINIT_LOAD;
+    hData->affinity = FALSE;
 
     return hData;
 }
@@ -842,6 +843,7 @@ addHost(struct hostInfo *lsf,
 
     hPtr->uJobLimit = thPtr->uJobLimit;
     hPtr->maxJobs   = thPtr->maxJobs;
+    hPtr->affinity  = thPtr->affinity;
     if (thPtr->maxJobs == -1) {
         /* The MXJ was set as ! in lsb.hosts
          */
@@ -2193,6 +2195,7 @@ addHostData(int numHosts, struct hostInfoEnt *hosts)
         hPtr.loadSched = hostConf->hosts[i].loadSched;
         hPtr.loadStop = hostConf->hosts[i].loadStop;
         hPtr.windows = hostConf->hosts[i].windows;
+        hPtr.affinity = hostConf->hosts[i].affinity;
 
         /* Add the host by merging the lsf base
          * host information with the batch configuration.

@@ -610,6 +610,7 @@ struct hData {
     LIST_T    *pxyRsvJL;
     float     leftRusageMem;
     char      message[MAXLINELEN];
+    int       affinity;
 };
 
 

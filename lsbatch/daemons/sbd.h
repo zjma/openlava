@@ -239,6 +239,7 @@ extern time_t     host_windEdge;
 extern char       host_active;
 extern char master_unknown;
 extern char myStatus;
+extern int hostAffinity;
 
 #define NO_LIM		0x0001
 
