@@ -425,6 +425,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         {"ENABLE_PROXY_HOSTS", NULL, 0},    /* 38 */
         {"DISABLE_PEER_JOBS", NULL, 0},     /* 39 */
         {"HIST_MINUTES", NULL, 0},          /* 40 */
+        {"ABS_RUNLIMIT", NULL, 0},          /* 41 */
         {NULL, NULL, 0}
     };
 
@@ -649,6 +650,13 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 } else {
                     pConf->param->slotResourceReserve = FALSE;
                 }
+            } else if (i == 41) {
+                /* the name is swapped not to conflict
+                 * with abs_run_limit
+                 */
+                pConf->param->run_abs_limit = false;
+                if (strcasecmp(keylist[i].val, "y") == 0)
+                    pConf->param->run_abs_limit = true;
             } else if (i > 5) {
                 if (i < 23)
                     value = my_atoi(keylist[i].val, INFINIT_INT, 0);
@@ -767,7 +775,6 @@ isn't a positive  integer between 1 and %d; ignored", __func__, fname, *lineNum,
         }
     }
 
-
     if (pConf->param->maxUserPriority <= 0
         && pConf->param->jobPriorityValue > 0
         && pConf->param->jobPriorityTime > 0) {
@@ -855,6 +862,7 @@ initParameterInfo(struct parameterInfo *param)
     param->enable_proxy_hosts = 0;
     param->disable_peer_jobs = 0;
     param->hist_mins = -1;
+    param->run_abs_limit = false;
 }
 
 static void

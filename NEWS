@@ -27,6 +27,9 @@ Release notes for OpenLava versions
 -- Refine man5 lsb.resources.5 and man1 bresources.1.
 -- Rename example queue/user group/project of lsb.resources.
 -- Create 4.0pre1 tag.
+-- Implement ABS_RUNLIMIT in lsb.params, if this parameter is enabled
+   the runtime specified as bsub -W is not scaled by the execution
+   cpu factor.
 
 3.3.3
 ======

@@ -1998,6 +1998,11 @@ setParams(struct paramConf *paramConf)
     if (mbdParams->hist_mins == -1)
         mbdParams->hist_mins = DEF_HIST_MINUTES;
     mbdParams->hist_mins = mbdParams->hist_mins * 60;
+    /* By default the value is false and we scale the
+     * runtime limit by the cpu factor, if set to true
+     * we don't.
+     */
+    mbdParams->run_abs_limit = params->run_abs_limit;
 }
 
 static void

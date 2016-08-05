@@ -889,6 +889,7 @@ struct parameterInfo {
     int enable_proxy_hosts;
     int disable_peer_jobs;
     int hist_mins;
+    int run_abs_limit; /* if specificied -W is not scaled */
 };
 
 

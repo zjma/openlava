@@ -834,8 +834,10 @@ acceptJob(struct qData *qp,
     return (LSBE_NO_ERROR);
 }
 
+/* getCpuLimit()
+ */
 static int
-getCpuLimit (struct jData *job, struct submitReq *subReq)
+getCpuLimit(struct jData *job, struct submitReq *subReq)
 {
     float *cpuFactor, cpuLimit, runLimit;
     char  *spec;
@@ -875,14 +877,21 @@ getCpuLimit (struct jData *job, struct submitReq *subReq)
         subReq->rLimits[LSF_RLIMIT_CPU] = cpuLimit;
         job->shared->jobBill.rLimits[LSF_RLIMIT_CPU] = cpuLimit;
     }
-    if (runLimit > 0) {
-        if (*cpuFactor <= 0) {
-            return (LSBE_BAD_LIMIT);
-        }
 
+    if (runLimit > 0) {
         /* Save the absolute, unscaled run limit
          */
         job->abs_run_limit = job->shared->jobBill.rLimits[LSF_RLIMIT_RUN];
+        /* If we are not supposed to scale the run limit
+         * the just return.
+         */
+        if (mbdParams->run_abs_limit == true) {
+            return LSBE_NO_ERROR;
+        }
+
+        if (*cpuFactor <= 0) {
+            return (LSBE_BAD_LIMIT);
+        }
 
         if (runLimit > (INFINIT_INT /(*cpuFactor))) {
             return (LSBE_BAD_LIMIT);
@@ -896,13 +905,12 @@ getCpuLimit (struct jData *job, struct submitReq *subReq)
     }
 
     if (!(subReq->options & SUB_HOST_SPEC)) {
-
-        FREEUP (subReq->hostSpec);
-        subReq->hostSpec = (char *) my_malloc (MAXHOSTNAMELEN, "getCpuLimit");
-        strcpy (subReq->hostSpec, spec);
+        FREEUP(subReq->hostSpec);
+        subReq->hostSpec = my_malloc (MAXHOSTNAMELEN, "getCpuLimit");
+        strcpy(subReq->hostSpec, spec);
         subReq->options |= SUB_HOST_SPEC;
     }
-    return (LSBE_NO_ERROR);
+    return LSBE_NO_ERROR;
 
 }
 
@@ -1997,7 +2005,7 @@ jobStatusSignal(sbdReplyType reply, struct jData *jData, int sigValue,
 }
 
 int
-sbatchdJobs (struct sbdPackage *sbdPackage, struct hData *hData)
+sbatchdJobs(struct sbdPackage *sbdPackage, struct hData *hData)
 {
     static char fname[] = "sbatchdJobs";
     struct jData *jpbw, *next;
@@ -2015,20 +2023,19 @@ sbatchdJobs (struct sbdPackage *sbdPackage, struct hData *hData)
             next= jpbw->back;
 
 
-            if ( (list == FJL) &&
-                 !( (jpbw->jStatus & JOB_STAT_DONE)
-                    && !IS_POST_FINISH(jpbw->jStatus) ) ) {
+            if ((list == FJL) &&
+                 ! ((jpbw->jStatus & JOB_STAT_DONE)
+                    && !IS_POST_FINISH(jpbw->jStatus))) {
                 continue;
             }
 
-            if (!IS_START(jpbw->jStatus) &&
-                !(jpbw->jStatus & JOB_STAT_ZOMBIE) &&
-                (list != FJL) ) {
+            if (!IS_START(jpbw->jStatus)
+                && !(jpbw->jStatus & JOB_STAT_ZOMBIE)
+                && (list != FJL)) {
                 continue;
             }
             if (jpbw->hPtr == NULL || jpbw->hPtr[0] != hData)
                 continue;
-
 
             if (jpbw->jobPid == 0 && !IS_FINISH(jpbw->jStatus)) {
 
@@ -2040,15 +2047,14 @@ sbatchdJobs (struct sbdPackage *sbdPackage, struct hData *hData)
 
 
             if (num >= sbdPackage->numJobs) {
-                ls_syslog(LOG_ERR, I18N(6541,
-                                        "%s: Cannot add job<%s>, package full."), /* catgets 6541 */
-                          fname, lsb_jobid2str(jpbw->jobId));
+                ls_syslog(LOG_ERR, "\
+%s: Cannot add job<%s>, package full.", __func__, lsb_jobid2str(jpbw->jobId));
                 continue;
             }
 
             jpbw->nextSeq = 1;
             jobSpecs = &(sbdPackage->jobs[num]);
-            packJobSpecs (jpbw, jobSpecs);
+            packJobSpecs(jpbw, jobSpecs);
 
             size += sizeof(struct jobSpecs)
                 + jobSpecs->thresholds.nThresholds *
@@ -2093,16 +2099,16 @@ sbatchdJobs (struct sbdPackage *sbdPackage, struct hData *hData)
     sbdPackage->rusageUpdatePercent = rusageUpdatePercent;
     sbdPackage->jobTerminateInterval = jobTerminateInterval;
     sbdPackage->nAdmins = nManagers;
-    if ((sbdPackage->admins = (char **)my_calloc(
-             nManagers, sizeof(char *), fname)) != NULL) {
+
+    if ((sbdPackage->admins = my_calloc(nManagers,
+                                        sizeof(char *), fname)) != NULL) {
         for (i = 0; i < nManagers; i++) {
             sbdPackage->admins[i] = safeSave(lsbManagers[i]);
             size += getXdrStrlen(lsbManagers[i]);
         }
     }
 
-    return (size);
-
+    return size;
 }
 
 int
@@ -2135,11 +2141,10 @@ countNumSpecs (struct hData *hData)
     }
 
     return numSpecs;
-
 }
 
 void
-packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
+packJobSpecs(struct jData *jDataPtr, struct jobSpecs *jobSpecs)
 {
     static char fname[] = "packJobSpecs";
     struct hData *hp = jDataPtr->hPtr[0];
@@ -2191,8 +2196,8 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
 
     jobSpecs->numToHosts = jDataPtr->numHostPtr;
     jobSpecs->maxNumProcessors = jDataPtr->shared->jobBill.maxNumProcessors;
-    jobSpecs->toHosts = (char **) my_calloc (jDataPtr->numHostPtr,
-                                             sizeof(char *), fname);
+    jobSpecs->toHosts = my_calloc(jDataPtr->numHostPtr,
+                                  sizeof(char *), fname);
     for (i = 0; i < jDataPtr->numHostPtr; i++)
         jobSpecs->toHosts[i] = jDataPtr->hPtr[i]->host;
 
@@ -2379,14 +2384,14 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
         }
     }
 
-    strcpy (jobSpecs->mailUser, jDataPtr->shared->jobBill.mailUser);
-    strcpy (jobSpecs->preExecCmd, jDataPtr->shared->jobBill.preExecCmd);
-    strcpy (jobSpecs->projectName, jDataPtr->shared->jobBill.projectName);
+    strcpy(jobSpecs->mailUser, jDataPtr->shared->jobBill.mailUser);
+    strcpy(jobSpecs->preExecCmd, jDataPtr->shared->jobBill.preExecCmd);
+    strcpy(jobSpecs->projectName, jDataPtr->shared->jobBill.projectName);
     jobSpecs->niosPort = jDataPtr->shared->jobBill.niosPort;
     jobSpecs->loginShell = jDataPtr->shared->jobBill.loginShell;
     jobSpecs->schedHostType = jDataPtr->schedHost;
 
-    strcpy (jobSpecs->clusterName, clusterName);
+    strcpy(jobSpecs->clusterName, clusterName);
 
     for(i = 0; i < LSF_RLIM_NLIMITS; i++) {
 
@@ -2409,9 +2414,10 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
                     if (qp->defLimits[i] > 0) {
                         rLimits2lsfLimits(qp->defLimits, jobSpecs->lsfLimits, i, 1);
                     } else {
-
-                        jobSpecs->lsfLimits[i].rlim_curl = jobSpecs->lsfLimits[i].rlim_maxl;
-                        jobSpecs->lsfLimits[i].rlim_curh = jobSpecs->lsfLimits[i].rlim_maxh;
+                        jobSpecs->lsfLimits[i].rlim_curl
+                            = jobSpecs->lsfLimits[i].rlim_maxl;
+                        jobSpecs->lsfLimits[i].rlim_curh
+                            = jobSpecs->lsfLimits[i].rlim_maxh;
                     }
                     break;
                 default:
@@ -2422,7 +2428,8 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
         } else {
             if (qp->rLimits[i] >= jDataPtr->shared->jobBill.rLimits[i]
                 || qp->rLimits[i] < 0) {
-                rLimits2lsfLimits(jDataPtr->shared->jobBill.rLimits, jobSpecs->lsfLimits, i, 1);
+                rLimits2lsfLimits(jDataPtr->shared->jobBill.rLimits,
+                                  jobSpecs->lsfLimits, i, 1);
             } else {
 
                 if (logclass & LC_EXEC) {
@@ -2437,20 +2444,22 @@ packJobSpecs (struct jData *jDataPtr, struct jobSpecs *jobSpecs)
         }
     }
 
-
     scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_CPU].rlim_curh,
                   &jobSpecs->lsfLimits[LSF_RLIMIT_CPU].rlim_curl,
                   hp->cpuFactor);
     scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_CPU].rlim_maxh,
                   &jobSpecs->lsfLimits[LSF_RLIMIT_CPU].rlim_maxl,
                   hp->cpuFactor);
-
-    scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_curh,
-                  &jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_curl,
-                  hp->cpuFactor);
-    scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_maxh,
-                  &jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_maxl,
-                  hp->cpuFactor);
+    /* Don't scale if run_abs_limit is true
+     */
+    if (mbdParams->run_abs_limit == false) {
+        scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_curh,
+                      &jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_curl,
+                      hp->cpuFactor);
+        scaleByFactor(&jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_maxh,
+                      &jobSpecs->lsfLimits[LSF_RLIMIT_RUN].rlim_maxl,
+                      hp->cpuFactor);
+    }
 
     jobSpecs->execHosts = safeSave(jDataPtr->execHosts);
 

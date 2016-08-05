@@ -1456,6 +1456,7 @@ checkParams(struct infoReq *req, struct parameterInfo *reply)
     reply->freshPeriod = freshPeriod;
     reply->maxSbdConnections = maxSbdConnections;
     reply->hist_mins = mbdParams->hist_mins;
+    reply->run_abs_limit = mbdParams->run_abs_limit;
 }
 
 void

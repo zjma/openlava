@@ -646,6 +646,7 @@ packJobInfo(struct jData *jobData,
         jobInfoReply.jobBill->numProcessors = 1;
         jobInfoReply.jobBill->maxNumProcessors = 1;
     }
+
     if (jobInfoReply.jobBill->jobName)
         FREEUP(jobInfoReply.jobBill->jobName);
     fullJobName_r(jobData, fullName);
@@ -686,7 +687,11 @@ packJobInfo(struct jData *jobData,
         }
     }
 
-    if (cpuFactor != NULL && *cpuFactor > 0) {
+    /* Scale back for user to display
+     */
+    if (cpuFactor != NULL
+        && *cpuFactor > 0
+        && mbdParams->run_abs_limit == false) {
 
         if (jobInfoReply.jobBill->rLimits[LSF_RLIMIT_CPU] > 0)
             jobInfoReply.jobBill->rLimits[LSF_RLIMIT_CPU] /= *cpuFactor;

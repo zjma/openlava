@@ -493,6 +493,9 @@ xdr_parameterInfo(XDR *xdrs,
             return false;
     }
 
+    if (! xdr_int(xdrs, &paramInfo->run_abs_limit))
+        return false;
+
     return true;
 }
 

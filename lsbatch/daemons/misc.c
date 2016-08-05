@@ -460,23 +460,20 @@ errorBack(int chan, int replyCode, struct sockaddr_in *from)
 void
 scaleByFactor(int *h32, int *l32, float cpuFactor)
 {
-    double limit, tmp;
+    double limit;
+    double tmp;
 
     if (*h32 == 0x7fffffff && *l32 == 0xffffffff)
-
         return;
-
 
     limit = *h32;
     limit *= (1<<16);
     limit *= (1<<16);
     limit += *l32;
 
-
     limit = limit/cpuFactor + 0.5;
     if (limit < 1.0)
         limit = 1.0;
-
 
     tmp = limit/(double)(1<<16);
     tmp = tmp/(double)(1<<16);
@@ -484,8 +481,6 @@ scaleByFactor(int *h32, int *l32, float cpuFactor)
     tmp = (double) (*h32) * (double) (1<<16);
     tmp *= (double) (1<<16);
     *l32 = limit - tmp;
-
-    return;
 }
 
 struct tclLsInfo *

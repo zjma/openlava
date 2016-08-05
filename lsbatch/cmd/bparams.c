@@ -59,6 +59,7 @@ main (int argc, char **argv)
                 return -1;
         }
     }
+
     if (!(paramInfo = lsb_parameterinfo(NULL, NULL, 0))) {
         lsb_perror(NULL);
         return -1;
@@ -154,7 +155,8 @@ The maximum number of finished jobs that can be stored in current events file:\n
 
     if (reply->sharedResourceUpdFactor > 0){
         printf("Static shared resource update interval for the cluster:\n");
-        printf("    SHARED_RESOURCE_UPDATE_FACTOR = %d \n\n",reply->sharedResourceUpdFactor);
+        printf("    SHARED_RESOURCE_UPDATE_FACTOR = %d \n\n",
+               reply->sharedResourceUpdFactor);
     }
 
     if (reply->jobDepLastSub == 1) {
@@ -205,4 +207,9 @@ The maximum number of finished jobs that can be stored in current events file:\n
 
     printf("History minutes\n");
     printf("    HIST_MINUTES = %d\n\n", reply->hist_mins);
+
+    if (reply->run_abs_limit == true) {
+        printf("Absolute Runtime\n");
+        printf("    ABS_RUNTIME is enabled.\n\n");
+    }
 }
