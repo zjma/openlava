@@ -9,7 +9,8 @@
 .BR
 .PP
 .PP
-\fBbjobs\fR [\fB-a\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-J\fR \fIjob_name\fR] 
+\fBbjobs\fR [\fB-a\fR] [\fB-A\fR] [\fB-w\fR | \fB-l\fR | \fB-UF\fR] [\fB-WL\fR | \fB-WP\fR | \fB-WF\fR]
+[\fB-J\fR \fIjob_name\fR]
 [\fB-m\fR \fIhost_name\fR | \fB-m\fR \fIhost_group\fR] 
 [\fB-N\fR \fIhost_name | \fR\fB-N\fR \fIhost_model | \fR\fB-N \fR\fICPU_factor\fR] [\fB-P\fR\fI project_name\fR]
 [\fB-g\fR \fIjob_group_name\fR]
@@ -121,7 +122,33 @@ the time interval specified by SBD_SLEEP_TIME in lsb.params. So the
 reasons shown may not reflect the current load situation. 
 
 
-.TP 
+.TP
+\fB-W\fR
+.IP
+Provides resource usage information for: PROJ_NAME, CPU_USED,
+MEM, SWAP, PIDS, START_TIME, FINISH_TIME. Displays jobs that belong
+to you only if you are not logged in as an administrator.
+
+.TP
+\fB-WF\fR
+.IP
+Displays an estimated finish time for running jobs submitted
+with the -W option (run limit). For done or exited jobs, displays the actual finish time.
+
+
+.TP
+\fB-WL\fR
+.IP
+Displays the estimated remaining run time for jobs submitted with the -W option (run limit).
+
+
+.TP
+\fB-WP\fR
+.IP
+Displays the current estimated completion percentage for jobs submitted with the -W option (run limit).
+
+
+.TP
 \fB-w
 \fR
 .IP

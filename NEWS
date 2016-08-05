@@ -30,6 +30,9 @@ Release notes for OpenLava versions
 -- Implement ABS_RUNLIMIT in lsb.params, if this parameter is enabled
    the runtime specified as bsub -W is not scaled by the execution
    cpu factor.
+-- Add bjobs -WF|-WP|-WL for jobs submitted with the -W option.
+-- Fix bjobs man page and help for the -W option.
+-- Add support of bjobs -p -w.
 
 3.3.3
 ======
