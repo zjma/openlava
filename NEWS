@@ -34,6 +34,7 @@ Release notes for OpenLava versions
 -- Fix bjobs man page and help for the -W option.
 -- Add support of bjobs -p -w.
 -- Implement host CPU affinity configuration in lsb.hosts.
+-- Fix the config/Makefile.am to create the OpenLava etc directory.
 
 3.3.3
 ======
