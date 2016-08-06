@@ -33,7 +33,9 @@ Release notes for OpenLava versions
 -- Add bjobs -WF|-WP|-WL for jobs submitted with the -W option.
 -- Fix bjobs man page and help for the -W option.
 -- Add support of bjobs -p -w.
--- Implement host CPU affinity configuration in lsb.hosts.
+-- Add “AFFINITY” column in hosts section to specify which hosts support
+   cpubinding (affinity) and which ones don’t. OpenLava supports just "y"
+   or "n".
 -- Fix the config/Makefile.am to create the OpenLava etc directory.
 
 3.3.3
