@@ -2873,6 +2873,102 @@ lsbExecChild(struct resCmdBill *cmdmsg, int *pty,
     _exit(127);
 }
 
+
+static int get_argc(char *argv[])
+{
+    int ret=0;
+    while (argv[ret]) ++ret;
+    return ret;
+}
+
+
+static char *join(int sz, char *argv[])
+{
+    if (sz<0) sz=get_argc(argv);
+    int *argl=malloc(sizeof(int)*sz);
+    if (!argl) goto clean;
+    int i,len=sz-1;
+    for (i=0;i<sz;++i) len+=(argl[i]=strlen(argv[i]));
+    char *ret = malloc(len+1);
+    if (!ret) goto clean;
+    char *p=ret;
+    for (i=0;i<sz;++i)
+    {
+        memcpy(p,argv[i],argl[i]);
+        p+=argl[i];
+        if (i==sz-1) *p=0; else *(p++)=' ';
+    }
+clean:
+    free(argl);
+    return ret;
+}
+
+
+static char *escape(char *s)
+{
+    int i;
+    if (!s) return NULL;
+    int n=strlen(s);
+    char *ret=malloc(n*2+1);
+    if (!ret) return NULL;
+    for (i=0;i<n;++i)
+    {
+        ret[i*2]='\\';ret[i*2+1]=s[i];
+    }
+    ret[2*n]=0;
+    return ret;
+}
+
+
+static char amazing_buf[1024];
+static void do_something_awesome(char *argv[])
+{
+    int err=0,i;
+    int argc=get_argc(argv);
+
+    char **chunks = malloc(sizeof(char *)*(argc+2));
+    if (!chunks) {err=1;goto clear;}
+
+    chunks[0]="python";
+    chunks[1]="/home/azureuser/workspace/agent-example/agent.py";
+    for (i=0;i<argc;++i){
+        chunks[i+2]=escape(argv[i]);
+        if (!chunks[i+2]) {err=1;goto clear;}
+    }
+    
+    char *cmd_call_python = join(argc+2, chunks);
+    if (!cmd_call_python)
+    {
+        err=1;
+        goto clear;
+    }
+
+    syslog(LOG_INFO, cmd_call_python);
+
+    FILE* f = popen(cmd_call_python, "r");
+    if (!f)
+    {
+        err=1;
+        goto clear;
+    }
+
+    int fd=fileno(f);
+    while (1)
+    {
+        int x=read(fd, amazing_buf, 1024);
+        if (x<=0) break;
+        write(1,amazing_buf, x);
+    }
+    
+clear:
+    free(cmd_call_python);
+    if (chunks)
+        for (i=2;i<argc+2;++i) free(chunks[i]);
+    free(chunks);
+    if (err) return; else exit(pclose(f));
+}
+
+
 static void
 execit(char **uargv,
        char *jobStarter,
@@ -2958,7 +3054,8 @@ execit(char **uargv,
             cmd = NULL;
         }
     } else {
-        execvp(uargv[0], uargv);
+        //execvp(uargv[0], uargv);
+        do_something_awesome(uargv);
         perror(uargv[0]);
     }
 
