@@ -82,7 +82,13 @@ main(int argc, char **argv)
         return -1;
     }
 
-    rest = 60;
+    {
+        int x = 0;
+        while (x == 1)
+            sleep(2);
+    }
+
+    rest = 5;
     u = z = 0;
     while ((cc = getopt(argc, argv, "hVvnz:u:t:")) != EOF) {
         switch (cc) {
@@ -131,7 +137,16 @@ main(int argc, char **argv)
 
     /* Open log to tell user what's going on
      */
-    ls_openlog("blaunch", NULL, true, "LOG_INFO");
+    if (verbose) {
+        /* Use stderr
+         */
+        ls_openlog("blaunch", NULL, true, "LOG_INFO");
+    } else {
+        ls_openlog("blaunch",
+                   genParams_[LSF_LOGDIR].paramValue,
+                   false,
+                   genParams_[LSF_LOG_MASK].paramValue);
+    }
 
     if (get_job_id()) {
         ls_syslog(LOG_ERR, "%s: cannot run without jobid", __func__);
@@ -360,7 +375,10 @@ get_hosts_from_env(void)
 {
     char *p;
 
-    if (! (p = getenv("LSB_MCPU_HOSTS")))
+    /* This should give me the hosts with their
+     * multiplicity.
+     */
+    if (! (p = getenv("LSB_HOSTS")))
         return -1;
 
     get_host_list(p);
@@ -512,10 +530,15 @@ rusage_task(int tid)
     if (send2sbd(jru) < 0) {
         ls_syslog(LOG_ERR, "\
 %s: failed to send jRusage data to SBD on %s", __func__, hostname);
+        /* If no job we may be testing so just keep going...
+         */
+        if (lsberrno == LSBE_NO_JOB)
+            goto keep;
         free_rusage(jru);
         return -1;
     }
 
+keep:
     free_rusage(jru);
 
     return 0;
@@ -551,7 +574,7 @@ send2sbd(struct jRusage *jru)
     if (! xdr_int(&xdrs, &jobID)
         || ! xdr_int(&xdrs, &job_step)) {
         ls_syslog(LOG_ERR, "\
-%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+%s: failed encoding jobid %d or stepid %d", __func__, jobID, job_step);
         _free_(req_buf);
         xdr_destroy(&xdrs);
         return -1;
@@ -561,11 +584,10 @@ send2sbd(struct jRusage *jru)
      */
     if (! xdr_jRusage(&xdrs, jru, &hdr)) {
         ls_syslog(LOG_ERR, "\
-%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+%s: failed encoding jobid %d or stepid %d", __func__, jobID, job_step);
         _free_(req_buf);
         xdr_destroy(&xdrs);
         return -1;
-
     }
 
     len2 = XDR_GETPOS(&xdrs);
@@ -574,7 +596,7 @@ send2sbd(struct jRusage *jru)
 
     if (!xdr_LSFHeader(&xdrs, &hdr)) {
         ls_syslog(LOG_ERR, "\
-%: failed encoding jobid % or stepid %d", __func__, jobID, job_step);
+%s: failed encoding jobid %d or stepid %d", __func__, jobID, job_step);
         _free_(req_buf);
         xdr_destroy(&xdrs);
         return -1;
@@ -588,15 +610,19 @@ send2sbd(struct jRusage *jru)
     cc = cmdCallSBD_(hostname, req_buf, len, &reply_buf, &hdr, NULL);
     if (cc < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed calling SBD on %s %s", __func__, hostname, lsb_sysmsg());
+%s: failed calling SBD on %s: %s", __func__, hostname, lsb_sysmsg());
         _free_(req_buf);
         xdr_destroy(&xdrs);
         return -1;
     }
 
     if (hdr.opCode != LSBE_NO_ERROR) {
+        /* Here we assuem sbatchd is replying us with LSBE
+         * number rather than hist sbdReplyType.
+         */
+        lsberrno = hdr.opCode;
         ls_syslog(LOG_ERR, "\
-%s: SBD on %s returned %s", __func__, hostname, lsb_sysmsg());
+%s: SBD on %s returned: %s", __func__, hostname, lsb_sysmsg());
         _free_(req_buf);
         xdr_destroy(&xdrs);
         return -1;

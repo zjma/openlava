@@ -359,6 +359,7 @@ extern int* find_free_core(int num);
 extern void free_core(int, int*);
 extern int bind_to_core(pid_t, int, int*);
 extern int* find_bound_core(pid_t);
+
 #ifdef HAVE_HWLOC_H
 extern int init_numa_topology(void);
 extern void init_numa_cores(void);
@@ -368,4 +369,9 @@ extern void bind_to_numa_mem(int*, int);
 extern void free_numa_core(int, int*);
 extern int* find_numa_bound_core(pid_t);
 #endif
+extern void updateJUsage(struct jobCard *, struct jRusage *);
+extern void copyPidInfo(struct jobCard *, struct jRusage *);
+extern void writePidInfoFile(struct jobCard *, struct jRusage *);
+extern void update_job_rusage(struct jobCard *, struct jRusage *);
+
 #endif

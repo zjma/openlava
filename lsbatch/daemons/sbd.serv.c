@@ -29,6 +29,7 @@ extern int sbdlog_newstatus(struct jobCard *jp);
 extern int lsbJobCpuLimit;
 extern int lsbJobMemLimit;
 static int replyHdrWithRC(int rc, int chfd, int jobId);
+static struct jobCard *find_job_card(int);
 
 void
 do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
@@ -1124,6 +1125,72 @@ replyHdrWithRC(int rc, int chfd, int jobId)
 void
 do_blaunch_rusage(XDR *xdrs, int chfd, struct LSFHeader *hdr)
 {
-    if (replyHdrWithRC(LSBE_NO_ERROR, chfd, -1) < 0)
-        ls_syslog(LOG_ERR, "%s: replyHdrWithRC()", __func__);
+    int jobID;
+    int stepID;
+    struct jobCard *jPtr;
+    struct jRusage *jru;
+
+    /* Get the job id
+     */
+    if (! xdr_int(xdrs, &jobID)
+        || ! xdr_int(xdrs, &stepID)) {
+        ls_syslog(LOG_ERR, "\%s: failed dencoding jobid %s", __func__, jobID);
+        xdr_destroy(xdrs);
+        return;
+    }
+
+    /* find the job
+     */
+    jPtr = find_job_card(jobID);
+    if (! jPtr) {
+        replyHdrWithRC(LSBE_NO_JOB, chfd, -1);
+        xdr_destroy(xdrs);
+        return;
+    }
+
+    if (jPtr->jobSpecs.jStatus & (JOB_STAT_DONE | JOB_STAT_EXIT)) {
+        ls_syslog(LOG_ERR, "%s: job %d is finished", __func__, jobID);
+        replyHdrWithRC(LSBE_JOB_FINISH, chfd, jobID);
+        return;
+    }
+
+    /* decode the rusage
+     */
+    jru = calloc(1, sizeof(struct jRusage));
+
+    if (! xdr_jRusage(xdrs, jru, hdr)) {
+        ls_syslog(LOG_ERR, "\
+%: failed decoding jobid % or stepid %d", __func__, jobID);
+        replyHdrWithRC(LSBE_XDR, chfd, jobID);
+        xdr_destroy(xdrs);
+        return;
+    }
+
+    /* Now and update the rusage of thsi process
+     * I have blaunched.
+     */
+    update_job_rusage(jPtr, jru);
+
+    /* update the job
+     */
+    replyHdrWithRC(LSBE_NO_ERROR, chfd, jobID);
+
+    xdr_destroy(xdrs);
+    _free_(jru->pidInfo);
+    _free_(jru->pgid);
+    _free_(jru);
+}
+
+static struct jobCard *
+find_job_card(int jobID)
+{
+    struct jobCard *jp;
+
+    for (jp = jobQueHead->back; jp != jobQueHead; jp = jp->back) {
+
+        if (jp->jobSpecs.jobId == jobID)
+            return jp;
+    }
+
+    return NULL;
 }

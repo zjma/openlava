@@ -599,3 +599,18 @@ OpenLava daemon (LIM) not responding ... still trying\n");
     return tempPtr;
 }
 
+/* ackSBDReturnCode()
+ */
+int
+ackSBDReturnCode(struct LSFHeader *hdr)
+{
+    /* Translate the SBD code, perhaps we could use the LSE
+     * code in the entire system.
+     */
+    switch (hdr->opCode) {
+        case RESE_OK:
+            return LSE_NO_ERR;
+    }
+
+    return -1;
+}

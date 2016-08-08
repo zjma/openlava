@@ -83,10 +83,6 @@ extern char *yybuff;
 extern int lsbJobCpuLimit;
 extern int lsbJobMemLimit;
 
-static void updateJUsage(struct jobCard *, const struct jRusage *);
-static void copyPidInfo(struct jobCard *, const struct jRusage *);
-static void writePidInfoFile(const struct jobCard *,
-                             const struct jRusage *);
 extern void ls_closelog_ext(void);
 extern int cpHostent(struct hostent *, const struct hostent *);
 static int acctMapTo(struct jobCard *jobCard);
@@ -2118,9 +2114,13 @@ Read file <%s> for stdout output of this job.\n", jp->jobSpecs.outFile);
 
     return (hasError);
 }
-
+/* addJob()
+ *
+ * Upon sbd's start up, initialize sbatchd's job list
+ * using job specs from mbatchd
+ */
 struct jobCard *
-addJob (struct jobSpecs *jobSpecs, int mbdVersion)
+addJob(struct jobSpecs *jobSpecs, int mbdVersion)
 {
     static char fname[] = "addJob";
     struct jobCard *jp = NULL;
@@ -2129,10 +2129,9 @@ addJob (struct jobSpecs *jobSpecs, int mbdVersion)
     int cc;
 
     jp = my_calloc (1, sizeof (struct jobCard), fname);
-    memcpy((char *) &jp->jobSpecs, jobSpecs, sizeof(struct jobSpecs));
+    memcpy(&jp->jobSpecs, jobSpecs, sizeof(struct jobSpecs));
 
     if (jobSpecs->execUsername[0] == '\0') {
-
         jp->execGid = 0;
         jp->execUsername[0] = '\0';
         jp->jobSpecs.execUid   = -1;
@@ -2764,18 +2763,14 @@ saveSpecs (struct jobSpecs *jobSpecs, struct jobSpecs *specs)
 
 
 void
-setRunLimit (struct jobCard *jp, int initRunTime)
+setRunLimit(struct jobCard *jp, int initRunTime)
 {
     if (jp->jobSpecs.lsfLimits[LSF_RLIMIT_RUN].rlim_curh != 0) {
-
-
         jp->jobSpecs.lsfLimits[LSF_RLIMIT_RUN].rlim_curl = 0x7fffffff;
     }
 
     if (initRunTime)
         jp->runTime = 0;
-    return;
-
 }
 
 static int
@@ -3584,32 +3579,10 @@ updateRUsageFromSuper(struct jobCard *jp, char *mbuf)
 
 }
 
-static void
-updateJUsage(struct jobCard *jPtr, const struct jRusage *jRusage)
+extern void updateJUsage(struct jobCard *jPtr, struct jRusage *jRusage)
 {
-    static char      fname[] = "updateJUsage";
-
-    if (logclass & LC_EXEC) {
-        ls_syslog(LOG_DEBUG,"\
-%s: Update rusage for job=%d from supervisor (%x/%d) newutime=%d newstime=%d newmem=%d newswap=%d wrkutime=%d wrkstime=%d prevutime=%d prevstime=%d prevmem=%d prevswap=%d",
-                  fname,
-                  jPtr->jobSpecs.jobId,
-                  jPtr->client,
-                  jPtr->newPam,
-                  jRusage->utime,
-                  jRusage->stime,
-                  jRusage->mem,
-                  jRusage->swap,
-                  jPtr->wrkRusage.utime,
-                  jPtr->wrkRusage.stime,
-                  jPtr->runRusage.utime,
-                  jPtr->runRusage.stime,
-                  jPtr->runRusage.mem,
-                  jPtr->runRusage.swap);
-    }
 
     if (jPtr->newPam == TRUE) {
-
 
         if (jPtr->runRusage.utime == -1
             && jPtr->runRusage.stime == -1) {
@@ -3629,15 +3602,15 @@ updateJUsage(struct jobCard *jPtr, const struct jRusage *jRusage)
 
 
 
-    jPtr->runRusage.mem =  MAX(jPtr->runRusage.mem,
-                               jRusage->mem);
+    jPtr->runRusage.mem = MAX(jPtr->runRusage.mem,
+                              jRusage->mem);
     jPtr->runRusage.swap = MAX(jPtr->runRusage.swap,
                                jRusage->swap);
 
     if (logclass & LC_EXEC) {
-        ls_syslog(LOG_DEBUG,"\
+        ls_syslog(LOG_INFO,"\
 %s: current rusage of job %d utime=%d stime=%d mem=%d swap=%d",
-                  fname, jPtr->jobSpecs.jobId, jPtr->runRusage.utime,
+                  __func__, jPtr->jobSpecs.jobId, jPtr->runRusage.utime,
                   jPtr->runRusage.stime, jPtr->runRusage.mem,
                   jPtr->runRusage.swap);
     }
@@ -3649,7 +3622,6 @@ updateJUsage(struct jobCard *jPtr, const struct jRusage *jRusage)
 
     copyPidInfo(jPtr, jRusage);
 
-
     if (jPtr->newPam == TRUE) {
         writePidInfoFile(jPtr, jRusage);
     }
@@ -3659,32 +3631,21 @@ updateJUsage(struct jobCard *jPtr, const struct jRusage *jRusage)
 
 }
 
-static void
-copyPidInfo(struct jobCard *jPtr, const struct jRusage *jRusage)
+/* copyPidInfo()
+ */
+void
+copyPidInfo(struct jobCard *jPtr, struct jRusage *jRusage)
 {
-    static char    fname[] = "copyPidInfo";
-
 
     FREEUP(jPtr->runRusage.pidInfo);
     jPtr->runRusage.npids = 0;
     FREEUP(jPtr->runRusage.pgid);
     jPtr->runRusage.npgids = 0;
 
-
     if (jRusage->npids > 0) {
 
-        jPtr->runRusage.pidInfo =
-            (struct pidInfo *)my_calloc(jRusage->npids,
-                                        sizeof(struct pidInfo),
-                                        fname);
-        if (jPtr->runRusage.pidInfo == NULL) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5500,
-                                             "%s: failed to malloc (%d) bytes.\n"),
-                      fname,
-                      (jRusage->npids)*(sizeof(struct pidInfo)));/* catgets 5500 */
-            return;
-        }
-
+        jPtr->runRusage.pidInfo = calloc(jRusage->npids,
+                                         sizeof(struct pidInfo));
 
         jPtr->runRusage.npids = jRusage->npids;
         memcpy(jPtr->runRusage.pidInfo,
@@ -3695,35 +3656,21 @@ copyPidInfo(struct jobCard *jPtr, const struct jRusage *jRusage)
 
     if (jRusage->npgids > 0) {
 
-        jPtr->runRusage.pgid =
-            (int *)my_calloc(jRusage->npgids,
-                             sizeof(int),
-                             fname);
-        if (jPtr->runRusage.pgid == NULL) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5501,
-                                             "%s: failed to malloc (%d) bytes.\n"),
-                      fname,
-                      (jRusage->npgids)*(sizeof(int)));/* catgets 5501 */
-            return;
-        }
-
-
+        jPtr->runRusage.pgid = calloc(jRusage->npgids, sizeof(int));
         jPtr->runRusage.npgids = jRusage->npgids;
         memcpy(jPtr->runRusage.pgid,
                jRusage->pgid,
                (jRusage->npgids)*(sizeof(int)));
     }
-
 }
 
-static void
-writePidInfoFile(const struct jobCard    *jPtr,
-                 const struct jRusage    *jRusage)
+void
+writePidInfoFile(struct jobCard *jPtr,
+                 struct jRusage *jRusage)
 {
-    static char    fname[] = "writePidInfoFile";
-    char           buf[MAXFILENAMELEN];
-    FILE           *fp;
-    int            i;
+    char buf[MAXFILENAMELEN];
+    FILE *fp;
+    int i;
 
     if (jPtr->jobSpecs.jobFile[0] == '/') {
         sprintf(buf, "%s/.%s.pidInfo", LSTMPDIR,
@@ -3734,9 +3681,8 @@ writePidInfoFile(const struct jobCard    *jPtr,
 
     fp = fopen(buf, "w");
     if (fp == NULL) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5502,
-                                         "%s: Unable to fopen() pidInfo file (%s), %m.\n"),
-                  fname, buf); /* catgets 5502 */
+        ls_syslog(LOG_ERR, "\
+%s: Unable to fopen() pidInfo file (%s), %m.", __func__, buf);
         return;
     }
 
@@ -3751,12 +3697,9 @@ writePidInfoFile(const struct jobCard    *jPtr,
 
 }
 
-
-
 static void
 jobFinishRusage(struct jobCard *jp)
 {
-    static char fname[] = "jobFinishRusage()";
     char rufn[MAXFILENAMELEN];
     char rufn30[MAXFILENAMELEN];
     char tmpDirName[MAXFILENAMELEN];
@@ -3765,7 +3708,7 @@ jobFinishRusage(struct jobCard *jp)
     FILE *fp;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG, "%s: Entering this routine ...", fname);
+        ls_syslog(LOG_DEBUG, "%s: Entering this routine ...", __func__);
 
     if (!jp->collectedChild) {
 
@@ -3788,24 +3731,28 @@ jobFinishRusage(struct jobCard *jp)
         sprintf(rufn30, "%s/.%s.acct", LSTMPDIR, jp->jobSpecs.jobFile);
     }
 
-    if ((fp = fopen(rufn, "r")) == NULL && (fp = fopen(rufn30, "r")) == NULL) {
+    if ((fp = fopen(rufn, "r")) == NULL
+        && (fp = fopen(rufn30, "r")) == NULL) {
     }
     if (fp == NULL) {
         ls_syslog(LOG_DEBUG, "%s: fopen(%s) failed: %m",
-                  fname, rufn);
+                  __func__, rufn);
     } else {
         if ((rec = ls_getacctrec(fp, &lineNum)) == NULL) {
-            ls_syslog(LOG_ERR, I18N_FUNC_S_FAIL_M, fname, "ls_getacctrec",
-                      rufn);
+            ls_syslog(LOG_ERR, "%s: ls_getacctrec() %s failed",
+                      __func__, rufn);
+
         } else {
             if (logclass & LC_EXEC) {
                 LS_WAIT_T w_status;
                 LS_STATUS(w_status) = rec->exitStatus;
-                ls_syslog(LOG_DEBUG, I18N(5495, "%s: Job <%s> status <%d> exitcode <%d>"),/*catgets 5495*/
-                          fname, lsb_jobid2str(jp->jobSpecs.jobId),
+                ls_syslog(LOG_DEBUG, "\
+%s: Job %s status %d exitcode %d",
+                          __func__, lsb_jobid2str(jp->jobSpecs.jobId),
                           rec->exitStatus,
                           WEXITSTATUS(w_status));
             }
+
             if (jp->collectedChild) {
 
                 if (jp->lsfRusage.ru_utime > rec->lsfRu.ru_utime)
