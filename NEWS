@@ -37,6 +37,11 @@ Release notes for OpenLava versions
    cpubinding (affinity) and which ones don’t. OpenLava supports just "y"
    or "n".
 -- Fix the config/Makefile.am to create the OpenLava etc directory.
+-- Update lsf.conf man page and lsb.hosts man page for cross reference of
+   cpu binding.
+-- Fix bresources core dump during non-active time window.
+-- Fix bresources bug in which current resource usage displays
+   duplicated slots/jobs.
 
 3.3.3
 ======

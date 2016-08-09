@@ -2938,6 +2938,7 @@ checkResLimit(struct jData *jp, char* hostname)
         if (limitConf->limits[i].nConsumer <= 0)
             continue;
 
+        per_queue = FALSE;
         for (j = 0; j < limitConf->limits[i].nConsumer; j++) {
             if (limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_QUEUES
                     || limitConf->limits[i].consumers[j].consumer == LIMIT_CONSUMER_PER_QUEUE) {
@@ -3089,6 +3090,8 @@ checkResLimit(struct jData *jp, char* hostname)
                             return FALSE;
                         }
                     }
+                } else {
+                    goto clean4next;
                 }
             }
         }
@@ -3139,6 +3142,8 @@ checkResLimit(struct jData *jp, char* hostname)
                         return FALSE;
                     }
                 }
+            }else  {
+                goto clean4next;
             }
         }
 

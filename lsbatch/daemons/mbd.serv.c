@@ -3469,20 +3469,36 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
             || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_PROJECT) {
             project = strdup(limit->consumers[j].value);
             save_project = project;
+            if (!pAcct->project
+                    && limit->consumers[j].consumer == LIMIT_CONSUMER_PER_PROJECT)
+                goto clean;
+
         } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_QUEUES
                    || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_QUEUE) {
             queue = strdup(limit->consumers[j].value);
             save_queue = queue;
+            if (!pAcct->queue
+                    && limit->consumers[j].consumer == LIMIT_CONSUMER_PER_QUEUE)
+                goto clean;
+
         } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_USERS
                    || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_USER) {
             user = strdup(limit->consumers[j].value);
             save_user = user;
             user_def = strdup(limit->consumers[j].def);
             save_user_def = user_def;
+            if (!pAcct->user
+                    && limit->consumers[j].consumer == LIMIT_CONSUMER_PER_USER)
+                goto clean;
+
         } else if (limit->consumers[j].consumer == LIMIT_CONSUMER_HOSTS
                    || limit->consumers[j].consumer == LIMIT_CONSUMER_PER_HOST) {
             host = strdup(limit->consumers[j].value);
             save_host = host;
+            if (!pAcct->host
+                    && limit->consumers[j].consumer == LIMIT_CONSUMER_PER_HOST)
+                goto clean;
+
         }
     }
 
@@ -3582,6 +3598,9 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
     if (!match)
         goto clean;
 
+    if ((lr = getActiveLimit(limit->res, limit->nRes)) == NULL)
+        goto clean;
+
     usage = my_calloc(1, sizeof(struct resLimitUsage), __func__);
     usage->limitName = strdup(limit->name);
     if (pAcct->project)
@@ -3603,7 +3622,6 @@ getLimitUsage(struct resLimit *limit, struct resData *pAcct)
         + pAcct->numUSUSPJobs
         + pAcct->numRESERVEJobs;
 
-    lr = getActiveLimit(limit->res, limit->nRes);
     usage->maxSlots = usage->maxJobs = lr->value;
 
 clean:

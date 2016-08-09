@@ -43,7 +43,7 @@ Each host, host model or host type can be configured to:
 .HP 2
 \(bu Run jobs only under specific time windows
 .HP 2
-\(bu Enable or disable affinity/cpu binding on the host
+\(bu Enable or disable CPU binding on individual host
 .RE
 .PP
 The entries in a line for a host override the entries in a line for its model
@@ -272,16 +272,14 @@ Undefined
 .BR
 .PP
 .PP
-Enable or disable affinity/cpu binding on the host.
+Use "Y"/"N" to enable/disable CPU binding on this host.
 .PP
-Use "(Y)" to enable affinity/cpu binding on the host.
-.PP
-Use "(N)" to disable affinity/cpu binding on the host.
+If you configure SBD_BIND_CPU=Y in lsf.conf, CPU binding is globally enabled to all hosts in the cluster.
 .SS Default
 .BR
 .PP
 .PP
-(N)
+N
 
 .SH Example of a Host Section
 .BR
