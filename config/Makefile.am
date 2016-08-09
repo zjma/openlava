@@ -23,9 +23,8 @@ install-data-local:
 	mkdir -p $(DESTDIR)$(prefix)/work/logdir
 	mkdir -p $(DESTDIR)$(prefix)/log
 	mkdir -p $(DESTDIR)$(prefix)/etc
-	git rev-parse HEAD > $(DESTDIR)$(prefix)/etc/commit
 
 # Tell automake to install during distcheck the
 # configuration and etc files. 
-#
+#etc_DATA = commit
 #EXTRA_DIST = $(etc_DATA)
