@@ -756,7 +756,8 @@ initConfInfo(void)
     if((sp = getenv("LSF_NCPUS")) != NULL)
         myHostPtr->statInfo.maxCpus = atoi(sp);
     else
-        myHostPtr->statInfo.maxCpus = numCPUs();
+        myHostPtr->statInfo.maxCpus = 999;
+        //myHostPtr->statInfo.maxCpus = numCPUs();
 
     if (myHostPtr->statInfo.maxCpus <= 0) {
         ls_syslog(LOG_ERR, "\
