@@ -4,7 +4,8 @@ Release notes for OpenLava versions
            ^
            |
            |
-
+-- In the bootstrap.sh file create the revision number file
+   which is going to be installed in the etc directory.
 -- Create lsid 4.0dev4 output.
 
 4.0pre3
