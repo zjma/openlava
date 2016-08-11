@@ -13,14 +13,14 @@ sbin_PROGRAMS = lim
 lim_SOURCES  = \
 lim.cluster.c lim.control.c lim.internal.c lim.main.c lim.policy.c \
 lim.xdr.c lim.conf.c lim.info.c lim.load.c lim.misc.c  lim.rload.c  \
-lim.common.h  lim.conf.h  lim.h limout.h
+lim.common.h  lim.conf.h  lim.h limout.h 
 if SOLARIS
 lim_SOURCES += lim.solaris.c
 else
 lim_SOURCES += lim.linux.c
 endif
 
-lim_LDADD =  ../lib/.libs/liblsf.a ../intlib/.libs/liblsfint.a -lnsl
+lim_LDADD =  ../lib/.libs/liblsf.a ../lib/.libs/libazure.a  ../intlib/.libs/liblsfint.a -lnsl
 if SOLARIS
 lim_LDADD += -lsocket -lnsl
 endif

@@ -28,6 +28,7 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 #include "../lib/lproto.h"
+#include "../lib/azure.h"
 
 static FILE *lim_popen(char **, char *);
 static int lim_pclose(FILE *);
@@ -756,7 +757,7 @@ initConfInfo(void)
     if((sp = getenv("LSF_NCPUS")) != NULL)
         myHostPtr->statInfo.maxCpus = atoi(sp);
     else
-        myHostPtr->statInfo.maxCpus = 999;
+        myHostPtr->statInfo.maxCpus = AZURE_getCoreNum();
         //myHostPtr->statInfo.maxCpus = numCPUs();
 
     if (myHostPtr->statInfo.maxCpus <= 0) {

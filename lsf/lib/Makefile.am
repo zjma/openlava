@@ -6,7 +6,7 @@ include $(top_srcdir)/common.mk
 
 AM_CPPFLAGS += -I../
 
-lib_LTLIBRARIES = liblsf.la
+lib_LTLIBRARIES = liblsf.la libazure.la
 
 liblsf_la_SOURCES = \
 lib.channel.c lib.err.c lib.limits.c lib.rcp.c lib.xdr.c \
@@ -24,3 +24,7 @@ lib.channel.h lib.h lib.pim.h  lib.rcp.h lib.table.h \
 lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \
 lib.rf.h lib.words.h lib.xdrlim.h lproto.h
 liblsf_la_LDFLAGS =  -no-undefined -version-info 0:1
+
+
+libazure_la_SOURCES = azure.c
+
