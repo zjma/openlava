@@ -16,19 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
-#include <stdlib.h>
-#include "sbd.h"
 
-#define NL_SETN         11
+#include "sbd.h"
 
 extern int urgentJob;
 extern int jRusageUpdatePeriod;
 extern int  rusageUpdateRate;
 extern int  rusageUpdatePercent;
-extern int sbdlog_newstatus(struct jobCard *jp);
 extern int lsbJobCpuLimit;
 extern int lsbJobMemLimit;
-static int replyHdrWithRC(int rc, int chfd, int jobId);
+
+static struct jRusage *blaunch_jru;
+
+static int replyHdrWithRC(int, int, int);
 static struct jobCard *find_job_card(int);
 
 void
@@ -74,8 +74,7 @@ do_newjob(XDR *xdrs, int chfd, struct LSFHeader *reqHdr)
         goto sendReply;
     }
 
-    memcpy((char *) &jp->jobSpecs, (char *) &jobSpecs,
-           sizeof(struct jobSpecs));
+    memcpy(&jp->jobSpecs, &jobSpecs, sizeof(struct jobSpecs));
 
     jp->jobSpecs.jStatus &= ~JOB_STAT_MIG;
     jp->jobSpecs.startTime = now;
@@ -168,9 +167,8 @@ sendReply:
     }
 
     if (chanWrite_(chfd, reply_buf, XDR_GETPOS(&xdrs2)) <= 0) {
-        ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5805,
-                                         "%s: Sending jobReply (len=%d) to master failed: %m"), /* catgets 5805 */
-                  fname, XDR_GETPOS(&xdrs2));
+        ls_syslog(LOG_ERR, "\
+%s: chanWrite() jobReply len %d to master failed: %m", __func__, XDR_GETPOS(&xdrs2));
     }
 
     xdr_destroy(&xdrs2);
@@ -183,7 +181,6 @@ sendReply:
             jp->notReported++;
         }
     }
-
 }
 
 void
@@ -1125,10 +1122,9 @@ replyHdrWithRC(int rc, int chfd, int jobId)
 void
 do_blaunch_rusage(XDR *xdrs, int chfd, struct LSFHeader *hdr)
 {
+    struct jobCard *jPtr;
     int jobID;
     int stepID;
-    struct jobCard *jPtr;
-    struct jRusage *jru;
 
     /* Get the job id
      */
@@ -1154,11 +1150,13 @@ do_blaunch_rusage(XDR *xdrs, int chfd, struct LSFHeader *hdr)
         return;
     }
 
+    free_jrusage(&blaunch_jru);
+
     /* decode the rusage
      */
-    jru = calloc(1, sizeof(struct jRusage));
+    blaunch_jru = calloc(1, sizeof(struct jRusage));
 
-    if (! xdr_jRusage(xdrs, jru, hdr)) {
+    if (! xdr_jRusage(xdrs, blaunch_jru, hdr)) {
         ls_syslog(LOG_ERR, "\
 %: failed decoding jobid % or stepid %d", __func__, jobID);
         replyHdrWithRC(LSBE_XDR, chfd, jobID);
@@ -1166,19 +1164,21 @@ do_blaunch_rusage(XDR *xdrs, int chfd, struct LSFHeader *hdr)
         return;
     }
 
-    /* Now and update the rusage of thsi process
-     * I have blaunched.
-     */
-    update_job_rusage(jPtr, jru);
-
     /* update the job
      */
     replyHdrWithRC(LSBE_NO_ERROR, chfd, jobID);
 
+    /* Report the rusage
+     */
+    jPtr->needReportRU = true;
+
     xdr_destroy(xdrs);
-    _free_(jru->pidInfo);
-    _free_(jru->pgid);
-    _free_(jru);
+}
+
+struct jRusage *
+get_blaunch_jrusage(void)
+{
+    return blaunch_jru;
 }
 
 static struct jobCard *
@@ -1193,4 +1193,17 @@ find_job_card(int jobID)
     }
 
     return NULL;
+}
+
+void
+free_jrusage(struct jRusage **jru)
+{
+    if (jru == NULL
+        || *jru == NULL)
+        return;
+
+    _free_((*jru)->pidInfo);
+    _free_((*jru)->pgid);
+    _free_(*jru);
+    *jru = NULL;
 }

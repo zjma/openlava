@@ -28,13 +28,13 @@ extern int rusageUpdateRate;
 extern int rusageUpdatePercent;
 #define MAX_ARGS        16
 
-int setCmp(int *, int, int *, int);
 static int terminateAct(struct jobCard *, int, int, int, logType );
 int jRunSuspendAct(struct jobCard *, int ,int ,int, int, logType);
 static int jSuspResumeAct(struct jobCard *, int , int, logType);
 int resumeJob(struct jobCard * ,int ,int ,logType);
 static char *getJobPgids(struct jobCard *);
 static char *getJobPids(struct jobCard *);
+
 void errorPostProcess(struct jobCard *, int, char *);
 char *exitFileSuffix(int);
 static int jobsig1(struct jobCard *, int, int);
@@ -496,8 +496,8 @@ jSuspResumeAct(struct jobCard *jp, int sigValue, int suspendReasons,
 }
 
 int
-resumeJob (struct jobCard *jp, int sigValue, int suspendReasons,
-           logType logFlag)
+resumeJob(struct jobCard *jp, int sigValue, int suspendReasons,
+          logType logFlag)
 {
     int cc;
     int defSigValue;
@@ -546,7 +546,7 @@ resumeJob (struct jobCard *jp, int sigValue, int suspendReasons,
 
 
 int
-jobSigLog (struct jobCard *jp, int finishStatus)
+jobSigLog(struct jobCard *jp, int finishStatus)
 {
     if (status_job(BATCH_STATUS_JOB, jp, jp->jobSpecs.jStatus,
                    finishStatus == 0 ? ERR_NO_ERROR : ERR_SYSACT_FAIL) < 0) {
@@ -594,7 +594,7 @@ jobsig(struct jobCard *jp, int sig, int forkSig)
 }
 
 static int
-jobsig1 (struct jobCard *jp, int sig, int forkSig)
+jobsig1(struct jobCard *jp, int sig, int forkSig)
 {
     static char fname[] = "jobsig1()";
     int preSig;
@@ -696,12 +696,13 @@ mykillpg(struct jobCard *jp, int sig)
         npgid = jp->runRusage.npgids;
     }
 
+    /* jru is static inside lib.pim.c following old
+     * LSF tradition
+     */
     TIMEIT(0,
            jru = getJInfo_(npgid, pgid, 0, jp->jobSpecs.jobPGid),
            "getJInfo_()");
 
-    /* update the job resource usage
-     */
     update_job_rusage(jp, jru);
 
     /*
@@ -814,42 +815,6 @@ updateJRru(struct jRusage *jru, char *jobFile)
 
     return 0;
 }
-
-/* setCmp()
- *
- * Given two un-sorted sets:
- *    set1 {x1, x2, ..., xm)
- *    set2 {y1, y2, ..., yn}
- *
- *  Function returns true if set1 is equal to set 2; otherwise it returns false.
- *
- */
-int
-setCmp(int *set1, int len1, int *set2, int len2)
-{
-    int i;
-    int j;
-    int start;
-    int tmp;
-
-    if (len1 != len2)
-        return false;
-
-    for (i = 0; i < len1; i++) {
-        start = i;
-        for (j = start; j < len2; j++)
-            if (set1[i] == set2[j]) {
-                tmp = set2[j];
-                set2[j] = set2[i];
-                set2[i] = tmp;
-                break;
-            } else if (j == (len2 - 1))
-                return false;
-    }
-
-    return true;
-}
-
 
 static int
 pgkillit(int pgid, int sig)
@@ -1958,10 +1923,8 @@ update_job_rusage(struct jobCard *jp, struct jRusage *jru)
 {
     pid_t sbdPgid;
     int changed;
-    int fileStatus;
     int j;
     int i;
-    static char jobFileName[PATH_MAX];
 
     if (!jru
         || !jp)
@@ -1981,17 +1944,11 @@ update_job_rusage(struct jobCard *jp, struct jRusage *jru)
 %s: sbatchd's pgid %d is the same as job %s",
                           __func__, sbdPgid, lsb_jobid2str(jp->jobSpecs.jobId));
                 for (j = i; j < jru->npgids - 1; j++) {
-                    jru->pgid[j] = jru->pgid[j+1];
+                    jru->pgid[j] = jru->pgid[j + 1];
                 }
                 jru->npgids--;
             }
         }
-    }
-
-    sprintf(jobFileName, "/tmp/.sbd/%s.rusage", jp->jobSpecs.jobFile);
-    fileStatus = access(jobFileName, F_OK | R_OK);
-    if (fileStatus == 0) {
-        updateJRru(jru, jobFileName);
     }
 
     /* Remember max resources used by job
@@ -2027,47 +1984,21 @@ update_job_rusage(struct jobCard *jp, struct jRusage *jru)
     } else if (abs(jru->stime - jp->mbdRusage.stime)
                > jp->mbdRusage.stime / 100.0 * (float)rusageUpdatePercent) {
         changed = true;
-    } else if (setCmp(jru->pgid,
-                      jru->npgids,
-                      jp->mbdRusage.pgid,
-                      jp->mbdRusage.npgids) == true) {
-        if (jru->npids != jp->mbdRusage.npids) {
-            changed = true;
-        } else {
-            int *set1;
-            int *set2;
-            set1 = calloc(jru->npids, sizeof(int));
-            set2 = calloc(jp->mbdRusage.npids, sizeof(int));
-            if ((set1 == NULL) || (set2 == NULL)) {
-                changed = true;
-            } else {
-                for (i = 0; i < jru->npids; i++) {
-                    set1[i] = jru->pidInfo[i].pid;
-                    set2[i] = jp->mbdRusage.pidInfo[i].pid;
-                }
-                if (!setCmp(set1, jru->npids, set2, jp->mbdRusage.npids))
-                    changed = true;
-            }
-            FREEUP(set1);
-            FREEUP(set2);
-        }
-    } else {
-        changed = true;
     }
 
     if (logclass & (LC_SIGNAL|LC_EXEC)) {
-        ls_syslog(LOG_INFO, "%S: Job %s pgid %d mem %d swap %d utime %d stime %d rusageUpdatePercent %d current mem %d swap %d rusageUpdateRate %d changed %d needReportRU %d lastStatusMbdTime %d sbdSleepTime %d", __func__,
+        ls_syslog(LOG_INFO, "%s: job %s pgid %d mem %d swap %d utime %d stime %d rusageUpdatePercent %d current mem %d swap %d rusageUpdateRate %d changed %d needReportRU %d lastStatusMbdTime %d sbdSleepTime %d", __func__,
                   lsb_jobid2str(jp->jobSpecs.jobId), jp->jobSpecs.jobPGid,
                   jru->mem, jru->swap, jru->utime, jru->stime,
                   rusageUpdatePercent, jp->mbdRusage.mem,
                   jp->mbdRusage.swap, rusageUpdateRate, changed,
                   jp->needReportRU, jp->lastStatusMbdTime, sbdSleepTime);
 
-        ls_syslog(LOG_DEBUG, "%s: npgids =%d", __func__, jru->npgids);
+        ls_syslog(LOG_INFO, "%s: npgids =%d", __func__, jru->npgids);
 
         for (i = 0; i < jru->npgids; i++)
-            ls_syslog(LOG_DEBUG, "\%s: pgid[%d]=%d",
-                      __func__, i,jru->pgid[i]);
+            ls_syslog(LOG_INFO, "\%s: pgid[%d]=%d",
+                      __func__, i, jru->pgid[i]);
     }
 
     if (((changed || jp->needReportRU)
@@ -2086,4 +2017,58 @@ update_job_rusage(struct jobCard *jp, struct jRusage *jru)
 
     if (! (jp->regOpFlag & REG_RUSAGE))
         copyJUsage(&(jp->runRusage), jru);
+}
+
+/* merge_jrusage()
+ */
+struct jRusage *
+merge_jrusage(struct jRusage *x, struct jRusage *y)
+{
+    struct jRusage *j;
+    int cc;
+
+    j = calloc(1, sizeof(struct jRusage));
+
+    if (logclass & LC_SIGNAL) {
+        ls_syslog(LOG_INFO, "\
+%s: job mem %d swap %d utime %d stime %d npids %d npgids %d", __func__,
+                  x->mem, x->swap, x->utime, x->stime);
+        ls_syslog(LOG_INFO, "\
+%s: blaunch mem %d swap %d utime %d stime %d npids %d npgids %d", __func__,
+                  y->mem, y->swap, y->utime, y->stime);
+    }
+
+    j->mem = j->mem + x->mem + y->mem;
+    j->swap = j->swap + x->swap + y->swap;
+    j->utime = j->utime + x->utime + y->utime;
+    j->stime = j->stime + x->stime + y->stime;
+    j->npids = x->npids + y->npids;
+    j->npgids = x->npgids + y->npgids;
+
+    j->pidInfo = calloc(j->npids, sizeof(struct pidInfo));
+    j->pgid = calloc(j->npgids, sizeof(int));
+
+    memcpy(j->pidInfo, x->pidInfo, x->npids * sizeof(struct pidInfo));
+    memcpy(j->pidInfo + x->npids, y->pidInfo, y->npids * sizeof(struct pidInfo));
+
+    memcpy(j->pgid, x->pgid, x->npgids * sizeof(int));
+    memcpy(j->pgid + x->npgids, y->pgid, y->npgids * sizeof(int));
+
+    /* Debug the global rusage
+     */
+    if (logclass & LC_SIGNAL) {
+
+        ls_syslog(LOG_INFO, "\
+%s: all tasks mem %d swap %d utime %d stime %d", __func__, j->mem, j->swap,
+        j->utime, j->stime);
+
+        for (cc = 0; cc < j->npids; cc++)
+            ls_syslog(LOG_INFO, "\
+%s: pid %d ppid %d pgid %d", __func__, j->pidInfo[cc].pid,
+                      j->pidInfo[cc].ppid, j->pidInfo[cc].pgid);
+        for (cc = 0; cc < j->npgids; cc++)
+            ls_syslog(LOG_INFO, "%s: pgid %d", __func__, j->pgid[cc]);
+    }
+
+    return j;
 }

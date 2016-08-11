@@ -497,13 +497,13 @@ xdr_jobReply (XDR *xdrs, struct jobReply *jobReply, struct LSFHeader *hdr)
 }
 
 bool_t
-xdr_statusReq (XDR *xdrs, struct statusReq *statusReq, struct LSFHeader *hdr)
+xdr_statusReq(XDR *xdrs, struct statusReq *statusReq, struct LSFHeader *hdr)
 {
     int i;
     int jobArrId, jobArrElemId;
 
     if (xdrs->x_op == XDR_FREE) {
-        for(i=0; i < statusReq->numExecHosts; i++)
+        for(i = 0; i < statusReq->numExecHosts; i++)
             FREEUP(statusReq->execHosts[i]);
         if (statusReq->numExecHosts > 0)
             FREEUP(statusReq->execHosts);
@@ -523,6 +523,7 @@ xdr_statusReq (XDR *xdrs, struct statusReq *statusReq, struct LSFHeader *hdr)
     if (xdrs->x_op == XDR_ENCODE) {
         jobId64To32(statusReq->jobId, &jobArrId, &jobArrElemId);
     }
+
     if (!(xdr_int(xdrs,&jobArrId) &&
           xdr_int(xdrs,&statusReq->jobPid) &&
           xdr_int(xdrs,&statusReq->jobPGid) &&

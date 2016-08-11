@@ -1197,31 +1197,36 @@ finishJob(struct jobCard *jobCard)
 
 
 void
-status_report (void)
+status_report(void)
 {
-    static char fname[] = "status_report()";
     struct jobCard *jp, *next;
     static char mailed = TRUE;
-    int rep, allReported = TRUE;
+    int rep;
+    int allReported = TRUE;
 
     if (logclass & LC_TRACE)
-        ls_syslog(LOG_DEBUG2,"status_report: Entering..");
+        ls_syslog(LOG_INFO,"%s: Entering..", __func__);
 
-    for (jp = jobQueHead->back; (jp != jobQueHead); jp = next) {
+    for (jp = jobQueHead->back; jp != jobQueHead; jp = next) {
         next = jp->back;
 
         if (!IS_START(jp->jobSpecs.jStatus)
             && !(jp->jobSpecs.jStatus & JOB_STAT_PEND)
             && !IS_FINISH(jp->jobSpecs.jStatus)
             && !IS_POST_FINISH(jp->jobSpecs.jStatus) ) {
-            ls_syslog(LOG_ERR, _i18n_msg_get(ls_catd , NL_SETN, 5418,
-                                             "%s: Illegal job status <%d> of job <%s> found; re-life"), /* catgets 5418 */
-                      fname, jp->jobSpecs.jStatus, lsb_jobid2str(jp->jobSpecs.jobId));
+            ls_syslog(LOG_ERR, "\
+%s: Illegal job status %d of job %s found; re-life",
+                      __func__, jp->jobSpecs.jStatus,
+                      lsb_jobid2str(jp->jobSpecs.jobId));
             relife();
         }
 
         if (logclass & LC_TRACE)
-            ls_syslog(LOG_DEBUG3,"status_report: checking job %s notReproted=%d missing=%d needReportRU=%d now=%d startTime=%d status=%x",lsb_jobid2str(jp->jobSpecs.jobId), jp->notReported, jp->missing, jp->needReportRU, now, jp->jobSpecs.startTime, jp->jobSpecs.jStatus);
+            ls_syslog(LOG_INFO,"\
+%s: job %s notReproted %d missing %d needReportRU %d startTime %d status %x",
+                      lsb_jobid2str(jp->jobSpecs.jobId), jp->notReported,
+                      jp->missing, jp->needReportRU,
+                      jp->jobSpecs.startTime, jp->jobSpecs.jStatus);
 
         if (jp->notReported < 0)
             continue;
@@ -1246,8 +1251,10 @@ status_report (void)
             else
                 reqType = BATCH_STATUS_JOB;
 
-            rep = status_job (reqType, jp, jp->jobSpecs.jStatus,
-                              ERR_NO_ERROR);
+            rep = status_job(reqType,
+                             jp,
+                             jp->jobSpecs.jStatus,
+                             ERR_NO_ERROR);
 
             if (reqType == BATCH_STATUS_JOB) {
                 if (rep >= 0) {
@@ -1257,20 +1264,21 @@ status_report (void)
                     allReported = FALSE;
                     jp->notReported++;
                     if (jp->notReported == 40 && !mailed) {
+                        static char buf[256];
                         mailed = TRUE;
-                        lsb_merr(_i18n_printf(_i18n_msg_get(ls_catd , NL_SETN, 411,
-                                                            "%s: unable to report job %s status to master; retried %d times\n"), /* catgets 411 */
-                                              fname, lsb_jobid2str(jp->jobSpecs.jobId), jp->notReported));
+                        sprintf(buf, "\
+%s: unable to report job %s status to master; retried %d times\n",
+                                __func__, lsb_jobid2str(jp->jobSpecs.jobId),
+                                jp->notReported);
+                        lsb_merr(buf);
                     }
                 }
             }
         }
     }
 
-
     if (allReported == TRUE)
         mailed = FALSE;
-
 }
 
 void
@@ -2404,7 +2412,7 @@ jobGone(struct jobCard *jp)
 }
 
 void
-refreshJob (struct jobSpecs *jobSpecs)
+refreshJob(struct jobSpecs *jobSpecs)
 {
     static char fname[] = "refreshJob()";
     struct jobCard *jp;
@@ -2425,14 +2433,14 @@ refreshJob (struct jobSpecs *jobSpecs)
             jp->jobSpecs.jStatus = (jobSpecs->jStatus & ~JOB_STAT_MIG) |
                 (jp->jobSpecs.jStatus & JOB_STAT_MIG);
 
-            renewJobStat (jp);
+            renewJobStat(jp);
         }
-        strcpy (jp->jobSpecs.queue, jobSpecs->queue);
-        strcpy (jp->jobSpecs.resumeCond, jobSpecs->resumeCond);
-        strcpy (jp->jobSpecs.stopCond, jobSpecs->stopCond);
-        strcpy (jp->jobSpecs.suspendActCmd, jobSpecs->suspendActCmd);
-        strcpy (jp->jobSpecs.resumeActCmd, jobSpecs->resumeActCmd);
-        strcpy (jp->jobSpecs.terminateActCmd, jobSpecs->terminateActCmd);
+        strcpy(jp->jobSpecs.queue, jobSpecs->queue);
+        strcpy(jp->jobSpecs.resumeCond, jobSpecs->resumeCond);
+        strcpy(jp->jobSpecs.stopCond, jobSpecs->stopCond);
+        strcpy(jp->jobSpecs.suspendActCmd, jobSpecs->suspendActCmd);
+        strcpy(jp->jobSpecs.resumeActCmd, jobSpecs->resumeActCmd);
+        strcpy(jp->jobSpecs.terminateActCmd, jobSpecs->terminateActCmd);
 
         for (i=0; i < LSB_SIG_NUM; i++)
             jp->jobSpecs.sigMap[i] = jobSpecs->sigMap[i];
@@ -2443,8 +2451,8 @@ refreshJob (struct jobSpecs *jobSpecs)
         jp->jobSpecs.chkPeriod = jobSpecs->chkPeriod;
 
 
-        freeToHostsEtc (&jp->jobSpecs);
-        saveSpecs (&jp->jobSpecs, jobSpecs);
+        freeToHostsEtc(&jp->jobSpecs);
+        saveSpecs(&jp->jobSpecs, jobSpecs);
 
         jp->jobSpecs.jAttrib = jobSpecs->jAttrib;
         if (jp->jobSpecs.jAttrib & Q_ATTRIB_EXCLUSIVE) {
@@ -2454,35 +2462,34 @@ refreshJob (struct jobSpecs *jobSpecs)
             }
         }
         for (j = 0; j < LSF_RLIM_NLIMITS; j++)
-            memcpy((char *) &jp->jobSpecs.lsfLimits[j],
-                   (char *)&jobSpecs->lsfLimits[j],
+            memcpy(&jp->jobSpecs.lsfLimits[j],
+                   &jobSpecs->lsfLimits[j],
                    sizeof (struct lsfLimit));
         setRunLimit (jp, FALSE);
 
-        if ((strcmp (jp->jobSpecs.windows, jobSpecs->windows)) != 0) {
-            freeWeek (jp->week);
+        if ((strcmp(jp->jobSpecs.windows, jobSpecs->windows)) != 0) {
+            freeWeek(jp->week);
             cp = jobSpecs->windows;
             while ((word = getNextWord_(&cp)) != NULL) {
                 if (addWindow(word, jp->week, "refreshJobs jobSpecs") < 0) {
                     ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
                               lsb_jobid2str(jp->jobSpecs.jobId), "addWindow", word);
-                    lsb_merr(_i18n_msg_get(ls_catd , NL_SETN, 458,
-                                           "Got garbage job bill from mbatchd on restart: die\n")); /* catgets 458 */
+                    lsb_merr("Got garbage job bill from mbatchd on restart: die\n");
                     die(SLAVE_FATAL);
                 }
             }
-            strcpy (jp->jobSpecs.windows, jobSpecs->windows);
+            strcpy(jp->jobSpecs.windows, jobSpecs->windows);
             jp->windEdge = now;
         }
         lsbFreeResVal (&jp->resumeCondVal);
         if (jobSpecs->resumeCond && jobSpecs->resumeCond[0] != '\0') {
-            if ((jp->resumeCondVal = checkThresholdCond (jobSpecs->resumeCond))
+            if ((jp->resumeCondVal = checkThresholdCond(jobSpecs->resumeCond))
                 == NULL)
                 ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
                           lsb_jobid2str(jp->jobSpecs.jobId), "checkThresholdCond", "resumeCond");
         }
 
-        lsbFreeResVal (&jp->stopCondVal);
+        lsbFreeResVal(&jp->stopCondVal);
         if (jobSpecs->stopCond  && jobSpecs->stopCond[0] != '\0') {
             if ((jp->stopCondVal = checkThresholdCond (jobSpecs->stopCond))
                 == NULL)
@@ -2503,19 +2510,19 @@ refreshJob (struct jobSpecs *jobSpecs)
 
 
 void
-inJobLink (struct jobCard *jp)
+inJobLink(struct jobCard *jp)
 {
     struct jobCard *jobp;
 
-
-    for (jobp = jobQueHead->forw; jobp !=jobQueHead; jobp = jobp->forw) {
+    for (jobp = jobQueHead->forw; jobp != jobQueHead; jobp = jobp->forw) {
         if (jp->jobSpecs.priority < jobp->jobSpecs.priority)
             break;
         else if ((jp->jobSpecs.priority == jobp->jobSpecs.priority)
                  && (jp->jobSpecs.startTime - jobp->jobSpecs.startTime) >= 0)
             break;
     }
-    inList ((struct  listEntry *)jobp, (struct listEntry *)jp);
+
+    inList((struct  listEntry *)jobp, (struct listEntry *)jp);
 
 }
 
@@ -3512,11 +3519,8 @@ updateRUsageFromSuper(struct jobCard *jp, char *mbuf)
 
     if (jusage.npids > 0) {
         FREEUP(jusage.pidInfo);
-        jusage.pidInfo = (struct pidInfo *)
-            my_malloc(jusage.npids * sizeof(struct pidInfo),
-                      fname);
-
-
+        jusage.pidInfo = my_calloc(jusage.npids, sizeof(struct pidInfo),
+                                   fname);
 
         for (i = 0; i < jusage.npids; i++) {
             if ((ret = sscanf(mbuf, "%d%d%d%d%n",
@@ -3778,10 +3782,9 @@ jobFinishRusage(struct jobCard *jp)
 int
 initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
 {
-    static char fname[] = "initJobCard";
-    char *cp, *word;
+    char *cp;
+    char *word;
     int j;
-
 
     jp->resumeCondVal = NULL;
     jp->stopCondVal = NULL;
@@ -3789,42 +3792,42 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
     cp = jp->jobSpecs.windows;
     for (j = 0; j < 8; j++)
         jp->week[j] = NULL;
+
     while ((word = getNextWord_(&cp)) != NULL) {
-        if (addWindow (word, jp->week, "addJob jobSpecs") < 0) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jobSpecs->jobId), "addWindow",
-                      word);
-            freeWeek(jp->week);
-            *reply = ERR_BAD_REQ;
-            return -1;
-        }
-    }
-    if (jobSpecs->resumeCond && jobSpecs->resumeCond[0] != '\0') {
-        if ((jp->resumeCondVal = checkThresholdCond (jobSpecs->resumeCond))
-            == NULL)  {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jp->jobSpecs.jobId),
-                      "checkThresholdCond", "resumeCond");
+        if (addWindow(word, jp->week, "addJob jobSpecs") < 0) {
+            ls_syslog(LOG_ERR,"\
+%s: addWindow(%s) failed for job %s", __func__, word, lsb_jobid2str(jobSpecs->jobId));
             freeWeek(jp->week);
             *reply = ERR_BAD_REQ;
             return -1;
         }
     }
 
-    if (jobSpecs->stopCond && jobSpecs->stopCond[0] != '\0') {
-        if ((jp->stopCondVal = checkThresholdCond (jobSpecs->stopCond))
-            == NULL) {
-            ls_syslog(LOG_ERR, I18N_JOB_FAIL_S_S_M, fname,
-                      lsb_jobid2str(jp->jobSpecs.jobId),
-                      "checkThresholdCond", "stopCond");
+    if (jobSpecs->resumeCond && jobSpecs->resumeCond[0] != 0) {
+        jp->resumeCondVal = checkThresholdCond(jobSpecs->resumeCond);
+        if (! jp->resumeCondVal) {
+            ls_syslog(LOG_ERR,"\
+%s: resumeCondVal() %s failed for job %s", __func__,
+                      jobSpecs->resumeCond, lsb_jobid2str(jobSpecs->jobId));
             freeWeek(jp->week);
             *reply = ERR_BAD_REQ;
             return -1;
         }
     }
 
+    if (jobSpecs->stopCond && jobSpecs->stopCond[0] != 0) {
+        jp->stopCondVal = checkThresholdCond(jobSpecs->stopCond);
+        if (! jp->stopCondVal) {
+            ls_syslog(LOG_ERR,"\
+%s: stopCondVal() %s failed for job %s", __func__,
+                      jobSpecs->resumeCond, lsb_jobid2str(jobSpecs->jobId));
+            freeWeek(jp->week);
+            *reply = ERR_BAD_REQ;
+            return -1;
+        }
+    }
 
-    setRunLimit (jp, TRUE);
+    setRunLimit(jp, TRUE);
     jp->windEdge = now;
     jp->active = FALSE;
     jp->windWarnTime = 0;
@@ -3854,9 +3857,6 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
 
     jp->jobSpecs.execHosts = NULL;
 
-
-    ls_syslog(LOG_DEBUG, "options2=%x ", jobSpecs->options2);
-
     jp->crossPlatforms = -1;
     if (jobSpecs->options2 >= 0) {
         if (jobSpecs->options2 & SUB2_HOST_UX)
@@ -3867,7 +3867,7 @@ initJobCard(struct jobCard *jp, struct jobSpecs *jobSpecs, int *reply)
     }
 
 
-    saveSpecs (&jp->jobSpecs, jobSpecs);
+    saveSpecs(&jp->jobSpecs, jobSpecs);
     jobcnt++;
     inJobLink (jp);
     jp->spooledExec = NULL;
@@ -3933,7 +3933,7 @@ initJRusage(struct jRusage *jRusage)
     jRusage->utime = -1;
     jRusage->stime = -1;
     jRusage->npids = 0;
-    jRusage-> pidInfo = NULL;
+    jRusage->pidInfo = NULL;
     jRusage->npgids = 0;
     jRusage->pgid = NULL;
 }

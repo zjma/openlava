@@ -26,8 +26,10 @@ usage(void)
     fprintf(stderr, "blaunch: [-h] [-V] [-n] [-z hosts...]\n");
 }
 
-/* Global variables we revolve around
+/* Global variables we revolve around, the program works
+ * with parallel arrays.
  */
+static int num_tasks;
 static int arg_count;
 static char **arg_char;
 static char **host_list;
@@ -55,12 +57,13 @@ static void build_command(void);
 static int run_job(void);
 static void free_hosts(void);
 static void free_command(void);
-static int rusage_task(int);
 static void print_hosts(void);
 static int size_rusage(struct jRusage *);
 static int get_job_id(void);
+static void send_rusage(void);
 static int send2sbd(struct jRusage *);
 static void free_rusage(struct jRusage *);
+static struct jRusage *compact_rusage(void);
 
 int
 main(int argc, char **argv)
@@ -83,8 +86,8 @@ main(int argc, char **argv)
     }
 
     {
-        int x = 0;
-        while (x == 1)
+        int x = 1;
+        while (x == 0)
             sleep(2);
     }
 
@@ -210,6 +213,8 @@ run_job(void)
      */
     num_tasks = cc = 0;
     while (host_list[cc]) {
+        /* Run the task on the host
+         */
         tid = ls_rtask(host_list[cc],
                        command,
                        0);
@@ -219,8 +224,11 @@ run_job(void)
                     tid, host_list[cc], ls_sysmsg());
             return -1;
         }
+        /* Array of taskids
+         */
         tasks[cc] = tid;
-        ls_syslog(LOG_INFO, "%s: task %d started", __func__, tid);
+        ls_syslog(LOG_INFO, "\
+%s: task id %d cc %d started on host %s", __func__, tid, cc, host_list[cc]);
         ++cc;
         ++num_tasks;
     }
@@ -229,7 +237,7 @@ znovu:
     /* Check if they are still alive
      */
     task_active = cc = 0;
-    for (cc = 0; tasks[cc]; cc++) {
+    for (cc = 0; cc < num_tasks; cc++) {
         LS_WAIT_T stat;
         struct rusage ru;
         int tid;
@@ -238,26 +246,41 @@ znovu:
             continue;
 
         tid = ls_rwaittid(tasks[cc], &stat, WNOHANG, &ru);
-        if (tid == 0) {
-            if (rusage_task(tasks[cc]) < 0) {
-                ls_syslog(LOG_ERR, "\
-%s: failed to get rusage from task %d %s", __func__, cc, ls_sysmsg());
-                tasks[cc] = -1;
-                continue;
-            }
-        }
         if (tid < 0) {
             ls_syslog(LOG_ERR, "\
 %s: ls_rwaittid() failed task %d %s", __func__, tid, ls_sysmsg());
-            return -1;
+            tasks[cc] = -1;
+            free_rusage(jrus[cc]);
+            jrus[cc] = NULL;
+            continue;
         }
+
+        if (tid == 0) {
+            /* Collect the rusage if still running
+             */
+            jrus[cc] = ls_getrusage(tasks[cc]);
+            if (jrus[cc] == NULL) {
+                ls_syslog(LOG_ERR, "\
+%s: failed to get rusage from task %d %s", __func__, cc, ls_sysmsg());
+                tasks[cc] = -1;
+                free_rusage(jrus[cc]);
+                jrus[cc] = NULL;
+                continue;
+            }
+            ls_syslog(LOG_INFO, "\
+%s: got rusage for task tid %d from host %s",
+                      __func__, tasks[cc], host_list[cc]);
+        }
+
         if (tid > 0) {
             ls_syslog(LOG_INFO, "%s: task %d done", __func__, tid);
             tasks[cc] = -1;
+            free_rusage(jrus[cc]);
+            jrus[cc] = NULL;
         }
     }
 
-    for (cc = 0; tasks[cc]; cc++) {
+    for (cc = 0; cc < num_tasks; cc++) {
         if (tasks[cc] > 0) {
             ls_syslog(LOG_INFO, "\
 %s: task %d still active", __func__, tasks[cc]);
@@ -266,6 +289,7 @@ znovu:
     }
 
     if (task_active > 0) {
+        send_rusage();
         sleep(rest);
         goto znovu;
     }
@@ -351,6 +375,8 @@ get_host_list_from_file(const char *file)
     return 0;
 }
 
+/* count_lines()
+ */
 static int
 count_lines(FILE *fp)
 {
@@ -448,8 +474,16 @@ make_tasks(void)
     while (host_list[cc])
         ++cc;
 
-    tasks = calloc(cc + 1, sizeof(int));
-    jrus = calloc(cc + 1, sizeof(struct jRusage *));
+    /* Total counter of tasks
+     */
+    num_tasks = cc;
+
+    /* This array holds the taskids
+     */
+    tasks = calloc(cc, sizeof(int));
+    /* This array holds the jRusage of each task
+     */
+    jrus = calloc(cc, sizeof(struct jRusage *));
 }
 
 static void
@@ -464,6 +498,8 @@ build_command(void)
     if (arg_count - optind <= 0)
         return;
 
+    /* the command array is NULL terminated as UNIX wants
+     */
     command = calloc((arg_count - optind) + 1, sizeof(char *));
 
     n = 0;
@@ -479,7 +515,6 @@ build_command(void)
         ++cc;
     }
     ls_syslog(LOG_INFO, "%s: user command: %s", __func__, buf);
-
 }
 
 static void
@@ -490,10 +525,8 @@ free_hosts(void)
     if (! host_list)
         return;
 
-    cc = 0;
-    while (host_list[cc]) {
+    for (cc = 0; cc < num_tasks; cc++) {
         _free_(host_list[cc]);
-        ++cc;
     }
 
     _free_(host_list);
@@ -516,32 +549,89 @@ free_command(void)
     _free_(command);
 }
 
-static int
-rusage_task(int tid)
+static void
+send_rusage(void)
 {
     struct jRusage *jru;
 
-    jru = ls_getrusage(tid);
-    if (! jru)
-        return -1;
-
-    ls_syslog(LOG_DEBUG, "%s: got rusage for task %d", __func__, tid);
+    jru = compact_rusage();
 
     if (send2sbd(jru) < 0) {
         ls_syslog(LOG_ERR, "\
-%s: failed to send jRusage data to SBD on %s", __func__, hostname);
-        /* If no job we may be testing so just keep going...
-         */
-        if (lsberrno == LSBE_NO_JOB)
-            goto keep;
-        free_rusage(jru);
-        return -1;
+%s: failed to send jRusage data to SBD on %s: %s",
+                  __func__, hostname, lsb_sysmsg());
     }
 
-keep:
     free_rusage(jru);
+}
 
-    return 0;
+static struct jRusage *
+compact_rusage(void)
+{
+    struct jRusage *j;
+    int cc;
+    int k;
+    int n;
+
+    j = calloc(1, sizeof(struct jRusage));
+
+    for (cc = 0; cc < num_tasks; cc++) {
+
+        if (jrus[cc] == NULL)
+            continue;
+
+        ls_syslog(LOG_INFO, "\
+%s: task %d mem %d swap %d utime %d stime %d npids %d npgids %d", __func__,
+                  tasks[cc], jrus[cc]->mem, jrus[cc]->swap,
+                  jrus[cc]->utime, jrus[cc]->stime,
+                  jrus[cc]->npids, jrus[cc]->npgids);
+
+        j->mem = j->mem + jrus[cc]->mem;
+        j->swap = j->swap + jrus[cc]->swap;
+        j->utime = j->utime + jrus[cc]->utime;
+        j->stime = j->stime + jrus[cc]->stime;
+        j->npids = j->npids + jrus[cc]->npids;
+        j->npgids = j->npgids + jrus[cc]->npgids;
+    }
+
+
+    j->pidInfo = calloc(j->npids, sizeof(struct pidInfo));
+    j->pgid = calloc(j->npgids, sizeof(int));
+
+    /* Now merge all the pids and pigds into the compact
+     * jrusage structure. Those FORTRAN array memories.
+     */
+    n = k = 0;
+    for (cc = 0; cc < num_tasks; cc++) {
+        int i;
+
+        if (jrus[cc] == NULL)
+            continue;
+
+        for (i = 0; i < jrus[cc]->npids; i++) {
+            j->pidInfo[k].pid = jrus[cc]->pidInfo[i].pid;
+            j->pidInfo[k].ppid = jrus[cc]->pidInfo[i].ppid;
+            j->pidInfo[k].pgid = jrus[cc]->pidInfo[i].pgid;
+            ++k;
+        }
+
+        for (i = 0; i < jrus[cc]->npgids; i++) {
+            j->pgid[n] = jrus[cc]->pgid[i];
+            ++n;
+        }
+    }
+
+    /* Debug the global rusage
+     */
+    for (cc = 0; cc < j->npids; cc++)
+        ls_syslog(LOG_INFO, "\
+%s: pid %d ppid %d pgid %d", __func__, j->pidInfo[cc].pid,
+                  j->pidInfo[cc].ppid, j->pidInfo[cc].pgid);
+
+    for (cc = 0; cc < j->npgids; cc++)
+        ls_syslog(LOG_INFO, "%s: pgid %d", __func__, j->pgid[cc]);
+
+    return j;
 }
 
 /* send2sbd()
