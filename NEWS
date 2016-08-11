@@ -1,5 +1,14 @@
 Release notes for OpenLava versions
 
+4.0pre3
+=======
+
+Introduce 4.0dev3 lsid output. The dev indicates that the code
+is between tags. 4.0dev3 finishes with 4.0pre3 tag. After which
+we will start 4.0dev4 lsid output till we tag 4.0pre4 or we cut
+a final 4.0 branch. In this way when building tagged version we
+know the exact commit.
+
 4.0pre2
 ========
 
