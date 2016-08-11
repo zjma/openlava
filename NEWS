@@ -11,14 +11,16 @@ Release notes for OpenLava versions
 4.0pre3
 =======
 
+-- Create lsid 4.0pre3 tag output.
+
+4.0pre2
+========
+
 Introduce 4.0dev3 lsid output. The dev indicates that the code
 is between tags. 4.0dev3 finishes with 4.0pre3 tag. After which
 we will start 4.0dev4 lsid output till we tag 4.0pre4 or we cut
 a final 4.0 branch. In this way when building tagged version we
 know the exact commit.
-
-4.0pre2
-========
 
 4.0pre1
 ========
@@ -106,6 +108,7 @@ know the exact commit.
 -- Fix the host group expanding bug in lsb.resources.
 -- Fix the resource usage counting bug when enforcing limits.
 -- Release 3.3.3 the lsid command returns now 3.3.3 as OpenLava version.
+-- Improve bjobs performance ~50 times avoiding sort the SJL by hostname.
 
 3.3.2
 ======
