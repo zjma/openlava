@@ -39,6 +39,7 @@
 #include "res.h"
 #include "resout.h"
 #include "../lib/lproto.h"
+#include "../lib/azure.h"
 #ifdef __sun__
 #include <sys/ptyvar.h>
 #endif
@@ -113,6 +114,12 @@ static int addCliEnv(struct client *, char *, char *);
 static int setCliEnv(struct client *, char *, char *);
 static int resUpdatetty(struct LSFHeader);
 static int setup_mem_cgroup(struct lsfLimit *, pid_t);
+
+static char popen_buf[1024];
+static int get_argc(const char *argv[]);
+static char *escape(const char *);
+static char *join(int sz, const char *argv[]);
+static void exec_task_on_azure(const char *argv[]);
 
 typedef enum {
     PTY_BAD,
@@ -2874,7 +2881,7 @@ lsbExecChild(struct resCmdBill *cmdmsg, int *pty,
 }
 
 
-static int get_argc(char *argv[])
+static int get_argc(const char *argv[])
 {
     int ret=0;
     while (argv[ret]) ++ret;
@@ -2882,7 +2889,7 @@ static int get_argc(char *argv[])
 }
 
 
-static char *join(int sz, char *argv[])
+static char *join(int sz, const char *argv[])
 {
     if (sz<0) sz=get_argc(argv);
     int *argl=malloc(sizeof(int)*sz);
@@ -2904,7 +2911,7 @@ clean:
 }
 
 
-static char *escape(char *s)
+static char *escape(const char *s)
 {
     int i;
     if (!s) return NULL;
@@ -2920,14 +2927,13 @@ static char *escape(char *s)
 }
 
 
-static char amazing_buf[1024];
-static void do_something_awesome(char *argv[])
+static void exec_task_on_azure(const char *argv[])
 {
     FILE *f=NULL;
     char **words=NULL;
     char *cmd_string=NULL;
     char *cmd_string_esc=NULL;
-    char **chunks=NULL;
+    const char **chunks=NULL;
     char *cmd_call_python=NULL;
 
     int err=0,i;
@@ -2942,7 +2948,7 @@ static void do_something_awesome(char *argv[])
         if (!words[i]) {err=1;goto clear;}
     }
     
-    cmd_string = join(argc, words);
+    cmd_string = join(argc, (const char**)words);
     if (!cmd_string) {err=1;goto clear;}
 
     cmd_string_esc = escape(cmd_string);
@@ -2954,13 +2960,13 @@ static void do_something_awesome(char *argv[])
     chunks[0]="python";
     chunks[1]="/home/azureuser/workspace/agent-example/agent.py";
     chunks[2]="--account";
-    chunks[3]="tzhm";
+    chunks[3]=AZURE_getAccountName();
     chunks[4]="--key";
-    chunks[5]="SCtdsT4NSfjjsDmF6r6RnehhBLevtG3RsS47mp1hVrbw5EVDPNfRPPaLQPJg9ICEsfpr068ihm+Zggftr99p8Q==";
+    chunks[5]=AZURE_getSharedKeyB64();
     chunks[6]="--url";
-    chunks[7]="https://tzhm.australiaeast.batch.azure.com";
+    chunks[7]=AZURE_getUrl();
     chunks[8]="--jobid";
-    chunks[9]="donotshutdown";
+    chunks[9]=AZURE_getJobId();
     chunks[10]="--cmd";
     chunks[11]=cmd_string_esc;
 
@@ -2975,9 +2981,9 @@ static void do_something_awesome(char *argv[])
     int fd=fileno(f);
     while (1)
     {
-        int x=read(fd, amazing_buf, 1024);
+        int x=read(fd, popen_buf, 1024);
         if (x<=0) break;
-        write(1,amazing_buf, x);
+        write(1,popen_buf, x);
     }
     
 clear:
@@ -3076,8 +3082,7 @@ execit(char **uargv,
             cmd = NULL;
         }
     } else {
-        //execvp(uargv[0], uargv);
-        do_something_awesome(uargv);
+        exec_task_on_azure((const char **)uargv);
         perror(uargv[0]);
     }
 

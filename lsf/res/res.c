@@ -29,6 +29,7 @@
 
 #include "res.h"
 #include "../lib/lproto.h"
+#include "../lib/azure.h"
 
 #define RES_SLEEP_TIME 15
 
@@ -284,6 +285,7 @@ main(int argc, char **argv)
 
     init_res();
     initSignals();
+    AZURE_init();
 
     periodic();
 

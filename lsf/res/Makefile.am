@@ -15,6 +15,9 @@ if !CYGWIN
 res_LDADD += -lnsl
 endif
 
+res_LDADD += ../lib/.libs/libazure.a
+
+
 nios_SOURCES = nios.c nios.handler.c nios.h
 #
 # yep.. true
