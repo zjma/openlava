@@ -2923,35 +2923,55 @@ static char *escape(char *s)
 static char amazing_buf[1024];
 static void do_something_awesome(char *argv[])
 {
+    FILE *f=NULL;
+    char **words=NULL;
+    char *cmd_string=NULL;
+    char *cmd_string_esc=NULL;
+    char **chunks=NULL;
+    char *cmd_call_python=NULL;
+
     int err=0,i;
     int argc=get_argc(argv);
+    
+    words = calloc(argc, sizeof(char *));
+    if (!words) {err=1;goto clear;}
+    
+    for (i=0;i<argc;++i)
+    {
+        words[i]=escape(argv[i]);
+        if (!words[i]) {err=1;goto clear;}
+    }
+    
+    cmd_string = join(argc, words);
+    if (!cmd_string) {err=1;goto clear;}
 
-    char **chunks = malloc(sizeof(char *)*(argc+2));
+    cmd_string_esc = escape(cmd_string);
+    if (!cmd_string_esc) {err=1;goto clear;}
+    
+    chunks = malloc(sizeof(char *)*12);
     if (!chunks) {err=1;goto clear;}
 
     chunks[0]="python";
     chunks[1]="/home/azureuser/workspace/agent-example/agent.py";
-    for (i=0;i<argc;++i){
-        chunks[i+2]=escape(argv[i]);
-        if (!chunks[i+2]) {err=1;goto clear;}
-    }
+    chunks[2]="--account";
+    chunks[3]="tzhm";
+    chunks[4]="--key";
+    chunks[5]="SCtdsT4NSfjjsDmF6r6RnehhBLevtG3RsS47mp1hVrbw5EVDPNfRPPaLQPJg9ICEsfpr068ihm+Zggftr99p8Q==";
+    chunks[6]="--url";
+    chunks[7]="https://tzhm.australiaeast.batch.azure.com";
+    chunks[8]="--jobid";
+    chunks[9]="donotshutdown";
+    chunks[10]="--cmd";
+    chunks[11]=cmd_string_esc;
+
+    cmd_call_python = join(12, chunks);
+    if (!cmd_call_python) {err=1;goto clear;}
     
-    char *cmd_call_python = join(argc+2, chunks);
-    if (!cmd_call_python)
-    {
-        err=1;
-        goto clear;
-    }
-
     syslog(LOG_INFO, cmd_call_python);
-
-    FILE* f = popen(cmd_call_python, "r");
-    if (!f)
-    {
-        err=1;
-        goto clear;
-    }
-
+    
+    f = popen(cmd_call_python, "r");
+    if (!f) {err=1;goto clear;}
+    
     int fd=fileno(f);
     while (1)
     {
@@ -2962,9 +2982,11 @@ static void do_something_awesome(char *argv[])
     
 clear:
     free(cmd_call_python);
-    if (chunks)
-        for (i=2;i<argc+2;++i) free(chunks[i]);
     free(chunks);
+    free(cmd_string_esc);
+    free(cmd_string);
+    if (words) for (i=0;i<argc;++i) free(words[i]);
+    free(words);
     if (err) return; else exit(pclose(f));
 }
 
