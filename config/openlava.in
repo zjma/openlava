@@ -67,6 +67,17 @@ case "$opcode" in
         ;;
 
   'start')
+        AZURE_CONF=$OPENLAVA_TOP/etc/azure.conf
+        if [ -f $AZURE_CONF ]
+        then
+            . $AZURE_CONF
+            export AZURE_SHARED_KEY
+            export AZURE_URL
+            export AZURE_JOBID
+            export AZURE_ACCOUNT
+            export AZURE_CORE_NUM
+        fi
+
         LSF_CONF=$OPENLAVA_TOP/etc/lsf.conf
 
         if [ -f $LSF_CONF ]
@@ -76,6 +87,9 @@ case "$opcode" in
             # Get the location of the openlava daemons
             . $LSF_CONF
 
+            # Get the location of the openlava daemons
+            . $LSF_CONF
+            
             # Export this env.variable to notify openlava daemons the loc. of
             # lsf.conf
             export LSF_ENVDIR

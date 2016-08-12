@@ -2935,6 +2935,7 @@ static void exec_task_on_azure(const char *argv[])
     char *cmd_string_esc=NULL;
     const char **chunks=NULL;
     char *cmd_call_python=NULL;
+    char *python_script_path=NULL;
 
     int err=0,i;
     int argc=get_argc(argv);
@@ -2956,9 +2957,18 @@ static void exec_task_on_azure(const char *argv[])
     
     chunks = malloc(sizeof(char *)*12);
     if (!chunks) {err=1;goto clear;}
+    
+    char *lavatop = getenv("OPENLAVA_TOP");
+    if (!lavatop) lavatop="";
+    
+    const char *script_loc = "/sbin/agent.py";
+
+    python_script_path = malloc(strlen(lavatop)+strlen(script_loc)+1);
+    if (!python_script_path) {err=1;goto clear;}
+    sprintf(python_script_path, "%s%s", lavatop, script_loc);
 
     chunks[0]="python";
-    chunks[1]="/home/azureuser/workspace/agent-example/agent.py";
+    chunks[1]=AZURE_scriptPath();
     chunks[2]="--account";
     chunks[3]=AZURE_getAccountName();
     chunks[4]="--key";
@@ -2988,6 +2998,7 @@ static void exec_task_on_azure(const char *argv[])
     
 clear:
     free(cmd_call_python);
+    free(python_script_path);
     free(chunks);
     free(cmd_string_esc);
     free(cmd_string);

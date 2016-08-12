@@ -24,5 +24,6 @@ const char *AZURE_getAccountName();
 const char *AZURE_getUrl();
 const char *AZURE_getJobId();
 
+const char *AZURE_scriptPath();
 
 #endif
