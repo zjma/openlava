@@ -102,7 +102,9 @@ free_resLimits(struct resLimitReply *limits)
     for (i = 0; i < limits->numUsage; i++) {
         FREEUP(limits->usage[i].limitName);
         FREEUP(limits->usage[i].project);
+        FREEUP(limits->usage[i].user);
         FREEUP(limits->usage[i].queue);
+        FREEUP(limits->usage[i].host);
     }
     FREEUP(limits->usage);
     FREEUP(limits);

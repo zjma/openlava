@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsb.params 5 "OpenLava Version 3.3 - Mar 2016"
+.TH lsb.params 5 "OpenLava Version 4.0 - Aug 2016"
 .br
 .SH NAME
 \fBlsb.params\fR
@@ -27,12 +27,24 @@ processing overhead in the batch daemons.
 This section and all the keywords in this section are optional. If
 keywords are not present, openlava Batch assumes default values for the
 corresponding keywords. The valid keywords for this section are:
+.SH ABS_RUNLIMIT
+.BR
+.PP
+.SS Syntax
+.BR
+\fBABS_RUNLIMIT = y | Y\fR
+.SS Description
+.BR
+Specify y or Y to use the absolute run time for controlling the job run limit.
+.SS Default
+.BR
+Undefined. The normalized job run time is used for the job run limit.
 .SH ACCT_ARCHIVE_AGE
 .BR
 .PP
 .SS Syntax
 .BR
-\fIdays\fR
+\fBACCT_ARCHIVE_AGE = \fR\fIdays\fR
 .SS Description
 .BR
 Enables automatic archiving of openlava accounting log files, and specifies
@@ -53,7 +65,7 @@ Undefined (no limit to the age of lsb.acct).
 .BR
 .SS Syntax
 .BR
-\fIkilobytes\fR
+\fBACCT_ARCHIVE_SIZE = \fR\fIkilobytes\fR
 .SS Description
 .BR
 Enables automatic archiving of openlava accounting log files, and specifies

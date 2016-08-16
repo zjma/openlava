@@ -88,6 +88,8 @@ static char do_Queues(struct lsConf *, char *, int *, struct lsInfo *, int);
 static char do_Groups(struct groupInfoEnt **, struct lsConf *, char *,
                       int *, int *, int);
 static char do_ResLimits(struct lsConf *, char *, int *);
+static struct limitRes *parseTimeWindowRes(char *, char *, int *, limitResType_t, int *);
+static void freeResLimit(int, struct limitRes *);
 static int isHostName(char *);
 static int addHost(struct hostInfoEnt *, struct hostInfo *, int);
 static char addQueue(struct queueInfoEnt *, char *, int);
@@ -423,6 +425,7 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
         {"ENABLE_PROXY_HOSTS", NULL, 0},    /* 38 */
         {"DISABLE_PEER_JOBS", NULL, 0},     /* 39 */
         {"HIST_MINUTES", NULL, 0},          /* 40 */
+        {"ABS_RUNLIMIT", NULL, 0},          /* 41 */
         {NULL, NULL, 0}
     };
 
@@ -647,6 +650,13 @@ do_Param(struct lsConf *conf, char *fname, int *lineNum)
                 } else {
                     pConf->param->slotResourceReserve = FALSE;
                 }
+            } else if (i == 41) {
+                /* the name is swapped not to conflict
+                 * with abs_run_limit
+                 */
+                pConf->param->run_abs_limit = false;
+                if (strcasecmp(keylist[i].val, "y") == 0)
+                    pConf->param->run_abs_limit = true;
             } else if (i > 5) {
                 if (i < 23)
                     value = my_atoi(keylist[i].val, INFINIT_INT, 0);
@@ -765,7 +775,6 @@ isn't a positive  integer between 1 and %d; ignored", __func__, fname, *lineNum,
         }
     }
 
-
     if (pConf->param->maxUserPriority <= 0
         && pConf->param->jobPriorityValue > 0
         && pConf->param->jobPriorityTime > 0) {
@@ -853,6 +862,7 @@ initParameterInfo(struct parameterInfo *param)
     param->enable_proxy_hosts = 0;
     param->disable_peer_jobs = 0;
     param->hist_mins = -1;
+    param->run_abs_limit = false;
 }
 
 static void
@@ -2534,6 +2544,7 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
 #define HKEY_MIG info->numIndx+3
 #define HKEY_UJOB_LIMIT info->numIndx+4
 #define HKEY_DISPATCH_WINDOW info->numIndx+5
+#define HKEY_AFFINITY info->numIndx+6
 
     struct hostInfoEnt  host;
     char *linep;
@@ -2565,7 +2576,8 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
     keylist[HKEY_MIG].key="MIG";
     keylist[HKEY_UJOB_LIMIT].key="JL/U";
     keylist[HKEY_DISPATCH_WINDOW].key="DISPATCH_WINDOW";
-    keylist[HKEY_DISPATCH_WINDOW+1].key=NULL;
+    keylist[HKEY_AFFINITY].key="AFFINITY";
+    keylist[HKEY_AFFINITY+1].key=NULL;
 
     initHostInfo ( &host );
 
@@ -2791,6 +2803,22 @@ do_Hosts(struct lsConf *conf, char *fname, int *lineNum, struct lsInfo *info, in
             }
         }
 
+        if (keylist[HKEY_AFFINITY].position >= 0
+            && keylist[HKEY_AFFINITY].val != NULL
+            && strcmp (keylist[HKEY_AFFINITY].val, "")) {
+            if (!strcasecmp(keylist[HKEY_AFFINITY].val, "Y")
+                || !strcasecmp(keylist[HKEY_AFFINITY].val, "(Y)")) {
+                host.affinity = TRUE;
+            } else if (!strcasecmp(keylist[HKEY_AFFINITY].val, "N")
+                        || !strcasecmp(keylist[HKEY_AFFINITY].val, "(N)")) {
+                host.affinity = FALSE;
+            } else {
+                ls_syslog(LOG_ERR,
+"%s: File %s at line %d: Invalid value <%s> for key <%s>; %s is assumed", __func__, fname, *lineNum, keylist[HKEY_AFFINITY].val, keylist[HKEY_AFFINITY].key, "(Y) or (N)");
+                lsberrno = LSBE_CONF_WARNING;
+            }
+        }
+
         /* If we are dealing with the compact notation we reuse
          * the hostInfo data structure so make sure we don't
          * leak memory
@@ -2954,6 +2982,7 @@ initHostInfo (struct hostInfoEnt *hp)
         hp->mig = INFINIT_INT;
         hp->attr = INFINIT_INT;
         hp->chkSig = INFINIT_INT;
+        hp->affinity = FALSE;
     }
 }
 
@@ -4911,6 +4940,12 @@ freeLimitInfo(struct resLimit *rl)
         FREEUP(rl->consumers[i].def);
         FREEUP(rl->consumers[i].value);
     }
+
+    for (i = 0; i < rl->nRes; i++) {
+        FREEUP(rl->res[i].windows);
+        freeWeek(rl->res[i].week);
+    }
+
     FREEUP(rl->consumers);
     FREEUP(rl->res);
     FREEUP(rl->name);
@@ -8038,21 +8073,30 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     int i, j;
     struct resLimit *limitPtr;
     int idx;
+    char **valPtr;
     struct keymap keylist[] = {
         {"NAME", NULL, 0},          /* 0 */
         {"QUEUES", NULL, 0},        /* 1 */
-        {"PROJECTS", NULL, 0},      /* 2 */
-        {"HOSTS", NULL, 0},         /* 3 */
-        {"USERS", NULL, 0},         /* 4 */
-        {"SLOTS", NULL, 0},         /* 5 */
-        {"JOBS", NULL, 0},          /* 6 */
+        {"PER_QUEUE", NULL, 0},     /* 2 */
+        {"PROJECTS", NULL, 0},      /* 3 */
+        {"PER_PROJECT", NULL, 0},   /* 4 */
+        {"HOSTS", NULL, 0},         /* 5 */
+        {"PER_HOST", NULL, 0},      /* 6 */
+        {"USERS", NULL, 0},         /* 7 */
+        {"PER_USER", NULL, 0},      /* 8 */
+        {"SLOTS", NULL, 0},         /* 9 */
+        {"JOBS", NULL, 0},          /* 10 */
         {NULL, NULL, 0}
     };
     char* mapConsumerType2Name[] = {
         "QUEUES",
+        "PER_QUEUE",
         "PROJECTS",
+        "PER_PROJECT",
         "HOSTS",
-        "USERS"
+        "PER_HOST",
+        "USERS",
+        "PER_USER"
     };
     static char* mapResType2Name[] = {
         "SLOTS",
@@ -8138,21 +8182,37 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
 
     limitPtr->name = putstr_(keylist[0].val);
     limitPtr->consumers = calloc(limitPtr->nConsumer, sizeof(struct limitConsumer));
-    limitPtr->res = calloc(limitPtr->nRes, sizeof(struct limitRes));
     idx = 0;   /* index of consumer */
 
     /*QUEUES*/
     if (keylist[1].val != NULL
-        && strcmp(keylist[1].val, "")) {
+            && keylist[2].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure QUEUES and PER_QUEUE in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[1].val != NULL
+         || keylist[2].val != NULL) {
         char* outQueues = NULL;
         int   numQueues = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_QUEUES;
-        limitPtr->consumers[idx].def = putstr_(keylist[1].val);
+        if (keylist[1].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_QUEUES;
+            valPtr = &keylist[1].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_QUEUE;
+            valPtr = &keylist[2].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
-                  "the string is \'%s\'", keylist[1].val);
-        numQueues = parseQueues(keylist[1].val, &outQueues);
+                  "the string is \'%s\'", *valPtr);
+        numQueues = parseQueues(*valPtr, &outQueues);
         if (numQueues > 0) {
             ls_syslog(LOG_DEBUG, "parseQueues: for do_ResLimits "
                       "the string is replaced with \'%s\'", outQueues);
@@ -8164,33 +8224,67 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[1].val);
-        keylist[1].val = outQueues;
-        limitPtr->consumers[idx].value = putstr_(keylist[1].val);
+        FREEUP(*valPtr);
+        *valPtr = outQueues;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*PROJECTS*/
-    if (keylist[2].val != NULL
-        && strcmp(keylist[2].val, "")) {
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PROJECTS;
-        limitPtr->consumers[idx].def = putstr_(keylist[2].val);
-        limitPtr->consumers[idx].value = putstr_(keylist[2].val);
+    if (keylist[3].val != NULL
+            && keylist[4].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure PROJECTS and PER_PROJECT in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[3].val != NULL
+         || keylist[4].val != NULL) {
+        if (keylist[3].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PROJECTS;
+            valPtr = &keylist[3].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_PROJECT;
+            valPtr = &keylist[4].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*HOSTS*/
-    if (keylist[3].val != NULL
-        && strcmp(keylist[3].val, "")) {
+    if (keylist[5].val != NULL
+            && keylist[6].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure HOSTS and PER_HOST in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[5].val != NULL
+         || keylist[6].val != NULL) {
         char* outHosts = NULL;
         int   numHosts = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_HOSTS;
-        limitPtr->consumers[idx].def = putstr_(keylist[3].val);
+        if (keylist[5].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_HOSTS;
+            valPtr = &keylist[5].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_HOST;
+            valPtr = &keylist[6].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
-                  "the string is \'%s\'", keylist[3].val);
-        numHosts = parseHosts(keylist[3].val, &outHosts);
+                  "the string is \'%s\'", *valPtr);
+        numHosts = parseHosts(*valPtr, &outHosts);
         if (numHosts > 0) {
             ls_syslog(LOG_DEBUG, "parseHosts: for do_ResLimits "
                       "the string is replaced with \'%s\'", outHosts);
@@ -8202,24 +8296,41 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[3].val);
-        keylist[3].val = outHosts;
-        limitPtr->consumers[idx].value = putstr_(keylist[3].val);
+        FREEUP(*valPtr);
+        *valPtr = outHosts;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     /*USERS*/
-    if (keylist[4].val != NULL
-        && strcmp(keylist[4].val, "")) {
+    if (keylist[7].val != NULL
+            && keylist[8].val != NULL) {
+        ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: Configure USERS and PER_USER in the same Limit section; ignoring the limit",  __func__, fname, *lineNum);
+        lsberrno = LSBE_CONF_WARNING;
+        freekeyval (keylist);
+        freeLimitInfo(limitPtr);
+        return FALSE;
+    }
+
+    if (keylist[7].val != NULL
+         || keylist[8].val != NULL) {
         char* outUsers = NULL;
         int   numUsers = 0;
 
-        limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_USERS;
-        limitPtr->consumers[idx].def = putstr_(keylist[4].val);
+        if (keylist[7].val != NULL) {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_USERS;
+            valPtr = &keylist[7].val;
+        } else {
+            limitPtr->consumers[idx].consumer = LIMIT_CONSUMER_PER_USER;
+            valPtr = &keylist[8].val;
+        }
+
+        limitPtr->consumers[idx].def = putstr_(*valPtr);
 
         ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
-                  "the string is \'%s\'", keylist[4].val);
-        numUsers = parseUsers(keylist[4].val, &outUsers);
+                  "the string is \'%s\'", *valPtr);
+        numUsers = parseUsers(*valPtr, &outUsers);
         if (numUsers > 0) {
             ls_syslog(LOG_DEBUG, "parseUsers: for do_ResLimits "
                       "the string is replaced with \'%s\'", outUsers);
@@ -8231,25 +8342,20 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
             freeLimitInfo(limitPtr);
             return FALSE;
         }
-        FREEUP(keylist[4].val);
-        keylist[4].val = outUsers;
-        limitPtr->consumers[idx].value = putstr_(keylist[4].val);
+        FREEUP(*valPtr);
+        *valPtr= outUsers;
+        limitPtr->consumers[idx].value = putstr_(*valPtr);
         idx++;
     }
 
     idx = 0;    /* index of resource */
 
     /*SLOTS*/
-    if (keylist[5].val != NULL
-        && strcmp(keylist[5].val, "")) {
-        limitPtr->res[idx].res = LIMIT_RESOURCE_SLOTS;
-        if ((limitPtr->res[idx].value =
-             my_atoi(keylist[5].val,
-                     INFINIT_INT, -1)) == INFINIT_INT) {
-            ls_syslog(LOG_ERR, "\
-%s: File %s in section Limit ending at line %d: SLOTS value <%s> isn't a non-negative integer between -1 and %d; ignored",
-                      __func__, fname, *lineNum,
-                      keylist[5].val, INFINIT_INT);
+    if (keylist[9].val != NULL
+        && strcmp(keylist[9].val, "")) {
+        if ((limitPtr->res = parseTimeWindowRes(keylist[9].val,
+                             fname, lineNum, LIMIT_RESOURCE_SLOTS,
+                             &limitPtr->nRes)) == NULL) {
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
@@ -8257,16 +8363,11 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     }
 
     /*JOBS*/
-    if (keylist[6].val != NULL
-        && strcmp(keylist[6].val, "")) {
-        limitPtr->res[idx].res = LIMIT_RESOURCE_JOBS;
-        if ((limitPtr->res[idx].value =
-             my_atoi(keylist[6].val,
-                     INFINIT_INT, -1)) == INFINIT_INT) {
-            ls_syslog(LOG_ERR, "\
-%s: File %s in section Limit ending at line %d: JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
-                      __func__, fname, *lineNum,
-                      keylist[6].val, INFINIT_INT);
+    if (keylist[10].val != NULL
+        && strcmp(keylist[10].val, "")) {
+        if ((limitPtr->res = parseTimeWindowRes(keylist[10].val,
+                             fname, lineNum, LIMIT_RESOURCE_JOBS,
+                             &limitPtr->nRes)) == NULL) {
             freekeyval (keylist);
             freeLimitInfo(limitPtr);
             return FALSE;
@@ -8279,3 +8380,112 @@ do_ResLimits(struct lsConf *conf, char *fname, int *lineNum)
     return TRUE;
 }
 
+/*
+ * SLOTS = [200 09:00-17:00] [100 17:00-09:00]
+ * JOBS = 100
+ */
+static struct limitRes *
+parseTimeWindowRes(char *linep, char *fname, int *lineNum, limitResType_t type, int *nres)
+{
+    int   idx = 0;
+    char  *ptr, *sp, *ep, *word;
+    char  buf[1024];
+    char  bufWin[1024];
+    struct limitRes *resLimits = NULL;
+
+    *nres = 0;
+    sprintf(buf, "%s", linep);
+    ptr = buf;
+
+    sp = ptr;
+    while ((sp = strchr(sp, '[')) != NULL) {
+        (*nres)++;
+        sp++;
+    }
+
+    if (*nres == 0)
+        (*nres)++;
+
+    resLimits = calloc(*nres, sizeof(struct limitRes));
+
+    while (ptr && strcmp(ptr, "")) {
+        sp = strchr(ptr, '[');
+        if (sp) {
+            sp++;
+            ep = strchr(sp, ']');
+
+            if (!ep) {
+                ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: number of '[' is not match that of ']'; ignored",
+                          __func__, fname, *lineNum);
+                goto clean;
+            }
+
+            ptr = ep + 1;
+            while(isspace(*ptr))
+                ptr++;
+            *ep = '\0';
+        } else {
+            sp = ptr;
+            ptr = NULL;
+        }
+
+        resLimits[idx].res = type;
+
+        word = getNextWord_(&sp);
+        if ((resLimits[idx].value = my_atoi(word, INFINIT_INT, -1)) == INFINIT_INT) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: SLOTS or JOBS value <%s> isn't a non-negative integer between -1 and %d; ignored",
+                     __func__, fname, *lineNum,
+                     word, INFINIT_INT);
+            goto clean;
+        }
+
+        word = getNextWord_(&sp);
+        if (!word) {
+            resLimits[idx].windows = strdup("");
+            continue;
+        }
+        resLimits[idx].windows = parsewindow(word, fname, lineNum, "Limit");
+        if (!resLimits[idx].windows) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: invalid time window <%s>; ignored",
+                      __func__, fname, *lineNum, word);
+            goto clean;
+        }
+
+        sprintf(bufWin, "%s", resLimits[idx].windows);
+        if (addWindow(bufWin, resLimits[idx].week, "resLimit") < 0) {
+            ls_syslog(LOG_ERR, "\
+%s: File %s in section Limit ending at line %d: invalid time expression <%s>; ignored",
+                      __func__, fname, *lineNum, resLimits[idx].windows);
+            goto clean;
+        }
+        resLimits[idx].windEdge = time(0);
+        idx++;
+    }
+    return resLimits;
+
+clean:
+    freeResLimit(*nres, resLimits);
+    *nres = 0;
+    return NULL;
+}
+
+/* freeResLimit()
+ */
+static void
+freeResLimit(int num, struct limitRes *rl)
+{
+    int     i;
+
+    if (!rl)
+        return;
+
+    for (i = 0; i < num; i++) {
+        FREEUP(rl[i].windows);
+        if (rl[i].week)
+            freeWeek(rl[i].week);
+    }
+    FREEUP(rl);
+}

@@ -13,22 +13,23 @@
 # Each row defines one consumer or resource.
 
 # Consumer types:
-# USERS - A space-separated list of user names or user groups on which limits are enforced.
-# QUEUES - A space-separated list of queue names on which limits are enforced.
-# HOSTS - A space-separated list of hosts, host groups defined in lsb.hosts on which limits are enforced.
-# PROJECTS - A space-separated list of project names on which limits are enforced.
+# USERS or PER_USER - A space-separated list of user names or user groups on which limits are enforced.
+
+# QUEUES or PER_QUEUE - A space-separated list of queue names on which limits are enforced.
+# HOSTS or PER_HOST - A space-separated list of hosts, host groups defined in lsb.hosts on which limits are enforced.
+# PROJECTS or PER_PROJECT - A space-separated list of project names on which limits are enforced.
 
 # Resource types:
 # JOBS - Maximum number of running or suspended (RUN, SSUSP, USUSP) jobs available to resource consumers.
 # SLOTS - Maximum number of job slots available to resource consumers.
 
 # Syntax:
-# USERS=all [~]user_name ... | all [~]user_group ...
-# QUEUE=all [~]queue_name ..
-# HOSTS=all [~]host_name ... | all [~]host_group ...
-# PROJECTS=all [~]project_name ...
+# USERS | PER_USER = all [~]user_name ... | all [~]user_group ...
+# QUEUE | PER_QUEUE = all [~]queue_name ..
+# HOSTS | PER_HOST = all [~]host_name ... | all [~]host_group ...
+# PROJECTS | PER_PROJECT = all [~]project_name ...
 # JOBS=integer
-# SLOTS=integer
+# SLOTS=integer | integer [day:]hour[:minute] ...
 
 
 # Example 1: disallow non-member projects to use a particular queue
@@ -62,4 +63,26 @@
 #HOSTS=host0 host1
 #QUEUES=priority
 #SLOTS=0
+#End Limit
+
+# Example 5: slot limit for each project
+#Begin Limit
+#NAME = Projectlimit
+#PER_PROJECTS = all
+#SLOTS = 300
+#End Limit
+
+# Example 6: slot limit for each user
+#Begin Limit
+#NAME = nonG1usersLimit
+#SLOTS = 100
+#PER_USER = all ~G1
+#End Limit
+
+# Example 7: time-window based slot limit for each user
+#Begin Limit
+#NAME = G1userslimits
+#SLOTS = [200 09:00-17:00] [100 17:00-09:00]
+#QUEUES = regression low
+#PER_USER = G1
 #End Limit

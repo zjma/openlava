@@ -22,8 +22,9 @@ etc_SCRIPTS = openlava
 install-data-local:
 	mkdir -p $(DESTDIR)$(prefix)/work/logdir
 	mkdir -p $(DESTDIR)$(prefix)/log
+	mkdir -p $(DESTDIR)$(prefix)/etc
 
 # Tell automake to install during distcheck the
 # configuration and etc files. 
-#
+#etc_DATA = commit
 #EXTRA_DIST = $(etc_DATA)

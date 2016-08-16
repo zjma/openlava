@@ -270,7 +270,8 @@ struct jData {
     int     numReasons;
     struct  qData *qPtr;
     struct  hData **hPtr;
-    struct  pqData *pPtr;
+    struct  resData *pqPtr;  /* res account of project on queue */
+    struct  resData *uqPtr;  /* res account of user on queue */
     int     numHostPtr;
     struct  askedHost *askedPtr;
     int     numAskedPtr;
@@ -608,6 +609,8 @@ struct hData {
     LIST_T    *pxySJL;
     LIST_T    *pxyRsvJL;
     float     leftRusageMem;
+    char      message[MAXLINELEN];
+    int       affinity;
 };
 
 
@@ -635,23 +638,33 @@ struct gData {
     int max_slots;
 };
 
-/* resource usage per project per queue */
-struct pqData {
+/* resource account for limits */
+struct resData {
     char      *project;
+    char      *user;
     char      *queue;
+    char      *host;
     int       maxJobs;
     int       numJobs;
-    int       numPEND;
-    int       numRUN;
-    int       numSSUSP;
-    int       numUSUSP;
-    int       numRESERVE;
+    int       numPENDJobs;
+    int       numRUNJobs;
+    int       numSSUSPJobs;
+    int       numUSUSPJobs;
+    int       numRESERVEJobs;
+    int       maxSlots;
+    int       numSlots;
+    int       numPENDSlots;
+    int       numRUNSlots;
+    int       numSSUSPSlots;
+    int       numUSUSPSlots;
+    int       numRESERVESlots;
 };
 
-/* resource usage per project */
-struct pData {
-    char         *project;
-    struct hTab  *qAcct;
+/* consumer account for limits */
+struct consumerData {
+    limitConsumerType_t type;
+    char                *consumer;
+    struct hTab         *rAcct;
 };
 
 typedef enum {
@@ -950,6 +963,8 @@ extern struct switch_child     *swchild;
 
 extern struct resLimitConf     *limitConf;
 extern struct hTab             pDataTab;
+extern struct hTab             uDataTab;
+extern struct hTab             hDataTab;
 
 extern void                 pollSbatchds(int);
 extern void                 hStatChange(struct hData *, int status);
@@ -1273,9 +1288,12 @@ extern void                 updUserData (struct jData *, int, int, int, int,
                                          int, int);
 extern void                 updQaccount(struct jData *jData, int, int, int,
                                         int, int, int);
-extern void                 updProjectData(struct jData *,
+extern void                 updLimitSlotData(struct jData *,
                                         int, int, int, int, int, int);
-extern struct pqData *      getProjectData(char *, char *);
+extern void                 updLimitJobData(struct jData *, int, int,
+                                        int, int, int, int);
+extern struct resData *     getLimitUsageData(limitConsumerType_t, char *, char *);
+extern struct limitRes     *getActiveLimit(struct limitRes *, int);
 extern struct uData *       getUserData(char *user);
 extern struct userAcct *    getUAcct(struct hTab *, struct uData *);
 extern struct hostAcct *    getHAcct(struct hTab  *, struct hData *);
@@ -1320,7 +1338,7 @@ extern void                 log_mig(struct jData *, int, char *);
 extern void                 log_route(struct jData *);
 extern int                  log_modifyjob(struct modifyReq *, struct lsfAuth *);
 extern void                 log_queuestatus(struct qData *, int, int, char*);
-extern void                 log_hoststatus(struct hData *, int, int, char*);
+extern void                 log_hoststatus(struct hData *, int, int, char*, char*);
 extern void                 log_mbdStart(void);
 extern void                 log_mbdDie(int);
 extern void                 log_unfulfill(struct jData *);

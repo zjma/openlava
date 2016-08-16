@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH badmin 8 "OpenLava Version 3.3 - Mar 2016"
+.TH badmin 8 "OpenLava Version 4.0 - Aug 2016"
 .br
 .SH NAME
 \fBbadmin\fR - administrative tool for openlava
@@ -32,9 +32,9 @@
 .br
 \fBqhist\fR [\fB-t\fR \fItime0\fR,\fItime1\fR] [\fB-f\fR \fIlogfile_name\fR] [\fIqueue_name \fR...]
 .br
-\fBhopen\fR [\fIhost_name\fR ... | \fIhost_group\fR ... | \fBall\fR]
+\fBhopen\fR [\fB-C\fR \fImessage\fR] [\fIhost_name\fR ... | \fIhost_group\fR ... | \fBall\fR]
 .br
-\fBhclose\fR [\fIhost_name\fR ... | \fIhost_group\fR ... | \fBall\fR]
+\fBhclose\fR [\fB-C\fR \fImessage\fR] [\fIhost_name\fR ... | \fIhost_group\fR ... | \fBall\fR]
 .br
 \fBhrestart\fR [\fB-f\fR] [\fIhost_name\fR ...| \fBall\fR]
 .br
@@ -335,7 +335,7 @@ LSB_SHAREDIR/cluster_name/logdir/lsb.events. Option
 .RE
 
 .TP 
-\fBhopen\fR [\fIhost_name \fR... | \fIhost_group \fR... | \fBall\fR]
+\fBhopen\fR [\fB-C\fR \fImessage\fR] [\fIhost_name \fR... | \fIhost_group \fR... | \fBall\fR]
 
 .IP
 Opens batch server hosts. Specify the names of any server hosts or host 
@@ -343,9 +343,17 @@ groups (see bmgroup(1)). All batch server hosts will be opened if the
 reserved word all is specified. If no host or host group is specified, 
 the local host is assumed. A host accepts batch jobs if it is open.
 
-
+.IP
+\fB-C\fR \fImessage\fR
+.BR
+.RS
+.IP
+Logs the text as an administrator message record to lsb.events. The maximum
+length of the message is 512 characters. If you open a host group, each
+member displays with the same message.
+.RE
 .TP 
-\fBhclose\fR [\fIhost_name \fR... | \fIhost_group \fR... | \fBall\fR]
+\fBhclose\fR [\fB-C\fR message] [\fIhost_name \fR... | \fIhost_group \fR... | \fBall\fR]
 
 .IP
 Closes batch server hosts. Specify the names of any server hosts or host 
@@ -356,7 +364,15 @@ already dispatched to the host will not be affected. Note that this is
 different from a host closed by a window \fB-\fR all jobs on it are suspended 
 in that case.
 
-
+.IP
+\fB-C\fR \fImessage\fR
+.BR
+.RS
+.IP
+Logs the text as an administrator message record to lsb.events. The maximum
+length of the message is 512 characters. If you close a host group, each
+member displays with the same message.
+.RE
 .TP 
 \fBhrestart\fR [\fB-f\fR] [\fIhost_name \fR... | \fBall\fR]
 

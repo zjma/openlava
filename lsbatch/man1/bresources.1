@@ -1,10 +1,10 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH bresources 1 "OpenLava Version 3.3 - Mar 2016"
+.TH bresources 1 "OpenLava Version 4.0 - Aug 2016"
 .br
 .SH NAME
-\fBbresources\fR - displays information about resource limits
+\fBbresources\fR - displays information about resource limits of running jobs
 .SH SYNOPSIS
 .BR
 .PP
@@ -35,25 +35,25 @@ Prints OpenLava release version to stderr and exits.
 .SH DEFAULT OUTPUT
 .BR
 .PP
-A list of resource limits is displayed with the following fields:
+Current usage of resource limits are displayed with the following fields:
 .PP
 \fBLIMIT\fR
 .IP
 The name of the resource limit.
 .PP
-\fBQUEUES\fR
+\fBQUEUES or PER_QUEUE\fR
 .IP
 Queues defined in lsb.resources.
 .PP
-\fBHOSTS\fR
+\fBHOSTS or PER_HOST\fR
 .IP
 Hosts or host groups defined in lsb.resources.
 .PP
-\fBPROJECTS\fR
+\fBPROJECTS or PER_PROJECT\fR
 .IP
 Projects defined in lsb.resources.
 .PP
-\fBUSERS\fR
+\fBUSERS or PER_USER\fR
 .IP
 Users or user groups defined in lsb.resources.
 .PP
@@ -77,9 +77,21 @@ Project defined in this limit has started jobs.
 .IP
 The jobs are started on the queue.
 .PP
+\fBUSER\fR
+.IP
+The jobs are submitted by the user.
+.PP
+\fBHOST\fR
+.IP
+The jobs are running on the host.
+.PP
+\fBSLOTS\fR
+.IP
+The number of used slots and the maximum number of slots this project/user/host/queue can start.
+.PP
 \fBJOBS\fR
 .IP
-The number of started jobs and the maximum number of jobs this project can start.
+The number of started jobs and the maximum number of jobs this project/user/host/queue can start.
 .PP
 .SH EXAMPLE
 .PP
@@ -100,11 +112,11 @@ SLOTS      : 0
 .PP
 LIMIT  Limit2
 .br
-QUEUES     : bench
+QUEUES     : normal
 .br
-    expand : bench
+    expand : normal
 .br
-PROJECTS   : RCRDPERF FEDPERF NRRD NRPV_MT IPPERF AMSPERF
+PROJECTS   : Proj1 Proj2 Proj3
 .br
 JOBS       : 10
 .br
@@ -112,9 +124,31 @@ CURRENT LIMIT RESOURCE USAGE:
 .br
     PROJECT     QUEUE       JOBS
 .br
-    RCRDPERF    bench       5/10
-    NRPV_MT     bench       2/10
-
+    Proj1       normal      5/10
+    Proj2       nornal      2/10
+.br
+.PP
+LIMIT  jenkinslimits
+.br
+QUEUES     : normal owner
+.br
+    expand : normal owner
+.br
+PER_USER   : G1
+.br
+    expand : david wlu james john
+.br
+SLOTS      : 20 09:00-17:00
+.br
+SLOTS      : 10 17:00-09:00
+.br
+CURRENT LIMIT RESOURCE USAGE:
+.br
+    PROJECT     QUEUE       USER        HOST        SLOTS       JOBS
+.br
+    -           owner       john       -           5/10        -
+.br
+    -           normal      john       -           5/10        -
 .PP
 .SH SEE ALSO
 .BR

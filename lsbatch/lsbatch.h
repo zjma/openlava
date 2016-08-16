@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 David Bigagli
+ * Copyright (C) 2014-2016 David Bigagli
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,8 @@
 /* Include all Unix and openlava base definition.
  */
 #include <lsf.h>
+#include "../lsf/intlib/intlibout.h"
+
 
 #define _PATH_NULL      "/dev/null"
 
@@ -836,6 +838,8 @@ struct hostInfoEnt {
     float *realLoad;
     int   numRESERVE;
     int   chkSig;
+    char  *hCtrlMsg;
+    int   affinity;
 };
 
 #define DEF_MAX_JOBID   999999
@@ -886,6 +890,7 @@ struct parameterInfo {
     int enable_proxy_hosts;
     int disable_peer_jobs;
     int hist_mins;
+    int run_abs_limit; /* if specificied -W is not scaled */
 };
 
 
@@ -1234,6 +1239,7 @@ struct hostCtrlLog {
     char   host[MAXHOSTNAMELEN];
     int    userId;
     char   userName[MAX_LSB_NAME_LEN];
+    char   message[MAXLINELEN];
 };
 
 struct mbdStartLog {
@@ -1497,10 +1503,14 @@ struct queueConf {
 
 typedef enum limitConsumerType {
     LIMIT_CONSUMER_QUEUES = 0,
-    LIMIT_CONSUMER_PROJECTS = 1,
-    LIMIT_CONSUMER_HOSTS = 2,
-    LIMIT_CONSUMER_USERS = 3,
-    LIMIT_CONSUMER_TYPE_NUM = 4    /* how many consumer types */
+    LIMIT_CONSUMER_PER_QUEUE = 1,
+    LIMIT_CONSUMER_PROJECTS = 2,
+    LIMIT_CONSUMER_PER_PROJECT = 3,
+    LIMIT_CONSUMER_HOSTS = 4,
+    LIMIT_CONSUMER_PER_HOST = 5,
+    LIMIT_CONSUMER_USERS = 6,
+    LIMIT_CONSUMER_PER_USER = 7,
+    LIMIT_CONSUMER_TYPE_NUM = 8    /* how many consumer types */
 } limitConsumerType_t;
 
 struct limitConsumer {
@@ -1518,6 +1528,9 @@ typedef enum limitResType {
 struct limitRes {
     limitResType_t res;
     float value;
+    char  *windows;
+    windows_t *week[8];
+    time_t    windEdge;
 };
 
 struct resLimit {
@@ -1593,7 +1606,7 @@ extern LS_LONG_INT lsb_submit(struct submit  *, struct submitReply *);
 
 extern void lsb_closejobinfo(void);
 
-extern int  lsb_hostcontrol(char *, int);
+extern int  lsb_hostcontrol(char *, int, char *);
 extern struct queueInfoEnt *lsb_queueinfo(char **,
                                           int *,
                                           char *,
@@ -1608,7 +1621,7 @@ extern int  lsb_deletejob(LS_LONG_INT, int, int);
 extern int  lsb_forcekilljob(LS_LONG_INT);
 extern int  lsb_requeuejob(struct jobrequeue *);
 extern char *lsb_sysmsg(void);
-extern void lsb_perror(char *);
+extern void lsb_perror(const char *);
 extern char *lsb_sperror(char *);
 extern char *lsb_peekjob(LS_LONG_INT);
 
@@ -1677,5 +1690,6 @@ extern struct jobGroupInfo *lsb_getjgrp(int *);
 extern void free_jobgroupinfo(int, struct jobGroupInfo *);
 extern struct resLimitReply *lsb_getlimits();
 extern void free_resLimits(struct resLimitReply *);
+extern void freeWeek (windows_t **);
 
 #endif

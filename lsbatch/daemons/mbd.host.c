@@ -262,6 +262,8 @@ copyHostInfo(struct hData *hData, struct hostInfoEnt *hInfo)
     hInfo->busyStop = hData->busyStop;
     hInfo->realLoad = hData->lsfLoad;
     hInfo->load = hData->lsbLoad;
+    hInfo->hCtrlMsg = hData->message;
+    hInfo->affinity = hData->affinity;
 
     hInfo->mig = (hData->mig != INFINIT_INT) ? hData->mig/60 : INFINIT_INT;
     switch (hData->chkSig) {
@@ -843,25 +845,18 @@ ctrlHost(struct controlReq *hcReq,
             if (hData->hStatus & HOST_STAT_UNAVAIL)
                 return LSBE_SBATCHD;
 
-            if (hData->hStatus & HOST_STAT_DISABLED) {
-                hData->hStatus &= ~HOST_STAT_DISABLED;
-                log_hoststatus(hData, hcReq->opCode,
-                               auth->uid, auth->lsfUserName);
-                return LSBE_NO_ERROR;
-            }
-            else
-                return LSBE_NO_ERROR;
+            hData->hStatus &= ~HOST_STAT_DISABLED;
+            strcpy (hData->message, hcReq->message);
+            log_hoststatus(hData, hcReq->opCode,
+                           auth->uid, auth->lsfUserName, hcReq->message);
+            return LSBE_NO_ERROR;
 
         case HOST_CLOSE :
-            if (hData->hStatus & HOST_STAT_DISABLED) {
-                return LSBE_NO_ERROR;
-            }
-            else {
-                hData->hStatus |= HOST_STAT_DISABLED;
-                log_hoststatus(hData, hcReq->opCode,
-                               auth->uid, auth->lsfUserName);
-                return LSBE_NO_ERROR;
-            }
+            hData->hStatus |= HOST_STAT_DISABLED;
+            strcpy (hData->message, hcReq->message);
+            log_hoststatus(hData, hcReq->opCode,
+                           auth->uid, auth->lsfUserName, hcReq->message);
+            return LSBE_NO_ERROR;
         default :
             return LSBE_LSBLIB;
     }
@@ -1387,10 +1382,10 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
                 if (logclass & LC_SCHED) {
                     ls_syslog(LOG_DEBUG1, "\
 %s: Updating reserved memory of job <%s> to <%f> as all <%d> processors are on the same host.",
-                     __func__,
-                     lsb_jobid2str(jpbw->jobId),
-                     jackValue,
-                     jpbw->shared->jobBill.numProcessors);
+                              __func__,
+                              lsb_jobid2str(jpbw->jobId),
+                              jackValue,
+                              jpbw->shared->jobBill.numProcessors);
                 }
             }
 
@@ -1405,7 +1400,7 @@ adjLsbLoad(struct jData *jpbw, int forResume, bool_t doAdj)
 
                     TEST_BIT (ldx, rusage_bit_map, isSet)
                         if ((isSet == TRUE) && !slotResourceReserve) {
-                           continue;
+                            continue;
                         }
                     SET_BIT(ldx, rusage_bit_map);
                 }

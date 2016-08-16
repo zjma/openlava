@@ -340,7 +340,8 @@ init_log(void)
 
             updQaccount(jp, num, num, 0, 0, 0, 0);
             updUserData(jp, num, num, 0, 0, 0, 0);
-            updProjectData(jp, num, num, 0, 0, 0, 0);
+            updLimitSlotData(jp, num, num, 0, 0, 0, 0);
+            updLimitJobData(jp, 1, 1, 0, 0, 0, 0);
 
             jp->jStatus = svJStatus;
             if (jp->jStatus & JOB_STAT_PEND)
@@ -951,6 +952,7 @@ replay_hostcontrol(char *filename, int lineNum)
         hp->hStatus &= ~HOST_STAT_DISABLED;
     if (opCode == HOST_CLOSE)
         hp->hStatus |= HOST_STAT_DISABLED;
+    strcpy(hp->message,logPtr->eventLog.hostCtrlLog.message);
     return true;
 
 }
@@ -1640,7 +1642,7 @@ log_switchjob(struct jobSwitchReq * switchReq, int uid, char *userName)
                   fname,
                   lsb_jobid2str(switchReq->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_SWITCH;
     logPtr->eventLog.jobSwitchLog.userId = uid;
@@ -1883,7 +1885,7 @@ log_mig(struct jData * jData, int uid, char *userName)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_MIG;
     logPtr->eventLog.migLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1910,7 +1912,7 @@ log_jobrequeue(struct jData * jData)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openeventfile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_REQUEUE;
     logPtr->eventLog.jobRequeueLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1933,7 +1935,7 @@ log_jobclean(struct jData * jData)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_CLEAN;
     logPtr->eventLog.jobCleanLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1957,7 +1959,7 @@ log_chkpnt(struct jData * jData, int ok, int flags)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_CHKPNT;
     logPtr->eventLog.chkpntLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -1985,7 +1987,7 @@ log_jobsigact (struct jData *jData, struct statusReq *statusReq, int sigFlags)
                   fname,
                   lsb_jobid2str(jData->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_JOB_SIGACT;
     logPtr->eventLog.sigactLog.jobId = LSB_ARRAY_JOBID(jData->jobId);
@@ -2031,7 +2033,7 @@ log_queuestatus(struct qData * qp, int opCode, int userId, char *userName)
                   fname,
                   qp->queue,
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_QUEUE_CTRL;
     logPtr->eventLog.queueCtrlLog.opCode = opCode;
@@ -2048,7 +2050,7 @@ log_queuestatus(struct qData * qp, int opCode, int userId, char *userName)
 
 
 void
-log_hoststatus(struct hData * hp, int opCode, int userId, char *userName)
+log_hoststatus(struct hData * hp, int opCode, int userId, char *userName, char *message)
 {
     static char             fname[] = "log_hoststatus";
 
@@ -2064,6 +2066,7 @@ log_hoststatus(struct hData * hp, int opCode, int userId, char *userName)
     strcpy(logPtr->eventLog.hostCtrlLog.host, hp->host);
     logPtr->eventLog.hostCtrlLog.userId = userId;
     strcpy(logPtr->eventLog.hostCtrlLog.userName, userName);
+    strcpy(logPtr->eventLog.hostCtrlLog.message, message);
     if (putEventRec(fname) < 0)
         ls_syslog(LOG_ERR, I18N_HOST_FAIL,
                   fname,
@@ -2102,7 +2105,7 @@ log_unfulfill(struct jData * jp)
                   fname,
                   lsb_jobid2str(jp->jobId),
                   "openEventFile");
-            mbdDie(MASTER_FATAL);
+        mbdDie(MASTER_FATAL);
     }
     logPtr->type = EVENT_MBD_UNFULFILL;
 
@@ -3321,7 +3324,7 @@ rmLogJobInfo(struct jData *jp, int check)
 
     } else if (errno != ENOENT) {
         if (check == FALSE)
-                ls_syslog(LOG_ERR, "\
+            ls_syslog(LOG_ERR, "\
 %s: job %s stat() %s failed: %m", __func__, lsb_jobid2str(jp->jobId), logFn);
         return -1;
     }
@@ -4099,7 +4102,7 @@ replay_jobdata(char *filename, int lineNum, char *fname)
                                 sizeof(struct xFile), fname);
         memcpy(jobBill->xf, jobNewLog->xf, jobBill->nxf * sizeof(struct xFile));
     } else {
-       jobBill->xf = NULL;
+        jobBill->xf = NULL;
     }
 
     jobBill->niosPort = jobNewLog->niosPort;
@@ -4787,6 +4790,8 @@ log_hostStatusAtSwitch(const struct hostCtrlEvent *ctrlPtr)
 
     strcpy(logPtr->eventLog.hostCtrlLog.userName,
            ctrlPtr->hostCtrlLog->userName);
+
+    strcpy(logPtr->eventLog.hostCtrlLog.message, ctrlPtr->hostCtrlLog->message);
 
     if (putEventRecTime(fname, ctrlPtr->time) < 0) {
         ls_syslog(LOG_ERR, I18N_HOST_FAIL,

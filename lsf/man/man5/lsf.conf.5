@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsf.conf 5 "OpenLava Version 3.3 - Mar 2016"
+.TH lsf.conf 5 "OpenLava Version 4.0 - Aug 2016"
 .br
 .SH NAME
 \fBlsf.conf\fR
@@ -3336,6 +3336,10 @@ By default, OL_CGROUP_ROOT is not set, and OpenLava does not run jobs with Cgrou
 .PP
 .PP
 Bind job processes to CPU cores.
+.PP
+If you enable this parameter globally in lsf.conf, CPU binding is enabled to all hosts in the cluster.
+.PP
+If you want to specify which hosts have CPU binding enabled, you need to disable this parameter and configure the AFFINITY parameter for individual hosts in the lsb.hosts file (see man lsb.hosts(5)).
 .PP
 It is recommended that the MXJ configuration parameter for each host in the lsb.hosts file is set to the number of cores on the host.
 .PP

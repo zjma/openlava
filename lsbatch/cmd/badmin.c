@@ -20,20 +20,20 @@
 #include "badmin.h"
 #include <unistd.h>
 
-extern char *myGetOpt (int nargc, char **nargv, char *ostr);
-extern int checkConf (int, int);
-extern int getConfirm (char *msg);
+extern char *myGetOpt(int nargc, char **nargv, char *ostr);
+extern int checkConf(int, int);
+extern int getConfirm(char *msg);
 extern int lsb_debugReq(struct debugReq *pdebug , char *host);
 extern int linux_optind;
 extern int linux_opterr;
-static int doBatchCmd (int argc, char *argv[]);
-static int badminDebug (int nargc, char *nargv[], int opCode);
+static int doBatchCmd(int argc, char *argv[]);
+static int badminDebug(int nargc, char *nargv[], int opCode);
 
 
 int
 main(int argc, char **argv)
 {
-    int cc,  myIndex;
+    int myIndex;
     char *prompt = "badmin>";
     static char line[MAXLINELEN];
 
@@ -44,19 +44,21 @@ main(int argc, char **argv)
 
     setbuf(stdout, NULL);
 
-    while ((cc = getopt(argc, argv, "Vh")) != EOF) {
-        switch (cc) {
-            case 'V':
-                fputs(_LS_VERSION_, stderr);
-                exit(0);
-            case 'h':
-            default:
-
-                cmdsUsage("badmin",
-                          cmdList,
-                          cmdInfo);
+    if (argc>1 && argv[1][0] == '-') {
+        switch (argv[1][1]) {
+        case 'V':
+            fputs(_LS_VERSION_, stderr);
+            exit(0);
+        case 'h':
+           cmdsUsage("badmin",cmdList,cmdInfo);
+        default:
+           fprintf (stderr, "badmin: illegal option -- %c\n", argv[1][1]);
+           cmdsUsage("badmin",cmdList,cmdInfo);
         }
     }
+
+    optind = 1;
+
     if (argc > optind) {
         int rc;
 
@@ -66,9 +68,9 @@ main(int argc, char **argv)
             cmdsUsage("badmin", cmdList, cmdInfo);
         }
         optind++;
-        rc = doBatchCmd (argc, argv);
-        _i18n_end ( ls_catd );
-        exit ( rc );
+        rc = doBatchCmd(argc, argv);
+        _i18n_end (ls_catd);
+        exit (rc);
     }
 
     for (;;) {
@@ -78,7 +80,7 @@ main(int argc, char **argv)
             exit(-1);
         }
 
-        parseAndDo (line, doBatchCmd);
+        parseAndDo(line, doBatchCmd);
     }
     return 0;
 }
@@ -88,7 +90,7 @@ doBatchCmd(int argc, char *argv[])
 {
     int cmdRet = 0, myIndex;
 
-    if ((myIndex=adminCmdIndex(argv[optind-1], cmdList)) == -1) {
+    if ((myIndex = adminCmdIndex(argv[optind-1], cmdList)) == -1) {
         fprintf(stderr,
                 _i18n_msg_get(ls_catd,NL_SETN,2554, "Invalid command <%s>. Try help\n"),/* catgets  2554  */
                 argv[optind-1]);
@@ -216,7 +218,7 @@ breconfig(int argc, char **argv, int configFlag)
                 fflush(stderr);
             }
             fclose(fp);
-	    unlink(filename);
+            unlink(filename);
         }
         else
             checkReply = checkConf(0, 2);

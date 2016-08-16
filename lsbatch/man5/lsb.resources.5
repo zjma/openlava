@@ -1,7 +1,7 @@
 .ds ]W %
 .ds ]L
 .nh
-.TH lsb.resources 5 "OpenLava Version 3.3 - Mar 2016"
+.TH lsb.resources 5 "OpenLava Version 4.0 - Aug 2016"
 .br
 .SH NAME
 \fBlsb.resources\fR
@@ -9,7 +9,7 @@
 .BR
 .PP
 .PP
-The lsb.resources file contains configuration information for 
+The lsb.resources file contains configuration information for
 resource allocation limits. This file is optional. All sections are
 optional.
 .SS Contents
@@ -26,20 +26,20 @@ optional.
 .BR
 .PP
 .PP
-Defines limits for the maximum amount of the specified resources that 
-must be available for jobs to start, and which resource consumers the limits apply to. 
+Defines limits for the maximum amount of the specified resources that
+must be available for jobs to start, and which resource consumers the limits apply to.
 Limits are enforced during job resource allocation.
 .PP
 Consumer type:
 .RS
 .HP 2
-\(bu QUEUES
+\(bu QUEUES or PER_QUEUE
 .HP 2
-\(bu USERS
+\(bu USERS or PER_USER
 .HP 2
-\(bu PROJECTS
+\(bu PROJECTS or PER_PROJECT
 .HP 2
-\(bu HOSTS
+\(bu HOSTS or PER_HOST
 .RE
 .PP
 Resource type:
@@ -50,7 +50,7 @@ Resource type:
 \(bu JOBS
 .RE
 .PP
-After making any changes to lsb.resources, 
+After making any changes to lsb.resources,
 run \fBbadmin\fR reconfig to reconfigure mbatchd.
 .SH Limit Section Structure
 .BR
@@ -60,14 +60,14 @@ Each limit definition begins with the line Begin Limit and ends with
 the line End Limit. A limit section is defined in horizontal format.
 Each row defines one consumer or resource. At least one consumer and
 one resouce must be specified in a limit section.
-.SH QUEUES
+.SH QUEUES or PER_QUEUE
 .BR
 .PP
 .SS Syntax
 .BR
 .PP
 .PP
-\fBQUEUES\fR \fB=\fR \fIall\fR [~]\fIqueue_name\fR ...
+\fBQUEUES | PER_QUEUE\fR \fB=\fR \fIall\fR [~]\fIqueue_name\fR ...
 .SS Description
 .BR
 .PP
@@ -76,8 +76,8 @@ A space-separated list of queue names on which limits are enforced.
 .PP
 The list must contain valid queue names defined in \fBlsb.queues\fR.
 .PP
-Use the not operator (~) to exclude queues from the all specification in the limit. 
-This is useful if you have a large number of queues but only want to exclude 
+Use the not operator (~) to exclude queues from the all specification in the limit.
+This is useful if you have a large number of queues but only want to exclude
 a few queues from the limit definition.
 .SS Default
 .BR
@@ -89,14 +89,14 @@ Undefined.
 .PP
 .PP
 \fBQUEUES\fR \fB=\fR \fBpriority idle\fR
-.SH USERS
+.SH USERS or PER_USER
 .BR
 .PP
 .SS Syntax
 .BR
 .PP
 .PP
-\fBUSERS\fR \fB=\fR \fIall\fR [~]\fIuser_name\fR ... | [~]\fIuser_group\fR ...
+\fBUSERS | PER_USER\fR \fB=\fR \fIall\fR [~]\fIuser_name\fR ... | [~]\fIuser_group\fR ...
 .SS Description
 .BR
 .PP
@@ -111,7 +111,7 @@ If a group contains a subgroup, the limit also applies
 to each member in the subgroup recursively.
 .PP
 Use the not operator (~) to exclude users or user groups from the all specification in the limit.
-This is useful if you have a large number of users but only want to exclude 
+This is useful if you have a large number of users but only want to exclude
 a few users or groups from the limit definition.
 .SS Default
 .BR
@@ -123,26 +123,26 @@ Undefined.
 .PP
 .PP
 \fBUSERS\fR \fB=\fR \fBall ~user1 ~user2\fR
-.SH HOSTS
+.SH HOSTS or PER_HOST
 .BR
 .PP
 .SS Syntax
 .BR
 .PP
 .PP
-\fBHOSTS\fR \fB=\fR \fIall\fR [~]\fIhost_name\fR ... | [~]\fIhost_group\fR ...
+\fBHOSTS | PER_HOST\fR \fB=\fR \fIall\fR [~]\fIhost_name\fR ... | [~]\fIhost_group\fR ...
 .SS Description
 .BR
 .PP
 .PP
-A space-separated list of host names or host groups 
+A space-separated list of host names or host groups
 defined in \fBlsb.hosts\fR on which limits are enforced.
 .PP
 If a group contains a subgroup, the limit also applies
 to each member in the subgroup recursively.
 .PP
 Use the not operator (~) to exclude hosts from the all specification in the limit.
-This is useful if you have a large cluster but only want to exclude 
+This is useful if you have a large cluster but only want to exclude
 a few hosts from the limit definition.
 .SS Default
 .BR
@@ -154,14 +154,14 @@ Undefined.
 .PP
 .PP
 \fBHOSTS\fR \fB=\fR \fBGroup1 ~hostA ~hostB ~hostC\fR
-.SH PROJECTS
+.SH PROJECTS or PER_PROJECT
 .BR
 .PP
 .SS Syntax
 .BR
 .PP
 .PP
-\fBPROJECTS\fR \fB=\fR \fIall\fR [~]\fIproject_name\fR ...
+\fBPROJECTS | PER_PROJECT\fR \fB=\fR \fIall\fR [~]\fIproject_name\fR ...
 .SS Description
 .BR
 .PP
@@ -178,7 +178,7 @@ Undefined.
 .BR
 .PP
 .PP
-\fBHOSTS\fR \fB=\fR \fIall ~p1 ~p2 ~p3\fR
+\fBPROJECTS\fR \fB=\fR \fIall ~p1 ~p2 ~p3\fR
 .SH SLOTS
 .BR
 .PP
@@ -186,12 +186,14 @@ Undefined.
 .BR
 .PP
 .PP
-\fBSLOTS\fR \fB=\fR \fIinteger\fR
+\fBSLOTS\fR \fB=\fR \fIinteger\fR | [\fIinteger\fR \fI[day:]hour[:minute]\fR] ...
 .SS Description
 .BR
 .PP
 .PP
 Maximum number of job slots available to resource consumers.
+.PP
+Time window is optional. The limit is enforced only if current time falls within this time window.
 .SS Default
 .BR
 .PP
@@ -201,7 +203,7 @@ Undefined.
 .BR
 .PP
 .PP
-\fBSLOTS\fR \fB=\fR \fI0\fR
+\fBSLOTS\fR \fB=\fR \fI[20 09:00-17:00] [10 17:00-09:00] [100 5:20:00-1:08:00]\fR
 .SH JOBS
 .BR
 .PP

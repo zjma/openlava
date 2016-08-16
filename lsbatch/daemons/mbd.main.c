@@ -116,7 +116,20 @@ struct lsInfo *allLsInfo;
 struct hTab calDataList;
 struct hTab condDataList;
 
+/* Hash table to resource account
+ * per project on queues.
+ */
 struct hTab pDataTab;
+
+/* Hash table to resource account
+ * per user on queues.
+ */
+struct hTab uDataTab;
+
+/* Hash table to resource account
+ * per host on queues.
+ */
+struct hTab hDataTab;
 
 char   *masterHost = NULL;
 char   *clusterName = NULL;
@@ -321,8 +334,8 @@ mbd:%s: MBD_MAX_JOBS_SCHED %d", __func__, max_job_sched);
     qsort_jobs = 1;
     if (daemonParams[MBD_NO_QSORT_JOBS].paramValue) {
         qsort_jobs = 0;
-        ls_syslog(LOG_INFO, "\
-mbd:%s qsort() of jobs is disabled", __func__);
+        ls_syslog(LOG_WARNING, "\
+%s: mbatchd qsort() of jobs is disabled", __func__);
     }
 
     daemon_doinit();
@@ -1177,8 +1190,7 @@ forkOnRequest(mbdReqType req)
         || req == BATCH_PARAM_INFO
         || req == BATCH_USER_INFO
         || req == BATCH_JOB_PEEK
-        || req == BATCH_JOBDEP_INFO
-        || req == BATCH_RESLIMIT_INFO) {
+        || req == BATCH_JOBDEP_INFO) {
         return 1;
     }
 

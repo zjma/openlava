@@ -343,6 +343,7 @@ struct sbdPackage {
     int    jobTerminateInterval;
     int    nAdmins;
     char   **admins;
+    int    affinity;
 };
 
 struct jobSig {
@@ -550,7 +551,6 @@ int initTcl(struct tclLsInfo *);
 
 
 extern int fileExist(char *file, int uid, struct hostent *);
-extern void freeWeek (windows_t **);
 extern void errorBack(int, int, struct sockaddr_in *);
 
 extern int init_ServSock(u_short port);

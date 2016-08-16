@@ -1,4 +1,5 @@
-/* $Id: cmd.misc.c 397 2007-11-26 19:04:00Z mblack $
+/*
+ * Copyright (C) 2016 Teraproc.com
  * Copyright (C) 2007 Platform Computing Inc
  *
  * This program is free software; you can redistribute it and/or modify
@@ -113,20 +114,20 @@ getNames (int argc, char **argv,  int optind, char ***nameList,
             if ((a_size!=0) && (numNames>=a_size)) {
                 a_size <<= 1;
                 if ((temp=(char **)realloc(list,
-			a_size*sizeof(char *)))==NULL) {
-		    *nameList = list;
+                        a_size*sizeof(char *)))==NULL) {
+                    *nameList = list;
                     return (numNames);
                 }
-		list = temp;
-	    }
+                list = temp;
+            }
             list[numNames] = argv[optind];
             numNames ++;
         }
     }
 
     if (numNames == 1 && strcmp (nameType, "queue") == 0
-		    && strcmp ("default", list[0]) == 0)
-	*allOrDef = TRUE;
+                    && strcmp ("default", list[0]) == 0)
+        *allOrDef = TRUE;
     *nameList = list;
     return (numNames);
 }
@@ -149,7 +150,7 @@ prtWord(int len, const char *word, int cent)
 
             d2 = len - d1;
             sprintf(fomt, "%%%ds%%%ds ", d1, d2);
-	    };
+            };
        };
 
        printf(fomt, word, " ");

@@ -336,7 +336,8 @@ init_cores(void)
 {
     int i;
 
-    if (! daemonParams[SBD_BIND_CPU].paramValue)
+    if (! daemonParams[SBD_BIND_CPU].paramValue
+        && !hostAffinity)
         return;
 
 #ifdef HAVE_HWLOC_H

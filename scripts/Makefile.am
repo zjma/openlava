@@ -9,7 +9,7 @@ include $(top_srcdir)/common.mk
 # mpi and openmpi systems.
  
 bin_SCRIPTS = lam-mpirun impi-mpirun mpich-mpirun openmpi-mpirun \
-	esync 
+	esync mpich2-mpiexec mpich2-hydra
 
 sbin_SCRIPTS = agent.py
 

@@ -273,6 +273,7 @@ struct jobSwitchReq {
 struct controlReq {
     int         opCode;
     char        *name;
+    char        *message;
 };
 
 
@@ -293,8 +294,13 @@ struct resLimitReply {
 struct resLimitUsage {
     char    *limitName;
     char    *project;
+    char    *user;
     char    *queue;
-    float   used;
+    char    *host;
+    float   slots;
+    float   maxSlots;
+    float   jobs;
+    float   maxJobs;
 };
 
 typedef enum {

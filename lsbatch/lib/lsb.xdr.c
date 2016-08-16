@@ -36,6 +36,12 @@ static bool_t xdr_lsbSharedResourceInfo(XDR *,
 static bool_t xdr_lsbShareResourceInstance(XDR *,
                                            struct lsbSharedResourceInstance *,
                                            struct LSFHeader *);
+static bool_t
+xdr_shareAcctOwn(XDR *xdrs,
+                 int *num,
+                 struct share_acct ***s,
+                 struct LSFHeader *hdr);
+
 int  lsbSharedResConfigured_ = false;
 
 bool_t
@@ -421,7 +427,7 @@ xdr_parameterInfo(XDR *xdrs,
           xdr_int(xdrs, &paramInfo->maxSbdRetries) &&
           xdr_int(xdrs, &paramInfo->cleanPeriod) &&
           xdr_int(xdrs, &paramInfo->maxNumJobs)) &&
-          xdr_int(xdrs, &paramInfo->pgSuspendIt))
+        xdr_int(xdrs, &paramInfo->pgSuspendIt))
         return false;
 
     if (!(xdr_var_string(xdrs, &paramInfo->defaultProject)))
@@ -486,6 +492,9 @@ xdr_parameterInfo(XDR *xdrs,
         if (! xdr_int(xdrs, &paramInfo->hist_mins))
             return false;
     }
+
+    if (! xdr_int(xdrs, &paramInfo->run_abs_limit))
+        return false;
 
     return true;
 }
@@ -1012,7 +1021,7 @@ xdr_queueInfoEnt(XDR *xdrs,
     }
 
     if (!(xdr_var_string(xdrs, &qInfo->chkpntDir) &&
-            xdr_int (xdrs, &qInfo->chkpntPeriod)))
+          xdr_int (xdrs, &qInfo->chkpntPeriod)))
         return false;
 
     for (i = 0; i < LSF_RLIM_NLIMITS; i++) {
@@ -1025,30 +1034,23 @@ xdr_queueInfoEnt(XDR *xdrs,
         return false;
     }
 
-    /* Handle fairshare data
+    /* Handle fairshare data. Default starting from 3.0.
+     * Compatibility with previous OL versions starts in 3.0
      */
     if (! xdr_numShareAccts(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
         return false;
 
-    if (hdr->version >= 3) {
-        if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
-            return false;
-    }
+    if (! xdr_uint32_t(xdrs, &qInfo->numFairSlots))
+        return false;
 
-    if (xdrs->x_op == XDR_ENCODE
-        && hdr->version >= 3) {
-        xdr_var_string(xdrs, &qInfo->preemption);
-    }
+    if (! xdr_var_string(xdrs, &qInfo->preemption))
+        return false;
 
-    if (xdrs->x_op == XDR_DECODE
-        && hdr->version >= 3) {
-        xdr_var_string(xdrs, &qInfo->preemption);
-    }
+    if (! xdr_uint32_t(xdrs, &qInfo->num_owned_slots))
+        return false;
 
-    if (hdr->version >= 32) {
-        if (! xdr_uint32_t(xdrs, &qInfo->num_owned_slots))
-            return false;
-    }
+    if (! xdr_shareAcctOwn(xdrs, &qInfo->numAccts, &qInfo->saccts, hdr))
+        return false;
 
     return true;
 }
@@ -1069,14 +1071,7 @@ xdr_numShareAccts(XDR *xdrs,
     if (!xdr_int(xdrs, num))
         return false;
 
-    /* Encode fairshare data. If we are
-     * encoding to < 3 don't care as
-     * the library is not expecting
-     * any fairshare data.
-     */
-    if (xdrs->x_op == XDR_ENCODE
-        && hdr->version >= 3) {
-
+    if (xdrs->x_op == XDR_ENCODE) {
         s2 = *s;
         for (i = 0; i < *num; i++) {
             if (! xdr_shareAcct(xdrs, s2[i], hdr))
@@ -1086,19 +1081,18 @@ xdr_numShareAccts(XDR *xdrs,
         return true;
     }
 
-    if (xdrs->x_op == XDR_DECODE
-        && hdr->version >= 3) {
+    /* I am decoding
+     */
+    if (*num == 0) {
+        s2 = NULL;
+        return true;
+    }
+    s2 = calloc(*num, sizeof(struct share_acct *));
 
-        if (*num == 0)
-            s2 = NULL;
-        else
-            s2 = calloc(*num, sizeof(struct share_acct *));
-
-        for (i = 0; i < *num; i++) {
-            s2[i] = calloc(1, sizeof(struct share_acct));
-            if (! xdr_shareAcct(xdrs, s2[i], hdr))
+    for (i = 0; i < *num; i++) {
+        s2[i] = calloc(1, sizeof(struct share_acct));
+        if (! xdr_shareAcct(xdrs, s2[i], hdr))
                 return false;
-        }
     }
 
     *s = s2;
@@ -1118,13 +1112,26 @@ xdr_shareAcct(XDR *xdrs, struct share_acct *s, struct LSFHeader *hdr)
         || ! xdr_uint32_t(xdrs, &s->options))
         return false;
 
-    if (hdr->version >= 32) {
-        if (! xdr_int(xdrs, &s->numBORROWED))
-            return false;
-    }
+    return true;
+}
 
-    if (hdr->version >= 33) {
-        if (! xdr_int(xdrs, &s->numRAN))
+/* xdr_shareAcctOwn()
+ */
+static bool_t
+xdr_shareAcctOwn(XDR *xdrs,
+                 int *num,
+                 struct share_acct ***s,
+                 struct LSFHeader *hdr)
+{
+    int i;
+    struct share_acct **s2;
+
+    s2 = *s;
+    for (i = 0; i < *num; i++) {
+        if (! xdr_int(xdrs, &s2[i]->numBORROWED))
+            return false;
+
+        if (! xdr_int(xdrs, &s2[i]->numRAN))
             return false;
     }
 
@@ -1228,7 +1235,7 @@ xdr_hostDataReply(XDR *xdrs,
                 return false;
             }
             if (!(sp = malloc(hostCount
-                              * (MAXHOSTNAMELEN + MAXLINELEN)))) {
+                              * (MAXHOSTNAMELEN + 2*MAXLINELEN)))) {
                 FREEUP(hInfoTmp);
                 lsberrno = LSBE_NO_MEM;
                 return false;
@@ -1244,6 +1251,8 @@ xdr_hostDataReply(XDR *xdrs,
                 hInfo[i].host = sp;
                 sp += MAXHOSTNAMELEN;
                 hInfo[i].windows = sp;
+                sp += MAXLINELEN;
+                hInfo[i].hCtrlMsg = sp;
                 sp += MAXLINELEN;
             }
         }
@@ -1322,11 +1331,13 @@ xdr_hostInfoEnt(XDR *xdrs, struct hostInfoEnt *hostInfoEnt,
 {
     char *sp = hostInfoEnt->host;
     char *wp = hostInfoEnt->windows;
+    char *mp = hostInfoEnt->hCtrlMsg;
     int i;
 
     if (xdrs->x_op == XDR_DECODE) {
         sp[0] = '\0';
         wp[0] = '\0';
+        mp[0] = '\0';
     }
 
     if (!(xdr_string(xdrs, &sp, MAXHOSTNAMELEN) &&
@@ -1340,7 +1351,8 @@ xdr_hostInfoEnt(XDR *xdrs, struct hostInfoEnt *hostInfoEnt,
           xdr_int(xdrs, &hostInfoEnt->numUSUSP) &&
           xdr_int(xdrs, &hostInfoEnt->hStatus) &&
           xdr_int(xdrs, &hostInfoEnt->attr) &&
-          xdr_int(xdrs, &hostInfoEnt->mig)))
+          xdr_int(xdrs, &hostInfoEnt->mig) &&
+          xdr_string(xdrs, &mp, MAXLINELEN)))
         return false;
 
     hostInfoEnt->nIdx = *nIdx;
@@ -1589,9 +1601,8 @@ bool_t
 xdr_controlReq(XDR *xdrs, struct controlReq *controlReq,
                struct LSFHeader *hdr)
 {
-    static char *sp = NULL;
+    static char *sp = NULL, *message;
     static int first = true;
-
 
 
     if (xdrs->x_op == XDR_DECODE) {
@@ -1599,15 +1610,22 @@ xdr_controlReq(XDR *xdrs, struct controlReq *controlReq,
             sp = (char *) malloc (MAXHOSTNAMELEN);
             if (sp == NULL)
                 return false;
+            message = (char *) malloc(MAXLINELEN);
+            if (message == NULL)
+                return false;
             first = false;
         }
         controlReq->name = sp;
         sp[0] = '\0';
+        controlReq->message = message;
+        message[0] = '\0';
     } else {
         sp = controlReq->name;
+        message = controlReq->message;
     }
     if (!(xdr_int(xdrs, &controlReq->opCode) &&
-          xdr_string(xdrs, &sp, MAXHOSTNAMELEN)))
+          xdr_string(xdrs, &sp, MAXHOSTNAMELEN) &&
+          xdr_string(xdrs, &message, MAXLINELEN)))
         return false;
 
     return true;
@@ -2056,7 +2074,7 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
 
     if (xdrs->x_op == XDR_DECODE && reply->numUsage != 0) {
         reply->usage = calloc(reply->numUsage,
-                               sizeof(struct resLimitUsage));
+                              sizeof(struct resLimitUsage));
         if (reply->usage == NULL)
             return false;
     }
@@ -2074,7 +2092,7 @@ xdr_resLimitReply(XDR *xdrs, struct resLimitReply *reply,
 
 bool_t
 xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
-                 struct LSFHeader *hdr)
+                struct LSFHeader *hdr)
 {
     int i;
 
@@ -2094,7 +2112,7 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
     if (xdrs->x_op == XDR_DECODE && limit->nConsumer != 0) {
         limit->consumers= calloc(limit->nConsumer,
-                               sizeof(struct limitConsumer));
+                                 sizeof(struct limitConsumer));
         if (limit->consumers == NULL)
             return false;
     }
@@ -2115,13 +2133,16 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
     if (xdrs->x_op == XDR_DECODE && limit->nRes != 0) {
         limit->res= calloc(limit->nRes,
-                               sizeof(struct limitRes));
+                           sizeof(struct limitRes));
         if (limit->res== NULL)
             return false;
     }
 
     for (i = 0; i < limit->nRes; i++) {
         if (!xdr_int(xdrs, (int *)(&(limit->res[i].res))))
+            return false;
+
+        if (!xdr_var_string(xdrs, &(limit->res[i].windows)))
             return false;
 
         if (!xdr_float(xdrs, &limit->res[i].value))
@@ -2133,13 +2154,16 @@ xdr_resLimitEnt(XDR *xdrs, struct resLimit *limit,
 
 bool_t
 xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
-                 struct LSFHeader *hdr)
+                     struct LSFHeader *hdr)
 {
     if (xdrs->x_op == XDR_DECODE) {
         usage->limitName = NULL;
         usage->project = NULL;
+        usage->user = NULL;
         usage->queue = NULL;
-        usage->used = 0;
+        usage->host = NULL;
+        usage->slots = 0;
+        usage->jobs = 0;
     }
 
     if (!xdr_var_string(xdrs, &(usage->limitName)))
@@ -2148,10 +2172,26 @@ xdr_resLimitUsageEnt(XDR *xdrs, struct resLimitUsage *usage,
     if (!xdr_var_string(xdrs, &(usage->project)))
         return false;
 
+    if (!xdr_var_string(xdrs, &(usage->user)))
+        return false;
+
     if (!xdr_var_string(xdrs, &(usage->queue)))
         return false;
 
-    if (!xdr_float(xdrs, &(usage->used)))
+    if (!xdr_var_string(xdrs, &(usage->host)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->slots)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->maxSlots)))
+        return false;
+
+
+    if (!xdr_float(xdrs, &(usage->jobs)))
+        return false;
+
+    if (!xdr_float(xdrs, &(usage->maxJobs)))
         return false;
 
     return true;

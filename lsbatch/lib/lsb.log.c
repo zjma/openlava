@@ -1516,6 +1516,8 @@ readHostCtrl(char *line, struct hostCtrlLog *hostCtrlLog)
 
     copyQStr(&line, MAX_LSB_NAME_LEN, 1, hostCtrlLog->userName);
 
+    copyQStr(&line, MAXLINELEN, 0, hostCtrlLog->message);
+
     return LSBE_NO_ERROR;
 
 }
@@ -2554,6 +2556,9 @@ writeHostCtrl(FILE *log_fp, struct hostCtrlLog *hostCtrlLog)
 
     if (addQStr(log_fp, hostCtrlLog->userName) < 0)
         return LSBE_SYS_CALL;
+
+    if (addQStr(log_fp, hostCtrlLog->message) < 0)
+	return LSBE_SYS_CALL;
 
     if (fprintf(log_fp, "\n") < 0)
         return LSBE_SYS_CALL;

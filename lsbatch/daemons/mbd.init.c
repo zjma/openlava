@@ -476,6 +476,7 @@ initHData(struct hData *hData)
     hData->pxySJL = NULL;
     hData->pxyRsvJL = NULL;
     hData->leftRusageMem = INFINIT_LOAD;
+    hData->affinity = FALSE;
 
     return hData;
 }
@@ -842,6 +843,7 @@ addHost(struct hostInfo *lsf,
 
     hPtr->uJobLimit = thPtr->uJobLimit;
     hPtr->maxJobs   = thPtr->maxJobs;
+    hPtr->affinity  = thPtr->affinity;
     if (thPtr->maxJobs == -1) {
         /* The MXJ was set as ! in lsb.hosts
          */
@@ -1998,6 +2000,11 @@ setParams(struct paramConf *paramConf)
     if (mbdParams->hist_mins == -1)
         mbdParams->hist_mins = DEF_HIST_MINUTES;
     mbdParams->hist_mins = mbdParams->hist_mins * 60;
+    /* By default the value is false and we scale the
+     * runtime limit by the cpu factor, if set to true
+     * we don't.
+     */
+    mbdParams->run_abs_limit = params->run_abs_limit;
 }
 
 static void
@@ -2188,6 +2195,7 @@ addHostData(int numHosts, struct hostInfoEnt *hosts)
         hPtr.loadSched = hostConf->hosts[i].loadSched;
         hPtr.loadStop = hostConf->hosts[i].loadStop;
         hPtr.windows = hostConf->hosts[i].windows;
+        hPtr.affinity = hostConf->hosts[i].affinity;
 
         /* Add the host by merging the lsf base
          * host information with the batch configuration.

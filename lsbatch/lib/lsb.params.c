@@ -42,8 +42,6 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
 
 
     infoReq.options = options;
-
-
     if (alloc == TRUE) {
 	alloc = FALSE;
 	FREEUP(infoReq.names);
@@ -84,7 +82,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
     }
 
 
-    if ((cc = callmbd (NULL,request_buf, XDR_GETPOS(&xdrs), &reply_buf, &hdr,
+    if ((cc = callmbd (NULL, request_buf, XDR_GETPOS(&xdrs), &reply_buf, &hdr,
 		       NULL, NULL, NULL)) == -1) {
         xdr_destroy(&xdrs);
         free (request_buf);
@@ -97,7 +95,7 @@ lsb_parameterinfo (char **names, int *numUsers, int options)
     if (lsberrno == LSBE_NO_ERROR || lsberrno == LSBE_BAD_USER) {
 	xdrmem_create(&xdrs, reply_buf, XDR_DECODE_SIZE_(cc), XDR_DECODE);
         reply = &paramInfo;
-        if(!xdr_parameterInfo (&xdrs, reply, &hdr)) {
+        if (! xdr_parameterInfo (&xdrs, reply, &hdr)) {
 	    lsberrno = LSBE_XDR;
             xdr_destroy(&xdrs);
 	    if (cc)
