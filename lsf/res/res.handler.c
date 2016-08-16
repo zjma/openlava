@@ -70,7 +70,7 @@ static resAck childPty(struct client *, int *, int *, char *, int);
 static resAck parentPty(int *pty, int *sv, char *);
 static int forkPty(struct client *,int *, int *, int *, int *, char *, resAck *, int, int);
 static int forkSV(struct client *, int *, int *, int *, resAck *);
-static void execit(char **uargv, char *, int *, int, int, int);
+static void execit(char **uargv, char *, int *, int, int, int, int);
 static void lsbExecChild(struct resCmdBill *cmdmsg, int *pty, int *sv,
                          int *err, int *info, int *pid);
 
@@ -2752,7 +2752,8 @@ rexecChild(struct client *cli_ptr, struct resCmdBill *cmdmsg, int server,
 
     ls_closelog();
 
-    execit(cmdmsg->argv, getenv("LSF_JOB_STARTER"), pid, -1, taskSock, FALSE);
+    execit(cmdmsg->argv, getenv("LSF_JOB_STARTER"), pid, -1, taskSock, FALSE,
+            1);
 
     if (info != NULL) {
         Signal_(SIGTERM, SIG_DFL);
@@ -2876,7 +2877,8 @@ lsbExecChild(struct resCmdBill *cmdmsg, int *pty,
            pid,
            iofd,
            -1,
-           (cmdmsg->options & REXF_USEPTY));
+           (cmdmsg->options & REXF_USEPTY),
+           0);
     _exit(127);
 }
 
@@ -3014,7 +3016,8 @@ execit(char **uargv,
        int *pid,
        int stdio,
        int taskSock,
-       int loseRoot)
+       int loseRoot,
+       int goto_azure)
 {
     static char   fname[] = "execit()";
     char          *cmd = NULL;
@@ -3093,7 +3096,10 @@ execit(char **uargv,
             cmd = NULL;
         }
     } else {
-        exec_task_on_azure((const char **)uargv);
+        if (goto_azure)
+            exec_task_on_azure((const char **)uargv);
+        else
+            execvp(uargv[0], uargv);
         perror(uargv[0]);
     }
 
