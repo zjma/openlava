@@ -5,22 +5,20 @@
 #include "azure.h"
 
 #define BUFLEN 1024
-static int status=-1;
-static int CoreNum=0;
-static char SharedKey[BUFLEN+1];
-static char Url[BUFLEN+1];
-static char JobId[BUFLEN+1];
-static char Account[BUFLEN+1];
-static char ScriptPath[BUFLEN+1];
+static int status=AZURE_ST_NEEDINIT;
+static int CoreNum=1;
+static char SharedKey[BUFLEN+1]={'k',0};
+static char Url[BUFLEN+1]={'u',0};
+static char JobId[BUFLEN+1]={'j',0};
+static char Account[BUFLEN+1]={'a', 0};
+static char ScriptPath[BUFLEN+1]={'s', 0};
 
 
-int AZURE_init()
+void AZURE_init()
 {
     char *lavatop=getenv("OPENLAVA_TOP");
     if (!lavatop) lavatop="";
     char *script_loc = "sbin/agent.py";
-    
-    int ret=-1;
     
     sprintf(ScriptPath, "%s/%s", lavatop, script_loc);
     syslog(LOG_INFO, ScriptPath);
@@ -28,31 +26,66 @@ int AZURE_init()
     char *p;
 
     p=getenv("AZURE_SHARED_KEY");
-    if (!p) goto final;
-    strncpy(SharedKey, p, BUFLEN);
-
+    if (p && strlen(p)<=BUFLEN)
+    {
+        strcpy(SharedKey, p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure shared key. Use \"%s\" by default.",
+                SharedKey);
+    }
+    
     p=getenv("AZURE_URL");
-    if (!p) goto final;
-    strncpy(Url, p, BUFLEN);
+    if (p && strlen(p)<=BUFLEN)
+    {
+        strcpy(Url, p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure url. Use \"%s\" by default.",
+                Url);
+    }
 
     p=getenv("AZURE_JOBID");
-    if (!p) goto final;
-    strncpy(JobId, p, BUFLEN);
+    if (p && strlen(p)<=BUFLEN)
+    {
+        strcpy(JobId, p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure job id. Use \"%s\" by default.",
+                JobId);
+    }
 
     p=getenv("AZURE_ACCOUNT");
-    if (!p) goto final;
-    strncpy(Account, p, BUFLEN);
+    if (p && strlen(p)<=BUFLEN)
+    {
+        strcpy(Account, p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure account. Use \"%s\" by default.",
+                Account);
+    }
 
     p=getenv("AZURE_CORE_NUM");
-    if (!p) goto final;
-    CoreNum=atoi(p);
-    
-    status = 0;
-    
-    ret=0;
+    if (p)
+    {
+        CoreNum=atoi(p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure core num. Use %d by default.",
+                CoreNum);
+    }
 
-final:
-    return ret;
+    status = AZURE_ST_READY;
 }
 
 
