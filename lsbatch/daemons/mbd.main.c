@@ -147,7 +147,7 @@ struct sharedResource **sharedResources = NULL;
 
 int sharedResourceUpdFactor = INFINIT_INT;
 long   schedSeqNo;
-int    schedule;
+int    schedule;//do we need schedule in this iteration?
 int lsbModifyAllJobs = FALSE;
 int max_job_sched = INT32_MAX;
 int qsort_jobs = 0;

@@ -877,7 +877,7 @@ getCandHosts (struct jData *jpbw)
         resValPtr = jpbw->qPtr->resValPtr;
 
 
-
+    //get usable hosts (occupied cores excluded), store it in jUsable
     TIMEVAL(3, jUsable = getJUsable(jpbw, &numJUsable, &nProc), tmpVal);
     timeGetJUsable += tmpVal;
 
@@ -1275,7 +1275,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
 
         for (hPtr = (struct hData *)hostList->back;
              hPtr != (void *)hostList;
-             hPtr = hPtr->back) {
+             hPtr = hPtr->back) {//check if each host should be considered for this job.
 
             i = hPtr->hostId;
             INC_CNT(PROF_CNT_firstLoopgetJUsable);
@@ -1337,7 +1337,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
                 break;
         }
     }
-
+    //Now jUsable is a list of compute nodes, usable to this job. Maybe we can add a mpi-or-not attr to each job and apply a rule in the loop above?
     if (imposeDCSOnJob(jp, &deadline, &isWinDeadline, &runLimit)) {
         num = numHosts;
         numHosts = 0;
@@ -1365,7 +1365,7 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
                 numHosts++;
             }
         }
-    }
+    }//jUsable[] is updated by ignoring the nodes who can not beat the deadline
 
     num = numHosts;
     numHosts = 0;
@@ -1381,11 +1381,11 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
             if (logclass & (LC_SCHED | LC_PEND))
                 ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d", fname, jUsable[i]->host, jReasonTb[numReasons-1]);
         }
-    }
+    }//jUsable now ignores nodes that exceed res limit defined by MBD.
 
     num = numHosts;
-    if ((!jp->qPtr->resValPtr
-         || !(jp->qPtr->qAttrib & Q_ATTRIB_NO_HOST_TYPE))
+    if (   (!jp->qPtr->resValPtr || !(jp->qPtr->qAttrib & Q_ATTRIB_NO_HOST_TYPE))
+
         && !jp->shared->resValPtr
         &&  jp->numAskedPtr == 0) {
 
@@ -1404,10 +1404,10 @@ getJUsable(struct jData *jp, int *numJUsable, int *nProc)
                     ls_syslog(LOG_DEBUG2, "%s: Host %s isn't eligible; reason=%d schedHost=%s hostType=%s", fname, jUsable[i]->host, jReasonTb[numReasons-1], jp->schedHost, jUsable[i]->hostType);
             }
         }
-    }
+    }//jUsable now only keeps nodes running OS which is same as that used by job submiter.
 
     num = numHosts;
-    if (jp->shared->resValPtr || jp->qPtr->resValPtr) {
+    if (jp->shared->resValPtr || jp->qPtr->resValPtr) {//if any res select rule to apply? (it might be from the job param or queue attributes)
         int noUse;
         struct hData *hData;
 
@@ -2900,7 +2900,7 @@ hostSlots (int numNeeded, struct jData *jp, struct hData *hp,
 }
 
 static int
-checkResLimit(struct jData *jp, char* hostname)
+checkResLimit(struct jData *jp, char* hostname)//Does job exceed the limits defined in mbd conf?
 {
     int i, j;
     char *queue = NULL;
@@ -4753,7 +4753,7 @@ scheduleAndDispatchJobs(void)
         TIMEVAL(0, scheduleAJob(jPtr, TRUE, TRUE), tmpVal);
 
         XORDispatch(jPtr, FALSE, dispatchAJob0);
-        if (STAY_TOO_LONG) {
+        if ((time(NULL) - now_disp >= maxSchedStay)) {
             if (logclass & LC_SCHED) {
                 ls_syslog(LOG_INFO, "\
 %s: Stayed too long in scheduleAJob() num_iter %d mSchedStage 0x%x ",

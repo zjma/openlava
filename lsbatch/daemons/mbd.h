@@ -268,7 +268,7 @@ struct jData {
     int     subreasons;
     int     *reasonTb;
     int     numReasons;
-    struct  qData *qPtr;
+    struct  qData *qPtr;//which queue the job is in
     struct  hData **hPtr;
     struct  pqData *pPtr;
     int     numHostPtr;
@@ -286,7 +286,7 @@ struct jData {
     char    usePeerCand;
     time_t  reserveTime;
     int     slotHoldTime;
-    char    processed;
+    char    processed;//job stage (JOB_STAGE_CAND, JOB_STAGE_DONE, etc.)
     int     dispCount;
     time_t  dispTime;
     time_t  startTime;
@@ -310,7 +310,7 @@ struct jData {
         int   notModified;
     } pendEvent;
     int     numDependents;
-    char    *schedHost;
+    char    *schedHost;//what OS the job wants to run on?
     int     actPid;
     time_t  ssuspTime;
     struct  submitReq *newSub;
@@ -396,7 +396,7 @@ struct jData {
 struct jShared {
     int                numRef;
     struct  dptNode   *dptRoot;
-    struct  submitReq  jobBill;
+    struct  submitReq  jobBill;//submitted info (job cmdlines, #cores, etc.)
     struct  resVal    *resValPtr;
 };
 
