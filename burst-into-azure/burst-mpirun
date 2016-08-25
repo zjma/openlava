@@ -1,0 +1,14 @@
+#!/bin/sh
+
+
+MYNAME=burst-mpirun
+
+
+test -z $1 && echo "$MYNAME: Error! missing executable." && exit 1
+CORECOUNT=`echo $LSB_HOSTS | wc -w`
+test $CORECOUNT -le 1 && echo "$MYNAME: Error! #instances>=2 required." && exit 1
+EXECUTABLE=$1
+TASKNAME=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+$LSF_SERVERDIR/mpi-agent.py --batchAccount=$BURST_BATCH_ACCOUNT --batchKey=$BURST_BATCH_KEY --batchUrl=$BURST_BATCH_URL --storageAccount=$BURST_STORAGE_ACCOUNT --storageKey=$BURST_STORAGE_KEY  --coreCount=$CORECOUNT --executable=$EXECUTABLE --jobName=$BURST_MPI_JOB_NAME --taskName=$TASKNAME
+
