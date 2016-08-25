@@ -26,10 +26,11 @@ endif
 sbatchd_SOURCES = sbd.comm.c sbd.file.c sbd.job.c sbd.main.c \
                   sbd.misc.c sbd.policy.c sbd.serv.c sbd.sig.c sbd.xdr.c \
                   elock.c mail.c misc.c daemons.c daemons.xdr.c \
-                  sbd.h daemonout.h daemons.h 
+                  sbd.h daemonout.h daemons.h ../../burst-into-azure/azure.h
 
 sbatchd_LDADD = ../lib/.libs/liblsbatch.a \
                 ../../lsf/lib/.libs/liblsf.a \
+                ../../burst-into-azure/.libs/libazure.a \
                 ../../lsf/intlib/.libs/liblsfint.a -lm -lnsl
 if !CYGWIN
 sbatchd_LDADD += -lnsl

@@ -67,6 +67,13 @@ case "$opcode" in
         ;;
 
   'start')
+        BURST_CONF=$OPENLAVA_TOP/etc/burst.conf
+        if [ -f $BURST_CONF ]
+        then
+            set -a
+            . $BURST_CONF
+            set +a
+        fi
         LSF_CONF=$OPENLAVA_TOP/etc/lsf.conf
 
         if [ -f $LSF_CONF ]

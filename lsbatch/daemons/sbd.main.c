@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "sbd.h"
+#include "../../burst-into-azure/azure.h"
 
 extern void do_sbdDebug(XDR *xdrs, int chfd, struct LSFHeader *reqHdr);
 static void sinit(void);
@@ -302,6 +303,8 @@ main(int argc, char **argv)
     sigprocmask(SIG_SETMASK, NULL, &oldsigmask);
 
     sinit();
+    AZURE_init();
+    
     ls_syslog(LOG_INFO, "%s: sbatchd (re-)started", __func__);
 
     /* Check if binding to cpus is enabled
