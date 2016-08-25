@@ -127,6 +127,7 @@ AC_CONFIG_FILES([
 	Makefile                 \
 	m4/Makefile              \
 	config/Makefile          \
+	burst-into-azure/Makefile\
 	lsf/Makefile             \
 	lsf/intlib/Makefile      \
 	lsf/lib/Makefile         \
