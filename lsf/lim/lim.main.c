@@ -19,6 +19,7 @@
  */
 
 #include "lim.h"
+#include "../../burst-into-azure/azure.h"
 
 extern char *argvmsg_(int argc, char **argv);
 
@@ -684,7 +685,9 @@ initAndConfig(int checkMode, int *kernelPerm)
     initParse(&allInfo);
 
     initReadLoad(checkMode);
-
+    
+    AZURE_init();
+    
     if (! checkMode) {
         initConfInfo();
         satIndex();
