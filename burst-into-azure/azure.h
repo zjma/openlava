@@ -20,10 +20,13 @@ int AZURE_libStatus();
 
 
 int AZURE_getCoreNum();
-const char *AZURE_getSharedKeyB64();
-const char *AZURE_getAccountName();
-const char *AZURE_getUrl();
-const char *AZURE_getJobId();
+
+const char *AZURE_getBatchAccount();
+const char *AZURE_getBatchUrl();
+const char *AZURE_getBatchKeyB64();
+const char *AZURE_getStorageAccount();
+const char *AZURE_getStorageKeyB64();
+const char *AZURE_getMpiJobName();
 
 const char *AZURE_scriptPath();
 
