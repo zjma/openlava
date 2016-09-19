@@ -13,6 +13,7 @@ static char BatchUrl[BUFLEN+1]={'u',0};
 static char BatchMpiJobId[BUFLEN+1]={'j',0};
 static char StorageAccount[BUFLEN+1]={'a', 0};
 static char StorageKey[BUFLEN+1]={'k',0};
+static char StorageContainerName[BUFLEN+1]={'c',0};
 static char ScriptPath[BUFLEN+1]={'s', 0};
 
 
@@ -110,6 +111,18 @@ void AZURE_init()
                 "Invalid/missing azure storage key. Use \"%s\" by default.",
                 StorageKey);
     }
+    
+    p=getenv("AZURE_STORAGE_CONTAINER_NAME");
+    if (p && strlen(p)<=BUFLEN)
+    {
+        strcpy(StorageContainerName, p);
+    }
+    else
+    {
+        syslog(LOG_WARNING,
+                "Invalid/missing azure container name. Use \"%s\" by default.",
+                StorageContainerName);
+    }
 
     status = AZURE_ST_READY;
 }
@@ -154,6 +167,11 @@ const char *AZURE_getStorageAccount()
 const char *AZURE_getStorageKeyB64()
 {
     return StorageKey;
+}
+
+const char *AZURE_getStorageContainerName()
+{
+    return StorageContainerName;
 }
 
 const char *AZURE_getMpiJobName()

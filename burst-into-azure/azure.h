@@ -26,6 +26,7 @@ const char *AZURE_getBatchUrl();
 const char *AZURE_getBatchKeyB64();
 const char *AZURE_getStorageAccount();
 const char *AZURE_getStorageKeyB64();
+const char *AZURE_getStorageContainerName();
 const char *AZURE_getMpiJobName();
 
 const char *AZURE_scriptPath();

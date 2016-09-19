@@ -919,7 +919,8 @@ setJobEnv(struct jobCard *jp)
     putEnv ("BURST_BATCH_URL", AZURE_getBatchUrl());
     putEnv ("BURST_STORAGE_ACCOUNT", AZURE_getStorageAccount());
     putEnv ("BURST_STORAGE_KEY", AZURE_getStorageKeyB64());
-    
+    putEnv ("BURST_CONTAINER_NAME", AZURE_getStorageContainerName());
+
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
     return 0;
 }

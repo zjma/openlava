@@ -1,0 +1,144 @@
+#!/bin/python
+import argparse
+import time
+import random
+import string
+import os
+import sys
+import datetime
+import logging
+logging.getLogger('msrest.serialization').addHandler(logging.NullHandler())
+
+from azure.batch import BatchServiceClient
+from azure.batch.batch_auth import SharedKeyCredentials
+import azure.batch.models as batchmodels
+import azure.storage.blob as azureblob
+import azure.batch.batch_service_client as batch
+import azure.batch.batch_auth as batchauth
+from azure.storage.blob.models import PublicAccess
+
+
+StorageAccount  = 'sa'
+StorageKey      = 'sk'
+ContainerName   = 'sc'
+
+BatchAccount    = "ba"
+BatchKey        = "bk"
+BatchUrl        = "bu"
+JobId           = "bj"
+
+
+def put(storeAccount, storeKey, containerName, filePath):
+    blobClient = azureblob.BlockBlobService(
+            account_name=storeAccount,
+            account_key=storeKey)
+
+    blobClient.create_container(
+            container_name=containerName,
+            public_access=PublicAccess.Blob,
+            fail_on_exist=False)
+
+    fileName = os.path.basename(filePath)
+    blobClient.create_blob_from_path(
+            container_name=containerName,
+            blob_name=fileName,
+            file_path=filePath)
+
+    return blobClient.make_blob_url(containerName, fileName)
+
+
+def puut(filePath):
+    return put(StorageAccount, StorageKey, ContainerName, filePath)
+
+
+def go(batchAccount, batchKey, batchUrl, jobId, taskId, coreCount, cooCmd, appCmd, asRoot, cooRess, appRess):
+    '''
+    cooRess/appRess == [(local_path, azure_name), (local_path_2, azure_name_2)]
+    '''
+    credentials = batchauth.SharedKeyCredentials(
+            batchAccount,
+            batchKey)
+
+    batch_client = batch.BatchServiceClient(
+            credentials,
+            base_url=batchUrl)
+
+    upedCooRess = [(puut(path),das) for path,das in cooRess]
+    upedAppRess = [(puut(path),das) for path,das in appRess]
+
+    cooResources = [batchmodels.ResourceFile(file_path=das,blob_source=url) for url,das in upedCooRess]
+    appResources = [batchmodels.ResourceFile(file_path=das,blob_source=url) for url,das in upedAppRess]
+
+    mpiSettings = None if coreCount<=1 else batch.models.MultiInstanceSettings(
+            number_of_instances         = coreCount,
+            coordination_command_line   = cooCmd,
+            common_resource_files       = cooResources)
+
+    task = batch.models.TaskAddParameter(
+            id                      = taskId,
+            command_line            = appCmd,
+            display_name            = taskId,
+            resource_files          = appResources,
+            environment_settings    = None,
+            affinity_info           = None,
+            constraints             = None,
+            run_elevated            = asRoot,
+            multi_instance_settings = mpiSettings,
+            depends_on              = None)
+
+    batch_client.task.add(jobId, task)
+    
+    print("Forwarded to Azure Batch, task ID = {}".format(taskId))
+    sys.stdout.flush()
+
+    while True:
+        task = batch_client.task.get(jobId, taskId)
+        if task.state == batchmodels.TaskState.completed: break
+        time.sleep(2.0)
+
+    #Read stderr.
+    stderr_chunks = batch_client.file.get_from_task(
+            jobId, taskId,
+            'stderr.txt')
+
+    #Read stdout.
+    stdout_chunks = batch_client.file.get_from_task(
+            jobId, taskId,
+            'stdout.txt')
+
+    return ''.join(stdout_chunks), ''.join(stderr_chunks)
+
+
+def goo(coreCount, cooCmd, appCmd, asRoot, cooRess, appRess):
+    taskId = ''.join(random.choice(string.ascii_uppercase+string.digits) for _ in range(16))
+    o,e = go(BatchAccount, BatchKey, BatchUrl, JobId, taskId, coreCount, cooCmd, appCmd, asRoot, cooRess, appRess)
+    return taskId,o,e
+
+
+def gee(appCmd, asRoot):
+    return goo(1, None, appCmd, asRoot, [], [])
+
+
+def main():
+    global StorageAccount,StorageKey,ContainerName,BatchUrl,BatchKey,BatchAccount,JobId
+    StorageAccount  = os.environ['BURST_STORAGE_ACCOUNT']
+    StorageKey      = os.environ['BURST_STORAGE_KEY']
+    ContainerName   = os.environ['BURST_CONTAINER_NAME']
+    BatchUrl        = os.environ['BURST_BATCH_URL']
+    BatchKey        = os.environ['BURST_BATCH_KEY']
+    BatchAccount    = os.environ['BURST_BATCH_ACCOUNT']
+    JobId           = os.environ['BURST_MPI_JOB_NAME']
+    
+    path = sys.argv[1]
+    coreCount = len(os.environ['LSB_HOSTS'].split())
+    ConstCoo='bash -c \'yum -y install nfs-utils environment-modules > /dev/null 2>&1 ; source /etc/profile.d/modules.sh; systemctl enable nfs-server.service; systemctl start nfs-server.service; DIR_SHARED=$AZ_BATCH_TASK_WORKING_DIR/nfs; MASTER_HOST_PORT=(${AZ_BATCH_MASTER_NODE/:/ }); MASTER_HOST=${MASTER_HOST_PORT[0]}; mkdir -p $DIR_SHARED; chmod 777 -R $DIR_SHARED; if $AZ_BATCH_IS_CURRENT_NODE_MASTER; then echo "$DIR_SHARED      10.0.0.0/24(rw,sync,no_root_squash,no_all_squash)" > /etc/exports; exportfs -ra; else while true; do mount $MASTER_HOST:$DIR_SHARED $DIR_SHARED && break; sleep 2; done; fi\''
+    ConstApp="su _azbatch -s /bin/bash -p -c ' _TMP_HOSTNAMES=(); _TMP_ALLOCS=(); _TMP_CCP_N=`echo $CCP_NODES | wc -w`; CCP_NODE_ARR=($CCP_NODES); for ((i=1;i<_TMP_CCP_N;i++)); do if [ `expr $i % 2` -eq 0 ]; then _TMP_ALLOCS+=(${CCP_NODE_ARR[i]}); else _TMP_HOSTNAMES+=(${CCP_NODE_ARR[i]}); fi; done; _TMP_N=$((_TMP_CCP_N/2)); LSB_HOST_ARR=(); for ((i=0;i<_TMP_N;i++)); do LSB_HOST_ARR+=(`for (( j=${_TMP_ALLOCS[$i]}; j>0; j--)) ; do echo ${_TMP_HOSTNAMES[$i]} ; done`); done; LSB_HOSTS=${LSB_HOST_ARR[@]}; DIR_SHARED=$AZ_BATCH_TASK_WORKING_DIR/nfs; cd $DIR_SHARED; source ../my.script ' "
+    tid,o,e = goo(coreCount, ConstCoo, ConstApp, True, [], [(path, 'my.script')])
+    sys.stdout.write(e)
+    sys.stdout.write(o)
+    pass
+
+
+if __name__=='__main__':
+    main()
+
