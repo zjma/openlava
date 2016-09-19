@@ -913,13 +913,13 @@ setJobEnv(struct jobCard *jp)
 
     putEnv ("LSB_EFFECTIVE_RSRCREQ", jp->jobSpecs.resReq);
     
-    putEnv ("BURST_MPI_JOB_NAME",AZURE_getMpiJobName());
-    putEnv ("BURST_BATCH_ACCOUNT", AZURE_getBatchAccount());
-    putEnv ("BURST_BATCH_KEY", AZURE_getBatchKeyB64());
-    putEnv ("BURST_BATCH_URL", AZURE_getBatchUrl());
-    putEnv ("BURST_STORAGE_ACCOUNT", AZURE_getStorageAccount());
-    putEnv ("BURST_STORAGE_KEY", AZURE_getStorageKeyB64());
-    putEnv ("BURST_CONTAINER_NAME", AZURE_getStorageContainerName());
+    putEnv ("BURST_MPI_JOB_NAME",(char *)AZURE_getMpiJobName());
+    putEnv ("BURST_BATCH_ACCOUNT", (char *)AZURE_getBatchAccount());
+    putEnv ("BURST_BATCH_KEY", (char *)AZURE_getBatchKeyB64());
+    putEnv ("BURST_BATCH_URL", (char *)AZURE_getBatchUrl());
+    putEnv ("BURST_STORAGE_ACCOUNT", (char *)AZURE_getStorageAccount());
+    putEnv ("BURST_STORAGE_KEY", (char *)AZURE_getStorageKeyB64());
+    putEnv ("BURST_CONTAINER_NAME", (char *)AZURE_getStorageContainerName());
 
     runEexec_("", jp->jobSpecs.jobId, &jp->jobSpecs.eexec, NULL);
     return 0;
