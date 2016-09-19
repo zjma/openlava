@@ -60,7 +60,8 @@ void AZURE_init()
     else
     {
         syslog(LOG_WARNING,
-                "Invalid/missing azure batch mpi job id. Use \"%s\" by default.",
+                "Invalid/missing azure batch mpi job id. \
+		Use \"%s\" by default.",
                 BatchMpiJobId);
     }
 
@@ -96,7 +97,8 @@ void AZURE_init()
     else
     {
         syslog(LOG_WARNING,
-                "Invalid/missing azure storage account. Use \"%s\" by default.",
+                "Invalid/missing azure storage account. \
+		Use \"%s\" by default.",
                 StorageAccount);
     }
 

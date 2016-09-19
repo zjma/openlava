@@ -125,6 +125,12 @@ def upload_file_to_container(block_blob_client, container_name, file_path):
 
 
 if __name__=='__main__':
+    '''
+    Run an OpenMPI program on Azure Batch, get back its stdout and stderr.
+
+    A MPI program is an executable
+    which may depend on libmpi.so or OpenMPI environment variables.
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument('--batchAccount', required=True)
     parser.add_argument('--batchKey', required=True)
@@ -164,7 +170,7 @@ if __name__=='__main__':
     common_res_file = upload_file_to_container(
             blob_client, blob_container_name, executable_path)
 
-    # Add a task.
+    # Submit a multi-instance task.
     task_cmd = "/usr/lib64/openmpi/bin/mpirun -np {} --host $AZ_BATCH_HOST_LIST -wdir $AZ_BATCH_TASK_SHARED_DIR $AZ_BATCH_TASK_SHARED_DIR/{}".format(coreCount, executable_filename)
 
     coordination_cmdline = "chmod +x $AZ_BATCH_TASK_SHARED_DIR/{}".format(executable_filename)

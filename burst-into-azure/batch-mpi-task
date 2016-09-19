@@ -29,6 +29,21 @@ JobId           = "bj"
 
 
 def put(storeAccount, storeKey, containerName, filePath):
+    '''
+    Upload local file to Azure Storage.
+
+    params storeAccount(str)    Your Azure Storage account?
+    params storeKey(str)        Your Azure Storage shared key?
+    params containerName(str)   Which container should the file go to?
+                                If the container does not exist,
+                                a public one will be created.
+    params filePath(str)        Which local file should be uploaded?
+
+    return  URL of the uploaded file.
+
+    note    If the container you specified is private,
+            you cannot download it directly via the returned URL.
+    '''
     blobClient = azureblob.BlockBlobService(
             account_name=storeAccount,
             account_key=storeKey)
@@ -48,12 +63,45 @@ def put(storeAccount, storeKey, containerName, filePath):
 
 
 def puut(filePath):
+    '''
+    Upload local file to Azure Storage.
+
+    This is a shortcut of put(). See the definition of put() for details.
+    '''
     return put(StorageAccount, StorageKey, ContainerName, filePath)
 
 
-def go(batchAccount, batchKey, batchUrl, jobId, taskId, coreCount, cooCmd, appCmd, asRoot, cooRess, appRess):
+def go(batchAccount, batchKey, batchUrl,
+        jobId, taskId,
+        coreCount, cooCmd, appCmd, asRoot, cooRess, appRess):
     '''
-    cooRess/appRess == [(local_path, azure_name), (local_path_2, azure_name_2)]
+    Run a task on Azure Batch.
+
+    If you requires 2+ cores, the task turns into a multi-instance task.
+    
+    params batchAccount(str)    Your Azure Batch Account?
+    params batchKey(str)        Your Azure Batch shared key?
+    params batchUrl(str)        Your Azure Batch URL?
+    params jobId(str)           Which job the new task should go?
+    params taskId(str)          What should the name of the new task ne?
+    params coreCount(int)       How many cores do you need?
+    params cooCmd(str)          What should coordination command be?
+    params appCmd(str)          What should application command be?
+    params asRoot(bool)         Run as root or not?
+    params cooRess(list of tuple of str,str)
+                                Any local file to be uploaded
+                                before running coordination command?
+    params appRess(list of tuple of str,str) 
+                                Any local file to be uploaded
+                                before running application command?
+    
+    note    An example of cooRess/appRess.
+            [('/tmp/a.txt','aa'),('../b.sh','bb')]
+            will place local files /tmp/a.txt and ../b.sh
+            at Azure Batch task's working dir,
+            renamed as 'aa' and 'bb' respectively.
+
+    return  Azure Batch task ID, stdout and stderr.
     '''
     credentials = batchauth.SharedKeyCredentials(
             batchAccount,
@@ -65,9 +113,12 @@ def go(batchAccount, batchKey, batchUrl, jobId, taskId, coreCount, cooCmd, appCm
 
     upedCooRess = [(puut(path),das) for path,das in cooRess]
     upedAppRess = [(puut(path),das) for path,das in appRess]
-
-    cooResources = [batchmodels.ResourceFile(file_path=das,blob_source=url) for url,das in upedCooRess]
-    appResources = [batchmodels.ResourceFile(file_path=das,blob_source=url) for url,das in upedAppRess]
+    
+    def resOf(das,url):
+        return batchmodels.ResourceFile(file_path=das,blob_source=url)
+    
+    cooResources = [resOf(das,url) for url,das in upedCooRess]
+    appResources = [resOf(das,url) for url,das in upedAppRess]
 
     mpiSettings = None if coreCount<=1 else batch.models.MultiInstanceSettings(
             number_of_instances         = coreCount,
@@ -109,18 +160,47 @@ def go(batchAccount, batchKey, batchUrl, jobId, taskId, coreCount, cooCmd, appCm
     return ''.join(stdout_chunks), ''.join(stderr_chunks)
 
 
+Alphabet = string.ascii_uppercase+string.digits
+
+
 def goo(coreCount, cooCmd, appCmd, asRoot, cooRess, appRess):
-    taskId = ''.join(random.choice(string.ascii_uppercase+string.digits) for _ in range(16))
-    o,e = go(BatchAccount, BatchKey, BatchUrl, JobId, taskId, coreCount, cooCmd, appCmd, asRoot, cooRess, appRess)
+    '''
+    Run a randomly named task on Azure Batch.
+
+    This is a shortcut of go(). See the definition of go() for details.
+    '''
+    taskId = ''.join(random.choice(Alphabet) for _ in range(16))
+    o,e = go(BatchAccount, BatchKey, BatchUrl,
+            JobId, taskId,
+            coreCount, cooCmd, appCmd, asRoot, cooRess, appRess)
     return taskId,o,e
 
 
 def gee(appCmd, asRoot):
+    '''
+    Run a randomly named task on Azure Batch.
+
+    This is a shortcut of goo(). See the definition of goo() for details.
+    '''
     return goo(1, None, appCmd, asRoot, [], [])
 
 
 def main():
-    global StorageAccount,StorageKey,ContainerName,BatchUrl,BatchKey,BatchAccount,JobId
+    '''
+    Run an OpenLava job as a Azure Batch multi-instance task.
+
+    The OpenLava job can call /usr/lib64/openmpi/mpirun,
+    and use the environment variable $LSB_HOSTS.
+    But no other operation (e.g., lsrun) is currently supported.
+    '''
+    global StorageAccount
+    global StorageKey
+    global ContainerName
+    global BatchUrl
+    global BatchKey
+    global BatchAccount
+    global JobId
+
     StorageAccount  = os.environ['BURST_STORAGE_ACCOUNT']
     StorageKey      = os.environ['BURST_STORAGE_KEY']
     ContainerName   = os.environ['BURST_CONTAINER_NAME']
@@ -133,7 +213,8 @@ def main():
     coreCount = len(os.environ['LSB_HOSTS'].split())
     ConstCoo='bash -c \'source /etc/profile.d/modules.sh; systemctl enable nfs-server.service; systemctl start nfs-server.service; DIR_SHARED=$AZ_BATCH_TASK_WORKING_DIR/nfs; MASTER_HOST_PORT=(${AZ_BATCH_MASTER_NODE/:/ }); MASTER_HOST=${MASTER_HOST_PORT[0]}; mkdir -p $DIR_SHARED; chmod 777 -R $DIR_SHARED; if $AZ_BATCH_IS_CURRENT_NODE_MASTER; then echo "$DIR_SHARED      10.0.0.0/24(rw,sync,no_root_squash,no_all_squash)" > /etc/exports; exportfs -ra; else while true; do mount $MASTER_HOST:$DIR_SHARED $DIR_SHARED && break; sleep 2; done; fi\''
     ConstApp="su _azbatch -s /bin/bash -p -c ' _TMP_HOSTNAMES=(); _TMP_ALLOCS=(); _TMP_CCP_N=`echo $CCP_NODES | wc -w`; CCP_NODE_ARR=($CCP_NODES); for ((i=1;i<_TMP_CCP_N;i++)); do if [ `expr $i % 2` -eq 0 ]; then _TMP_ALLOCS+=(${CCP_NODE_ARR[i]}); else _TMP_HOSTNAMES+=(${CCP_NODE_ARR[i]}); fi; done; _TMP_N=$((_TMP_CCP_N/2)); LSB_HOST_ARR=(); for ((i=0;i<_TMP_N;i++)); do LSB_HOST_ARR+=(`for (( j=${_TMP_ALLOCS[$i]}; j>0; j--)) ; do echo ${_TMP_HOSTNAMES[$i]} ; done`); done; LSB_HOSTS=${LSB_HOST_ARR[@]}; DIR_SHARED=$AZ_BATCH_TASK_WORKING_DIR/nfs; cd $DIR_SHARED; source ../my.script ' "
-    tid,o,e = goo(coreCount, ConstCoo, ConstApp, True, [], [(path, 'my.script')])
+    tid,o,e = goo(coreCount, ConstCoo, ConstApp, True,
+            [], [(path, 'my.script')])
     sys.stdout.write(e)
     sys.stdout.write(o)
     pass

@@ -6,7 +6,7 @@
 #define AZURE_ST_NEEDINIT   1
 
 
-/**Initialize Azure Batch library (by reading params from azure.conf).
+/**Initialize Azure Batch library (by reading params from burst.conf).
  */
 void AZURE_init();
 
@@ -15,12 +15,14 @@ void AZURE_init();
  *
  * \return AZURE_ST_READY if library has been initialized,
  *          or AZURE_ST_NEEDINIT otherwise.
+ *
+ * \note   You should trust what AZURE_getXXX() returns
+ *         only when calling AZURE_init() returns AZURE_ST_READY.
  */
 int AZURE_libStatus();
 
 
 int AZURE_getCoreNum();
-
 const char *AZURE_getBatchAccount();
 const char *AZURE_getBatchUrl();
 const char *AZURE_getBatchKeyB64();
